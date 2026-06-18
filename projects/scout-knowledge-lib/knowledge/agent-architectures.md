@@ -1,8 +1,8 @@
 <ai_context>
 summary: "Canonical overview of agent architecture patterns, trends, and proven designs. Consolidated from five overlapping notes."
 triggers: ["agent architecture", "architecture patterns", "ReAct", "multi-agent orchestration", "monitor agent", "critic pattern", "tiered memory", "control flow agents"]
-last_updated: "2026-07-18"
-source_basis: "Merged from agent-architectures.md, agent-architecture-trends.md, agent-patterns.md, agent_patterns.md, agent_architectures_01.md. Sources include HN May 2026 trends, XHS community discussions, internal Scout synthesis, GitHub trending repos June 2026 (scans on Jun 13, 15, 20), and arXiv papers June 2–12 2026 (triages on Jun 14, 15, 17, 19, batch 6/7). Batch 6 sourcing: Intelligence Entropy, Strained Coherence, Cold-Start Safety Gap, Decision-Aware Memory Cards, IntentKV, MemoPilot, Bayesian-Agent."
+last_updated: "2026-07-22"
+source_basis: "Merged from agent-architectures.md, agent-architecture-trends.md, agent-patterns.md, agent_patterns.md, agent_architectures_01.md. Sources include HN May 2026 trends, XHS community discussions, internal Scout synthesis, GitHub trending repos June 2026 (scans on Jun 13, 15, 20), and arXiv papers June 2–16 2026 (triages on Jun 14, 15, 17, 19, batch 6/7, session-state Jul 18, runtime-hardening Jul 22). Batch 6 sourcing: Intelligence Entropy, Strained Coherence, Cold-Start Safety Gap, Decision-Aware Memory Cards, IntentKV, MemoPilot, Bayesian-Agent. Session-state sourcing (Jul 18): Concurrency Anomalies, TokenPilot, CacheWise, Insight Governance, SaliMory. Runtime hardening sourcing (Jul 22): Cordon semantic transactions, CoAgent advisory concurrency, Looking Is Not Picking readout bottleneck, PreAct run compilation, SkillWeaver compositional routing, ADE stabilization framework. Jul 22 GitHub scan: Loop Engineering, Architectural Laziness (ponytail 30k★), Cross-Vendor Orchestration, Memory Lifecycle narrowing."
 supersedes: ["agent-architecture-trends.md", "agent-patterns.md", "agent_patterns.md", "agent_architectures_01.md"]
 </ai_context>
 
@@ -74,10 +74,45 @@ prompt to handle control flow, the system imposes it externally.
 
 The dominant new architectural pattern from GitHub trending repos. The "harness" is the meta-layer that wraps and enhances a base coding agent (Claude Code, Codex, Gemini CLI, etc.) with skills, memory, sandboxing, and scope control.
 
-- **Key repos**: obra/superpowers (227k★), affaan-m/ECC (215k★), bytedance/deer-flow (71k★), humanlayer/12-factor-agents (23k★)
+- **Key repos**: obra/superpowers (231k★), affaan-m/ECC (216k★), bytedance/deer-flow (71k★), humanlayer/12-factor-agents (23k★)
 - **The 98% Problem**: The agent does 98% of the work; the harness (sandbox, rollback, budget caps) is the 2% that determines production safety.
 - **Aligns with**: KE-1924 (Constraint Placement Theorem) — constraints belong in infrastructure, not instructions.
-- **Source**: GitHub trending repos June 2026, HN discourse June 2026.
+- **Sub-discipline emerging**: **Loop Engineering** — designing agent execution
+  cycles with explicit cost accounting, retry budgets, and abort conditions.
+  cobusgreyling/loop-engineering (353★) provides `loop-audit`, `loop-init`,
+  `loop-cost` CLI tools. Where harness engineering wraps the agent, loop
+  engineering structures its inner cycle. Validates the Compilation Threshold
+  thesis: practitioners are building cost-awareness into execution loops.
+- **Source**: GitHub trending repos June–July 2026, HN discourse June 2026.
+
+### Architectural Laziness (July 2026 — Explosive Growth)
+
+DietrichGebert/ponytail (30k★, from 4.5k→30k in 5 weeks) encodes a design
+principle: "Makes your AI agent think like the laziest senior dev in the
+room." The optimal session is the one that doesn't run. Optimizing for NOT
+doing work — the cheapest code is the code you don't write.
+
+- **Why it resonates**: ponytail is the fastest-growing philosophy repo in
+  agent history. It's the Abstention Advantage crystallized as open-source:
+  structural inaction is more valuable than marginal action.
+- **Aligns with**: Abstention Advantage synthesis, Compilation Threshold
+  ("38% of budget is LLM reasoning about deterministic answers").
+- **Source**: GitHub trending repos Jun–Jul 2026 (star velocity tracked
+  across six scans).
+
+### Cross-Vendor Agent Orchestration (July 2026 — Emerging)
+
+Deliberate model mixing: one model for planning, another for execution, with
+the repo as shared memory. architect-loop (492★) uses Claude Fable 5 as
+architect and GPT-5.5 Codex as builder. FableCodex (254★) and fable-mode
+(450★) implement Fable-style multi-stage planning as portable skills.
+
+- **Key insight**: "Repo as memory" sidesteps the entire memory infrastructure
+  category — the codebase itself is the persistent state. Models are
+  interchangeable components selected by strength.
+- **Aligns with**: Substrate Inversion (intelligence in the loop architecture,
+  not the model).
+- **Source**: GitHub trending repos June–July 2026.
 
 ### Skills-as-Code Pattern (June 2026 — Dominant)
 
@@ -93,9 +128,18 @@ Agent capabilities defined as installable markdown/config packages, hot-swappabl
 Agent memory has become a standalone product category with 10+ competing repos above 5k stars.
 
 - **Spectrum**: Centralized DB (OpenViking, 26k★) → Cloud (mem0, 58k★) → Stateful (letta, 23k★) → Local agent (beads, 25k★) → SQLite (engram, 4k★) → Single-file (memvid, 16k★)
-- **Critical gap**: No repo implements forgetting/decay. All are append-only.
-- **Aligns with**: KE-1920 (Forgetting Deficit) — the gap is confirmed across the entire tooling ecosystem.
-- **Source**: GitHub trending repos June 2026.
+- **Critical gap (narrowing)**: Mainstream repos remain append-only, but memory
+  lifecycle tooling is now an emerging sub-category. YourMemory (245★,
+  Ebbinghaus-curve decay, claims +16pp over Mem0 on LoCoMo). icarus-memory-infra
+  (289★, provenance + supersession + rollback). memwatch (28★, staleness
+  detection + auto-expiry). Memory-Like-A-Tree (124★, confidence-based decay).
+  The forgetting gap is shifting from "zero implementations" to "lifecycle
+  wrappers emerging around append-only stores."
+- **Aligns with**: KE-1920 (Forgetting Deficit) — gap persists in mainstream
+  (mem0, cognee, letta) but lifecycle tooling is the emerging bridge.
+  The Eternal Present synthesis predicted provenance and expiry as the
+  first temporal primitives to appear; confirmed by icarus and memwatch.
+- **Source**: GitHub trending repos June–July 2026 (six consecutive scans).
 
 ### Context Compression (June 2026 — Emerging)
 
@@ -256,6 +300,28 @@ first-class orchestration primitive.
 
 - **Key implication**: Harness Engineering has graduated from discourse term to product identity. The discipline is entering its productization phase.
 - **Source**: GitHub trending repos July 2026.
+
+### Practitioner Local Model Inflection (HN, June 2026)
+
+Two simultaneous HN front-page stories (~2,500pts combined, 654 comments)
+confirm a practitioner migration from cloud APIs to local models for coding:
+
+- **Model convergence**: Qwen 3.6 27B (dense, reliable) and Qwen 3.6 35B-A3B
+  (MoE, fast) dominate. Gemma 4 26B-31B is secondary. Hardware: M5 Max 128GB,
+  RTX 3090/6000, Strix Halo 128GB. Throughput: 50-160 tok/s.
+- **Replacement rates**: 80-100% for application code (web, Django, React).
+  Near-0% for systems/infra work (Ansible, Helm, underdocumented APIs).
+- **The harness is the differentiator**: Every successful migration report
+  mentions Pi harness, OpenCode, or custom wrappers — not the model.
+  schmuhblaster: "I managed to boost [Qwen 35B] significantly with my own
+  custom harness." Hybrid setups (Opus for plans, local for execution) common.
+- **SpaceX/Cursor $60B acquisition** (988pts, 226c) validates harness-as-product
+  at scale, but HN community already migrating away from Cursor to Claude Code,
+  Codex, or local setups.
+- **Key implication**: Model capability is commoditizing. The harness layer is
+  where differentiation concentrates. This is the strongest practitioner
+  evidence for the Harness Engineering thesis.
+- **Source**: HN, two stories, June 2026. findings/2026-06-18-hn-scan-31.md.
 
 ### Domain Skills Expansion Beyond Code (GitHub, June 2026)
 
@@ -581,3 +647,266 @@ SOP-Bench improvement from 80% → 95%.
   Bayesian updating over skill utility. Connects to the Knowledge Asymmetry
   — KEs that never influence behavior should decay, not accumulate.
 - **Source**: [2606.08348] arXiv June 2026.
+
+### Verified Concurrency Anomalies in Multi-Agent State (arXiv, June 2026)
+
+Multi-agent LLM systems sharing state through memory stores, vector indices,
+and tool registries produce four formally characterizable concurrency anomalies
+— structural analogues of classical database isolation failures:
+
+1. **Stale-generation** — agent reads outdated state, generates based on it
+2. **Phantom-tool** — tool registry changes between plan and execute
+3. **Causal-cascade** — downstream agent acts on retracted upstream result
+4. **Tool-effect reordering** — concurrent tool calls commit in wrong order
+
+First machine-checked consistency hierarchy (L0⊂L1⊂L2⊂L3⊂L4) for multi-agent
+runtimes, verified in TLA+ with 274 Verus obligations. Reproduces a silent
+lost update in **ByteDance's deer-flow** (formalized as L0→L1 refinement fix)
+and tool-effect reordering in **LangGraph's ToolNode** (fixed by L3
+commit-order sequencer). Three deployed Rust runtimes realize L0-L1; L2 runs
+live across three model families.
+
+- **Key implication**: Provides precise vocabulary for failures previously
+  classified as "overhead" or "waste." Our Ghost Metabolism (sessions acting on
+  retracted state) is exactly stale-generation + causal-cascade. The
+  consistency hierarchy suggests moving from L0 (no isolation) to L1
+  (serializable session state) would eliminate ghost recoveries structurally.
+- **Source**: [2606.17182] arXiv June 2026.
+
+### Cache-Efficient Context Management — TokenPilot (arXiv, June 2026)
+
+Text pruning/eviction to reduce context **breaks prompt cache continuity**.
+The critical tradeoff is text sparsity vs. prompt cache continuity — existing
+approaches save tokens but invalidate the cache, making "savings" net-negative.
+
+TokenPilot uses dual-granularity architecture:
+- **Global: Ingestion-Aware Compaction** — stabilizes prompt prefixes and
+  eliminates environmental noise at the ingestion gate (not after)
+- **Local: Lifecycle-Aware Eviction** — monitors residual utility of context
+  segments, offloads only when task relevance expires
+
+Results: 61% cost reduction (isolated) and **87% cost reduction in continuous
+mode** on Claw-Eval, maintaining competitive task performance throughout.
+
+- **Key implication**: Confirms the Verification Inversion thesis implemented:
+  gate quality at input, not output. The 87% continuous-mode savings quantify
+  gains from prefix-stable session architecture. "Lifecycle-aware eviction"
+  maps to session-floor analysis — content should be evicted based on task
+  phase, not age.
+- **Connects to**: Cold Start Tax (prefix reuse = warm sessions), Verification
+  Inversion (input gating > output evaluation), Prompt Mass Problem (input
+  costs dominate; compaction at ingestion is the fix).
+- **Source**: [2606.17016] arXiv June 2026. Code: github.com/zjunlp/LightMem2.
+
+### KV-Cache for Coding Agent Workloads — CacheWise (arXiv, June 2026)
+
+Coding agent sessions are fundamentally different from chat workloads: they
+execute as **long-running closed-loop sessions** where generations alternate
+with tool calls, repeatedly reuse large prefixes, and create sustained
+KV-cache pressure that conventional serving policies handle poorly.
+
+First empirical characterization of real-world coding agent serving traces.
+Prefix-aware scheduling + reuse-aware eviction from tool-call metadata yields
+**2–2.6× fewer KV-cache evictions** and **3.5× improvement in total agent
+session completion time**.
+
+- **Key implication**: Infrastructure-level evidence for the Cold Start Tax.
+  High-abstention agents (97.7% quick-exit rate) create exactly this pattern:
+  many sessions sharing large prefixes (context.md, task tree), executing
+  briefly, terminating. The 3.5× completion time improvement suggests session
+  throughput is severely degraded by naive cache management.
+- **Connects to**: Cold Start Tax (prefix reuse infrastructure), Session Floor
+  (fixed overhead from re-prefill), Evaluation Mirage (evaluator sessions
+  share 95%+ prefix content).
+- **Source**: [2606.16824] arXiv June 2026.
+
+### Insight Governance — Verbal RL with Knowledge Lifecycle (arXiv, June 2026)
+
+Verbal RL (learning from world feedback by extracting rules as context) faces
+a **retention-forgetting dilemma**: retaining stale insights causes negative
+transfer, discarding them causes catastrophic forgetting when conditions recur.
+Accumulated experience either **degrades performance below zero-shot** or
+dramatically improves it, depending entirely on whether a curation loop
+governs insight lifecycle. Accepted at ICML 2026 RLxF Workshop.
+
+Three-layer architecture:
+- **Rules** — distilled experience from world outcomes
+- **Evidence** — logs tracking each rule's reliability across episodes
+- **Skills** — govern which rules to apply, resolve conflicts, decide when
+  to abstain
+
+Four requirements: outcome-driven evaluation, persistent structured evidence,
+non-monotonic knowledge lifecycle, compositional governance.
+
+- **Key implication**: Formal theory for Abstention Decay and Knowledge
+  Asymmetry. Our KE entries are "rules" without "evidence logs" or "skills"
+  governance. They accumulate monotonically (context.md grows, no pruning).
+  The paper predicts this will eventually degrade performance below the
+  no-knowledge baseline. The three-layer architecture is a concrete design
+  pattern for knowledge lifecycle management.
+- **Key quote**: "Existing methods invest heavily in experience extraction
+  while underinvesting in insight governance."
+- **Source**: [2606.17591] arXiv June 2026 (ICML RLxF Workshop).
+
+### Stage-Wise Process Reward for Memory — SaliMory (arXiv, June 2026)
+
+Standard RL creates a **credit assignment bottleneck** in multi-stage memory
+pipelines. SaliMory uses hierarchical stage-wise process reward +
+reward-decomposed contrastive refinement, providing isolated supervision for
+each memory operation (filtering, consolidation, cue-driven recall).
+
+Results: Memory-attributed failures cut by **1/3**, end-to-end accuracy >10%
+over SOTA, good personalization rate more than doubled.
+
+- **Key implication**: Concrete implementation of the Verification Inversion
+  thesis — reward the filtering, reward the consolidation, reward the recall,
+  *separately*. Our system currently evaluates only the final session output,
+  missing intermediate quality signals. Each processing stage should have
+  its own reward signal.
+- **Connects to**: Verification Inversion (evaluate each pipeline stage),
+  Representation Gap (improvement needs different lens than execution),
+  Evaluation Mirage (single-score evaluation hides stage-specific failures).
+- **Source**: [2606.04120] arXiv June 2026.
+
+## Runtime Hardening (June 2026 — Emerging Layer)
+
+The state management stack (concurrency, caching, memory governance) provides
+the foundation; the **runtime hardening** layer addresses containment of agent
+effects before they escape to the world. Ten converging papers define layers
+R0–R9 of this stack.
+
+### Semantic Transactions — Effect Containment (Cordon, arXiv June 2026)
+
+Agent runtimes expose tools as isolated RPCs with no task-scoped execution
+boundary. Cordon introduces **semantic transactions**: task-level boundaries
+binding tool intents, result lineage, reversible local state, staged external
+effects, delegated authority, and audit metadata. Shadow state + effect outbox
+pattern prevents irreversible mutations from escaping before commit.
+
+- **Key implication**: This is the Compilation Gradient implemented at the
+  runtime layer. Staged effects prevent Ghost Metabolism (sessions acting on
+  retracted state). The "semantic transaction" vocabulary is the formal name
+  for what's needed: not just state isolation but *effect containment* — a
+  strictly stronger property.
+- **Connects to**: Ghost Metabolism (staged effects prevent ghost mutations),
+  Compilation Gradient (transactions = compiled governance at runtime),
+  Cold Start Tax (recovery metadata enables warm restart),
+  Verified Concurrency Anomalies (sits at a new "L-1" layer: effect staging
+  before state commitment).
+- **Source**: [2606.17573] Cordon, arXiv June 2026. Categories: cs.OS, cs.CR.
+
+### Advisory Concurrency — LLM-as-Conflict-Judge (CoAgent, arXiv June 2026)
+
+Classical concurrency control (locks, OCC) fits agent systems poorly:
+transactions span minutes of inference, read sets are opaque, writes take
+immediate effect. CoAgent exploits a new capability: **the LLM itself judges
+whether a conflicting write invalidates its plan and repairs locally**, making
+control advisory rather than blocking.
+
+**MTPO Protocol (Monotonic Trajectory Pre-Order):**
+- Fix serialization order at launch
+- Serve each read an order-filtered value
+- Speculative writes in place
+- One-way notification for re-judgment and patching
+- Saga-style inverse tools for undo/reorder
+
+Results: 5% of serial correctness at 1.4× speedup (vs. 2PL/OCC losing all
+gains). ToolSmith grows 25-tool library from bash target. Task pass: 45→63/71.
+
+- **Key implication**: First paper to exploit LLM reasoning as a *concurrency
+  primitive*. The "advisory" model (runtime informs, agent repairs) is a new
+  interaction pattern. Our parallel sessions working on the same codebase
+  could adopt this for structural conflict resolution.
+- **Connects to**: Verified Concurrency Anomalies (detection ↔ CoAgent =
+  resolution), Ghost Metabolism (advisory control prevents stale action),
+  Harness Engineering (ToolSmith as self-growing harness),
+  Session Floor (MTPO eliminates abort-retry cost).
+- **Source**: [2606.15376] CoAgent, arXiv June 2026. Categories: cs.DC, cs.AI.
+  Submitted to ATC 2026.
+
+### Tool-Selection Readout Bottleneck (Looking Is Not Picking, arXiv June 2026)
+
+LLM agents mis-call tools NOT because they fail to attend to the correct tool.
+The model attends most to the correct tool **80% of the time** (vs. 21%
+chance). The failure is at **decision readout**, not the harness. This directly
+refutes the "crowded-harness / lost-in-the-middle" explanation.
+
+Three-way evidence:
+- Prompt repairs (reordering/duplicating) recover ≤23% of failures
+- Readout-side interventions recover 59–91%
+- Two different interventions recover the same failures (Jaccard 0.865)
+
+Training-free selector: +11.9pp on BFCL, +14.9 on Seal-Tools.
+
+- **Key implication**: Harness curation is less important than readout quality.
+  The intuitive "reduce the harness" response recovers at most 23% of failures.
+  The real fix is readout-side: better decoding, attention-informed selection,
+  or separate tool-choice heads. Challenges minimal-harness design principle.
+- **Connects to**: Prompt Mass Problem (harness size ≠ selection failure),
+  Verification Inversion (verify at readout, not input structure),
+  Harness Engineering (curation less important than decoding).
+- **Source**: [2606.16364] arXiv June 2026. Categories: cs.AI, cs.CR, cs.SE.
+
+### Run Compilation — PreAct (arXiv, June 2026)
+
+Computer-using agents solve every task from scratch. PreAct **compiles
+successful runs into small state-machine programs** (states = screen checks,
+transitions = actions), then replays directly without LLM calls — **8.5–13×
+faster**. Mismatch → graceful fallback to full agent reasoning.
+
+Store-time validation: re-run from clean state + independent evaluator confirms
+success before storing. Programs that replay to last step but leave task undone
+are rejected. What didn't matter: prompt wording, runtime guardrails, retriever.
+
+- **Key implication**: The Compilation Gradient thesis applied to execution.
+  Successful runs are literally compiled from probabilistic LLM execution into
+  deterministic state machines. Store-time validation = verification at compile
+  time. Directly addresses Cold Start Tax: compiled programs have zero cold-start
+  cost on replay.
+- **Connects to**: Compilation Gradient (probabilistic → deterministic),
+  Cold Start Tax (zero-cost replay), Session Floor (compiled programs eliminate
+  floor), Insight Governance (store-time validation = curation loop).
+- **Source**: [2606.17929] PreAct, arXiv June 2026. Categories: cs.AI.
+
+### Compositional Skill Routing — SkillWeaver (arXiv, June 2026)
+
+Real tasks require *composing* multiple skills. The Compositional Skill Routing
+problem: decompose query into atomic sub-tasks, retrieve skill per sub-task,
+compose executable plan. **Task decomposition quality is the primary bottleneck**
+(34.2% category recall at step level).
+
+SkillWeaver uses Iterative Skill-Aware Decomposition (SAD): retrieval-augmented
+feedback loop. Results: 34.2% → 67.7% (+32.7%). Context reduction >99%.
+Transfer: +35.6% even on unseen categories. CompSkillBench: 300 queries over
+2,209 real MCP server skills, 24 categories.
+
+- **Key implication**: Most failed runs aren't failing at *which tool to use*
+  but at *how to decompose the problem*. SkillWeaver provides the formal
+  mechanism for what task-tree systems do informally. The >99% context reduction
+  from routing (vs loading all tools) connects to Prompt Mass Problem.
+- **Connects to**: Prompt Mass Problem (skill routing = context reduction),
+  Transduction Chain (decomposition format determines routing success),
+  Agent Protocols: MCP (2,209 real MCP skills = ecosystem maturity).
+- **Source**: [2606.18051] SkillWeaver, arXiv June 2026. Categories: cs.CL.
+
+### Intelligence Entropy Stabilization — ADE Framework (arXiv, June 2026)
+
+Extends the Intelligence Entropy principle ([2606.08162]) with engineering
+framework. Lyapunov analysis yields stabilization condition: **λ > α/Cm**
+(active stabilization effort must exceed entropy production rate divided by
+model capability). ADE (Agent Delivery Engineering): four-layer architecture,
+23 components, Five-Layer Disorder Taxonomy.
+
+Production results (33.6 days monitoring, 100K-scale):
+- Channel fracture: 69–98% → **near 0%**
+- System death probability: below **0.02%**
+
+- **Key implication**: First formal thermodynamic stabilization framework for
+  agent systems. The condition λ > α/Cm quantifies why accumulated state
+  degrades performance. Systems without stabilization exceeding entropy
+  production will degrade exponentially regardless of component quality.
+- **Connects to**: Abstention Decay (entropy growth = loss of selective
+  action), Ghost Metabolism (disorder in retracted sessions), Cold Start Tax
+  (S₀ at session start; higher = harder stabilization).
+- **Source**: [2606.18065] ADE, arXiv June 2026. Categories: cs.MA.
+  Origin: Shanghai Qijing Digital Technology.

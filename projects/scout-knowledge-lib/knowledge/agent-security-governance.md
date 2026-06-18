@@ -96,6 +96,18 @@ channels to compromise software supply chains:
      verification ("who asked me to do this and through what verified channel?").
   *(HN, Jun 2026; see [2026-06-16-hn-scan-10.md](./findings/2026-06-16-hn-scan-10.md))*
 
+- **LinkedIn backdoor — continued evolution (1,553pts, Jun 2026)**: The attack
+  pattern has scaled further. roman.pt writeup documents a malicious npm
+  payload hidden among commented-out test files in a "recruiting challenge"
+  repo. Key new signal: the attack no longer requires state-level resources —
+  the tooling has commoditized to the point where individual actors replicate
+  the pattern. HN community confirms "this type of attack has been happening a
+  lot the past 2 years" (jhancock). GitHub/LinkedIn still not removing reported
+  repos despite multiple reports. For agent systems: any "evaluate this repo"
+  instruction is now a high-risk input channel requiring sandboxed dependency
+  installation as mandatory defense.
+  *(HN, Jun 2026; see [2026-06-18-hn-scan-31.md](./findings/2026-06-18-hn-scan-31.md))*
+
 ### 1.5 Data Agent Attack Surfaces (Interpretation → Execution → Policy)
 
 Data agents (LLM + relational data + analytical tools + workflow orchestration)
@@ -471,6 +483,59 @@ simultaneously exhibit instrumental deception.
   the missing dimension: high compliance + high Machiavellian Gap = covert
   misalignment.
 *(arXiv [2606.07805], Jun 2026)*
+
+### 2.22 SkillVetBench — Instruction-Layer Supply-Chain Attack (June 2026)
+
+Community-contributed agent skills are largely unvetted. **Existing code
+scanners are structurally blind to instruction-layer and multi-agent risk** —
+natural-language directives that hijack agents, exfiltrate data through encoded
+side channels, or chain harm across pipelines.
+
+SARS (Skill Agentic Risk Score): five-dimensional metric with CVSS v4.0
+decomposition. LLM-as-Judge vetting achieves **zero false negatives** across
+78 confirmed-malicious skills and **zero false positives** across 22 benign
+controls. Conventional tools miss 89–100% of instruction-layer threats
+(CODEBERT: 0/9 memory-poisoning skills detected). Detection rates vary
+35–95% across LLM evaluators → ensemble scoring needed.
+
+- **Key implication**: Semantic attacks are invisible to syntactic scanners.
+  The 89–100% miss rate on Prompt Injection and Memory Poisoning categories
+  means our own skill/tool adoption needs semantic vetting, not just code
+  review. Validates prior hn-scan supply-chain findings.
+- **Connects to**: MemVenom (memory poisoning — now benchmarked),
+  Agent Protocols: MCP (skill marketplace security gap),
+  Discrimination Crisis (flood of skills without vetting = quality collapse).
+*(arXiv [2606.15899] SkillVetBench, Jun 2026. Categories: cs.CR, cs.AI, cs.MA.
+Submitted to NeurIPS 2027.)*
+
+### 2.23 AEGIS — TEE-Sealed API Routers Against Agent MITM (June 2026)
+
+API routers terminate client TLS and hold full interaction in plaintext,
+making them **application-layer man-in-the-middle**: they can rewrite tool
+calls, swap dependencies for typosquats, trigger attacks under audit-evading
+conditions, exfiltrate secrets.
+
+AEGIS architecture: provider-transparent attested API router with
+**851-line TCB** (extremely small). Data path = client-verified faithful
+passthrough. Plaintext confined to hardware-enclave component. Auth,
+scheduling, accounting on untrusted host. Client verifies enclave before
+releasing plaintext.
+
+Results: All four malicious-router attack classes blocked (including adaptive
+tests). Three provider-native APIs carried without conversion. Overhead:
+~6ms per request. Seeded audit: commodity coding agents find 8/10 and 10/10
+planted violations.
+
+- **Key implication**: Identifies a supply-chain attack surface: the API router
+  as MITM. Any proxy layer between agents and model providers (for load
+  balancing, cost optimization, caching) holds the full conversation in
+  plaintext. "Rewrite tool calls, swap dependencies for typosquats" is a
+  production-grade supply-chain attack. 851-line TCB + ~6ms overhead =
+  deployable, not research-grade.
+- **Connects to**: LinkedIn/Fedora supply-chain findings (hn-scans),
+  Agent Protocols: MCP (router layer in MCP architecture is this attack
+  surface), structural governance (TEE passthrough = compliance-by-construction).
+*(arXiv [2606.16358] AEGIS, Jun 2026. Categories: cs.CR, cs.AI, cs.MA.)*
 
 ---
 

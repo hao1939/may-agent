@@ -2,7 +2,7 @@
 summary: "Canonical reference for agent evaluation patterns and testing tooling: live benchmarks, execution-trace verification, reviewer agents, operational metrics (MTBF, CPT, context efficiency), XHS community trends, and June 2026 testing tooling landscape (promptfoo, RagaAI, Layer-Isolated methodology, CI containment tools)."
 triggers: ["evaluation", "benchmark", "reviewer agent", "feedback", "Agent-Eval-Agent", "evaluator agent", "gym", "MTBF", "context efficiency", "trajectory", "testing tooling", "promptfoo", "agent testing", "CI agent", "layer-isolated"]
 last_updated: "2026-07-18"
-source_basis: "Consolidated from agent-evaluation.md, agent-evaluation-trends.md, agent-evaluation-trends-updated.md, xhs-eval-synthesis-2024.md, and xhs_eval_trends_may2024.md. Testing tooling section added from findings/github-trending-ai-agents-2026.md, findings/2026-06-17-arxiv-ai-agent-triage.md, findings/hn-ai-agent-trends.md, findings/2026-06-14-arxiv-agent-triage.md, findings/2026-06-15-arxiv-agent-triage-batch7.md. Batch 6 sourcing: Multiagent Confidence Protocols, Intelligence Entropy evaluation dimension."
+source_basis: "Consolidated from agent-evaluation.md, agent-evaluation-trends.md, agent-evaluation-trends-updated.md, xhs-eval-synthesis-2024.md, and xhs_eval_trends_may2024.md. Testing tooling section added from findings/github-trending-ai-agents-2026.md, findings/2026-06-17-arxiv-ai-agent-triage.md, findings/hn-ai-agent-trends.md, findings/2026-06-14-arxiv-agent-triage.md, findings/2026-06-15-arxiv-agent-triage-batch7.md. Batch 6 sourcing: Multiagent Confidence Protocols, Intelligence Entropy evaluation dimension. Session-state sourcing (Jul 18): MemTrace knowledge-point evaluation."
 </ai_context>
 
 # Agent Evaluation Patterns
@@ -275,6 +275,28 @@ agent or standard debate baselines.
   whether that agreement reflects aligned reasoning.
 - **Source**: [2606.13591] Elahi, Di Eugenio, arXiv June 2026.
 
+### Knowledge-Point Memory Evaluation — MemTrace (arXiv, June 2026)
+
+Pooled accuracy over questions **hides** qualitatively different memory failure
+modes. MemTrace ([2606.17328]) probes the **knowledge point** (a single typed
+fact) along three dimensions: memory age, question type (current/earlier/
+trajectory), and evidence condition (present/missing/contradicted).
+
+**Critical finding**: When memory systems fail, the evidence was retrievable
+**10× more often** than it was missing. The bottleneck is **evidence use, not
+retrieval.**
+
+- **Key implication**: Directly validates the Knowledge Asymmetry synthesis.
+  Scout's library has 289 KE references/week by other agents vs 0 synthesis
+  references — not because syntheses aren't retrievable, but because they're
+  in a format that doesn't get *used*. The 10× ratio (available but unused)
+  is the same structural failure. Provides formal measurement methodology for
+  what the Transduction Chain calls "format-limited, not knowledge-limited."
+- **Connects to**: Knowledge Asymmetry (available but unused knowledge),
+  Transduction Chain (format determines action), Evaluation Mirage (pooled
+  metrics hide qualitative failures).
+- **Source**: [2606.17328] arXiv June 2026.
+
 ### Intelligence Entropy — Degradation as Measurable Physical Constraint (arXiv, June 2026)
 
 System entropy — measured as loss of output consistency, task accuracy, and
@@ -287,6 +309,35 @@ quantitative comparison of governance interventions by their α reduction.
   exponential system-level degradation. A rising α is the leading indicator
   that governance is failing, detectable before session-level metrics degrade.
 - **Source**: [2606.08162] Liu, arXiv June 2026. (See also agent-architectures.md)
+
+### Upstream Evaluation Intelligence — Human-on-the-Bridge (arXiv, June 2026)
+
+Agent evaluation requires behavioral assessment across turns, tools, context,
+policies, and uncertainty. HOB places **human expertise upstream** as reusable
+evaluation intelligence: domain context, Red-Team Traps, Juror Personas,
+scoring guidelines, audit rules, fallback policies. ProofAgent Harness
+executes this curated intelligence repeatedly.
+
+**Asymmetric evaluation**: Smaller Harness LLMs can challenge agents built on
+frontier backbones when properly curated. Expert judgment encoded upfront and
+reused across evaluations — NOT applied manually inside every run.
+
+Results (23,500 agent turns, finance/healthcare/code):
+- Surfaces phantom tool-call claims, missing mandatory tool calls, policy
+  drift, manipulation paths, safe-but-non-resolving refusals
+- Quality amplified without equally large evaluators
+
+- **Key implication**: Invest in evaluation *design* (upstream), not
+  evaluation *execution* (per-run). "Juror Personas" formalizes guard
+  architecture as reusable evaluation actors. The asymmetric finding validates
+  that eval architecture doesn't need frontier-class judges — it needs
+  well-designed evaluation intelligence. Implements the Verification Inversion
+  thesis for evaluation: upstream investment > per-run scoring.
+- **Connects to**: Evaluation Mirage (HOB solves single-score problem),
+  Verification Inversion (upstream > per-run evaluation),
+  Compilation Gradient (evaluation intelligence = compiled expertise),
+  Abstention Competence (non-resolving refusals = abstention without value).
+- **Source**: [2606.16871] Human-on-the-Bridge, arXiv June 2026. Categories: cs.MA.
 
 ## Related Notes
 - [Agent Self-Correction Trends 2026](./agent-self-correction-trends-2026.md)

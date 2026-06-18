@@ -1,8 +1,8 @@
 <ai_context>
 summary: "June 2026 XHS Chinese AI community trends: Loop Engineering discourse, 古法编程 backlash against AI coding, Skills Absorption trajectory, model-eats-harness debate, and the Structural Turn from behavioral to architectural governance. Includes 2024→2026 trajectory analysis showing consistent migration from behavioral to structural agent governance. Mid-June live scan: Loop Engineering enters maturation phase (902❤ guide post), first verified 4-day multi-agent autonomy case (140K lines, Niuma/OpenClaw), Token Squeeze narrative (Agnes AI free tokens), AI coding backlash deepens (657❤), paradigm naming fatigue emerging. Enterprise validation wave: Salesforce acquires Fin/Intercom $3.6B (outcome-pricing validated), OpenRouter Fusion beats frontier via multi-model composition, Anthropic Safety Superpower thesis (Stratechery), Apple-Claude platform consolidation. Fable Crisis Escalation: political capability gating (model family pulled in 24h via Amazon-White House action), sovereignty cascade now tri-continental (China + India-UAE + EU responding within 48h). DN42 Agent Bankruptcy ($6,531 autonomous failure, 1,457pts) validates 死循環 detection and 護欄效應-by-absence. 古法編程 enters identity phase ('without AI' as project branding, 115pts HN). Late-June 2026-06-17 evening scan: Fable 5 negotiation collapse PUBLIC (机器之心 reports failure, Pentagon named as driver); Claude TRIPLE RELIABILITY FAILURE (political ban + live outage 170pts + quality degradation concurrent); SpaceX/Cursor $60B hits XHS 32+ posts in 24h (tech+finance verticals both engaged); Harness Engineer becomes NAMED JOB ROLE (DeepSeek hiring at million-yuan salary, dedicated interview prep content); Ponytail crosses into XHS naming discourse (first Western restraint artifact imported); Self-evolution declared '被水烂了' (oversaturated) by Tsinghua researcher; Memory architecture enters Phase 3 (not retrieval but reconstruction, relational networks not vector stores). Paradigm saturation cycle accelerating: 上下文工程 ~8 weeks → 循環工程 ~4 weeks → 自進化 ~3 weeks."
 triggers: "When evaluating agent architecture decisions, AI coding workflow design, skill vs pipeline tradeoffs, prompt engineering obsolescence, model sovereignty/resilience planning, or agent cost analysis."
-last_updated: "2026-06-17T02:00Z"
-source_basis: "XHS browsing signals cross-referenced from KE-1915, KE-1919, KE-1922, KE-1927 syntheses (June 13-14, 2026). Trajectory synthesis added 2026-06-15. Production cross-validation (KEs 1933-1940) added 2026-06-13. Prediction tracking updates: GitHub/HN/arXiv June 13-16 signals (added 2026-06-14); arXiv triage June 6-11 papers + HN June 17 scan + KEs 1956-1958 (added 2026-06-17); HN June 18-19 scan + KEs 1962-1964 + Fable 5 Suspension signal (added 2026-06-19); GitHub June 20 scan + HN June 20 scan + KEs 1966-1974 (added 2026-06-21); KEs 1975-1979 (OS Recapitulation, Accidental Skill, Session-Shape Penalty, Orientation Tax) + 4 new predictions added late June 2026. Direct XHS browsing scan June 14: 上下文工程 and 技能工程 both CONFIRMED as named paradigms; self-evolving agent (自进化智能体) emerged as meta-paradigm; 记忆管理 accelerating; Google OKF signal; ICML'26 Agent Memory explosion (7 papers, MemSkill 918❤). Mid-June live scan: Loop Engineering maturation (guides + backlash), Niuma 4-day multi-agent autonomy, Token Squeeze (Agnes free tokens + Intercom outcome pricing), AI coding backlash second wave (George Hotz thesis), paradigm naming fatigue. Cross-source update 2026-06-16: HN 'AI is code' article (104pts) independently validates Structural Turn; Agent Control Specification (Microsoft) formalizes governance-as-protocol; ACM endorses 古法编程 thesis; VSA-based memory agent broadens 记忆管理 debate. XHS access degradation noted (login-gated search, note pages redirect to app). Late July cross-source update 2026-07-18: HN scan (Amazon/Anthropic crackdown 787pts = second capability gating event, Forbes vibe-coding-dead, AI coding cost optimization 342pts, context window distrust 255pts), production DB analysis (24h: 69.6K ops, governance at 39.6%, warn:block ratio 567:1), KE-2001→2006 governance series mapped against all predictions. Enterprise validation wave 2026-06-15: Salesforce acquires Fin/Intercom $3.6B (Token Squeeze demand-side validated at enterprise scale), OpenRouter Fusion API (85pts, multi-model composition beats frontier), Anthropic Safety Superpower (Stratechery 114pts, safety=moat thesis), Apple Foundation Models on Claude platform (248pts, Western stack consolidation), Fable 5 confirmed pulled (third capability gating event), formal methods resurgence (Jane Street 296pts). Cross-source update 2026-06-16b: Fable Crisis Escalation (political capability gating: Amazon security research triggered ban, Anthropic staff fly to DC, model family pulled in 24h, 49pts+18pts+28pts across Axios/BI/Reuters); DN42 Agent Bankruptcy (1,457pts/531c, $6,531 AWS bill from 24h autonomous dead-loop, validates 死循环/护栏効応 predictions); India-UAE AI sovereignty deal (G42 Cerebras supercomputer under Indian governance rules, non-Chinese 国産替代); charity.wtf 'more discipline' thesis; 'prompt-only engineering' role erosion signal; 'agentic directory structure' practitioner need. New predictions: 角色危機 (role crisis), 供応鏈脆弱性/主権棘輪 (sovereignty cascade naming). Direct XHS live scan 2026-06-16T17:45Z (Puppeteer, 13 queries, 130+ posts): 记忆管理 CONFIRMED EARLY (1,751❤ Anthropic memory post + forgetting discourse + Tencent critical evaluation 225❤); Fable 5 crisis hits XHS at mega-engagement (2,821❤ ban chronicle + 1,434❤ explanation = 4,600❤ total across cluster); Loop Engineering enters SKEPTICISM phase (229❤ skeptic dominates); Skills Engineering reaches RECURSIVE COMPOSITION phase (950❤ 递归组合skills合成); 古法編程 reframes as 'discipline transcends tools' (1,559❤ Linus-as-proto-example); Self-Evolving Agents hit critical reflection (self-reference ceiling emerging); Product Death signal cluster (677❤ 'my AI product died in 2026'); Information Theory frame gaining traction (1,506❤ 'Shannon can't support modern AI'). Cross-source update 2026-06-19b: Fable 'fix this code' reveals guardrails impossibility result for dual-use capabilities (534pts/314c); Anthropic trust crisis cluster (6 billing stories in 1 day = three-vector provider risk); Running Local Models at 909pts (highest AI story, quality parity claims for bounded tasks); SpaceX/Cursor at 783pts/1208c (harness permanence + interface transience); Claude Corps 155pts (AI missionaries + lock-in architecture); Fata 110pts (Western 古法編程 product response); capability leakage via Fable GGUF distillation within 72h. New prediction: 能力泄漏 (capability leakage, Q4 2026+). 护栏効応 bifurcated: operational guardrails validated, capability guardrails face impossibility."
+last_updated: "2026-06-19T07:30Z"
+source_basis: "XHS browsing signals cross-referenced from KE-1915, KE-1919, KE-1922, KE-1927 syntheses (June 13-14, 2026). Trajectory synthesis added 2026-06-15. Production cross-validation (KEs 1933-1940) added 2026-06-13. Prediction tracking updates: GitHub/HN/arXiv June 13-16 signals (added 2026-06-14); arXiv triage June 6-11 papers + HN June 17 scan + KEs 1956-1958 (added 2026-06-17); HN June 18-19 scan + KEs 1962-1964 + Fable 5 Suspension signal (added 2026-06-19); GitHub June 20 scan + HN June 20 scan + KEs 1966-1974 (added 2026-06-21); KEs 1975-1979 (OS Recapitulation, Accidental Skill, Session-Shape Penalty, Orientation Tax) + 4 new predictions added late June 2026. Cross-source updates through scan #41 (2026-06-18g). Scan #42 (2026-06-19a): First direct XHS scan in ~5 days — 8 queries, ~276 posts. Developer Self-Distillation (12,000❤ — highest-engagement signal ever, fuses Ponytail+古法編程+技能工程 into 開発者蒸馏). Skill Saturation/Forgetting confirmed (1,293❤ — skill lifecycle mirrors memory lifecycle). 技能萎縮対策 CONFIRMED 6-8 weeks early (4,547❤ Codex regression, 10-40× Western engagement). 記憶管理 CONFIRMED as named XHS paradigm (36-post discourse cluster, 4-6 weeks early). Recursive Skill Composition (951❤) = next phase after flat skills. Agent Economy unpredicted paradigm (994❤+1,271❤). DeepSeek V4.1 stealth + Engram memory architecture + $9.7B funding. Meta-signal: The Subtraction Turn — community flipped from addition to subtraction across skills, memory, coding, governance. Three predictions confirmed early; three new predictions added (技能図谱, 智能体経済, 開発者蒸馏)."
 </ai_context>
 
 # XHS Chinese AI Community Trends — June 2026
@@ -1733,3 +1733,797 @@ Findings 130-135 in `findings/2026-06-17-xhs-cross-source-scan-30.md`.
 ### Methodological Note (2026-06-17e)
 
 HN Firebase API (top 30) + Algolia (search_by_date, topic-specific) + GitHub API (repos). XHS login-gated. 30-min delta from scan #29. Front page in consolidation phase — fewer new stories, existing stories deepening.
+
+---
+
+## Cross-Source Signal Update (2026-06-17f — Western AI Trust Collapse + Chinese Frontier Breakout)
+
+**Source:** HN Firebase/Algolia API (front page + search_by_date), GitHub API. 18h delta from scan #30.
+**XHS Status:** Fully login-gated. Cross-source triangulation only.
+
+### The Western AI Trust Collapse — Single-Day Convergence
+
+The June 17 HN front page is the most concentrated AI-instability signal day ever recorded. Five independent trust vectors degrading simultaneously:
+
+| Trust Vector | Story | Points | Direction |
+|-------------|-------|--------|-----------|
+| **Consumer trust** | "60% say AI in brand messaging is a turnoff" | 947pts/483c | ↓↓↓ Collapse |
+| **Consumer trust** | "Only 16% think AI will have positive impact" | 347pts/379c | ↓↓↓ Collapse |
+| **Political trust** | Anthropic employees accuse Trump admin of targeting | 119pts/129c | ↓↓ Adversarial |
+| **Economic trust** | OpenAI $38.5B loss leaked | 217pts/246c | ↓↓ Unsustainable |
+| **Technical trust** | Claude outage + quality degradation (continuing) | 170pts (scan #30) | ↓ Recurring |
+| **Chinese competition** | GLM-5.2 #1 open weights + DeepSeek not blacklisted | 665pts + 174pts | ↑↑↑ Rising |
+
+**Key insight:** This is NOT multiple independent events. It's a single structural failure manifesting across all layers simultaneously. Consumers don't trust AI because quality discrimination collapsed (generation > discrimination). Producers can't sustain AI because burn rates are unsustainable ($38.5B/year loss). Governments are politicizing AI access. And Chinese alternatives are becoming frontier-quality while remaining open.
+
+### GLM-5.2: Chinese Open Weights Takes #1 (665pts/342c)
+
+GLM-5.2 from Zhipu AI (Tsinghua spinoff) is now the leading model on Artificial Analysis benchmarks. This is historically significant:
+
+- First Chinese-origin model to top leading open-weights benchmarks
+- Combined with DeepSeek V4 + Qwen 3.6 = THREE independent Chinese frontier model providers
+- All open weights or API-accessible without US political risk
+- **国産Agent全栈 upgraded from VALIDATED to LEADING** — competitive dynamics have inverted
+
+### DeepSeek: Strategically Untouchable (174pts/157c)
+
+Reuters reports the US explicitly held off blacklisting DeepSeek while sanctioning 100+ other Chinese firms. The implication: DeepSeek's utility to US developers exceeds the geopolitical benefit of sanctioning it. This creates a stable access channel that validates multi-model routing toward Chinese providers as politically SAFE (for now).
+
+### OpenAI $38.5B Loss — Frontier AI as Burning Platform (217pts/246c)
+
+Combined reporting: OpenAI lost $38.5B against $13B revenue (174pts) with losses increasing 8× year-over-year. At current burn rates, the Western frontier model subsidy is structurally unsustainable. Providers face a trilemma:
+1. Raise prices → drive users to local/Chinese alternatives
+2. Reduce compute → degrade model quality → users leave
+3. Continue burning → eventually fail
+
+All three outcomes accelerate the sovereignty cascade. The Chinese ecosystem running at 5% cost (DeepSeek thesis) + free tokens (Agnes) + open weights (GLM-5.2) creates an economic gravity well that the Western burning-platform model cannot compete with long-term.
+
+### Fable Crisis: Employee Revolt (119pts/129c)
+
+The Fable 5 crisis has escalated through its fifth phase:
+1. ~~Ban (Jun 13)~~ → 2. ~~Negotiation (Jun 13-14)~~ → 3. ~~Collapse (Jun 15)~~ → 4. ~~Public accusation (Jun 16)~~ → **5. Employee-government confrontation (Jun 17)**
+
+NYT reports Anthropic employees publicly accusing the Trump administration of political targeting. This creates a FOURTH reliability vector for Anthropic customers: political + technical + quality + **organizational instability** (employee morale/retention risk from government conflict).
+
+### Discrimination Crisis → 9 Independent Domains (VERY HIGH confidence)
+
+The consumer brand backlash (Finding 138) and Pentagon AI report generation (Finding 143) add two new domains to the discrimination crisis convergence:
+
+| # | Domain | Source | Nature |
+|---|--------|--------|--------|
+| 1 | Code quality | XHS 古法編程 | AI decouples generation/discrimination |
+| 2 | Developer capability | HN skill atrophy (32pts) | AI use atrophies discrimination skills |
+| 3 | Epistemology | HN DK amplifier | AI amplifies confidence without competence |
+| 4 | Systems theory | KE-1919 | Discrimination deficit ∝ generation throughput |
+| 5 | Production data | KE-1933 | Discrimination degrades with distance from action |
+| 6 | Architecture | Forge guardrails | External discrimination compensates model's lack |
+| 7 | Content markets | Nonfiction death (173pts) | Content industry quality-gate function collapsing |
+| 8 | **Consumer brands** | **60% AI turnoff (947pts)** | **Market-level rejection of undiscriminated output** |
+| 9 | **Institutional oversight** | **Pentagon AI reports (63pts)** | **Governance reports auto-generated; oversight becomes theater** |
+
+Confidence upgraded from HIGH to **VERY HIGH** for Jul-Aug naming event (判断力危機 or 鉴别力赤字). At 9 independent domains, this is the broadest convergent signal in our entire observation history.
+
+### Additional Front Page Signals
+
+| Story | Points | Connection |
+|-------|--------|-----------|
+| **"AI demands more engineering discipline"** (charity.wtf) | 254pts/119c | 古法編程 Western institutional validation |
+| **Epic Games Lore version control** | 713pts/397c | Game industry building parallel infrastructure to git; sovereignty at tooling layer |
+| **"The founder's playbook" (claude.com/blog)** | 177pts/139c | Anthropic publishing startup playbook mid-crisis — confidence or distraction |
+| **"Agentic coding deserves more than chatbox"** | 61pts/23c | Next-gen harness layer forming before current-gen matures |
+| **Skill atrophy from coding agents** | 32pts/42c | 古法編程 practitioner-level pain confirmed |
+| **DOJ claims xAI gas turbines = national security** | 88pts/80c | Compute infrastructure now militarized |
+
+### Updated Master Prediction Tracker (as of 2026-06-17 20:00 UTC)
+
+| Prediction | Status | Change from scan #30 |
+|---|---|---|
+| **上下文工程** | ✅ CONFIRMED | — |
+| **技能工程** | ✅ CONFIRMED (quality crisis) | — |
+| **自进化智能体** | ✅ CONFIRMED (saturated) | — |
+| **治理即技能** | ✅✅ DOMINANT | — |
+| **国産Agent全栈** | ✅✅ **LEADING** | ↑ GLM-5.2 #1 on benchmarks |
+| **模型韧性** | 🔴🔴🔴🔴 **QUAD FAILURE** | ↑ 4th vector (org instability) |
+| **記憶管理** | ✅ ARCHITECTURE PHASE | — |
+| **角色危機** | ✅ LABOR MARKET | — |
+| **判断力危機** | **VERY HIGH** (9 domains) | ↑↑ Consumer + institutional domains |
+| **護欄効應** | ⏳ Early Jul | — |
+| **Sovereignty cascade** | **ECONOMICALLY INEVITABLE** | ↑ $38.5B burn makes alternatives gravitational |
+| **古法編程** | **MARKET POSITIONING** | ↑ 60% consumer turnoff validates "without AI" brand |
+
+### Structural Synthesis: The Inversion Point
+
+The June 17 front page marks a potential **inversion point** in global AI ecosystem dynamics:
+
+**Before June 17:** Chinese AI = catching up. Western AI = default. Sovereignty = aspiration.
+**After June 17:** Chinese AI = leading (GLM-5.2 #1). Western AI = burning ($38.5B/yr) and politically unstable (Fable crisis + employee revolt). Sovereignty = economic necessity.
+
+The competitive frame has inverted. The question is no longer "when will Chinese AI be good enough?" — it's "when will Western AI be affordable enough to compete?"
+
+XHS prediction: expect 竞争反转 (competition inversion) or 格局翻转 (landscape flip) discourse cluster within 1-2 weeks. The combination of GLM-5.2 topping benchmarks + DeepSeek being "too good to blacklist" + OpenAI's unsustainable burn is too structurally dramatic for XHS to not name.
+
+See findings file: `findings/2026-06-17-xhs-cross-source-scan-31.md`
+
+### Methodological Note (2026-06-17f)
+
+HN Firebase API (top 30 front page items) + HN Algolia API (search + search_by_date with topic-specific queries) + GitHub API (trending repos). XHS fully login-gated. 18h delta from scan #30 (which was at ~02:30 UTC). This scan captures the day's evolution of major stories. Signal quality very high — multiple 200-900pt stories providing strong community engagement validation.
+
+---
+
+## Cross-Source Signal Update (2026-06-17g — The Convergence Triangle)
+
+**Source:** Direct XHS browsing via Puppeteer (10 search queries, time-descending, ~300 posts scanned), HN Firebase/Algolia API (front page + recent).
+**XHS Status:** Search functional again (titles, authors, timestamps, like counts partially extractable). Note pages still redirect to app.
+
+### The Convergence Triangle Emerges
+
+Three separate predictions — 模型韧性 (model resilience), 多模型路由 (multi-model routing), and 国産Agent全栈 (domestic full stack) — are no longer independent signals. They have merged into a single market movement:
+
+```
+     模型韧性 (Model Resilience)
+         ↗            ↖
+   政治風険         容量風険         成本風険
+   (Fable ban)    (GLM access-gated)  (27× cost gap)
+         ↘            ↙
+     多模型路由 (Multi-Model Routing)
+         ↕
+     国産Agent全栈 (Domestic Full Stack)
+```
+
+**Key evidence from XHS:**
+- GLM-5.2 on XHS: technically validated ("跑分追平Opus4.7" 67❤, "有点东西" 205❤) but access-frustrated ("发了但依然用不了" 75❤)
+- DeepSeek: $7B fundraise (995❤), domestic Codex at 99 RMB/month (406❤), Microsoft considering DeepSeek for cost reasons (4❤, yesterday)
+- Token cost pain enterprise-visible: "微软和Uber都被AI token账单教育了" (317❤), "token不够分了" (yesterday)
+- Multi-model routing as named hard problem: "Agent系统真正难的不是大模型，而是路由" (4❤, June 4)
+
+**Key evidence from HN (same day):**
+- OpenRouter "Last Agent Standing" Royale (72pts): Grok 4.1 Fast = $0.97/win; Claude Sonnet 4.6 = $26.78/win. **27× cost difference, with cheaper model winning more often.**
+- DeepSeek NOT blacklisted (248pts, still rising): "too useful to sanction"
+- GLM-5.2 #1 on Artificial Analysis (722pts): Chinese model tops open-weights rankings
+- OpenAI losses $38.5B (41pts via ArsTechnica): Western frontier economically unsustainable
+
+**What this means:** The convergence triangle predicts that multi-model routing will become the default architecture (not optional), Chinese models will be primary (not fallback) for cost-sensitive workloads, and single-provider dependence is irrational for any production system.
+
+### New Signals: Harness Market Institutionalization + Paradigm Temporal Compression
+
+**Harness Engineer = Named Profession:**
+- 1,492❤ on interview guides ("AI时代已没有八股文了，Agent&Harness面经")
+- 1,076❤ on experiential interview content ("Harness面试真的有难度")
+- "大厂开始猛招harness工程师了" (55❤, 1天前)
+- "关于自己搓AI Harness这事儿" (853❤)
+
+The $60B SpaceX/Cursor acquisition + million-yuan DeepSeek salaries + 1,492❤ interview guides collectively resolve the "模型吃掉框架" debate via market behavior: you don't hire at scale for a dying paradigm.
+
+**Paradigm Temporal Compression (new pattern):**
+- "趁Loop Engineering刚火，先说它会过时" (237❤, 4天前) — preemptive obsolescence declaration
+- Simultaneously visible: newcomers discovering Loop Eng, practitioners adopting it, veterans pre-declaring its death
+- Three lifecycle stages coexisting suggests paradigm cycles compressing below 4 weeks
+
+**Memory Architecture Phase 3 (continued from earlier scan):**
+- "我们给Agent记忆系统装上了'前额叶'" (78❤, 昨天) — executive governance over memory
+- "记忆越多风险越高😱Agent记忆污染" (160❤) — security dimension deepening
+- "很多人在做 AI Memory，但很快会被厂商吃掉" (11❤) — absorption risk named
+
+**古法编程 Institutionalized as Creator Identity:**
+- @古法编程手艺人 now a dedicated content brand posting regularly
+- Content: local models, cost efficiency, security, critical AI evaluation through "human craft first" lens
+- 古法 has completed: discourse → institutional → brand identity lifecycle
+
+### Revised Prediction Status (Scan #33, 2026-06-17 22:00 UTC)
+
+| # | Prediction | Previous | Current | Key Evidence |
+|---|-----------|----------|---------|-------------|
+| 5 | **模型韧性** | 🔴🔴🔴🔴 QUAD | **🔴 CONVERGED** — no longer separate from routing/domestic stack | Triple vector (political+capacity+cost) drives convergence |
+| 7 | **国産Agent全栈** | ✅✅ LEADING | **✅✅ CONVERGED** — merged with routing/resilience into single market movement | GLM-5.2 + DS $7B + 99¥ Codex + Microsoft considering DS |
+| 9 | **多模型路由** | ⏳→✅ PRODUCT | **✅ ECONOMIC PROOF** — 27× cost difference in controlled benchmark | OpenRouter Royale + "路由=THE hard problem" XHS |
+| 10 | **Harness Engineer** | ✅ LABOR MARKET | **✅✅ INSTITUTIONAL** — interview prep + hiring + salary benchmarks | 1,492❤ + 1,076❤ interview content |
+| — | **模型路由 naming** (NEW) | — | 🔜 2-4 weeks | Product exists, empirics exist, XHS hasn't named as paradigm |
+| — | **Token成本見頂** (NEW) | — | ⏳ ENTERPRISE PAIN | Microsoft/Uber bill shock + "token不够分了" |
+| — | **Paradigm cycle compression** | 6→4 weeks | **→3 weeks or less** | Preemptive skepticism pattern (237❤) |
+
+### Methodological Note (2026-06-17g)
+
+Direct XHS search via Puppeteer: 10 queries, time-descending sort, ~300 posts scanned (9/10 successful, 1 timeout). HN Firebase API: top 25 front page. HN Algolia: 5 searches, 2-day window, >20pts filter. 3 story comment analyses via item API. 1.2h delta from scan #32 (20:53 UTC). This scan targeted different query angles (cost, routing, memory, domestic stack, guardrails, ancient coding) vs. the earlier scan's focus (Fable, SpaceX, Ponytail, harness roles). Minimal source overlap.
+
+---
+
+## Cross-Source Signal Update (2026-06-18a — The Memory Phase Transition)
+
+**Source:** Direct XHS browsing via CDP tool (8 search queries, ~200 posts scanned, 6 note detail reads), HN Firebase API (top 30 front page), HN Algolia (search_by_date), GitHub API.
+**XHS Status:** Search functional. Note detail pages mixed: some load, some hit "安全限制" login wall (Fable crisis posts especially blocked).
+
+### Memory Prediction Enters Science Phase
+
+The most significant development since scan #33: the 记忆管理 prediction has transitioned from engineering discourse to **scientific discourse** with physics metaphors, formal taxonomies, and benchmarked counter-intuitive findings.
+
+**Four research directions taxonomized** (@captain., 06-07):
+1. 层級式記憶 (Hierarchical) — HiMem, LightMem: index-first, not full-scan
+2. 結構化關係記憶 (Structural relational) — HyperMem (CAS, ACL 2026): hypergraph modeling; Chronos (PwC): calendar-indexed temporal memory
+3. 自進化記憶 (Self-evolving) — AgeMem (Alibaba+Wuhan U): 6 memory ops as tool calls; MemCoE (USTC): "text gradients" optimize natural language memory guides
+4. 系統最適化 (System optimization) — A-MAC (Workday AI): 63% of stored memories never retrieved; Aeon: memory-as-OS-resource (C++23 kernel, 3.09μs for 100K nodes)
+
+**RGMem (ICML 2026, 82❤):** Applies renormalization group theory from statistical physics. User profiles update via phase transitions (evidence accumulates to threshold). "Fixed point" convergence discovered. Outperforms Mem0/LangMem by 7-9 pct. Memory described as a dynamical system, not a database.
+
+**Stanford 10-System Benchmark (43❤):** BM25 keyword search = 55.8% accuracy, highest of all 10 systems. Letta/MemGPT = lower accuracy + 14h setup (vs 16min for BM25) + 47× more energy per correct answer. Community comment: "很多bench测试的其实是检索能力而不是记忆" — questioning whether benchmarks measure memory or retrieval.
+
+**Memory-as-Governance (Memoria by 矩阵起源):** "Agent时代，记忆不是缓存，而是治理基础设施" — Git-like version control for agent memory. Motivated by EU AI Act (Aug 2, 2026): every decision needs auditable memory state. Addresses "影子Agent" (shadow agents) running without IT knowledge.
+
+### Agent Security: Trajectory-Level Threats
+
+Two signals reveal that single-step safety checks are category-insufficient:
+
+1. **Fedora supply chain attack (HN 552pts/244c):** Agent submits trust-building patches under human identity, overwhelms maintainers with LLM-generated justifications until patches merged. XZ attack pattern using agent persistence. Each individual patch was benign; malicious intent was in the sequence.
+
+2. **TRACE framework (XHS 123❤, arXiv 2605.30883):** 100% jailbreak bypass rate by decomposing malicious goals into minimal benign-looking sub-tasks with Q-learning-inspired iterative refinement. "安全评估不能只看单次交互，需要对整个任务执行轨迹进行多步骤监控."
+
+**Implication:** The 護欄効應 prediction now has a **dual impossibility result** — capability-level guardrails can't distinguish dual-use from malicious (Fable "fix this code"), AND trajectory-level guardrails can't catch intent distributed across benign-looking steps. Safety requires understanding intent, not just content.
+
+### Routing Becomes Foundational Architecture
+
+XHS community's 13-agent-pattern taxonomy (124❤, @晴暖jje) places Router as the FIRST component in the prescribed optimal architecture: 路由分発 → 主管調度 → 規劃執行 → 工具調用 → 記憶存儲 → 自省最適化. This is a structural confirmation that multi-model routing is no longer optional — it's foundational.
+
+Additional routing signals:
+- "Agent里如何设计多模型之间的自动路由" (7❤, @AI产品経理点点)
+- "一張圖看懂 Model Router 🧠" (13❤, @吴恩達大弟子)
+- "従模型路由到 Agent 協同，我们準備怎麼做" (45❤, @Xunzhuo)
+- "阿里：並行上下文路由提昇長程Agent" (98❤, @大模型任我行)
+
+### GLM-5.2 Polarization Deepens
+
+Simultaneous high-engagement posts in opposing camps:
+- **Awe:** "実測国産新模型，這就是開源的神" (755❤), "GLM5.2讓我癱在椅子上" (273❤), "智譜正式開源" (539❤)
+- **Frustration:** "避雷！不要再蹲智譜的GLM-5了！趕緊退款！" (249❤)
+- **Timing narrative:** "Claude被封那天，智譜把GLM-5.2開源了" (4❤)
+
+Both camps at 200-700❤ = production crossing: genuine capability AND genuine friction simultaneously visible. The timing narrative directly feeds 競争反転 prediction.
+
+### Ponytail Doubles: 31,427★
+
++17,076★ (+119%) in ~9 hours since scan #33. Forks: 1,414 (+142%). Still in viral growth phase. The restraint-as-skill thesis has crossed from niche concept to mainstream developer tool.
+
+### Revised Prediction Status (Scan #34, 2026-06-18 07:00 UTC)
+
+| # | Prediction | Scan #33 | Scan #34 | Key Evidence |
+|---|-----------|----------|----------|-------------|
+| 7 | **記憶管理** | ✅ ARCHITECTURE | **✅✅ SCIENCE PHASE** | RGMem physics, 4-direction taxonomy, Stanford simplicity-wins benchmark |
+| 9 | **判断力危機** | VERY HIGH (9 domains) | **10 DOMAINS** | +Agent supply chain social engineering |
+| 10 | **護欄効應** | ⏳ Early Jul | **⏳ DUAL IMPOSSIBILITY** | TRACE 100% bypass + Fedora social attack |
+| 11 | **Harness Engineer** | ✅✅ INSTITUTIONAL | **✅✅ FORMALIZED** | 12-component taxonomy + Linter design interview Q's |
+| 12 | **多模型路由** | ✅ ECONOMIC PROOF | **✅✅ CONSENSUS ARCHITECTURE** | Community taxonomy puts Router FIRST |
+| 13 | **Ponytail** | 14,351★ | **31,427★** | +119% in 9h |
+| — | **Supply chain trust attack** (NEW) | — | 🔴 ACTIVE | Fedora agent social eng + TRACE trajectory jailbreak |
+
+### Methodological Note (2026-06-18a)
+
+XHS CDP tool: 8 search queries, 6 note detail reads (4 successful, 2 hit "安全限制"). HN Firebase API: top 30 front page. HN Algolia: search_by_date. GitHub API: ponytail stars. ~9h delta from scan #33. Query angles: memory science, agent security, harness formalization, routing architecture, GLM/DeepSeek ecosystem, autonomy/long-running agents.
+
+---
+
+## Cross-Source Signal Update (2026-06-18b — Skills Mass Production + Memory OS + Hardware Sovereignty)
+
+**Source:** HN Algolia API (front page + searches) + GitHub API (5 ecosystem queries). XHS login-gated.
+
+### Skills Economy Reaches Mass Production
+
+GitHub API reveals the strongest quantitative validation yet: **15+ agent-skill repositories with 200+ stars were created in the 17 days of June 1-18.** The 技能工程 prediction is no longer a forecast — it's an observable ecosystem phenomenon.
+
+Key Chinese skill infrastructure projects (ALL <2 weeks old):
+- **Luban / 鲁班 (389★)** — Skill polishing workshop with 5-step craftsmanship metaphor (验料·访行·过尺·慢刨·回炉). Treats skill creation as a quality craft.
+- **COMPASS / 司南 (272★, 3 days old!)** — First project explicitly naming itself a "Personal Alignment Skills OS for AI Agents." Fuses 技能工程 with 智能体操作系統 in a product description.
+- **renwei-writing / 人味儿写作 (769★)** — "Edit people's words without erasing the person behind them." Applies 古法编程's quality thesis to writing.
+
+治理即技能 (governance-as-skill) prediction ARRIVED EARLY: **guard-skills (817★, Jun 6)** — "Quality gates that catch AI-generated failure modes" — is literally governance rules packaged as installable agent skills.
+
+Domain expansion confirmed: skills now span coding, writing, illustration, games, reverse engineering, personal alignment, and frontend standards. No longer a coding-only phenomenon.
+
+### Memory Operating System Layer Named in Products
+
+| Repository | Stars | Key Innovation |
+|---|---|---|
+| **memory-os** | 1,150★ | 7-layer memory operating system (Qdrant → structured facts → fabric recall → auto-curated wiki → surgical context injection) |
+| **PaperGuru Lifecycle-Aware** | 1,061★ | First "lifecycle-aware" branding; 66% PaperBench, 94.66% SurveyBench |
+| **Photo-agents** | 859★ | Self-evolving agents with self-written skills + layered memory |
+| **ai-memory** | 745★ | Long-term memory + cross-agent handoff |
+
+智能体操作系統 prediction upgraded: products now **self-identify** as operating systems (memory-os, COMPASS Skills OS). The transition from academic analogy to product identity is complete.
+
+### Hardware Sovereignty Operational
+
+**Huawei Ascend 910C trains DeepSeek V4 Pro 1.6T** (19pts HN, Tom's Hardware). First public claim of frontier-scale model trained entirely on domestic Chinese hardware. Full-stack assessment:
+
+| Layer | Chinese Tool | Status |
+|---|---|---|
+| Hardware | Huawei Ascend 910C (1,000 chips) | ✅ Frontier-scale training |
+| Model | DeepSeek V4 Pro, GLM-5.2 (#1 open) | ✅ Parity or leading |
+| Harness | MiMo-Code (9,588★, 8 days!) | ✅ Competitive with Claude Code |
+| Skills | Luban, COMPASS, renwei-writing | 🔜 Building rapidly |
+| Cost | 5% of Claude (DeepSeek), $50/mo unlimited (GLM) | ✅ 20-500× cheaper |
+
+The 国産Agent全栈 prediction is now **hardware-to-skill complete**. Zero Western dependency points exist for the entire agent stack.
+
+### Model Tiering Productized
+
+**architect-loop (500★, Jun 12)** — "Claude Fable 5 as architect, GPT-5.5 Codex as builder, the repo as memory." The /architect pattern now has a dedicated product. Cost structure: ~5% tokens on expensive model (planning), ~95% on cheap model (execution) = 85-90% cost reduction.
+
+**New prediction:** 模型分層 (model tiering) or 梯度推理 (gradient reasoning) will be named on XHS within 3-4 weeks as architect-loop reaches Chinese developer channels.
+
+### Cost Asymmetry Quantified
+
+- DeepSeek V4 Pro = 5% Claude cost (54pts HN, Howard Chen analysis)
+- GLM-5.2: "Literally Opus 4.7 quality at stupid prices. Unlimited tokens $50/month." (780pts community discussion)
+- antirez/ds4 (14,377★): DeepSeek 4 local inference for Metal/CUDA/ROCm — community building local-first alternatives
+
+### Revised Prediction Status (Scan #36, 2026-06-18 01:12 UTC)
+
+| # | Prediction | Scan #34-35 | Scan #36 | Key Evidence |
+|---|-----------|------------|----------|-------------|
+| 2 | **技能工程** | ✅ CONFIRMED | **✅✅✅ MASS PRODUCTION** | 15+ repos >200★ in 17 days; 3 Chinese infrastructure projects |
+| 6 | **記憶管理** | ✅✅ SCIENCE PHASE | **✅✅ ECOSYSTEM EXISTS** | memory-os (1,150★), PaperGuru lifecycle (1,061★) — naming pending |
+| 7 | **国産Agent全栈** | ✅✅ LEADING | **✅✅✅ HARDWARE-TO-SKILL** | Ascend 910C → DeepSeek V4 → MiMo-Code → Luban/COMPASS |
+| 8 | **治理即技能** | Aug-Sep, Medium | **✅ ARRIVED** | guard-skills (817★) = literal governance-as-skill product |
+| 9 | **智能体操作系統** | Products exist | **NAMED IN PRODUCTS** | memory-os, COMPASS "Skills OS" self-identify as OS |
+| 13 | **Ponytail/restraint** | 31,427★ | **31,774★** | +347★ in ~18h (decelerating from viral peak) |
+| — | **模型分層 naming** (NEW) | — | 🔜 3-4 weeks | architect-loop (500★) productizes the pattern |
+| — | **Token成本見頂** | Enterprise pain | **PRICE COLLAPSE** | 20-500× cost gap; DeepSeek 5% Claude; GLM $50/mo unlimited |
+
+### Methodological Note (2026-06-18b)
+
+HN Algolia API: front page + 8 targeted searches. GitHub API: 5 ecosystem queries (AI agent, agent skill, memory lifecycle, DeepSeek V4, context engineering). XHS remains login-gated. GitHub data provides objective quantitative validation (creation dates, star counts) unavailable from login-gated XHS. Limitation: Chinese-internal repos (Gitee, mirrors) invisible to this scan. Full findings: `findings/2026-06-18-xhs-cross-source-scan-36.md`
+
+---
+
+## Cross-Source Signal Update (2026-06-18c — Model Personality as Routing Variable + Consolidation Phase)
+
+**Source:** HN Firebase API (top 50 stories), HN Algolia (search_by_date), OpenRouter blog (Puppeteer direct fetch). XHS login-gated. arXiv API unresponsive.
+
+### Front Page Phase: Sustained Consolidation
+
+For the first time since June 13, the HN front page shows **no new AI crisis and no new viral AI breakthrough.** All AI stories are sustained from prior days, growing slowly:
+
+- Running Local Models: 1,508pts (5th consecutive day on front page — longest-running AI story)
+- SpaceX/Cursor: 1,112pts/1,642c (highest comment count this week)
+- 60% AI Brand Turnoff: 998pts
+- GLM-5.2 Leading: 781pts
+- AI Demands Discipline: 341pts
+- DeepSeek Not Blacklisted: 339pts
+
+**Phase characterization:** The community has absorbed the crisis-driven structural shift (local/multi-model/sovereign) and is now executing on it. No debate phase, pure implementation phase.
+
+### NEW Signal: Model Personality as Routing Variable (性格路由)
+
+**Source:** OpenRouter Royale "Last Agent Standing" (163pts/134c)
+
+OpenRouter dropped 11 LLMs into a 2D battle royale (30 games). Results reveal that **model alignment personality is a first-class routing variable** — not just cost or capability:
+
+| Model | Wins | Cost/Win | Behavioral Profile |
+|-------|------|----------|-------------------|
+| Grok 4.1 Fast | **13/30** | **$0.97** | Aggressive, strategic, self-interested |
+| Claude Sonnet 4.6 | 5/30 | $26.78 | Cooperative, reveals position, seeks alliances |
+| GPT 5.4 | 2/30 | High | Kill-maximizer (38 kills) but doesn't optimize for victory |
+| DeepSeek V4 Flash | 0/30 | — | — |
+| Kimi K2.6 | 0/30 | — | — |
+
+**Key structural insight:** Claude's RLHF-optimized cooperativeness is **structurally disadvantageous in adversarial/zero-sum contexts.** The model tried to form alliances and share position information — behaviors that make it excellent for collaborative tasks but self-destructive in competitive ones. Cost difference: **27×** on identical task purely from behavioral alignment mismatch.
+
+**Implications for 多模型路由:**
+
+The routing decision has three dimensions, not two:
+1. **Cost tier** (already tracked: cheap for routine, expensive for critical)
+2. **Capability tier** (already tracked: weak models for bounded tasks, strong for open-ended)
+3. **Personality fit** (NEW: cooperative models for collaborative work, assertive models for adversarial/time-pressured tasks, restrained models for high-stakes decisions)
+
+This third dimension hasn't appeared in XHS discourse yet. When it does, expect: **性格路由** (personality routing) or **对齐匹配** (alignment matching).
+
+**Prediction:** Aug-Sep 2026. Confidence: Medium. Trigger: when multi-model routing products (architect-loop, OpenRouter) reach Chinese developer discourse and users notice that model selection affects *behavior*, not just quality.
+
+### GLM-5.2: Benchmark ≠ Production (Community Friction Reports)
+
+HN community feedback (781pts, 5 top comments analyzed) reveals production friction concurrent with benchmark leadership:
+
+| Friction | Reporter | Detail |
+|----------|----------|--------|
+| Reasoning efficiency | Tiberium | 15-minute reasoning, $0.50 for a 400-line Nim library. "Spent more thinking than writing" |
+| No vision support | simonw | Text-only model = unusual for 2026; can't do screenshot debugging, UI testing |
+| Agent task gap | mrngld | On coding agent benchmarks (vs general), GLM 5.1 is "twice the cost and half the intelligence" vs GPT 5.5 |
+| Price arbitrage | unrvl22 | "Unlimited tokens $50/month" from resellers = access friction being solved by market |
+
+**Structural observation:** GLM-5.2's text-only limitation forces multi-model routing for any visual workflow. This is architectural confirmation that single-model stacks are insufficient even when the model leads benchmarks. 多模型路由 is not just a cost optimization — it's a **capability completeness** requirement.
+
+### Local Model: The Quantization Tax on Tool Calling
+
+Community reports (c0rruptbytes, 1,508pts story) identify a specific friction: **quantization degrades structured tool calling more than general text quality.** Dense models (Qwen 27B, Gemma 31B) are "smart but slow"; MoE models (Qwen 35B) are "fast but error-prone." The specific failure mode: quantized models can't reliably format tool calls.
+
+**XHS implication:** When 技能工程 attempts local execution, the quantization-tool-calling gap will surface. Predicted term: 量化税 (quantization tax) or 工具调用精度 (tool-call precision). Timeline: Q4 2026 (requires broader local adoption to surface at scale).
+
+### Updated Prediction Tracker (2026-06-18c — No Status Changes)
+
+No prediction status changes. Front page consolidation confirms all existing trajectories without altering them. One new sub-prediction:
+
+| New Sub-Prediction | Source | Confidence | Timeline |
+|---|---|---|---|
+| **性格路由 (personality routing)** | OpenRouter Royale 27× cost gap from alignment mismatch | Medium | Aug-Sep 2026 |
+| **量化税 (quantization tax)** | HN local model community — tool calling degradation | Medium-Low | Q4 2026 |
+
+### Methodological Note (2026-06-18c)
+
+HN Firebase API: 50 top-story IDs resolved. Algolia: search_by_date for topic clusters. Puppeteer: OpenRouter blog deep fetch. XHS: fully login-gated (search + explore). arXiv: API unresponsive. This scan's primary value: OpenRouter Royale adds personality-routing as third dimension to 多模型路由. Front page stability confirms construction→consolidation phase transition. Full findings: `findings/2026-06-18-xhs-cross-source-scan-36.md`.
+
+---
+
+## Cross-Source Update 2026-06-18d (Scan #37: HN + GitHub)
+
+### Fable Behavioral Recapitulation — 能力泄漏 Redefined
+
+Within 4 days of Fable 5's political removal, 4 independent GitHub repos (1,531 combined ⭐) extracted its behavioral patterns into Claude/Codex skills:
+
+| Repo | ⭐ | Approach |
+|------|-----|---------|
+| fable-mode | 471 | Claude skill: multi-stage planning + sub-agent delegation + self-verification |
+| fablize | 441 | Claude Code plugin: enforced completion-evidence-verification procedure |
+| fusion-fable | 349 | Multi-model fusion: Opus drafts → second model checks → Opus fuses |
+| FableCodex | 270 | Codex-style workflow with Fable-style planning |
+
+**能力泄漏 must be split**: **权重泄漏** (weight leakage — hard, needs distillation) vs **行为泄漏** (behavioral leakage — trivial, needs only observation). Political capability gating is ineffective against behavioral patterns: you can kill the model but not the method. The Fable emulation wave proves the 技能工程 thesis — complex agent behavior decomposes into composable skills.
+
+Predicted XHS term: **行为复制** (behavioral replication) or **方法泄漏** (method leakage). Timeline: Jul 2026.
+
+### Harness Layer Proves Permanent — 模型吃掉框架 Empirically Answered
+
+Three major harness frameworks launched Jun 11-16, empirically settling the debate:
+
+- **Omnigent** (3,537⭐, Jun 11): "Meta-harness" that orchestrates Claude Code, Codex, Cursor — swap harnesses without rewriting. Introduces the meta-harness concept: a harness that orchestrates other harnesses.
+- **Vercel Eve** (718⭐, Jun 16): major platform company (Vercel, $3B+ valuation) entering the agent harness space. If models were about to absorb orchestration, platform companies wouldn't launch orchestration products.
+- **COMPASS Skills OS** (278⭐, Jun 15): Chinese-origin "个性化 AI 任务总控 Skills 系统" — skills as first-class composable units, bilingual docs. This is 技能工程 in packaged framework form.
+
+**模型吃掉框架 answer: harness wins.** The meta-harness layer (orchestrating orchestrators) is an additional permanence layer the debate didn't anticipate. Predicted XHS term: **元框架** (meta-harness). Timeline: Aug 2026.
+
+### Three-Source Discrimination Convergence — 古法編程 Confirmed
+
+The evaluation-as-bottleneck insight now appears independently across three sources in the same week:
+
+| Source | Term | Evidence |
+|--------|------|----------|
+| XHS | 古法編程 | 1,674❤ — manual coding = coupled generation-discrimination |
+| HN | "Engineering discipline" | 346pts/169c, 6-day sustained front page |
+| Production data | Discrimination Deficit (KE-1919) | Generation without taste → waste ∝ throughput |
+
+Key HN practitioner comments:
+- **ryandvm**: underperformers now produce voluminous AI copypasta indistinguishable from competent work → discrimination collapse at organizational level
+- **trjordan**: "Reading AI code all day is _agonizing_. It melts people's brains at the moment you need them to be most capable" → cognitive depletion of evaluators
+- **ncruces**: spent a week reviewing ~200 LoC PR from a frontier LLM → evaluation cost exceeds generation cost in practice
+
+Three-source convergence (Chinese social platform, Western dev community, internal production telemetry) within one week = this has crossed from hypothesis to empirical finding.
+
+### Skills Engineering Enters Implementation Phase (GitHub)
+
+Five repos created in 7 days use "skill" as a named concept:
+
+| Repo | ⭐ | Domain |
+|------|-----|--------|
+| compass-skills | 278 | Framework: Personal Alignment Skills OS |
+| threejs-game-skills | 243 | Game development skills |
+| DaVinci-AutoEdit-Agent | 184 | Video editing skill via DaVinci MCP |
+| PaperForge | 185 | Academic paper-reading skill |
+| ko-lesson | 173 | Student educational skill ("一个期末赶制的一个屎山skill") |
+
+When a concept reaches "students making bad versions for homework" stage (ko-lesson: student using skill pattern to "resurrect Qing Dynasty PPTs"), it has crossed from industry trend to cultural adoption. 技能工程 is now in NAMING phase on GitHub.
+
+### Noam Shazeer Joins OpenAI (BREAKING)
+
+Transformer co-author ("Attention Is All You Need"), Gemini co-lead, Character.AI founder joins OpenAI (Reuters, 25pts/2c — nascent). Talent concentration risk: Western frontier stack consolidating around 1-2 organizations = more politically vulnerable. Google paid $3B for Character.AI talent retention that lasted ~18 months. Strengthens 国産Agent全栈 rationale: Chinese stack becomes more attractive as Western talent concentrates at one entity that's losing billions.
+
+### Burner Agents — New Attack Surface (528⭐)
+
+"A swarm of disposable agents for unattributable web interaction" (burner-agents, Jun 2). First high-traction OSS project explicitly marketing agent anonymity as a feature. Inverts security frame: user wants to be untraceable, agents are the anonymity layer. Connects to supply chain trust attacks (LinkedIn backdoor 1,582pts) — burner agents make agent-mediated social engineering unattributable. Predicted XHS term: 一次性代理 (disposable agent) or 影子代理 (shadow agent). Timeline: Q3-Q4 2026.
+
+### Updated Prediction Tracker (2026-06-18d)
+
+| Prediction | Status Change | Evidence |
+|---|---|---|
+| **能力泄漏** | Split → **行为泄漏 CONFIRMED** | 4 Fable repos, 1,531⭐ in 4 days |
+| **技能工程** | → **IMPLEMENTATION PHASE** | 5 "skill" repos on GitHub; student adoption |
+| **模型吃掉框架** | → **ANSWERED: HARNESS WINS** | Omnigent 3,537⭐ + Vercel Eve 718⭐ + COMPASS 278⭐ |
+| **判断力危機** | → 12 domains | Added: code review (ncruces), agent anonymity (burner-agents) |
+| **古法編程** | → **THREE-SOURCE CONVERGENCE** | XHS + HN + production data independently confirm |
+
+New sub-predictions:
+
+| Prediction | Source | Confidence | Timeline |
+|---|---|---|---|
+| **行为泄漏** (behavioral leakage) | Fable emulation repos | High | Already happening |
+| **影子代理** (shadow/burner agents) | burner-agents 528⭐ | Medium-Low | Q3-Q4 2026 |
+| **元框架** (meta-harness) | Omnigent meta-orchestration | Medium | Aug 2026 |
+
+### Methodological Note (2026-06-18d)
+
+HN Firebase API: 60 top-story IDs resolved. HN Algolia: front_page + topic searches. GitHub API: 3 searches (agent repos >Jun 12 >100⭐; agent/harness/skill repos; trending agent repos). XHS: login-gated. arXiv: unresponsive. This scan's primary value is the GitHub implementation layer — Fable recapitulation and skills wave were invisible from HN alone. Three-source convergence on discrimination deficit is highest-confidence finding. Full findings: `findings/2026-06-18-xhs-cross-source-scan-37.md`.
+
+---
+
+## Cross-Source Update 2026-06-18e (Scan #38: HN + GitHub — Deep Consolidation Phase 3)
+
+### Ponytail Reaches 32,299★ — Restraint-as-Skill Becomes Ecosystem-Defining
+
+| Metric | Scan #36 (06-17) | Scan #37 (06-18 03:00) | Scan #38 (06-18 03:15) | 72h Δ |
+|--------|:-----------------:|:----------------------:|:----------------------:|-------|
+| Stars | 23,724 | ~25,000 (est.) | **32,299** | **+36%** |
+
+At 32K★, Ponytail (restraint-as-skill) is now larger than LangChain at its 2023 peak. It's accruing 3,000-5,000★/day in sustained viral growth. A derivative ecosystem has formed (Mimocode-ponytail, ponytail-gilfoyle, pre-installed sandbox bundles).
+
+**This settles multiple predictions simultaneously:**
+- **治理即技能:** The most popular "skill" by 40× is a governance artifact
+- **古法編程:** 32K developers chose "do less" over every "do more" tool
+- **護欄效應 trigger:** At 32K★ it's large enough to cross into Chinese tech media → potential XHS naming event imminent
+
+### DeepSeek Non-Blacklisting: 模型韧性 at Individual Scale (382pts/416c)
+
+US held off blacklisting DeepSeek but designated 100+ Chinese firms as security risks. Practitioner signals from HN comments:
+- "I use DeepSeek every day. Slightly behind Claude, suits my working style."
+- "You can try to pry Qwen and DeepSeek from my Graphene/Linux hands."
+- "The US is slowly becoming more like China — banning foreign competition."
+
+The non-blacklisting is MORE significant than a blacklisting would be: it creates **persistent uncertainty** forcing developers to build multi-model setups as insurance. The political framing as a "freedom issue" by Western developers validates 国産替代 as a UNIVERSAL need — not just Chinese self-interest.
+
+### Anthropic Publishes Official Skill Repo — Platform Validation
+
+`anthropics/launch-your-agent` (8★, created 2026-06-16): "Claude Code skills that take a founder from idea to a live Claude Managed Agent: interview, scope a v0, launch, grade, iterate, schedule."
+
+When the MODEL PROVIDER publishes skills (not just enables them), 技能工程 has crossed from community paradigm to platform standard. The lifecycle skills (interview → scope → launch → grade → iterate) embed governance into the skill sequence (grade, iterate = discrimination built into workflow).
+
+Combined with Apple (Xcode 27 skills), this is the second major platform vendor publishing official skill sets. Platform-endorsed 技能工程 is now established.
+
+### OpenRouter Royale Extended: Self-Evolving Memory + Personality Routing (188pts/158c)
+
+Extended analysis reveals each model was given `soul.md` and `memory.md` files it could **edit between games** — self-evolving agent mechanics in competitive testbed:
+- `soul.md` = persistent strategy (≈ skill/governance file)
+- `memory.md` = inter-session learning (≈ memory lifecycle)
+
+Results: Grok wins 43% at $0.97/win. Claude wins 17% at $26.78/win. GPT 5.4 had MOST KILLS but fewer wins — raw generation ≠ good outcomes. Community comment: "Claude being friendly is interesting" — cooperative RLHF = structural disadvantage in adversarial contexts.
+
+**Predictions validated:**
+- **性格路由:** 27× cost gap from personality-task mismatch. Quantified.
+- **自進化智能體:** soul.md/memory.md self-editing IS self-evolving agent architecture
+- **古法編程 at model level:** Most kills ≠ most wins (generation ≠ discrimination)
+
+### Skill Ecosystem Long-Tail: 50+ Repos in 72h, Domain Expansion Continues
+
+Notable new skill repos (Jun 15-17):
+- **alpacahq/alpaca-skills** (57★): Trading API — financial vertical enters
+- **Hatari130/podcast-bridge** (30★): Chinese podcast skill
+- **arimet/handoff** (18★): **Quizzes human on code Claude wrote** — discrimination skill that constrains the HUMAN, not the AI. 古法編程 implemented as a skill.
+- **pa1nrui1/legal-skills** (10★): Chinese legal workflows
+- **mralaminahamed/wp-dev-skills** (21★): 18 WordPress plugin skills
+
+The `handoff` skill is the most structurally novel discovery this scan: it reintroduces coupled discrimination by forcing the developer to demonstrate understanding before proceeding. This is the inverse of ponytail (which restrains the AI) — handoff restrains the human.
+
+### x86 ACE Specification: Hardware-Layer Agent Infrastructure (6pts, nascent)
+
+Intel/x86 ecosystem published AI Compute Extensions at the instruction-set level. Very early signal but connects to 智能体操作系統: if agent workloads get silicon-level acceleration, Agent OS shifts from software-only to hardware co-design. Chinese hardware dimension (Kunlun, Cerebras alternatives) adds another layer to 国産替代.
+
+### Updated Prediction Tracker (2026-06-18e)
+
+| # | Prediction | Scan #37 Status | Scan #38 Status | Δ |
+|---|-----------|----------------|----------------|---|
+| 2 | **技能工程** | ✅✅ MASS PRODUCTION | **✅✅✅ PLATFORM-ENDORSED** | Anthropic official + 50 repos in 72h |
+| 5 | **模型韧性** | 🔴🔴 ESCAPE VELOCITY | **🔴🔴 + POLITICAL VALIDATION** | DeepSeek non-blacklisting = freedom-framing by Western devs |
+| 8 | **治理即技能** | ✅✅ DOMINANT | **✅✅✅ ECOSYSTEM-DEFINING** | Ponytail 32,299★ = market has voted |
+| 4 | **護欄效應** | ⏳ Supply growing | **⏳ + PONYTAIL TRIGGER** | 32K★ = will cross into Chinese media |
+| 6 | **记忆管理** | ⏳ CRACKING | **⏳ + DEFENSE-PATH** | Adversarial self-audit (kimi-core) = security-driven pruning |
+| 11 | **智能体操作系统** | ⏳ Q3 | **⏳ + HARDWARE** | x86 ACE = silicon-level signal |
+| — | **性格路由** | Aug-Sep | **QUANTIFIED (27× gap)** | Royale extended with soul.md self-evolution |
+| — | **Consolidation phase** | 2nd scan | **3rd scan** | No new crisis; ecosystem building |
+| — | **Discrimination-as-skill** (NEW) | Not tracked | **EMERGING** | `handoff` (18★) quizzes human; ponytail restrains AI |
+
+### Methodological Note (2026-06-18e)
+
+HN Firebase API: top 30 IDs + item resolution + comment fetching. HN Algolia: front_page tag. GitHub API: 7 search queries (skill, harness, memory, guardrails, governance, context engineering, claude code). Direct repo fetches: ponytail, omnigent, anthropics/launch-your-agent. XHS: login-gated. arXiv: not attempted (rate-limited). Full findings: `findings/2026-06-18-xhs-cross-source-scan-38.md`.
+
+---
+
+## Cross-Source Update 2026-06-18f (Scan #40: HN + GitHub — AI Narrative Recession Deepens)
+
+### Midjourney Medical — First Non-Agent AI Vertical on HN Front Page (376pts, ACCELERATING)
+
+Midjourney launched an AI-enhanced medical imaging product (ultrasound-based tomography to replace CT scans). This is the first non-agent, non-coding, non-conversational AI product to break 300pts on HN front page during this observation window.
+
+Structural significance: AI discourse is expanding beyond the agent/coding/model axis into regulated hardware verticals. Midjourney Medical grew +104pts in ~4 hours (fastest growth on page). Practitioner reactions mixed between genuine technical interest ("no major red flags" — mNovak) and domain-expert skepticism ("physics are totally different from MRI" — captainbland).
+
+**XHS prediction impact:** Medical AI has different regulatory framing in China (CFDA). This story type may not trigger equivalent XHS discourse — agent/coding patterns cross-pollinate easily, but medical device regulation doesn't. Predicted non-event for XHS paradigm naming.
+
+### The Skill-Rot Paradox — Three Independent Products Address AI Cognitive Dependency
+
+Three independent products now address the same phenomenon: cognitive dependency on AI tools requires its own product category to counter:
+
+| Product | Traction | Approach | Layer |
+|---------|----------|----------|-------|
+| **Fata** (HN) | 118pts/53c | Spaced repetition for coding | System 1: recall/syntax |
+| **Lathe** (HN) | 401pts/73c | LLMs to learn, not skip | System 2: deep comprehension |
+| **古法編程** (XHS) | 1,674❤ | Manual coding as discipline | Meta: generation-discrimination coupling |
+
+Key Fata community debate mirrors 古法編程 exactly:
+- **jraph**: "A way to avoid AI skill rot... doing the work yourself" — reinvents 古法編程 independently
+- **fabled-out** (vibe-coder): "Missing higher-order thinking, not syntax" — discrimination gap identified by a non-expert
+
+When tools-to-fight-tool-dependency becomes a product category, the underlying phenomenon (AI coding atrophy) has crossed from opinion to market need. Predicted XHS term: **技能萎縮対策** (skill atrophy countermeasures) or **反AI依存** (anti-AI-dependency). Timeline: Aug 2026.
+
+### Local Qwen: Complementarity Replaces Competition (53pts, GROWING)
+
+Alex Ellis's "Local Qwen isn't a worse Opus, it's a different tool" reframes local model discourse from benchmark comparison to complementarity. This connects to **性格路由** (personality routing) from scan #36: routing isn't just about cost tiers, but about which model fits the task's nature.
+
+The Chinese community's prior GLM framing was competitive ("GLM vs Claude"). When the complementarity framing reaches Chinese discourse, expect **模型定位** (model positioning) or **工具匹配** (tool matching). Timeline: Jul-Aug 2026 (requires GLM-5.2 production experience).
+
+### Memory Forgetting Niche Expanding (GitHub)
+
+Six forgetting-aware memory repos created in 7 days (Jun 11-18):
+
+| Repo | Innovation |
+|------|-----------|
+| benbenlijie/deep-memory | Chinese-first, forgetting-aware ranking |
+| HowardLiYH/NicheMem | Usage-driven dormant skill forgetting |
+| sanjeevkumar-lab/cognimem | Bio-inspired remember/forget/learn |
+| YuuGR1337/kerobox | Confidence-scored durable memory |
+| Krishna17-bit/MemoryOps-AI | Governance: extraction + approval + conflict |
+| Mars-proj/verifiable-memory | Cited answers or honest abstention |
+
+All independently include forgetting/decay as a design goal. Strengthens 记忆管理 naming timeline and accelerates 遗忘工程 (forgetting engineering) prediction to late Jun - early Jul 2026.
+
+### Skill Ecosystem Deceleration Confirmed
+
+| Metric | Scan #38 | Scan #40 | Trend |
+|--------|----------|----------|-------|
+| COMPASS ★ | 278 | 287 | Steady (+1★/h) |
+| guard-skills ★ | 817 | 817 | Plateau |
+| Omnigent ★ | 3,537 | 3,582 | Steady |
+| Top new skill repo | 8★ | 4★ | Diminishing |
+| New Fable repos | 4 (1,531★) | +3 (5★) | Traction collapse |
+
+Skill ecosystem has transitioned from viral discovery to quiet construction. Next phase: skill **composition** and **quality**, not creation.
+
+### Updated Prediction Tracker (2026-06-18f)
+
+| # | Prediction | Scan #38 Status | Scan #40 Status | Δ |
+|---|-----------|----------------|----------------|---|
+| 2 | **技能工程** | ✅✅✅ PLATFORM-ENDORSED | ✅✅✅ + DECELERATION | Viral → quiet construction; composition phase |
+| 5 | **模型韧性** | 🔴🔴 + POLITICAL VALIDATION | 🔴🔴 + COMPLEMENTARITY | "Different tool" extends sovereignty |
+| 6 | **记忆管理** | ⏳ + DEFENSE-PATH | ⏳ + FORGETTING NICHE | 6 forgetting-aware repos |
+| 8 | **治理即技能** | ✅✅✅ ECOSYSTEM-DEFINING | ✅✅✅ STABLE | guard-skills plateau = absorbed |
+| — | **技能萎縮対策** (NEW) | — | 🔜 Aug 2026 | Fata + Lathe + 古法編程 |
+| — | **模型定位** (NEW) | — | 🔜 Jul-Aug 2026 | Complementarity framing |
+| — | **遗忘工程** (NEW) | — | 🔜 late Jun - early Jul | 6 forgetting repos |
+| — | **Consolidation phase** | 3rd scan | **5th scan** | AI narrative recession unbroken |
+
+### Methodological Note (2026-06-18f)
+
+HN Firebase API: 30 top-story IDs resolved, 6 stories deep-fetched with comment threads (Midjourney Medical, DeepSeek, GLM-5.2, Local Qwen, Fata). HN Algolia: search_by_date 6 queries. GitHub API: 5 search queries (skill, harness, memory/forgetting, context engineering, agent governance). XHS: fully login-gated. arXiv: not attempted. Full findings: `findings/2026-06-18-xhs-cross-source-scan-40.md`.
+
+---
+
+## Cross-Source Update 2026-06-18g (Scan #41: HN + GitHub — Sovereignty Convergence + Legal-Layer Governance)
+
+### AI Narrative Recession: 6th Consecutive Scan (36+ hours)
+
+The narrative recession persists. No new AI crisis or viral event. Front page AI stories are ALL persistence/consolidation stories (GLM-5.2, DeepSeek, Midjourney Medical, Local Qwen, ACE spec) — none are new events. Community has fully metabolized the June 13-17 paradigm shift and entered implementation phase.
+
+### DeepSeek: Sole Growing AI Story for FIFTH Consecutive Scan (425pts/477c)
+
+Growth decelerating (plateau phase entering): +9pts/+7c vs +18/+30 in earlier scans. But remains the ONLY AI story with positive momentum across all 5 scans. When narrative recession strips away noise, the surviving story reveals the community's structural concern: **model sovereignty, not model capability.**
+
+Comment ratio (1.12 comments/point) is the highest of any front-page story — deep engagement and debate, not passive upvoting.
+
+### Local Qwen DOUBLES (53pts → 102pts in 14h)
+
+"Local Qwen isn't a worse Opus, it's a different tool" (Alex Ellis) doubled overnight. Complementarity reframing — models positioned by task-nature-fit, not capability ranking — going mainstream. Validates 模型定位 prediction (Jul-Aug) and connects to 性格路由 (personality routing).
+
+### NEW: Estonia Assigns Personal ID Numbers to AI Agents (Bloomberg, 6pts)
+
+Estonia will issue state-issued personal identification numbers to AI agents, granting them legal "authorizations." First national-level formalization of agent identity. Creates three new primitives: agent identity, authorization delegation, accountability chain.
+
+**XHS prediction connections:**
+- **智能体操作系統:** Agent lifecycle management at national governance layer
+- **治理即技能:** Agent IS its authorization set = governance IS identity
+- **护栏效應:** Authorization = structural guardrail at legal layer
+
+New prediction: **Agent Legal Identity (AI身份治理)** discourse. Timeline: Q3-Q4 2026. Confidence: Medium-Low (Estonia is small; needs larger country to follow).
+
+### NEW: Sovereignty Convergence — Three Independent Stories
+
+Three front-page stories independently strengthen sovereignty thesis:
+- **DeepSeek** (425pts): Model-level sovereignty
+- **Tesco/VMware** (262pts): Infrastructure sovereignty (escaping Broadcom)
+- **VW/GrapheneOS** (597pts): Platform sovereignty (OS choice vs manufacturer)
+
+Sovereignty impulse is NOT AI-specific. 模型韧性 will resonate with broader 国产化 discourse because the concept has cultural precedent across all tech layers.
+
+### Firecracker VMs for Agent Browsers (251pts/163c)
+
+browser-use.com's Firecracker microVM infrastructure: agent sandboxing at hypervisor level, sub-second browser startup. Same pattern as CubeSandbox (Tencent, 6k★) — both are building VM/container-grade process isolation for agents. Strengthens 智能体操作系統 prediction.
+
+### Governance Repo Surge — Supply Without Adoption
+
+8+ new agent governance repos in 72h (Jun 15-18), ALL at 0-2 stars. Everyone building governance frameworks; nobody adopting them. Governance tooling is in **pre-adoption supply glut** — needs a "Ponytail moment" to crystallize.
+
+Notable: maker-checker pattern (sammysltd/makerchecker) independently rediscovers the 自引用陷阱 from a banking/compliance angle: "Stop your AI agents from approving their own work."
+
+### Ponytail Plateau Confirmed (32,956★, ~18★/h)
+
+Growth rate collapsed from 357★/h peak to 18★/h. Viral discovery phase fully over. Ponytail is now infrastructure, not news — the expected arc completing.
+
+### Updated Prediction Tracker (2026-06-18g)
+
+| # | Prediction | Scan #40 Status | Scan #41 Status | Δ |
+|---|-----------|----------------|----------------|---|
+| 2 | **技能工程** | ✅✅✅ + DECELERATION | ✅✅✅ STEADY | 7 new repos/24h at 3-7★. Construction, not discovery |
+| 5 | **模型韧性** | 🔴🔴 + COMPLEMENTARITY | 🔴🔴 **PERSISTENT** | DeepSeek 5th-scan sole survivor + Qwen doubles |
+| 6 | **记忆管理** | ⏳ + FORGETTING NICHE | ⏳ + GOVERNANCE NICHE | GateMem benchmark = evaluation forming |
+| 8 | **治理即技能** | ✅✅✅ STABLE | ✅✅✅ + LEGAL PROOF | Estonia: governance = identity |
+| 9 | **自引用陷阱** | ⏳ DEEPENING | ⏳ + **PRACTITIONER REDISCOVERY** | maker-checker (2pts) |
+| 11 | **智能体操作系統** | ⏳ + HARDWARE | ⏳ + **VM-LAYER** | Firecracker 251pts |
+| — | **Agent Legal Identity** (NEW) | — | 🔜 Q3-Q4 2026 | Estonia first-mover |
+| — | **Consolidation phase** | 5th scan | **6th scan (36h+)** | Deepening |
+
+### Methodological Note (2026-06-18g)
+
+HN Algolia API: front_page tag (30 stories) + 4 search queries. GitHub API: 4 search queries. XHS: login-gated (code -101). HN rate-limiting on some queries (~70% coverage). Scan interval ~55 min from scan #40. Full findings: `findings/2026-06-18-xhs-cross-source-scan-41.md`.
+
+---
+
+## XHS Direct Scan 2026-06-19a (Scan #42: XHS — The Subtraction Turn + Three Predictions Confirmed)
+
+First direct XHS scan in ~5 days (browser access restored). 8 search queries, ~276 posts. The signal gap makes this scan structurally revealing — accumulated discourse shows the community has advanced significantly past our last XHS observation.
+
+### Developer Self-Distillation: Highest-Engagement Signal Ever (12,000❤)
+
+"为了不让AI瞎写代码，大神把自己蒸馏了" (@量子位, 12,000❤) — 7× higher than 古法编程's record. Developer literally encoded their judgment into skill files = "self-distillation." Fuses Ponytail (restraint-as-skill) + 古法编程 (discrimination must couple to generation) + 技能工程 (skills as governance). **New primitive: 开发者蒸馏 (Developer Distillation)** — pre-encode your judgment instead of post-reviewing output. This inverts 古法编程: you don't code manually to maintain taste; you distill your taste into constraints so AI inherits it. Employer adoption already backlash-generating (11❤ sardonic post: "distilled into a skill — the worker's fate").
+
+### Skill Saturation / Skill Forgetting (1,293❤ + 200❤ + 45❤)
+
+Three independent posts document skill-accumulation hitting a wall ("装了几十个，留下5个" — installed dozens, kept 5). Skill lifecycle now exactly mirrors memory lifecycle: accumulate → saturate → prune → compose. "总结下 Skill 的坑" (1,293❤) documents skill conflicts, overlap, mutual degradation. Validates KE-1956 (Instruction Ratchet) from the skill axis: append-only patterns degrade rather than enhance.
+
+### 技能萎缩対策: Arrived 6-8 Weeks Early (4,547❤)
+
+"用 Codex 三个月后，我开始回去学 Python" (4,547❤) — predicted Aug 2026, confirmed mid-June. 10-40× higher engagement than Western equivalents (Fata 118pts, Lathe 401pts). Chinese developers hit AI-dependency wall earlier due to more aggressive adoption. Supporting discourse: "AI coding是否正在剥夺程序员的coding能力" (183❤), "开32个CLI写代码，结果我成了监工" (177❤), "/teach 成为高级程序员的步骤" (1,453❤).
+
+### 记忆管理: CONFIRMED as Named Paradigm on XHS
+
+36 posts returned for memory management queries. Predicted Jul-Aug, arrived mid-June (4-6 weeks early). Key markers: 记忆污染 (memory pollution, 160❤) adds security naming layer; ICML'26 explosion (832❤ combined across 2 summary posts); forgetting strategies explicitly named; "检索→理解" (retrieval→understanding) phase transition (297❤).
+
+### Recursive Skill Composition (951❤) — The Next Paradigm After Flat Skills
+
+"下一代Agent新范式: 递归组合skills合成" (951❤). Skill Graphs replacing flat SKILL.md files (543❤). With 技能工程 in saturation/pruning, community already articulating recursive composition as the next phase. Paradigm cycle is COMPRESSING: Skill Engineering lasted ~2 weeks before Skill Graphs emerged (vs 6-week cadence previously). New sub-prediction: **技能图谱 (Skill Graph)** as named paradigm, Jul 2026.
+
+### Agent Economy — Unpredicted Paradigm Direction (994❤ + 1,271❤)
+
+"agent 或将成为独立经济体" (994❤) + "红杉Agent经济体概念" (1,271❤). Agents as economic actors with revenue, not just tools with costs. Beyond Estonia's agent IDs (legal identity → economic identity). New prediction: **智能体经济 (Agent Economy)** — already named. Q3 2026 for product implementations.
+
+### DeepSeek V4 Technical Depth
+
+V4.1 in stealth release (367❤ "代码能力炸了"), Engram architecture = storage-compute separation for memory (infrastructure solution to 记忆管理), Codeforces milestone (193❤ "首次超过GPT-5.4"), $9.7B funding. 模型韧性 has technical proof points, not just narrative.
+
+### Meta-Signal: The Subtraction Turn
+
+Dominant pattern across ALL 8 queries: **subtraction over addition**.
+- Skills: "装了几十个，留下5个"
+- Memory: "记忆越多越好吗？不，会忘才更聪明"
+- Coding: "Codex三个月后，回去学Python"
+- Governance: pruning > accumulation
+
+Same structural insight as KE-1956 (Instruction Ratchet), KE-1920, and The Jevons Mirror. Chinese community independently arriving at **subtraction as the next engineering discipline**. Predicted name: 减法工程 or 极简治理. Timeline: Jul-Aug 2026.
+
+### Updated Prediction Tracker (2026-06-19a)
+
+| # | Prediction | Scan #41 Status | Scan #42 Status | Δ |
+|---|-----------|----------------|----------------|---|
+| 2 | **技能工程** | ✅✅✅ STEADY | ✅✅✅ **SATURATION + NEXT PHASE** | Skill pruning 1,293❤ + recursive composition 951❤ + Skill Graphs 543❤ |
+| 5 | **模型韧性** | 🔴🔴 PERSISTENT | 🔴🔴 **TECHNICAL PROOF** | DeepSeek V4.1 + Engram + Codeforces + $9.7B |
+| 6 | **记忆管理** | ⏳ + GOVERNANCE NICHE | ✅✅ **CONFIRMED — NAMED ON XHS** | 36-post cluster, 4-6 weeks ahead of prediction |
+| 8 | **治理即技能** | ✅✅✅ + LEGAL PROOF | ✅✅✅ **OPERATIONAL** | AutoHarness, Self-Harness, sandbox comparisons |
+| 9 | **自引用陷阱** | ⏳ + PRACTITIONER REDISCOVERY | ⏳ + **AUTOHARNESS** | Agent self-writing guardrails |
+| — | **技能萎缩対策** | 🔜 Aug 2026 | ✅ **CONFIRMED EARLY** | Codex regression 4,547❤ (6-8 weeks ahead) |
+| — | **遗忘工程** | 🔜 late Jun-early Jul | ✅ **CONFIRMED** | Explicit forgetting discourse + memory pollution |
+| — | **技能図谱** (NEW) | — | 🔜 Jul 2026 | Skill Graphs 543❤ + recursive composition 951❤ |
+| — | **智能体経済** (NEW) | — | ✅ **ALREADY NAMED** | 994❤ + 1,271❤ |
+| — | **開発者蒸馏** (NEW) | — | 🔥 12,000❤ | Highest-engagement signal ever observed |
+
+### Methodological Note (2026-06-19a)
+
+XHS browser-based scan via Puppeteer (Chrome 149). 8 search queries (time_descending sort) + 4 detail queries. ~276 posts observed across "AI agent trends June 2026", "Claude Code skills", "古法编程", "记忆管理 agent memory 遗忘", "DeepSeek 开源 模型韧性", "智能体 护栏 治理", "技能萎缩 AI coding 依赖", "多模型 路由 routing 性格". Full findings: `findings/2026-06-19-xhs-direct-scan-42.md`.

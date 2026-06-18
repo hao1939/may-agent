@@ -167,6 +167,56 @@ above chance. Candidate mitigations: SimpleX/SMP, Tor, mixnets.
 **Implication**: Security-sensitive deployments need transport-layer privacy
 on top of protocol-layer standardization.
 
+### Source-Aware Factuality Verification — ProvenanceGuard (arXiv, June 2026)
+
+Standard factuality verification pools all evidence and checks support. MCP
+agents have a distinct failure mode: **cross-source conflation** — a claim is
+supported *somewhere* but attributed to the *wrong source*. Source attribution
+is an independent verification axis invisible to pooled metrics.
+
+Architecture: consumes captured MCP traces with stable tool IDs + source IDs →
+decomposes answers into atomic claims → routes claims to source-specific
+evidence → checks support via NLI + token-alignment proxy → compares stated
+attribution with routed source → returns per-claim verdicts + answer-level
+allow/block decision. Blocked answers repaired via retrieval-augmented revision.
+
+Results (medical-domain MCP traces, 281 traces):
+- Block F1: 0.802–0.846
+- Source accuracy: 0.858 over 260 source-eligible claims
+- 50 controlled conflation probes: **100% detection**, 0% retained wrong attribution
+
+- **Key implication**: Validates that protocol-level observability (tool IDs,
+  source IDs) enables verification impossible from output text alone. When
+  synthesizing across sources (arXiv + HN + XHS), attributions can drift.
+  Claim-level source tagging needed, not just file-level provenance. MCP trace
+  consumption is the enabling infrastructure.
+- **Connects to**: Transduction Chain (source attribution as format requirement),
+  Evaluation Mirage (pooled metrics miss provenance failures),
+  Knowledge Asymmetry (attribution drift degrades trust).
+- **Source**: [2606.18037] ProvenanceGuard, arXiv June 2026. Categories: cs.AI, cs.CL, cs.MA.
+
+---
+
+### Emerging: Universal Memory Protocol (UMP) — The Third Interop Layer
+
+GitHub repos signal a third protocol layer forming alongside MCP (tools) and
+A2A (agent coordination): a **memory protocol** standardizing how agents share,
+version, and expire persistent state.
+
+- **edihasaj/universal-memory-protocol** (28★, Jun 2026) — proposes UMP as
+  "the third interop layer beside MCP (tools) and A2A (coordination)."
+- **memforks-dev/memforks** (101★) — "Git for AI agent memory" with branching
+  and merging semantics for versioned agent state.
+- **icarus-memory-infra** (289★) — provenance, rollback, supersession chains
+  over any backend.
+
+**Implication**: The agent interop stack may complete as MCP + A2A + Memory
+Protocol. Cross-agent memory sharing is emerging as the bottleneck that
+neither MCP nor A2A addresses. Whether UMP or a competing spec fills this
+slot, the three-layer shape (tools / agents / state) is converging.
+
+- **Source**: GitHub trending scan, July 22, 2026.
+
 ---
 
 *This note consolidates MCP/A2A/AG-UI references scattered across 6+ library

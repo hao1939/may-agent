@@ -1,8 +1,8 @@
 # GitHub Trending AI Agent Repos & Tools — June 2026
 
-**Source:** GitHub Search API (live queries, June 13, June 15, June 20, June 21, & July 18 2026)  
-**Last updated:** 2026-07-18  
-**Prior versions:** June 13 initial scan → June 15 delta → June 20 delta → June 21 delta → July 18 delta (this update)
+**Source:** GitHub Search API (live queries, June 13, June 15, June 20, June 21, July 18, & July 22 2026)  
+**Last updated:** 2026-07-22  
+**Prior versions:** June 13 initial scan → June 15 delta → June 20 delta → June 21 delta → July 18 delta → July 22 delta (this update)
 
 ---
 
@@ -798,4 +798,138 @@ After five consecutive scans (June 13, 15, 20, 21) with **zero** forgetting impl
 
 ---
 
-*Data sourced from GitHub Search API, June 13, 15, 20, 21, & July 18, 2026. Star counts are approximate and change daily.*
+## 🆕 July 22 Delta: Star Velocity, Memory Lifecycle Acceleration, New Categories
+
+### Star Velocity Tracker (July 18 → July 22)
+
+| Repo | Stars (Jul 18) | Stars (Jul 22) | Δ | Signal |
+|------|---------------|----------------|---|--------|
+| **obra/superpowers** | 229k | 231k | +2k | Stable plateau — foundational |
+| **anthropics/skills** | 151k | 152k | +1k | Steady institutional growth |
+| **NousResearch/hermes-agent** | 194k | 196k | +2k | Reaccelerated from plateau |
+| **DietrichGebert/ponytail** | 14k | **30k** | **+16k** | 🔥🔥 2.1× in 4 days — "laziest dev" entering mainstream |
+| **colbymchenry/codegraph** | 50k | 51k | +1k | Stable — code knowledge graph established |
+| **aaif-goose/goose** | 49k | 50k | +1k | Rust-based agent steady |
+| **addyosmani/agent-skills** | 58k | 62k | +4k | Production skills accelerating |
+| **microsoft/SkillOpt** | 7.1k | 8.0k | +0.9k | Auto-generated skills steady |
+| **google-deepmind/science-skills** | 1.9k | 1.9k | stable | Institutional presence, slow growth |
+| **clawpatrol** (Deno) | 823 | 840 | +17 | Security firewall steady |
+| **guard-skills** | 750 | 802 | +52 | Governance-as-skill growing |
+| **Semia** | 518 | 546 | +28 | Skill auditing — steady interest |
+
+**Headline signal:** ponytail's explosive growth (4.5k→14k→30k in 5 weeks) is now the single fastest-growing agent philosophy repo. "Architectural laziness" — making the agent think like the laziest senior dev who writes no code when none is needed — has become a mainstream design principle, not a joke. This is the Abstention Advantage crystallized as open-source tooling.
+
+### New Category: Memory Versioning & Provenance
+
+A new pattern is emerging that directly addresses our Eternal Present thesis: memory systems with **git-like versioning**, provenance tracking, and supersession chains.
+
+| Stars | Repo | What It Does | Language | Created |
+|-------|------|-------------|----------|---------|
+| 289 | **esaradev/icarus-memory-infra** | Provenance, rollback, lifecycle/supersession, three-layer model (working memory + session archive + wiki). Markdown on disk, MCP-native | Python | Mar 2026 |
+| 124 | **loryoncloud/Memory-Like-A-Tree** | Confidence-based lifecycle, auto-decay, cross-agent search, Obsidian sync | Python | Feb 2026 |
+| 101 | **memforks-dev/memforks** | "Git for AI agent memory" — branching, merging, versioned state | TypeScript | Jun 2026 |
+| 28 | **kresnapandu/memwatch** | Memory staleness detection and auto-expiry for LLM agents | Python | Jun 2026 |
+| 28 | **edihasaj/universal-memory-protocol** | Universal Memory Protocol (UMP) — "the third interop layer beside MCP (tools) and A2A (coordination)" | TypeScript | Jun 2026 |
+
+**Why this matters:** icarus-memory-infra (289★) explicitly implements **provenance** and **supersession** — two of the five temporal primitives identified in the Eternal Present synthesis. memwatch implements **expiry** (staleness detection + auto-cleanup). Memory-Like-A-Tree implements **confidence-based decay**. The Universal Memory Protocol proposes memory as a third standardized layer alongside MCP (tools) and A2A (agents). Together, these repos represent the first tooling-level attempt to solve temporal blindness in agent memory — the exact gap the Eternal Present thesis identified.
+
+### New Category: Loop Engineering
+
+A naming crystallization for the practice of designing agent execution loops with explicit cost, audit, and structure.
+
+| Stars | Repo | What It Does | Language | Created |
+|-------|------|-------------|----------|---------|
+| 353 | **cobusgreyling/loop-engineering** | Practical patterns, starters & CLI tools for loop engineering. Includes `loop-audit`, `loop-init`, `loop-cost` | JavaScript | Jun 2026 |
+
+**Why this matters:** "Loop Engineering" as a named practice is a natural successor to "Harness Engineering" — where harness engineering focuses on the wrapper around the agent, loop engineering focuses on the internal execution cycle (when to retry, when to abort, when to escalate, how to budget). The inclusion of `loop-cost` as a first-class tool validates the Compilation Threshold thesis: practitioners are building cost-awareness directly into execution loops.
+
+### New Category: Cross-Vendor Agent Orchestration
+
+Agent workflows that deliberately combine models from different providers in structured loops.
+
+| Stars | Repo | What It Does | Language | Created |
+|-------|------|-------------|----------|---------|
+| 492 | **DanMcInerney/architect-loop** | Claude Fable 5 as architect, GPT-5.5 Codex as builder, the repo as memory. Research-backed cross-vendor loop | HTML | Jun 2026 |
+| 254 | **baskduf/FableCodex** | Codex-style coding agent workflow that plans like Fable | Python | Jun 2026 |
+| 450 | **mrtooher/fable-mode** | Skill that activates Fable-style agentic behavior: multi-stage planning, sub-agent delegation, self-verification | N/A | Jun 2026 |
+
+**Why this matters:** architect-loop implements a deliberate division: one model (Claude) for planning/architecture, another (Codex) for execution, with the repo itself serving as shared memory. This cross-vendor pattern treats models as interchangeable components selected by strength — architecture reasoning vs. code generation. The "repo as memory" approach is a zero-infrastructure implementation of persistent state that sidesteps the entire memory infrastructure category.
+
+### New Entrant: Vercel Eve
+
+| Stars | Repo | What It Does | Language | Created |
+|-------|------|-------------|----------|---------|
+| 391 | **vercel/eve** | "The Framework for Building Agents" — Vercel's official agent framework | TypeScript | Jun 16 2026 |
+
+**Why this matters:** Vercel entering the agent framework space with an official (not labs) product confirms agents are now a first-class platform primitive for web infrastructure companies. Combined with vercel-labs/zerolang (5.1k★, agent programming language) and vercel-labs/agent-skills (28k★), Vercel is building a complete agent stack: language → framework → skills. This is the "platform capture" phase where infrastructure vendors absorb the agent layer.
+
+### Memory Lifecycle Status: From "Trickle" to "Emerging Category"
+
+The forgetting gap tracked across six scans shows clear progression:
+
+| Scan Date | Forgetting Implementations | Lifecycle-Aware | Status |
+|-----------|---------------------------|-----------------|--------|
+| Jun 13 | 0 | 0 | Zero |
+| Jun 15 | 0 | 0 | Zero |
+| Jun 20 | 0 | 0 | Zero |
+| Jun 21 | 0 | 0 | Zero |
+| Jul 18 | 3 (niche) | 2 | Trickle |
+| **Jul 22** | **3 (unchanged)** | **5 (icarus, Memory-Like-A-Tree, memwatch, memforks, UMP)** | **Emerging** |
+
+The shift: while raw forgetting implementations haven't grown, the **lifecycle-aware** category has accelerated. Five repos now explicitly address memory versioning, provenance, staleness, or supersession. The mainstream (mem0 59k★, cognee 18k★, letta 23k★) remains append-only, but the ecosystem is building lifecycle infrastructure around them rather than waiting for them to change.
+
+**Updated prediction:** The "lifecycle layer" approach (provenance/versioning added atop existing append-only stores) may be how forgetting enters the mainstream — not as a feature of mem0, but as a wrapper around it (like how icarus-memory-infra works with any backend).
+
+### Updated Architecture Patterns (July 22)
+
+| Pattern | Status (Jul 18) | Status (Jul 22) | Key Change |
+|---------|-----------------|-----------------|------------|
+| **Memory Provenance/Versioning** | (not tracked) | 🆕 Emerging category | icarus (provenance), memforks (git-for-memory), memwatch (expiry) |
+| **Loop Engineering** | (implicit in harness) | 🆕 Named practice | cobusgreyling/loop-engineering with cost-audit tools |
+| **Cross-Vendor Orchestration** | (not tracked) | 🆕 Emerging | architect-loop, FableCodex — deliberate model mixing |
+| **Platform Agent Capture** | (Vercel labs) | 🆕 Escalated to official | Vercel/eve is official framework, not labs experiment |
+| **Token-Efficient Agents** | 🔥 Confirmed | 🔥🔥 **Explosive** | ponytail 30k★ — fastest growth in agent ecosystem |
+| **Skills-as-Code** | ✅ Post-saturation | ✅ Specialization deepening | Skills for reverse engineering (ghidra-rpc), game dev (threejs), video editing |
+| **Memory Lifecycle** | 🆕 Gap cracking | 🔥 **Lifecycle wrappers emerging** | Provenance, versioning, and expiry as separate layer |
+| **Governance-as-Skill** | 🆕 Emerging | 🔥 Growing | guard-skills 802★, Semia 546★ — steady growth |
+| **Harness Engineering** | ✅ Ecosystem-level | ✅ Mature + Loop Engineering fork | Loop engineering separates from harness engineering |
+
+### The Domain Skills Explosion Continues
+
+New domain-specific skills spotted this scan:
+
+| Stars | Repo | Domain | Why Notable |
+|-------|------|--------|-------------|
+| 221 | **cellebrite-labs/ghidra-rpc** | Reverse engineering | Cellebrite (forensics company) publishing agent skills — security vendor adoption |
+| 218 | **majidmanzarpour/threejs-game-skills** | Game development | Full game dev pipeline as agent skills |
+| 182 | **liuluhaixiu/DaVinci-AutoEdit-Agent** | Video editing | DaVinci Resolve automation via MCP — professional creative tools |
+| 182 | **ferdinandobons/brand-docs** | Document generation | Brand-aware document skills — preserves brand identity by construction |
+| 768 | **orange2ai/renwei-writing** | Writing | "人味儿写作" — preserving human voice in agent output. Cultural signal: resisting homogenization |
+
+**Key observation:** The skills ecosystem has passed the saturation inflection and entered the specialization phase. New skills are no longer general-purpose ("code better") but hyper-domain ("automate DaVinci Resolve," "reverse-engineer binaries," "preserve brand identity in Word templates"). This mirrors the maturation pattern of every software ecosystem: generalization → saturation → specialization → consolidation.
+
+### Cross-Reference Updates (July 22 KE Connections)
+
+| GitHub Trend (Jul 22) | Related KE | Connection |
+|----------------------|-----------|------------|
+| ponytail 30k★ (2.1× in 4 days) | Abstention Advantage, Compilation Threshold | "Do nothing" as highest-value action — mainstream adoption of abstention-by-design |
+| icarus-memory-infra (provenance) | Eternal Present synthesis | First tooling implementation of PROVENANCE temporal primitive |
+| memwatch (auto-expiry) | Eternal Present synthesis | First tooling implementation of EXPIRY temporal primitive |
+| memforks (git-for-memory) | Eternal Present synthesis | Memory CONSOLIDATION via branching/merging semantics |
+| architect-loop (cross-vendor) | Substrate Inversion | Intelligence in the loop architecture, not the model — vendor-agnostic by design |
+| loop-engineering (named practice) | Compilation Threshold | Cost-aware execution loops = compiled governance of the inner loop |
+| Vercel/eve (official framework) | Substrate Inversion | Platform vendors absorbing agent layer confirms intelligence-in-architecture shift |
+| UMP (memory protocol standard) | Agent Protocols (MCP/A2A) | Third protocol layer (memory) alongside tools (MCP) and agents (A2A) — protocol stack completing |
+| renwei-writing (human voice preservation) | Discrimination Crisis | Resistance to AI homogenization — preserving human distinctiveness as a skill |
+
+### Three Predictions (July 22)
+
+1. **ponytail crosses 50k★ by August 2026.** Its growth curve (4.5k→30k in 5 weeks) and meme resonance ("laziest dev") make it the fastest-growing philosophy repo in agent history. The underlying insight (optimal inaction > marginal action) has deep structural validity.
+
+2. **Memory lifecycle wrappers surpass standalone memory stores within 12 months.** The ecosystem will solve forgetting not by adding it to mem0, but by building lifecycle layers (provenance, expiry, versioning) that wrap any backend. icarus-memory-infra's architecture (backend-agnostic lifecycle) is the template.
+
+3. **The protocol stack completes with a memory standard by Q4 2026.** MCP (tools), A2A (agents), and UMP (memory) form a three-layer agent interop stack. The memory layer is the last unfilled slot, and the UMP proposal (28★ but architecturally clean) or a competing spec will gain traction as cross-agent memory sharing becomes a bottleneck.
+
+---
+
+*Data sourced from GitHub Search API, June 13, 15, 20, 21, July 18, & July 22, 2026. Star counts are approximate and change daily.*
