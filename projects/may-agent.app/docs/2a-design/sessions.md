@@ -79,15 +79,16 @@ and `db-writer.ts` (overwrites with NULL via `session.end` event, which
 lacks the `error` field). `updateSessionDb()` uses bare `error = ?`
 instead of `COALESCE(?, error)`.
 
-**However, as of 2026-06-14**, the race is not 100% reliable — at least one
-error session (`s_1781463007643_5`, may, 2026-06-14 18:57Z) has a surviving
-non-NULL error text ("Agent ended with an empty assistant turn") despite
-having a populated `endedAt`. Census (updated 2026-06-14 21:30Z): 3/668
-error sessions in the 7d retention window (0.45%), all from may with
-identical error text "Agent ended with an empty assistant turn" — all from
-`workflow:platform-owner-review` context-cascade sessions. This may indicate
-a timing change in the write path or a new code path that writes error after
-the `session.end` event.
+**However, as of 2026-06-14**, the race is not 100% reliable — some
+error sessions survive with non-NULL error text despite having a populated
+`endedAt`. Census (updated 2026-06-18 13:30Z): 3/641 error sessions in
+the 14d retention window (0.47%) have surviving error text. Two are may
+sessions from `telegram` source with "Agent ended with an empty assistant
+turn"; one is an aks-explorer session from `workflow:task-worker` with a
+task-moved-to-retry error. This may indicate timing differences in the
+write path depending on session source/kind — non-workflow sessions
+(telegram) and task-retry errors may write error text after the
+`session.end` event, or the event may not fire for these paths.
 
 **Guidance:** Do not rely on `sessions.error` for comprehensive error analysis
 (still NULL for ~99.7% of error sessions). But do not assume it is *always*

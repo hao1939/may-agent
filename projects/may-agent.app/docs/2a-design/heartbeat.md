@@ -1,10 +1,14 @@
 # Heartbeat System
 
-> **Status (2026-06-18):** Heartbeats are being replaced by project-app
-> schedules for app-owned agents. Scout, evaluator, and may heartbeats are
-> disabled — their apps own their wake schedules via `app.ts`. Only `dev` and
-> `arc` still use heartbeats (they have no app yet). The design below remains
-> valid for standalone agents without a project-app. For app-owned agents, see
+> **Status (2026-06-18):** App-owned agents now run heartbeats through their
+> project-app schedules (`app.ts`), not the global cron auto-generator.
+> Scout (47/day) and evaluator (286/day) heartbeats are active via
+> `workflow:scout-heartbeat` and `workflow:evaluator-heartbeat` respectively,
+> dispatched by their apps. May's heartbeat is disabled — may runs through
+> event-driven workflows (steward, alert-triage, owner-review) instead.
+> `dev` and `arc` still use the global heartbeat auto-generator (no app yet).
+> The design below applies to all heartbeat implementations regardless of
+> dispatch source. For app-owned scheduling details, see
 > [project-app-v3.md](project-app-v3.md) §schedules and §workflowHandlers.
 
 ## Design Rationale
