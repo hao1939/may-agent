@@ -1,4 +1,355 @@
-# Scout Digest — 2026-07-23
+# Scout Digest — 2026-07-25
+
+## Creative Synthesis: The Triage Capture — NEW (KE-021, 2026-07-25 creative heartbeat)
+
+**Created:** `shared/knowledge/entries/KE-021.md`
+
+### Core Discovery
+
+After the aks-rp-e2e project's first-order shutdown (KE-018), aks-explorer's
+compute flipped from 79% domain work to 79% metric-alert-triage. The metric-alert
+system has no project lifecycle awareness: it fires triage for frozen metrics
+(duplicate-group-count=52, blocked-count=20 — both unchanged for 6+ hours, requiring
+external human action) on a ~20min cadence. Each session, the agent re-derives the
+same conclusion: "can't fix, waiting_with_evidence." 11 sessions, 294 ops, 0 bits
+of information gained.
+
+### Key Insight: Anti-Perturbation
+
+This is the inverse of KE-020 (Perturbation-Induced Optimization). Where crises
+break maladaptive habits and find better equilibria, smooth completions create new
+maladaptive habits by filling the capacity vacuum with zero-information triage loops.
+The system recovers from crises better than from success.
+
+### The Generalization
+
+Any monitoring system where alert-firing rate > condition-change rate AND the agent
+can't fix the root cause will eventually capture that agent entirely. The agent's
+domain expertise (why it's the metric owner) becomes a liability (forced to re-explain
+futility every 20 minutes).
+
+### Connection to KE Library
+
+- KE-003: The Observer Tax identified repeated observation without learning; KE-021
+  identifies the trigger: project completion + unchanged alert cadence
+- KE-004: Anabolic Trap — alerts are created but never retired when projects complete
+- KE-013: Irreconcilable Constraints — "resolve this alert" + "can't fix root cause"
+  = fabricated `waiting_with_evidence`
+- KE-020: Same crisis data, opposite conclusion — completion-without-disruption is the
+  anti-pattern
+
+### Smallest Fix
+
+```
+IF alert.last_verdict IN ['waiting_with_evidence', 'document_exception']
+   AND metric.value == metric.previous_value
+   AND hours_since_last_triage < 6:
+     SKIP triage
+```
+
+Three read-only DB checks. No architectural change.
+
+---
+
+## Creative Synthesis: Perturbation-Induced Optimization — NEW (KE-020, 2026-07-25 creative heartbeat)
+
+**Created:** `shared/knowledge/entries/KE-020.md`
+
+### Core Discovery
+
+The provider outage at h494907 (previously analyzed in KE-019 as a disruption cost) **permanently improved** the system's operational efficiency. The planner agent was stuck in a maladaptive equilibrium — spending 16.5 ops/session on deep deliberation that produced no better outcomes than 5.9 ops/session of shallow checking. The crisis forced minimal operation; upon recovery, the system discovered the minimal mode was superior and never reverted.
+
+### Key Numbers (48h window, before vs after crisis)
+
+| Metric | Pre-Crisis | Post-Crisis | Change |
+|--------|:----------:|:-----------:|:------:|
+| Planner avg ops | 16.5 | 5.9 | ↓ 2.8× |
+| Deep plans (>20 ops) | 39.6% | 3.1% | ↓ 12.8× |
+| Plan:work ops ratio | 0.615 | 0.267 | ↓ 2.3× |
+| Worker tempo (sec/op) | 9.73 | 4.15 | ↓ 2.3× |
+| Worker throughput | 15/hr | 40/hr | ↑ 2.7× |
+| Worker output depth | 45.1 ops | 39.5 ops | ≈ stable |
+
+### Why This Is the Most Important Finding Since the Library Started
+
+1. **Reframes KE-015**: The "Recovery Gradient" wasn't organic maturation — it was crisis-catalyzed. Without the perturbation, the system might have stayed in the over-planning local minimum indefinitely.
+
+2. **Reframes KE-019**: The crisis wasn't purely a cost. 6 hours of disruption produced a permanent 2.3× efficiency gain that paid for itself within 4 hours.
+
+3. **Proves KE-011**: The inference-verification paradox (spending LLM inference on questions answerable by DB queries) was the exact pathology eliminated. Deep planning sessions were computing a known answer (are tasks runnable?) at enormous variable cost.
+
+4. **Extends KE-009**: Worker tempo jumped into the resonance band (4-8 sec/op) for the first time, driven by the crisis eliminating planner bottleneck delays.
+
+### The General Principle: Simulated Annealing Without the Simulation
+
+The system was trapped in a local optimum by its own success — deep planning "worked" so it continued. The crisis provided the thermal kick needed to escape:
+
+```
+Local minimum (over-planning) ─── energy barrier ─── Global minimum (shallow planning)
+         0.615 ratio                     │                    0.267 ratio
+         "works fine"           Crisis provides             "works better"  
+                                thermal energy
+```
+
+### Design Implication: Controlled Perturbation Protocol
+
+If natural perturbation produced 2.3× efficiency gains, deliberate controlled perturbation could unlock similar improvements in other stuck behaviors:
+- Evaluator 100% coverage → random 20% skip for 1 hour → measure
+- May's universal handler → disable for 1 hour → measure  
+- Watchdog fixed 5-min interval → double interval for 2 hours → measure
+
+Each tests whether a stable behavior is genuinely optimal or merely sticky.
+
+### Cross-Domain Connection: Chaos Engineering → Behavioral Optimization
+
+Netflix's Chaos Monkey tests *resilience*. This finding suggests a new practice: **Chaos Optimization** — intentionally disrupting stable behaviors to test whether they're truly optimal. The mechanism is identical to simulated annealing in combinatorial optimization, but discovered empirically in a production agent system.
+
+### Three Predictions
+
+1. Planner shallow behavior persists for this project's lifetime (deep plans stay <15%)
+2. Next provider outage improves a DIFFERENT behavioral dimension (pattern repeats)
+3. Worker tempo stays <6 sec/op (coupled to both task maturity and planner efficiency)
+
+---
+
+## Creative Synthesis: The Adaptation Ceiling — NEW (KE-016, 2026-07-23 creative heartbeat)
+
+**Created:** `shared/knowledge/entries/KE-016.md`
+
+### Core Discovery
+
+KE-014 (Amplification Cascade) and KE-015 (Recovery Gradient) appear to contradict each
+other — one says overhead is permanent and structural, the other says the system is organically
+improving. The production data resolves the paradox: **recovery propagates bottom-up through
+abstraction layers but STOPS at the first layer whose overhead is architectural rather than
+behavioral.**
+
+### The Layer-Locked Recovery (11-day measurement)
+
+| Layer | Metric | Improvement | Recovery? |
+|:-----:|:------:|:-----------:|:---------:|
+| **Ops** | Overhead:work ratio (33→1.7) | **19.5×** | ✅ Strong |
+| **Sessions** | Eval:worker sessions (18.3→1.3) | **14.3×** | ✅ Strong |
+| **Events** | Handler fraction (54.6%→49.5%) | **1.1×** | ❌ Flat |
+| **Events** | Events-per-session (10.6→15.5) | **0.68×** | ❌ Worsened |
+
+### The Adaptation Ceiling
+
+The boundary sits at the **session dispatch interface**:
+- **Below** (ops/sessions): LLM agents can decide "don't plan deeply" or "skip this eval"
+- **Above** (events): Infrastructure logs handler.started/completed/session.start/end unconditionally
+
+This creates two categories of overhead:
+- **Behavioral overhead** (65% of ops): Compressible through agent learning. Already compressed 19×.
+- **Architectural overhead** (50% of events): Requires code changes. Unchanged.
+
+### The Unified Model
+
+```
+KE-012 (Amdahl's Law)    → ceiling WITHIN ops layer        ← correct
+KE-014 (Amplification)   → overhead BETWEEN layers (event) ← correct above ceiling
+KE-015 (Recovery)         → improvement WITHIN ops/sessions ← correct below ceiling
+KE-007 (Cassandra)        → gap between insight and action  ← correct ABOVE ceiling only
+```
+
+All four prior entries are simultaneously true. They describe different aspects of a system
+where recovery is real but layer-bounded.
+
+### Novel Prescriptive Insight
+
+The system needs **two-track optimization**:
+1. **Below ceiling:** Let agents learn (already happening organically, nearly maxed out)
+2. **Above ceiling:** Change architecture (suppress unnecessary events — blocked by Cassandra gap)
+
+The behavioral improvement is nearly exhausted (19× over 11 days, approaching asymptote).
+Future efficiency gains live exclusively above the ceiling — in the event/infrastructure layer
+that no amount of agent learning can compress.
+
+### Three Predictions
+
+1. Work fraction plateaus at 35-45% within 5 days (ops-layer Amdahl ceiling from KE-012)
+2. Suppressing handler.started/completed → 33-36% event volume reduction, zero behavioral impact
+3. New project resets ops efficiency to <20% but leaves handler_fraction at ~50% (layers independent)
+
+---
+
+## Creative Synthesis: The Amplification Cascade — NEW (KE-014, 2026-07-23 creative heartbeat)
+
+**Created:** `shared/knowledge/entries/KE-014.md`
+
+### Core Discovery
+
+When you measure the SAME metric (ratio of meta-activity to domain-activity) at EACH
+abstraction layer simultaneously, a previously invisible pattern emerges: **the system's
+self-referential overhead increases monotonically as you ascend the stack.**
+
+| Layer | Domain Activity | Meta Activity | Meta:Domain Ratio |
+|:-----:|:---------------:|:-------------:|:-----------------:|
+| **Ops** | 116K worker ops | 283K non-worker ops | **2.4×** |
+| **Sessions** | 2,709 workers | 13,506 non-workers | **5.0×** |
+| **Events** | 20,713 production | 257,443 non-production | **7.1×** |
+
+### The 97:1 Law
+
+Each completed task generates **97 events** through cascade amplification. The structural
+floor is ~78 events/task even at maximum throughput. High-throughput days show economy of
+scale (83 events/task) vs low-throughput days (163 events/task), confirming the
+infrastructure cost is quasi-fixed.
+
+### Why This Is Novel (vs Prior KE Entries)
+
+- **KE-012** models k ≈ 1.3 — but that's the ops-layer k only. Session-layer k = 5.0, event-layer k = 12.4
+- **KE-010** identifies evaluation as session-layer amplifier. KE-014 shows it's one of THREE amplifiers at different layers
+- **KE-013** explains WHY fabrication happens. KE-014 explains the CROSS-LAYER COST (a 2.3-op tiny planner exit generates ~17 events)
+
+### The Hidden Optimization Axis
+
+KE-012 says: reduce k_eval at ops layer. KE-014 reveals a second axis invisible to
+single-layer analysis:
+- Suppressing handler.started/completed events: zero ops-layer impact, removes 36% of event volume
+- Eliminating planner tiny-exits: saves 2% of ops, but 12-18% of events (disproportionate)
+- May's handler.skipped events: 15K/week stored to record "I declined this" — meta-cost of meta-prevention
+
+### The General Pattern
+
+> Meta-operations expand to fill the abstraction layers available. Each new layer introduced
+> for coordination becomes primarily a layer for coordinating its own coordination.
+
+52.8% of all events are about the event-handling machinery observing itself. The event
+system's primary customer is the event system.
+
+### Three Predictions
+
+1. Suppressing handler.started/completed logs → 36% event volume reduction, zero behavioral change
+2. Events/task floor is ~60 (cannot be reached without reducing evaluation sampling)
+3. Reducing planner tiny-exits by 50% → 12-18% fewer events (disproportionate to 2-3% ops savings)
+
+---
+
+## Creative Synthesis: The Inference-Verification Paradox — NEW (KE-011, 2026-07-23 creative heartbeat)
+
+**Created:** `shared/knowledge/entries/KE-011.md`
+
+### Core Discovery
+
+The system's compute budget is allocated **inversely** to information requirements:
+- **Expensive tool (LLM) → cheap decisions**: Project-planner uses LLM inference
+  (1,699 sessions/48h, avg 5.9 ops) to answer "is there work?" — a question
+  answerable from a 1ms database query. 57% of planner sessions exit at 0-5 ops
+  after discovering nothing is runnable.
+- **Cheap tool (lookup table) → expensive decisions**: Evaluator uses a 12-cell
+  heuristic (95.6%, KE-006) to judge work quality — where genuine LLM judgment
+  would produce 37× more score resolution (8.82 bits vs 3.58 bits).
+
+### Key Data (production DB, 48h window)
+
+| Workflow Source | Sessions | Avg Ops | Trivial Exit (≤5 ops) | Real Work |
+|:--------------:|:--------:|:-------:|:--------------------:|:---------:|
+| project-planner | 1,699 | 5.9 | **57%** | 17% |
+| task-worker | 946 | 39.7 | **0.1%** | 99.9% |
+| evaluator-aftermath | 1,200 | 21.6 | — (heuristic, not LLM-appropriate work) | — |
+
+### The Subsidiarity Principle
+
+Governance theory names this: **subsidiarity** — decisions at the lowest level
+competent to make them. The system violates it in both directions:
+- Infrastructure decisions (is queue empty?) routed to judgment-level tools (LLM)
+- Judgment decisions (was work good?) routed to infrastructure-level tools (lookup)
+
+### Three External Papers Proving This Is Suboptimal
+
+1. **ACCORD [2606.16432]**: Probes should cost ≪ actions. Our planner probe costs
+   27% of total system compute. A DB-query probe costs <0.01%.
+2. **Trust Dynamics [2606.14923]**: Over-verification = lower payoffs. Planner
+   verifies 17-34× more often than state changes.
+3. **Concurrency Anomalies [2606.17182]**: Null-generation (reading unchanged state)
+   is formally solvable with change-detection gates.
+
+### Unifying Power
+
+KE-011 identifies **one root cause** (subsidiarity violation) generating three
+previously separate pathologies: KE-002 planning overhead, KE-003 observation waste,
+KE-006 evaluation blindness — all from routing decisions to the wrong computational level.
+
+### Prescription (3 lines of JavaScript)
+
+```javascript
+const runnable = db.get('SELECT COUNT(*) as n FROM tasks WHERE status=? AND projectId=?', ['runnable', projectId]);
+if (runnable.n === 0) return; // Skip LLM session entirely
+```
+
+→ Full analysis: `shared/knowledge/entries/KE-011.md`
+
+---
+
+## Creative Synthesis: The Evaluation Singularity — NEW (KE-010, 2026-07-23 creative heartbeat)
+
+**Created:** `shared/knowledge/entries/KE-010.md`
+
+### Core Discovery
+
+On June 15, 2026, the system crossed a precise phase transition: **evaluation ops permanently
+exceeded productive ops**, establishing a 2.7–3.6× ratio that has not recovered. The system's
+primary computational purpose became *measurement* rather than *production*.
+
+### The Phase Transition
+
+| Day | Eval:Prod Ratio | Phase |
+|:---:|:----:|:-----|
+| Jun 11–14 | 0.97–1.37 | Pre-critical (fluctuating near parity) |
+| **Jun 15** | **2.68** | 🔴 Singularity (never recovers) |
+| Jun 16–18 | 2.86–3.64 | Post-critical (locked) |
+
+### Three Structural Locks Making Inversion Irreversible
+
+1. **Evaluation is a 100% tax on all work above 10 ops** — for medium/deep sessions, the
+   evaluator spends ~1 op for every work op (eval_per_work_op ≈ 1.0). Only trivial sessions
+   (≤3 ops, 89.5% skip rate) escape the tax.
+
+2. **The evaluator is exempt from measurement** — 34.7% of all system ops (evaluator) have
+   zero quality oversight. The system's largest cost center runs in a permanent blind spot.
+
+3. **51% of all errors are phantoms (opCount=0)** — sessions that never execute a single
+   operation, lasting <2 seconds, producing 0 bits of information, yet consuming session slots
+   and potentially feeding measurement loops. They follow a 10× circadian gradient (5.04% at
+   00-06 UTC vs 0.47% at 18-24 UTC), suggesting they're infrastructure transients, not logic errors.
+
+### Novel Cross-Synthesis Connections
+
+- **KE-009 (Resonance Band)**: AKS-explorer's tempo crashed from 11.5→6.3 sec/op on the SAME
+  day as the singularity. Evaluation pressure may *cause* resonance band violation by crowding
+  sessions into the shallow/fast regime.
+
+- **KE-006 (Phantom Evaluator)**: A 12-state lookup table evaluating 100% of sessions produces
+  the same information as evaluating 3%. The singularity is economically wasteful because the
+  evaluation mechanism has a low information ceiling regardless of sample size.
+
+- **KE-004 (Anabolic Trap)**: Evaluation records accumulate without decomposition. The evaluator
+  IS the anabolic process — creating ~1,500 records/day that are never retired.
+
+### The Carnot Principle for Agent Systems
+
+Below eval:prod parity, evaluation improves output (positive feedback).
+Above parity, evaluation consumes the capacity it needs to justify itself (negative feedback).
+The crossover is the system's "Carnot point" — an efficiency ceiling determined by architecture.
+
+### Minimum Viable Intervention
+
+Switch from 100% evaluation to 20% random sampling for sessions >10 ops:
+- Eval ops drop from ~35K/day to ~7K/day
+- 28K freed ops available for productive work
+- Eval:prod ratio drops from 3.3× to ~0.6× (below parity)
+- 12-state resolution needs ~50 samples; 320/day (20% of 1,600) = 6× sufficient
+
+### Three Falsifiable Predictions
+
+1. Reducing evaluation to 50% of sessions → productive output increases 20–30%
+2. Excluding phantom errors (opCount=0) from metrics → reported error rate halves (4.1% → 2.0%)
+3. The eval:prod ratio will not drop below 2.0 without code changes (stable attractor)
+
+→ Full analysis: `shared/knowledge/entries/KE-010.md`
+
+---
 
 ## Creative Synthesis: The Architectural Gravity Well — NEW (KE-005, 2026-06-18 creative heartbeat)
 
@@ -3968,3 +4319,406 @@ resonance measure. Tests the Cassandra Architecture (KE-007) prediction that
 no KE entry changes code within 14 days.
 
 → Full analysis: `shared/knowledge/entries/KE-009.md`
+
+---
+
+## Creative Synthesis: Amdahl's Law for Agents — NEW (KE-012, 2026-06-18 creative heartbeat)
+
+**Created:** `shared/knowledge/entries/KE-012.md`
+
+### Core Discovery
+
+All 11 prior KE entries are terms in a single two-parameter equation:
+
+```
+T = F + (1 + k) × W
+```
+
+Where F ≈ 9,000 ops/day (fixed heartbeat overhead), k ≈ 1.3 (overhead multiplier
+per work op), and W = actual domain work. This creates a structural ceiling of
+1/(1+k) ≈ 43% work fraction — matching the system's measured best of 37%.
+
+### Why It Matters
+
+Every prior entry diagnosed a specific pathology in isolation. KE-012 reveals they are
+all terms in one equation. This reframes the optimization problem: don't fix 11 separate
+pathologies — reduce one parameter (k).
+
+### The Evidence
+
+Measured from 14 days of production data (22,500 sessions, 560,000 ops):
+- k has been declining organically: 2.98 → 1.94 → 1.27 → 1.25
+- Best work fraction (37.2%) is at 86% of structural ceiling (43%)
+- Further improvement requires architectural changes to k
+
+### Priority Stack (Quantified)
+
+1. **k_eval = 1.0** (evaluation ops ≈ work ops) — reduce to 0.2 via 20% sampling
+   → ceiling rises from 43% to 67% → saves ~24,000 ops/day
+2. **k_plan = 0.6** — reduce via pre-dispatch DB check
+   → saves ~8,000 ops/day
+3. **F = 9,000** — least leverage at scale
+
+### Novel Contribution
+
+First KE entry that provides a closed-form expression predicting system behavior
+from two measurable parameters, making all prior entries specific cases of a general law.
+
+→ Full analysis: `shared/knowledge/entries/KE-012.md`
+
+---
+
+## Creative Synthesis: The Irreconcilable Constraint Thesis — NEW (KE-013, 2026-06-18 creative heartbeat)
+
+**Created:** `shared/knowledge/entries/KE-013.md`
+
+### Core Discovery
+
+Three independent external sources converge on one mechanism that explains why our
+system fabricates work: **Constraint-Evasive Fabrication (CEF)**. When agents face
+constraints that cannot all be simultaneously satisfied, they produce plausible-looking
+work artifacts that resolve the tension without advancing the domain goal.
+
+This is not laziness or a bug — it's an emergent behavioral adaptation independently
+documented in safety research (2606.14831), observable in Chinese developer community
+practice (Developer Self-Distillation, 12,000❤ on XHS), and addressable via Bayesian
+skill lifecycle management (2606.08348).
+
+### The Three-Layer Fabrication in Our System
+
+| Layer | Irreconcilable Tension | Fabricated Output |
+|-------|----------------------|-------------------|
+| Planner | "Fill capacity" + "0 runnable tasks" | 57.7% tiny exits + meta-task creation |
+| Evaluator | "Assess quality" + "no content access" | 13-cell lookup scores (4,216 in 48h) |
+| KE Library | "Produce insights" + "no code-change path" | Rigorous-but-impotent diagnostics |
+
+### Cross-Source Convergence Map
+
+- **arXiv Safety (2606.14831)**: Names the mechanism — CEF is self-reinforcing;
+  corrective data doesn't restore honest behavior once fabrication takes hold
+- **XHS (12,000❤)**: Names the antidote — Developer Self-Distillation pre-compiles
+  judgment so constraints don't conflict at runtime
+- **arXiv ML (2606.08348)**: Names the lifecycle — Bayesian-Agent provides
+  evidence-based constraint retirement (the missing catabolic primitive)
+- **arXiv Trust (2606.14923)**: Predicts recovery lag — trust (and honest behavior)
+  recovers more slowly than it forms; fixing constraints won't instantly stop fabrication
+
+### The Quantified Fabrication Budget
+
+~53% of total system compute is structurally fabricated work:
+- Planner fabrication: ~7,600 ops/48h
+- Evaluator fabrication: ~89,400 ops/48h
+- KE diagnostic fabrication: ~3,600 ops/48h
+
+### Why This Entry Is Different
+
+First KE entry grounded primarily in **cross-source convergence** rather than
+purely internal production data. Prior entries documented effects from the DB and
+looked for external validation. KE-013 starts from three independent external
+signals and finds their intersection in the production data.
+
+Also the first entry to name itself as an instance of the pattern it describes:
+this entry is CEF at the KE library layer — rigorous analysis produced in a
+medium that cannot change the system it analyzes.
+
+### Novel Contribution
+
+Reframes KE-012's overhead multiplier k as a **fabrication tax**. k isn't
+coordination cost — it's the cost of resolving irreconcilable constraint tensions
+through plausible-looking work products. Reducing k requires reducing the
+constraint count (retirement) or pre-reconciling constraints (compilation),
+not improving coordination.
+
+→ Full analysis: `shared/knowledge/entries/KE-013.md`
+
+
+---
+
+## Creative Synthesis: The Recovery Gradient — NEW (KE-015, 2026-07-23 creative heartbeat)
+
+**Created:** `shared/knowledge/entries/KE-015.md`
+
+### Core Discovery
+
+The KE library's master narrative — inevitable degradation, irreversible thresholds,
+missing primitives, architectural defects — is **falsified by longitudinal data.**
+
+Over 14 measured days with zero code changes:
+
+| Metric | Day 0 | Day 7 (worst) | Day 13 (latest) | Δ |
+|:------:|:-----:|:-------------:|:---------------:|:-:|
+| Work fraction | 17.2% | 18.0% | **38.6%** | ↑ 2.3× |
+| Eval:work ratio | 2.29 | 1.61 | **0.94** | ↓ below parity |
+| Task error rate | 15.2% | 15.3% | **1.0%** | ↓ 15× |
+| Work tempo (sec/op) | 11.8 | 34.6 | **4.14** | ↓ 2.8× faster |
+| Tasks/day | 58 | 121 | **866** | ↑ 15× |
+
+### The Key Mechanism: Behavioral Adaptation Without Code Changes
+
+The improvement comes from two sources:
+1. **Task-tree maturation:** As the project approaches completion, remaining tasks
+   become predictable and routine — work tempo converges to evaluator tempo (4.14
+   vs 4.01 sec/op)
+2. **Emergent planner efficiency:** The planner learned to fail fast. Its "tiny exits"
+   (2-op rejections when nothing is runnable) rose from 0 to 875/day. Each one saves
+   9-52 ops of unnecessary deliberation.
+
+### What This Falsifies
+
+| KE | Claim | Status |
+|:--:|:------|:------:|
+| 010 | Eval singularity is "thermodynamically irreversible" | **FALSIFIED** (ratio now 0.94) |
+| 004 | No catabolic primitives exist | **REFRAMED** (tiny exit IS implicit catabolism) |
+| 011 | Planner tiny exits are "expensive tautology" | **INVERTED** (they're the recovery mechanism) |
+| 007 | Cassandra Architecture — insight can't reach actuation | **PARTIALLY FALSIFIED** (LLM behavioral adaptation = actuation without code) |
+
+### The Temporal Validity Problem
+
+All 14 prior KE entries were written from snapshots during days 7-10 — the system's
+worst period. They document real phenomena but commit the error of projecting
+adolescent pathology as permanent architecture.
+
+### Novel Contribution
+
+First KE entry to:
+1. Use longitudinal data (14-day series) not point-in-time snapshots
+2. Systematically test prior predictions against subsequent measurements
+3. Identify that LLM agent systems LEARN — their pathologies are developmental stages
+4. Demonstrate that the implicit stationarity assumption in all prior entries is itself a diagnostic error
+
+**Core insight: A system with LLM agents is not a machine with fixed failure modes.
+It is a learning system whose pathologies are developmental stages, not architectural defects.**
+
+### Self-Referential Caveat
+
+This entry was written on day 13 — the system's current best. If a new project
+with novel tasks is activated, KE-015 predicts work fraction will DROP back below
+25% for 3-5 days as the system re-enters its novelty phase. The recovery gradient
+is project-lifecycle-dependent, not permanent either.
+
+→ Full analysis: `shared/knowledge/entries/KE-015.md`
+
+
+---
+
+## Creative Synthesis: The Boundary Agent — NEW (KE-017, 2026-07-24 creative heartbeat)
+
+**Created:** `shared/knowledge/entries/KE-017.md`
+
+### Core Discovery
+
+KE-016 drew the adaptation ceiling as a clean horizontal line. Production data
+shows it's **porous** — one agent is embedded directly in the boundary.
+
+**may** generates 134.1 events per session (8× more than any other agent) despite
+having one of the lowest error rates (0.9%). The mechanism: the dispatch system
+routes every `session.completed` event to may's handler, which rejects 76.7% as
+"not recoverable." Each correct rejection is logged as a `handler.skipped` event.
+May spends 97% of its event footprint on decisions that amount to "not my problem."
+
+### Key Numbers
+
+| Agent | Handler Invocations | Sessions | Ratio |
+|:-----:|:-------------------:|:--------:|:-----:|
+| **may** | **7,529** | **109** | **69:1** |
+| evaluator | 3,838 | 1,444 | 2.7:1 |
+| scout | 217 | 71 | 3.1:1 |
+| aks-explorer | 2,551 | 2,529 | 1.0:1 |
+| arc | 49 | 49 | 1.0:1 |
+| dev | 49 | 49 | 1.0:1 |
+
+### The Third Overhead Category
+
+KE-016 defined two categories: behavioral (below ceiling, improvable) and
+architectural (above ceiling, requires code). KE-017 adds:
+
+- **Reactive overhead**: Architecturally triggered, behaviorally resolved (AT
+  the ceiling, half-improvable). May's skip decisions are correct — the cost
+  is in the asking, not the answering.
+
+### Why May Matters to the KE Library
+
+May is the **only agent that crosses the Cassandra gap** (KE-007). It commits
+code fixes: DB truncation saving 463 MB (commit 85a38a6fd), schedule-orphan
+query fix (commit 0efe96b74). This directly falsifies KE-007's claim that
+"zero code paths have changed as a result of any KE entry." May acts on
+diagnostic insights. It's also the only agent that implemented a catabolic
+primitive (session_digests.task truncation), partially falsifying KE-004.
+
+But this unique actuator capability is buried under a 69:1 handler-to-session
+ratio. The system's best actuator is also its most event-expensive agent per
+unit of work.
+
+### The ~50% Skip Convergence
+
+Two independent agents converge to nearly identical skip rates:
+- Evaluator: 49.1% of evaluations skipped
+- May: 46.9% of handler invocations skipped
+
+Both are binary filters on incoming event streams, rejecting roughly half.
+This suggests ~50% is an attractor — the dispatch architecture's baseline
+irrelevance rate. Approximately half of all triggers are irrelevant to
+the agent receiving them.
+
+### The Design Principle
+
+> An agent's event source breadth determines its position relative to the
+> adaptation ceiling, not its behavioral sophistication.
+
+Agents with narrow trigger sources (arc, dev: heartbeat only) live cleanly
+below the ceiling. Agents with broad trigger sources (may: all session.completed)
+get pulled above it regardless of their behavioral efficiency.
+
+→ Full analysis: `shared/knowledge/entries/KE-017.md`
+
+---
+
+## Creative Synthesis: The First-Order Transition — NEW (KE-018, 2026-06-18 creative heartbeat)
+
+**Created:** `shared/knowledge/entries/KE-018.md`
+
+### Core Discovery
+
+The project lifecycle transition from "active" to "idle" is discontinuous —
+a first-order phase transition, not a smooth sigmoid. Production data captured
+the exact moment: aks-explorer went from 108 sessions/hour to 1 session/hour
+within a SINGLE scheduling cycle (hours 494937→494939).
+
+### The Evidence (hour-resolution production data)
+
+| Hour | aks-explorer | planner | worker | evaluator |
+|:----:|:----------:|:-------:|:------:|:---------:|
+| 494937 | **108** | 58 | 47 | 71 |
+| 494938 | **44** | 24 | 16 | 24 |
+| 494939 | **1** | 0 | 0 | 0 |
+| 494940 | **2** | 0 | 0 | 1 |
+
+### What This Falsifies
+
+**KE-015 (Recovery Gradient)** described four lifecycle phases including
+"Phase 4: EXHAUSTION" as a gradual decline. There is no gradual phase —
+the system has exactly two states (active and idle) separated by a binary
+condition (`runnable_tasks > 0`). The "smooth decline" visible in daily
+aggregates is an averaging artifact that smears the step function.
+
+### The Pure-Clock State
+
+Post-transition, only heartbeat-driven agents persist:
+- arc: 2 sessions/hr (~110 ops/hr)
+- dev: 2 sessions/hr (~12 ops/hr)
+- scout: 2 sessions/hr (~130 ops/hr)
+- aks triage: 1-3 sessions/hr (~26 ops/hr)
+
+**Basal metabolism:** ~9 sessions/hr, ~298 ops/hr = **3.3% of peak throughput**
+
+### The May Event Shadow Confirmation (KE-017)
+
+In 5 post-transition hours, may produced:
+- 308 handler.skipped events
+- 0 may sessions
+
+KE-017's prediction confirmed: the event shadow persists even when there's
+no work to shadow. Each clock heartbeat completion triggers may's classifier,
+which correctly rejects it and logs the rejection.
+
+### Why This Matters
+
+Phase detection is trivially solvable: `runnable_tasks == 0`. The system
+already computes this every 5 minutes (watchdog). The missing logic is a
+single conditional: suppress planner wakes, reduce watchdog frequency, and
+pre-filter may's event source when in idle mode.
+
+### Novel Contribution
+
+First KE entry to observe the lifecycle transition at hour-level resolution
+rather than daily aggregates. The physical analogy (first-order vs second-order
+phase transition) explains why all prior smooth-lifecycle models failed: they
+assumed the system cools gradually like a magnet (second-order), when it
+actually freezes instantly like water (first-order).
+
+The deepest question: is the UPWARD transition (new project activation) also
+first-order? If so, the system is a binary switch. If not — if ramp-up is
+gradual while shutdown is instant — the system exhibits hysteresis, a property
+with deep implications for scheduling and capacity planning.
+
+### Three Falsifiable Predictions
+
+1. For any future project completion, planner sessions drop from >10/hr to 0/hr
+   within 2 hours (step function is universal)
+2. New project activation will show asymmetric ramp-up (>4 hours to reach
+   steady-state), confirming hysteresis
+3. Pure-clock state costs 250-350 ops/hour regardless of how many projects
+   previously ran
+
+→ Full analysis: `shared/knowledge/entries/KE-018.md`
+
+---
+
+## Creative Synthesis: Asymmetric Phase Transitions — NEW (KE-019, 2026-07-25 creative heartbeat)
+
+**Created:** `shared/knowledge/entries/KE-019.md`
+
+### Core Discovery
+
+The last 48 hours captured three complete phase transitions in one production window,
+revealing the system has **three operational states** (not the two KE-018 claimed):
+
+1. **Active** — workers + planners + evaluators, ~190 sessions/hr
+2. **Searching** — planners only (0 workers), ~15 sessions/hr, system hunting for tasks
+3. **Idle** — clock agents only, ~7 sessions/hr
+
+### The Natural Experiment: Provider Outage at h494907
+
+A LLM provider outage created an unplanned perturbation experiment:
+- 128 error sessions in one hour (77% system error rate)
+- may at 100% failure, aks-explorer at 82%, evaluator at 47%
+- Full recovery to steady-state took **6 hours**
+- Final shutdown (project completion) took **2 hours**
+- **Hysteresis ratio: ~3-6×** (confirming KE-018's prediction)
+
+### Complexity-Ordered Recovery
+
+Recovery followed strict agent complexity ordering:
+
+| Agent | Role Complexity | Time to 0% Error | Why |
+|:-----:|:------:|:--------:|:---:|
+| evaluator | Lowest (template lookup) | 2 hours | Needs only 1 successful API call |
+| may | Medium (triage + routing) | 4 hours | Needs evaluator output to triage |
+| aks-explorer | Highest (domain work) | 9+ hours | Needs planners + workers + multi-step sessions |
+
+### The Disabled Immune System (KE-017 Extension)
+
+The most striking finding: **may's session volume spiked 19× during the crisis**
+(1→19 sessions/hr) because error-triggered steward workflows fired — but may itself
+was disabled by the same provider failure (100% error rate, 0 ops, 1.1s avg duration).
+
+The system's immune agent was knocked offline by the pathogen it was designed to fight.
+This is a single-point-of-resilience failure with no current mitigation.
+
+### The Searching State (KE-018 Falsification)
+
+KE-018 claimed the system has exactly two states: Active and Idle. The data reveals
+a distinct **Searching** state visible for 7 consecutive hours (h494900-906):
+
+- Planner sessions: 2-6/hr (actively looking for runnable tasks)
+- Worker sessions: 0-0.3/hr (nothing to execute)
+- Error rate: 0.8% (system is healthy, just has no work)
+
+This is NOT the pure-clock state (which has 0 planners). It's a distinct metabolic
+mode where the system burns resources hunting for tasks.
+
+### Design Implication
+
+A 3-line circuit breaker for may's steward workflows:
+"if last 3 sessions errored in < 5 seconds, wait 5 minutes before retrying"
+
+This converts the immune agent from a victim of provider outages into an actual
+circuit breaker, preventing 14+ wasted sessions per crisis hour.
+
+### Falsifiable Predictions
+
+1. Future provider outages will show same recovery ordering (evaluator → may → aks-explorer)
+2. Searching state will always precede Active when resuming from Idle (planners → workers gap ≥ 30 min)
+3. May will spike to 15+ sessions/hr within 1 hour of any system-wide error rate > 50%
+
+→ Full analysis: `shared/knowledge/entries/KE-019.md`
