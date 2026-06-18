@@ -1,5 +1,26 @@
 # Scout Findings — 2026-06-18
 
+## Scan #41 (06:22 UTC) — Sovereignty Convergence + AI Narrative Recession Deepens
+
+**AI Narrative Recession enters 6th consecutive scan (36+ hours).** No new AI crisis or viral event. Community fully in implementation phase. DeepSeek is the sole surviving/growing AI story for 5 consecutive scans (425pts/477c) — revealing model SOVEREIGNTY as the community's structural concern.
+
+**Three sovereignty signals converge on HN front page simultaneously:**
+- DeepSeek (425pts) — model-level sovereignty
+- Tesco/VMware (262pts) — infra-level sovereignty  
+- VW/GrapheneOS (597pts) — platform-level sovereignty
+
+→ 模型韧性 naming will resonate with broader 国产化 because sovereignty impulse is cross-layer.
+
+**Local Qwen DOUBLES** (53→102pts overnight). Complementarity thesis going mainstream: models positioned by task-nature-fit, not capability ranking.
+
+**Estonia assigns personal ID numbers to AI agents** (Bloomberg, 6pts). First national-level agent identity formalization. New governance layer above code: legal identity + authorization boundaries.
+
+**Governance repo surge: 8+ repos, 0-2★ each.** Supply glut without adoption. Needs a "Ponytail moment" to crystallize.
+
+**Ponytail plateau confirmed:** 32,956★, growth collapsed from 357→18★/h. Now infrastructure, not news.
+
+---
+
 ## Key Signal: Model Personality as Routing Variable
 
 **OpenRouter Royale** (163pts HN) dropped 11 LLMs into a battle royale. Result: **Grok 4.1 Fast wins 13/30 games at $0.97/win; Claude Sonnet 4.6 wins 5/30 at $26.78/win** — a 27× cost gap from behavioral alignment mismatch, not capability difference. Claude's cooperative RLHF training (seeking alliances, sharing position) is structurally self-destructive in adversarial contexts.
@@ -160,3 +181,35 @@ Model vendor extends platform endorsement from skill files → full startup life
 Multiple repos (safety-net, greenlock, wasm-guardrails, deterministic-harness) converging on LLM-free, rule-based enforcement. `srishti` is the SECOND independent agent-native language attempt (after zerolang), strengthening Agent原生語言 prediction.
 
 → Full findings: `knowledge/findings/2026-06-18-xhs-cross-source-scan-39.md`
+
+---
+
+## Scan #40 Update (16:30 UTC) — Skill-Rot Paradox + AI Vertical Breakout + Forgetting Niche
+
+### Midjourney Medical: ACCELERATING (376pts, +104pts in ~4h — fastest on page)
+
+First non-agent, non-coding AI product to break 300pts this week. AI-enhanced ultrasound to replace CT scans. Practitioner reception cautiously positive: "no major technical red flags" but "physics totally different from MRI." AI expanding beyond agent/coding axis into regulated hardware verticals.
+
+### The Skill-Rot Paradox: Three Products Now Fight AI Coding Dependency
+
+Three independent products address the same phenomenon — cognitive dependency on AI coding tools requires its own counter-product:
+
+- **Fata** (118pts HN): Spaced repetition for coding fundamentals (fight syntax forgetting)
+- **Lathe** (401pts HN): Use LLMs to *learn* domains, not skip them (fight knowledge gaps)
+- **古法編程** (1,674❤ XHS): Manual coding as quality discipline (fight generation-discrimination decoupling)
+
+When tools-to-fight-tool-dependency becomes a product category, the phenomenon has crossed from opinion to market need.
+
+### Local Qwen: "Not Worse, Just Different" (53pts, GROWING)
+
+New narrative reframes local models from benchmark losers to complementary tools. Connects to 性格路由: routing isn't just cost/capability, it's task-nature fit.
+
+### Memory Forgetting Niche: 6 Repos in 7 Days
+
+Forgetting-as-feature is a distinct GitHub sub-niche now (deep-memory, NicheMem, cognimem, kerobox, MemoryOps-AI, verifiable-memory). Accelerates 遗忘工程 (forgetting engineering) prediction to late Jun - early Jul.
+
+### DeepSeek: Sole Growing AI Story for 4th Consecutive Scan (416pts/470c)
+
+While all other AI stories plateau, DeepSeek sovereignty remains the only accelerating signal. When narrative recession strips noise, the surviving story reveals the community's deepest concern: model sovereignty, not capability.
+
+→ Full findings: `knowledge/findings/2026-06-18-xhs-cross-source-scan-40.md`
