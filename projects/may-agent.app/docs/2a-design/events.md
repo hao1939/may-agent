@@ -912,8 +912,7 @@ harmful but will not match any handler's `on:` filter. Two temporal clusters:
 
 Note: `session.completed` is translated from `session.end` in daemon event
 subscribers. `session.failed` is not a live runtime event. `project.status_changed`
-still has no emitter. `session.resume_failed` fires actively from session-recovery
-when the target session cannot be found (~2,800 rows as of 2026-06-15 post-retention; rate rebounded post-Spec-3: 14–48/hr for ~16h before stopping at 04:53Z Jun 15; KE-2005's "collapse" claim was premature).
+still has no emitter. `session.resume_failed` is dormant — last event 2026-06-15 04:53Z, rate 0/hr for 3+ days (2,333 rows aging out via retention).
 Split shifted: ~50% task, ~41% planner, ~8% problem (was planner-dominated until Jun 14).
 
 ### Consumer Reality
