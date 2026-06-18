@@ -1,5 +1,19 @@
 # Design: Escalation System
 
+> **Status (2026-06-18):** Routing (slices 1-2) is shipped: `escalation.created`
+> events route to the owner via the `escalation` handler, which emits
+> `escalation.routed`. Lifecycle tracking (slices 3-5) is NOT implemented —
+> there is no `escalations` entity table, no `escalation.resolved` handler,
+> and no lifecycle metrics.
+>
+> In practice, escalations accumulate as `pending` event rows and are
+> bulk-resolved manually. The events.md delivery proposal includes paired-event
+> tracking for `escalation.created` → `escalation.resolved/dismissed` which
+> would detect orphan escalations automatically.
+>
+> Immediate gap: 400+ escalations accumulated before anyone noticed. The system
+> has no way to answer "what escalations are open?" without querying raw events.
+
 **Status:** proposal refined against current docs and implementation
 **Date:** 2026-05-19
 **References:** [events.md](./events.md), [handler-authoring.md](../2b-manual/handler-authoring.md), [practice-learning-loop.md](./practice-learning-loop.md), KE-1242

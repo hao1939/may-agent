@@ -1,5 +1,17 @@
 # Handler Surface Audit
 
+> **Status (2026-06-18):** Several handlers from this audit have been disabled:
+> - `project` — disabled (all projects are `.app` now)
+> - `closed-loop-steward` — disabled (97 sessions/day, redundant)
+> - `project-creative-audit` — disabled (redundant with project-steward + app review)
+> - `daily-alert-review` — disabled (replaced by may-agent.app ops-digest)
+> - `session-aftermath-scan` — migrated to evaluation.app schedule
+> - `eval-llm-scan` — partially migrated (rolled back, still on may cron)
+>
+> The Migration Gates section (below) now governs remaining consolidation.
+> See [system-operations-model.md](../3-proposals/system-operations-model.md)
+> for the current plan.
+
 **Status**: first audit slice.
 
 This audit applies the infra surface model:

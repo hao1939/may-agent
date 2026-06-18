@@ -92,9 +92,8 @@ Persistent row mapping:
 | *(legacy infra)* | `reason` | Legacy expiry/manual reason |
 | *(legacy infra)* | `retry_count` | Default 0; legacy retry placeholder |
 
-Target query schema after delivery convergence. The current live schema still
-lacks the `delivery_*` columns; implementation should add them by migration and
-keep legacy reads during the transition.
+Target query schema after delivery convergence. Runtime migrations add these
+columns for existing databases; legacy reads remain during the transition.
 
 ```sql
 CREATE TABLE events (
@@ -618,10 +617,9 @@ work. Do not add inbox-specific state columns for this; inbox follows the same
 event flow as every other delivery route.
 
 Events are retained for 7 days, then bulk-deleted by the `db-retention` handler
-(daily cron). Agents act within the retention window or they don't. The `ttl_ms`
-column exists on the envelope/schema but no current producer populates it;
-expiry is enforced solely by the retention handler's
-`DELETE FROM events WHERE timestamp < ?`.
+(daily cron). Agents act within the retention window or they don't. `ttl_ms`
+can shorten a specific delivery or inbox reaction window; long-term storage
+expiry is still enforced by retention.
 
 ## Handler Event Payloads
 
@@ -1119,6 +1117,16 @@ handler for addressed owner work, or an explicit no-op handler. Broad
 subscribers such as DbWriter, UI tailing, logging, and passive metrics readers
 must not report acceptance, because that would hide routing gaps.
 
+Some events are optional hooks: they are emitted so a handler can react, but
+the absence of a handler is not itself a failure. Examples include daemon
+heartbeats, routing/skip facts such as `metric.feedback.routed`, guard facts,
+session receipts, and evaluation audit facts such as
+`evaluation.deep_recorded`. If no targeted consumer claims one of these, the
+runtime optional hook consumer accepts it with
+`delivery_route='noop'`. This is different from a passive logger accepting
+everything: the noop set is explicit and should stay small. If an event
+represents required work, do not put it in the optional hook set.
+
 Owner inbox acceptance is a real delivery acceptance, but it is not the same as
 owner reaction. It means "this event has been routed to the owner's pull queue."
 The owner heartbeat/review later emits a normal follow-up event after it has
@@ -1239,15 +1247,27 @@ Some events are **unpaired** — they have a consumer but no completion clock:
 Don't add done tracking to these. The responsible consumer and entity tables
 already own that state.
 
-### Current Gap
+### Observability
 
-The bus fires and forgets. Subscribers react in-memory. Nobody records
-whether any subscriber actually processed the event. 255K events sit at
-`pending` because nothing ever writes back.
+Delivery health is a normal runtime read model:
 
-For paired events, `session-recovery` already detects orphan sessions.
-But no equivalent exists for escalations (400+ accumulated unresolved),
-problem-solver results (no closure tracking), or stale workflow runs.
+- `delivery_status='unhandled'` means no responsible consumer accepted a new
+  event within its TTL.
+- `delivery_status='pending'` with an expired TTL means the row is overdue but
+  has not yet been swept.
+- `delivery_route='noop'` means a runtime component explicitly accepted that no
+  further reaction is required. This is also used once during migration to
+  baseline events that predate delivery tracking, so old audit rows do not turn
+  into fake delivery failures.
+- `event_pair_runs.status='orphan'` means an expected closing event did not
+  arrive before the timeout.
+- `event_pair_runs.status='open'` with `expected_close_at < now` means the pair
+  is overdue but has not yet been swept.
+
+The query API exposes this as `query.eventDeliveryHealth()`. Ops health uses
+that read model as the default signal for routing gaps, stuck inbox work, and
+missing close events. The observer records the packet every run and wakes the
+project owner only when there is an actual delivery or pair failure.
 
 ### What This Gives Us
 
@@ -1276,11 +1296,15 @@ problem-solver results (no closure tracking), or stale workflow runs.
    accepted event
 8. Heartbeat/review emits follow-up events such as `message.consumed`,
    `message.reviewed`, `project.feedback.reviewed`, or `project.owner.reviewed`
-9. Periodic sweep marks unaccepted events past TTL as `unhandled`
+9. Write-time sweep marks unaccepted events past TTL as `unhandled`; health
+   queries also report overdue pending events that have not been swept yet
 10. Pair tracker accepts lifecycle-shaped events and opens/closes
     `event_pair_runs` from naming/key conventions
-11. Periodic sweep finds orphan openings (no closing event) → surfaces
-12. Ops health packet includes unhandled count + owner-inbox orphan count +
+11. Runtime optional-hook consumer accepts known optional/audit hooks as
+    `delivery_route='noop'` if no required consumer claimed them
+12. Write-time sweep marks orphan openings; health queries also report overdue
+    open pairs that have not been swept yet
+13. Ops health packet includes unhandled count + owner-inbox orphan count +
    lifecycle orphan count
 
 ### Legacy State Cleanup
@@ -1291,7 +1315,7 @@ inbox draining. That should converge to delivery fields plus follow-up events:
 | Current behavior | Target behavior |
 |------------------|-----------------|
 | `status='pending'` for unread inbox rows | `delivery_status='accepted'`, `delivery_route='owner_inbox'` |
-| `markInboxHandled()` | emit a follow-up event and let pair tracking close the original item |
+| `markInboxHandled()` | `reviewInboxEvents()` emits a follow-up event and lets pair tracking close the original item; `markInboxHandled()` remains a compatibility alias during migration |
 | `status='handled'`, `handled_by=<agent>` | closing event such as `message.consumed` or `project.feedback.reviewed` |
 | `status='expired'`, `reason='stale'` for old inbox rows | pair run marked `orphan`; optional `event_pair.orphan.detected` reaction event |
 | schedule/orphan metrics infer from legacy pending rows | metrics read `delivery_status`, `delivery_route`, and `event_pair_runs` |
@@ -1299,11 +1323,14 @@ inbox draining. That should converge to delivery fields plus follow-up events:
 Migration can be compatibility-first:
 
 1. Add the new columns and write them for new rows.
-2. Keep reading legacy `status` as a fallback while backfilling.
-3. Replace `markInboxHandled()` call sites with follow-up event emission.
-4. Update heartbeat/review queries to prefer `delivery_route='owner_inbox'` and
+2. Mark pre-delivery-tracking rows as `delivery_status='accepted'`,
+   `delivery_route='noop'`, `accepted_by='legacy:event-store'` using a one-time
+   migration marker.
+3. Keep reading legacy `status` as a fallback while backfilling.
+4. Replace `markInboxHandled()` call sites with `reviewInboxEvents()`.
+5. Update heartbeat/review queries to prefer `delivery_route='owner_inbox'` and
    open `event_pair_runs`.
-5. Remove metrics and code paths that infer delivery or completion from legacy
+6. Remove metrics and code paths that infer delivery or completion from legacy
    `status`.
 
 ### What This Is Not

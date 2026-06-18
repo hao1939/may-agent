@@ -84,6 +84,11 @@ mental shape. The difference is only durability and scope.
 
 ## Heartbeat As Agent Project
 
+> **Note (2026-06-18):** For agents owned by a project-app, the app's task tree
+> and schedules replace the heartbeat entirely. The app owns goal, signals,
+> plan, and evidence — the heartbeat concept is subsumed into the app's owner
+> workflow. This section remains valid for standalone agents without an app.
+
 Heartbeat is not a separate work mode. It is the default recurring trigger for
 an agent's standing self-maintenance context.
 
