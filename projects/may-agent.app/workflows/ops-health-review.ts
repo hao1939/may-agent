@@ -82,6 +82,29 @@ function queryCount(
   return numberValue(rows[0]?.count ?? rows[0]?.c);
 }
 
+function queryDeliveryHealth(ctx: WorkflowContext, now: number): Row {
+  try {
+    return ctx.query.eventDeliveryHealth({
+      now,
+      lookbackMs: 60 * 60_000,
+      limit: 20,
+    }) as Row;
+  } catch (error) {
+    return {
+      error: error instanceof Error ? error.message : String(error),
+      unhandledEvents: [],
+      overduePendingEvents: [],
+      orphanPairs: [],
+      overdueOpenPairs: [],
+      ownerInboxOpenCount: 0,
+    };
+  }
+}
+
+function rowArray(value: unknown): Row[] {
+  return Array.isArray(value) ? (value.filter((row) => row && typeof row === "object") as Row[]) : [];
+}
+
 function groupEventSymptoms(rows: Row[]): Row[] {
   const byKey = new Map<string, { count: number; latest: Row }>();
   for (const row of rows) {
@@ -218,6 +241,11 @@ function buildPacket(ctx: WorkflowContext): { packet: Row; signals: Signal[] } {
     ),
   );
 
+  const deliveryHealth = queryDeliveryHealth(ctx, now);
+  const unhandledEvents = rowArray(deliveryHealth.unhandledEvents);
+  const overduePendingEvents = rowArray(deliveryHealth.overduePendingEvents);
+  const orphanPairs = rowArray(deliveryHealth.orphanPairs);
+  const overdueOpenPairs = rowArray(deliveryHealth.overdueOpenPairs);
   const repeatedSymptoms = groupEventSymptoms(recentAbnormalEvents).filter(
     (row) => numberValue(row.count) >= 3,
   );
@@ -263,6 +291,28 @@ function buildPacket(ctx: WorkflowContext): { packet: Row; signals: Signal[] } {
       evidence: compactRows(repeatedSymptoms, 8),
     });
   }
+  if (unhandledEvents.length > 0 || overduePendingEvents.length > 0) {
+    signals.push({
+      kind: "event-delivery-unaccepted",
+      severity: "P1",
+      reason: `${unhandledEvents.length} unhandled and ${overduePendingEvents.length} overdue pending event(s) in the last hour.`,
+      evidence: {
+        unhandled: compactRows(unhandledEvents, 5),
+        overdue_pending: compactRows(overduePendingEvents, 5),
+      },
+    });
+  }
+  if (orphanPairs.length > 0 || overdueOpenPairs.length > 0) {
+    signals.push({
+      kind: "event-pair-unclosed",
+      severity: "P1",
+      reason: `${orphanPairs.length} orphan and ${overdueOpenPairs.length} overdue open event pair(s) in the last hour.`,
+      evidence: {
+        orphan: compactRows(orphanPairs, 5),
+        overdue_open: compactRows(overdueOpenPairs, 5),
+      },
+    });
+  }
 
   const packet = {
     generated_at: new Date(now).toISOString(),
@@ -278,6 +328,14 @@ function buildPacket(ctx: WorkflowContext): { packet: Row; signals: Signal[] } {
       unknown_project_events: compactRows(unknownProjectEvents, 10),
       pending_may_messages: pendingMayMessages,
       stale_escalations: compactRows(staleEscalations, 10),
+      event_delivery_health: {
+        owner_inbox_open_count: numberValue(deliveryHealth.ownerInboxOpenCount),
+        unhandled_events: compactRows(unhandledEvents, 10),
+        overdue_pending_events: compactRows(overduePendingEvents, 10),
+        orphan_pairs: compactRows(orphanPairs, 10),
+        overdue_open_pairs: compactRows(overdueOpenPairs, 10),
+        error: deliveryHealth.error,
+      },
     },
     signals,
   };

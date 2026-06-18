@@ -1,47 +1,43 @@
 {
   "version": 1,
-  "generated_at": "2026-06-18T10:07:16.229Z",
-  "tree_updated_at": "2026-06-18T10:07:16.134Z",
+  "generated_at": "2026-06-18T10:08:44.610Z",
+  "tree_updated_at": "2026-06-18T10:08:44.526Z",
   "kanban": {
-    "total_cards": 2129,
-    "tree_total": 2171,
+    "total_cards": 2131,
+    "tree_total": 2173,
     "tree_status_counts": {
-      "active": 4,
+      "review": 4,
       "blocked": 69,
-      "done": 2093,
-      "backlog": 2,
-      "review": 3
+      "done": 2096,
+      "backlog": 4
     },
     "status_counts": {
-      "done": 2060,
+      "done": 2063,
       "blocked": 63,
-      "review": 3,
-      "backlog": 2,
-      "active": 1
+      "backlog": 4,
+      "review": 1
     },
     "column_counts": {
-      "backlog": 2,
-      "in-progress": 1,
-      "review": 7,
+      "backlog": 4,
+      "in-progress": 0,
+      "review": 5,
       "blocked": 59,
-      "done": 2060
+      "done": 2063
     },
     "card_ids_by_column": {
       "backlog": [
+        "vm-prerelease-addonv2-asm-overlay-canonical-landing-20260618",
+        "vm-prerelease-addonv2-azure-monitor-metrics-family-seed-authoring-20260618",
         "vm-prerelease-addonv2-row62-ledger-reconcile-20260618",
         "vm-prerelease-wave1-row44-ipbasedlbbackendpool-source-packet-20260618"
       ],
-      "in-progress": [
-        "vm-prerelease-wave1-row32-autozone-mixed-sku-composition-disposition-20260618"
-      ],
+      "in-progress": [],
       "review": [
         "network-swift-v2-scale-validation-smallshape-live-rerun-gated-20260617",
         "trusted-access-dataplane-token-gateway-runtime-unblock-20260617",
-        "vm-prerelease-addonv2-asm-crud-source-packet-20260618",
-        "vm-prerelease-addonv2-asm-network-overlay-source-packet-20260618",
-        "vm-prerelease-addonv2-azure-monitor-metrics-source-packet-20260618",
         "vm-prerelease-policy-addon-pubsub-spec-implementation-20260617",
-        "vm-prerelease-virtual-node-addon-source-unblock-20260617"
+        "vm-prerelease-virtual-node-addon-source-unblock-20260617",
+        "vm-prerelease-wave1-row32-autozone-mixed-sku-composition-disposition-20260618"
       ],
       "blocked": [
         "aad-rbac-managed-v2-reset-stable-empty-rerun-await-aad-env-20260617",
@@ -1971,10 +1967,13 @@
         "vm-prerelease-addonv2-asm-behavior-source-attachment-20260617",
         "vm-prerelease-addonv2-asm-canonical-disposition-20260617",
         "vm-prerelease-addonv2-asm-cni-source-body-extraction-20260617",
+        "vm-prerelease-addonv2-asm-crud-source-packet-20260618",
         "vm-prerelease-addonv2-asm-functionality-source-packet-20260617",
         "vm-prerelease-addonv2-asm-lifecycle-source-packet-20260617",
+        "vm-prerelease-addonv2-asm-network-overlay-source-packet-20260618",
         "vm-prerelease-addonv2-asm-network-source-packet-20260617",
         "vm-prerelease-addonv2-asm-pod-subnet-cilium-neutral-substrate-packet-20260617",
+        "vm-prerelease-addonv2-azure-monitor-metrics-source-packet-20260618",
         "vm-prerelease-addonv2-family-spec-batch1-20260618",
         "vm-prerelease-agentpool-rollback-vm-contract-authoring-20260617",
         "vm-prerelease-agentpool-rollback-vm-source-packet-20260617",

@@ -1,10 +1,10 @@
 {
   "version": 2,
   "project": "aks-rp-e2e",
-  "updated_at": "2026-06-18T10:07:16.134Z",
+  "updated_at": "2026-06-18T10:08:44.526Z",
   "project_lifecycle": "active",
   "root_task_id": "project",
-  "active_task_id": "vm-prerelease-wave1-row32-autozone-mixed-sku-composition-disposition-20260618",
+  "active_task_id": null,
   "tasks": {
     "project": {
       "id": "project",
@@ -212,7 +212,7 @@
         "reopened_by": "human-steering",
         "reopen_reason": "Prior project-ceiling judgment was stale. Cover all Go e2ev3 scenarios, not only modeled paths or the VM REST positive slice."
       },
-      "state": "active"
+      "state": "review"
     },
     "spec-runner-and-replays": {
       "id": "spec-runner-and-replays",
@@ -23069,7 +23069,7 @@
     "feature-knowledge-and-specs": {
       "id": "feature-knowledge-and-specs",
       "parent_id": "project",
-      "state": "active",
+      "state": "review",
       "kind": "durable_lane",
       "priority": "P1",
       "children": [
@@ -23678,7 +23678,9 @@
         "vm-prerelease-addonv2-row62-ledger-reconcile-20260618",
         "vm-prerelease-addonv2-azure-monitor-metrics-source-packet-20260618",
         "vm-prerelease-addonv2-asm-crud-source-packet-20260618",
-        "vm-prerelease-addonv2-asm-network-overlay-source-packet-20260618"
+        "vm-prerelease-addonv2-asm-network-overlay-source-packet-20260618",
+        "vm-prerelease-addonv2-azure-monitor-metrics-family-seed-authoring-20260618",
+        "vm-prerelease-addonv2-asm-overlay-canonical-landing-20260618"
       ],
       "goal": "Learn AKS feature intent and maintain source-grounded feature packets, input/expectation paths, and runnable test specs.",
       "inputs": [],
@@ -112189,7 +112191,7 @@
     "vm-prerelease-wave1-mixedsku-autozone-spec-batch1-20260618": {
       "id": "vm-prerelease-wave1-mixedsku-autozone-spec-batch1-20260618",
       "parent_id": "feature-knowledge-and-specs",
-      "state": "active",
+      "state": "review",
       "kind": "domain_leaf",
       "priority": "P2",
       "owner": "aks-explorer",
@@ -119473,7 +119475,7 @@
     "vm-prerelease-wave1-row32-autozone-mixed-sku-composition-disposition-20260618": {
       "id": "vm-prerelease-wave1-row32-autozone-mixed-sku-composition-disposition-20260618",
       "parent_id": "vm-prerelease-wave1-mixedsku-autozone-spec-batch1-20260618",
-      "state": "active",
+      "state": "review",
       "kind": "domain_leaf",
       "priority": "P2",
       "owner": "aks-explorer",
@@ -119505,7 +119507,12 @@
         "assigned_worker": "aks-explorer",
         "last_session": "s_task_vm-prerelease-wave1-row32-autozone-mixed-sku-composition-disposition-20260618",
         "worker_started_attempt_id": "a_vm-prerelease-wave1-row32-autozone-mixed-sku-composition-disposition-20260618_20260618100643",
-        "worker_started_at": "2026-06-18T10:07:09.593Z"
+        "worker_started_at": "2026-06-18T10:07:09.593Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Wrote the requested row-32 archive disposition note at evidence/archive/vm-prerelease-wave1-row32-autozone-mixed-sku-composition-disposition-20260618.md, classifying row 32 as a blocked composition dependency on row-31 source/body recovery and citing the exact ledger, baseline, and blocker anchors.",
+        "last_worker_completed_at": "2026-06-18T10:08:10.629Z",
+        "last_worker_evidence": []
       },
       "session_id": "s_task_vm-prerelease-wave1-row32-autozone-mixed-sku-composition-disposition-20260618",
       "session_history": [
@@ -119603,7 +119610,7 @@
     "vm-prerelease-addonv2-azure-monitor-metrics-source-packet-20260618": {
       "id": "vm-prerelease-addonv2-azure-monitor-metrics-source-packet-20260618",
       "parent_id": "feature-knowledge-and-specs",
-      "state": "review",
+      "state": "done",
       "kind": "domain_leaf",
       "priority": "P2",
       "owner": "aks-explorer",
@@ -119640,17 +119647,26 @@
         "last_worker_claim": "done",
         "last_worker_summary": "Produced the row-63 source packet at evidence/archive/vm-prerelease-addonv2-azure-monitor-metrics-source-packet-20260618.md, grounding Scenario_Addonv2_Azure_Monitor_Metrics to exact repo-local anchors and concluding it should seed a new app-monitoring family rather than attach to managementplane-addon.",
         "last_worker_completed_at": "2026-06-18T10:07:16.128Z",
-        "last_worker_evidence": []
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-18T10:08:29.086Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted owner review: archive packet anchors row 63 to exact repo-local source, rejects incorrect attachment to managementplane-addon, treats the dual-VM-pool shape as variant metadata, and leaves a concrete new app-monitoring family landing as the next step."
       },
       "session_id": "s_task_vm-prerelease-addonv2-azure-monitor-metrics-source-packet-20260618",
       "session_history": [
         "s_task_vm-prerelease-addonv2-azure-monitor-metrics-source-packet-20260618"
-      ]
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-18T10:08:29.086Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted owner review: archive packet anchors row 63 to exact repo-local source, rejects incorrect attachment to managementplane-addon, treats the dual-VM-pool shape as variant metadata, and leaves a concrete new app-monitoring family landing as the next step."
+      }
     },
     "vm-prerelease-addonv2-asm-crud-source-packet-20260618": {
       "id": "vm-prerelease-addonv2-asm-crud-source-packet-20260618",
       "parent_id": "feature-knowledge-and-specs",
-      "state": "review",
+      "state": "done",
       "kind": "domain_leaf",
       "priority": "P2",
       "owner": "aks-explorer",
@@ -119687,17 +119703,26 @@
         "last_worker_claim": "done",
         "last_worker_summary": "Produced the row-64 Addonv2 ASM CRUD source packet at evidence/archive/vm-prerelease-addonv2-asm-crud-source-packet-20260618.md, anchoring the exact prerelease ledger entry and comparing it against the existing ASM enable-lifecycle spec/replay/evidence to show truthful attachment is still blocked on missing source-equivalence proof.",
         "last_worker_completed_at": "2026-06-18T10:07:00.504Z",
-        "last_worker_evidence": []
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-18T10:08:28.865Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted owner review: archive packet cites exact row-64 ledger/source anchors, compares Scenario_Addonv2_Azure_Service_Mesh_CRUD against the existing ASM enable-lifecycle family, and leaves a precise source-equivalence blocker instead of over-attaching the row."
       },
       "session_id": "s_task_vm-prerelease-addonv2-asm-crud-source-packet-20260618",
       "session_history": [
         "s_task_vm-prerelease-addonv2-asm-crud-source-packet-20260618"
-      ]
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-18T10:08:28.865Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted owner review: archive packet cites exact row-64 ledger/source anchors, compares Scenario_Addonv2_Azure_Service_Mesh_CRUD against the existing ASM enable-lifecycle family, and leaves a precise source-equivalence blocker instead of over-attaching the row."
+      }
     },
     "vm-prerelease-addonv2-asm-network-overlay-source-packet-20260618": {
       "id": "vm-prerelease-addonv2-asm-network-overlay-source-packet-20260618",
       "parent_id": "feature-knowledge-and-specs",
-      "state": "review",
+      "state": "done",
       "kind": "domain_leaf",
       "priority": "P2",
       "owner": "aks-explorer",
@@ -119734,17 +119759,80 @@
         "last_worker_claim": "done",
         "last_worker_summary": "Created the requested archive note `evidence/archive/vm-prerelease-addonv2-asm-network-overlay-source-packet-20260618.md`, grounding row 69 and row 106 in the prerelease ledger/matrix, spelling out the overlay-specific semantics, and concluding row 106 is a Mariner-only variant of the canonical row-69 overlay branch.",
         "last_worker_completed_at": "2026-06-18T10:07:08.042Z",
-        "last_worker_evidence": []
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-18T10:08:28.660Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted owner review: archive packet grounds rows 69 and 106 in exact prerelease/matrix anchors, preserves the overlay-specific substrate semantics, and truthfully classifies row 106 as a Mariner variant of the canonical row-69 overlay branch."
       },
       "session_id": "s_task_vm-prerelease-addonv2-asm-network-overlay-source-packet-20260618",
       "session_history": [
         "s_task_vm-prerelease-addonv2-asm-network-overlay-source-packet-20260618"
-      ]
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-18T10:08:28.660Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted owner review: archive packet grounds rows 69 and 106 in exact prerelease/matrix anchors, preserves the overlay-specific substrate semantics, and truthfully classifies row 106 as a Mariner variant of the canonical row-69 overlay branch."
+      }
+    },
+    "vm-prerelease-addonv2-azure-monitor-metrics-family-seed-authoring-20260618": {
+      "id": "vm-prerelease-addonv2-azure-monitor-metrics-family-seed-authoring-20260618",
+      "parent_id": "feature-knowledge-and-specs",
+      "state": "backlog",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Author the first exact app-monitoring family landing for VM prerelease row 63 by introducing a canonical app-monitoring feature/spec/replay draft anchored to Scenario_Addonv2_Azure_Monitor_Metrics, preserving the dual-VM-pool shape as row metadata unless source proves it is assertion-bearing semantics.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vm-prerelease-addonv2-azure-monitor-metrics-family-seed-authoring-20260618.md"
+      ],
+      "acceptance": [
+        "Archive note cites the accepted row-63 source packet plus every touched feature/spec/replay/index file and shows the new landing is anchored to Scenario_Addonv2_Azure_Monitor_Metrics under an app-monitoring family rather than managementplane-addon.",
+        "The landed draft keeps observed behavior/source limits truthful, records the dual-VM-pool topology as variant metadata unless source proved otherwise, and names any remaining follow-up for row 104 attachment or runtime verification without broad addon rediscovery.",
+        "Work stays repo-local, performs no cloud execution, and keeps the slice bounded to the new app-monitoring family seed."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "feature:app-monitoring"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-18T10:08:44.368Z",
+        "created_by": "task-tree-tool"
+      }
+    },
+    "vm-prerelease-addonv2-asm-overlay-canonical-landing-20260618": {
+      "id": "vm-prerelease-addonv2-asm-overlay-canonical-landing-20260618",
+      "parent_id": "feature-knowledge-and-specs",
+      "state": "backlog",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Land the canonical Addonv2 ASM overlay branch for VM prerelease row 69 by authoring the smallest truthful feature/spec/replay draft anchored to Scenario_Addonv2_ASM_Azure_CNI_Overlay, preserving Azure CNI overlay plus enable_cilium=false as canonical substrate semantics and attaching row 106 only as Mariner variant metadata.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vm-prerelease-addonv2-asm-overlay-canonical-landing-20260618.md"
+      ],
+      "acceptance": [
+        "Archive note cites the accepted row-69/106 overlay source packet plus every touched feature/spec/replay/index file and shows the canonical branch preserves overlay-specific substrate semantics instead of collapsing into generic ASM functionality.",
+        "The landing records row 106 only as os_sku=Mariner variant metadata, keeps the recovered ASM behavior bundle/source limits explicit, and leaves one exact successor if additional handwritten behavior proof is still required.",
+        "Work stays repo-local, performs no cloud execution, and does not broaden into non-overlay ASM families."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "feature:traffic-azure-service-mesh"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-18T10:08:44.518Z",
+        "created_by": "task-tree-tool"
+      }
     }
   },
-  "active_task_ids": [
-    "vm-prerelease-wave1-row32-autozone-mixed-sku-composition-disposition-20260618"
-  ],
+  "active_task_ids": [],
   "archive": {
     "kms-v2-managed-hsm-staging-20260611": {
       "goal": "Execute KMS v2 Managed HSM replay against staging.",
