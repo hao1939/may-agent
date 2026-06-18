@@ -5369,3 +5369,128 @@ highest expected surprise, not the source with the most pending items.
 
 → Full analysis: `shared/knowledge/entries/KE-029.md`
 
+
+
+---
+
+## The Variance Gradient — NEW (2026-07-25 creative heartbeat)
+
+### The Pattern Nobody Measured: CV Predicts Efficiency
+
+Every prior KE entry about system inefficiency (029: attention inversion, 027: triage
+loops, 026: instruction bloat) describes WHAT's wrong. KE-030 identifies the mechanistic
+WHY: the meta-layer agents are behaviorally frozen — they apply uniform effort to every
+invocation regardless of information content.
+
+The coefficient of variation (CV = std_dev / mean) across agents:
+
+| Agent | CV | Phenotype | Ops/Hr |
+|:-----:|:--:|:---------:|:------:|
+| dev | 0.075 | Fixed automaton | 12.6 |
+| evaluator | 0.262 | Factory band | 578 |
+| arc | 0.286 | Bounded explorer | 139 |
+| scout | 0.335 | Creative variable | 125 |
+| may | 0.660 | High-variance generalist | 47 |
+| aks-explorer | 0.998 | Bimodal adaptive | 775 |
+
+### The Key Insight: Gates Are the Mechanism
+
+aks-explorer's planner resolves 49.6% of invocations in ≤3 ops (gate decisions:
+"nothing to do"). This costs only 11.9% of its op budget. The evaluator has
+NO equivalent — minimum session cost is 11 ops. It cannot cheaply decide "skip."
+
+The meta-layer was never *selected for* cheap rejection because it always has input
+(sessions to evaluate, alerts to triage). But "having input" ≠ "having valuable input."
+The evaluator processes low-entropy inputs (86.6% predictable) at the same cost as
+high-entropy inputs.
+
+### The Connection to Edge of Chaos (complexity theory)
+
+Systems at CV≈1.0 operate at the edge of chaos: enough order to be reliable, enough
+variance to be adaptive. Dev at CV=0.075 is a frozen crystal. The entire meta-layer
+efficiency problem reduces to: **give diagnostic agents the ability to gate cheaply.**
+
+This unifies KE-027 (triage needs cooldown = gate), KE-029 (evaluator needs sampling =
+probabilistic gate), and KE-026 (instructions could be shorter = faster gate parsing).
+All three are instances of the same mechanism: introducing a cheap-exit pathway where
+none exists.
+
+### The Evolutionary Implication
+
+The production layer evolved gates through selection pressure (empty frontier → exit fast).
+The meta-layer faces no empty-frontier condition — it's always fed input. To get gates
+into the meta-layer, you'd need to either:
+1. Introduce information-value metadata (pre-gate signal)
+2. Stochastically skip invocations (probabilistic gate)
+3. Track per-source base rates and auto-gate when predictable (learned gate)
+
+All three are strictly cheaper than the current approach of uniform-effort evaluation.
+
+→ Full analysis: `shared/knowledge/entries/KE-030.md`
+
+
+---
+
+## The Phantom Quality — NEW (KE-031, 2026-07-25 creative heartbeat)
+
+**Created:** `shared/knowledge/entries/KE-031.md`
+
+### Core Discovery: The Evaluation System Is Structurally Blind
+
+The system evaluates sessions using three tiers: JS-skip (49.1%), heuristic
+(49.7%), and LLM deep-eval (1.2%). The heuristic tier — which handles 98.9%
+of all non-skipped evaluations — always sets `productiveCalls = opCount` and
+`wastedCalls = 0`. It never reads the transcript. It is a formula over
+session metadata, not a quality judgment.
+
+### The Divergence That Proves It
+
+For aks-explorer sessions evaluated in the current window:
+
+| Evaluator | Good Rate | Waste Rate | Quality Values |
+|:---------:|:---------:|:----------:|:--------------:|
+| Heuristic (n=1,215) | **86.8%** | **0.0%** | {0.85, 0.65, 0.2} |
+| LLM deep-eval (n=28) | **28.6%** | **29.2%** | Continuous 0.18–0.93 |
+
+The same agent, same time window, 58.2 percentage-point gap in good-rates.
+The heuristic says "almost everything is fine." The LLM reads the actual
+transcripts and finds that only 28.6% are genuinely good, with an average
+of 27.5 wasted tool calls per session.
+
+### Why This Is Deeper Than Prior KE Entries
+
+- **KE-029** found the evaluator watches the wrong agent. KE-031 finds it
+  watches with a **blind instrument**. Even perfect allocation won't help if
+  the sensor outputs constant values.
+
+- **KE-030** found the evaluator has low behavioral variance (CV=0.262).
+  KE-031 explains *why*: it's a formula outputting 3 fixed constants, not an
+  intelligent judge with natural variance.
+
+- **KE-006/008/009** (evaluation measures structure not content) are now
+  quantitatively confirmed. The heuristic literally measures `opCount + status`
+  (structure) and never reads the transcript (content).
+
+### The Self-Referential Test
+
+This KE entry's own evaluation will, with 98.9% probability, use the heuristic
+mode. It will set `productiveCalls = opCount, wastedCalls = 0` and output
+`quality = 0.85, verdict = "good"` — proving KE-031's claim by demonstrating
+it on itself.
+
+### Information-Theoretic Root
+
+The heuristic carries ~0.7 bits of entropy (3 fixed values). The actual quality
+distribution requires ~4-5 bits. The sensor has **14% of the resolution needed**
+to see reality. This is not a calibration problem — it's a bit-depth problem.
+No threshold adjustment can make a 3-level sensor detect a continuous distribution.
+
+### The Practical Implication
+
+If the system switched to 100% LLM evaluation, the good-rate would drop from
+~87% to ~40% overnight. This wouldn't mean quality got worse — it would mean
+the sensor finally measured what was already happening.
+
+The evaluator doesn't need better algorithms. **It needs more bits.**
+
+→ Full analysis: `shared/knowledge/entries/KE-031.md`
