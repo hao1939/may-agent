@@ -455,6 +455,39 @@ approved. Ghost deliverable fix (KE-2022) needs planner workflow
 change. Combined projected reduction if both land: ~2061 events/day,
 bringing total to ~2657/day (52% headroom at 5500).
 
+**Snapshot 2026-06-18 ~05:00Z** (24h window, ~4974 total, threshold 5500 = 90.4%):
+
+| Signal | 24h Count | 6h Count | 6h Share |
+|--------|-------:|-------:|------:|
+| READ_DEDUP (combined) | 2294 | 608 | 47% |
+| FINISH_UNCOMMITTED | 867 | 174 | 13% |
+| SESSION_BASH_CAT | 801 | 218 | 17% |
+| FINISH_SUCCESS_GUARD | 446 | 179 | 14% |
+| SESSION_BASH_GREP | 255 | 59 | 5% |
+| SESSION_READ | 217 | 63 | 5% |
+| PATH_HALLUCINATION | 72 | 0 | 0% |
+| EDIT_WITHOUT_READ | 20 | 5 | 0% |
+
+Throughput: ~4413 sessions/day (aks-explorer 2568, evaluator 1484,
+may 209, scout 62, dev 47, arc 43). Guard rate ~207/hr (6h avg).
+Headroom to 5500: 526 triggers (9.6%).
+
+Trend: 12h ago metric was at ~2700; now ~4974. Rolling 24h window is
+ingesting the post-calibration "catch-up" period (the 6th calibration
+at ~02:01Z cleared the alert; the 24h window now includes a full day
+of higher-throughput activity). Rate is ~207/hr but the outgoing window
+is also shedding the low-activity period from yesterday. Expect the
+metric to plateau near ~5000 as the rolling window stabilizes.
+
+Worst single sessions (6h): 68, 49, 40, 29, 23 triggers — all
+aks-explorer task sessions re-reading model.json files. Top offender
+generates 68 READ_DEDUP events from a single session.
+
+**All pending proposals remain unapproved (ORDER-010 requires human merge):**
+1. Per-session dedup (structural fix, would eliminate ~1700 triggers/day)
+2. Guard threshold 5500→6000 (stopgap, proposed but superseded by dedup)
+3. DB threshold 2000→2500 MB (P1, breach in ~26h at 4.3 MB/h)
+
 ### Known issue: guard name conflation
 
 Tool-level guards all emit `guard: "beforeToolCall"` instead of their
