@@ -356,6 +356,40 @@ proposal filed). Guard threshold 4,500 has 2.3× headroom at current
 ~1,992/day steady-state rate. Headroom is conservative; no further
 threshold calibration needed.
 
+**Snapshot 2026-06-18 ~01:00Z** (24h window, ~4335 total):
+
+**Approaching breach again.** `guard.triggered-count-24h` = 4335
+(threshold 4500, 96.3%). This is NOT a Spec 3 regression — commit-guard
+ambient noise remains zero. The new dominant driver is **READ_DEDUP**
+from aks-explorer sessions that re-read model files 20-50+ times.
+
+| Signal | 24h Count | Sessions | Avg/Session |
+|--------|-------:|--------:|-----------:|
+| READ_DEDUP (combined variants) | 1673 | 382 | 4.4 |
+| finish() uncommitted (session-owned) | 799 | 690 | 1.2 |
+| SESSION_BASH_CAT | 706 | 667 | 1.1 |
+| finish(success) guard | 348 | 337 | 1.0 |
+| SESSION_BASH_GREP | 222 | 165 | 1.3 |
+| SESSION_READ | 195 | 115 | 1.7 |
+| PATH_HALLUCINATION | 64 | — | — |
+| read-before-edit (Tier 1) | 22 | — | — |
+| hallucinated-path (Tier 1) | 23 | — | — |
+
+Key structural shift: READ_DEDUP generates 7.9 events per offending
+session (worst: 68 triggers from a single session). The metric now
+scales with (aks-explorer throughput × per-session model-read intensity),
+not with anomalous conditions.
+
+**Root cause**: aks-explorer throughput doubled (from ~1992 to ~2298
+sessions/24h) after the planner fix (KE-2018), and task sessions read
+model.json repetitively. Spec 3 commit-guard noise is zero; all current
+triggers are legitimate behavioral signals, but the volume per condition
+is disproportionate.
+
+**Structural fix**: Per-session event dedup (proposal filed 2026-06-18).
+Without it, a 6th threshold calibration is needed within hours.
+See KE-2021.
+
 ### Known issue: guard name conflation
 
 Tool-level guards all emit `guard: "beforeToolCall"` instead of their
