@@ -21,7 +21,7 @@
   "taskIndex": ["tasks/tree.json"],
   "currentFocus": {
     "taskId": null,
-    "summary": "Committed metric.breach/recovered/stalled + escalation lifecycle draining (9185d5fbd). 42 pending agent:may signal events remain from pre-commit runs (drain will execute on next workflow run). Alert #1932 (stale-active-count) resolved. Alert #1922 (aks-rp-e2e blocked-count=20) remains aks-explorer-owned. Platform core: 0 handler.failed, 0 session.resume_failed, 0 subscriber.failed, 0 agent.config_invalid. 7 backlog leaves (P2 docs/design), 0 active."
+    "summary": "Lifecycle draining fully operational: 0 pending agent:may signal/escalation events. Alert #1932 (stale-active-count=32) auto-resolved after transient measurement gap. Only aks-explorer-owned alerts remain open (#1922 blocked-count, #1933 ready-starvation). Platform core: 0 handler.failed, 0 session.resume_failed, 0 subscriber.failed. 7 backlog leaves (P2 docs/design), 0 active."
   },
-  "updatedAt": "2026-06-18T01:20:00.000Z"
+  "updatedAt": "2026-06-18T01:30:00.000Z"
 }
