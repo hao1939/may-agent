@@ -81,15 +81,23 @@ Persistent row mapping:
 | `ttl_ms` | `ttl_ms` | |
 | `timestamp` | `timestamp` | |
 | `data` | `data` JSON | |
-| *(infra only)* | `status` | Default `'pending'`; currently used by manual inbox cleanup and expiry, not delivery acceptance |
-| *(infra only)* | `handled_by` | Current inbox/manual consumer marker; not equivalent to delivery acceptance |
-| *(infra only)* | `result` | Current inbox/manual result marker; not equivalent to work completion |
-| *(infra only)* | `reason` | Expiry/manual reason |
-| *(infra only)* | `retry_count` | Default 0; reserved |
+| *(infra only)* | `delivery_status` | `pending`, `accepted`, or `unhandled`; delivery bookkeeping |
+| *(infra only)* | `accepted_by` | Responsible consumer that accepted delivery |
+| *(infra only)* | `accepted_at` | Acceptance timestamp |
+| *(infra only)* | `delivery_route` | `direct`, `owner_fallback`, `inbox`, or `noop` |
+| *(infra only)* | `delivery_note` | Optional delivery detail |
+| *(infra only)* | `inbox_status` | `pending`, `consumed`, or `expired`; only meaningful for inbox-routed events |
+| *(infra only)* | `inbox_consumed_by` | Owner/agent/session that consumed the inbox item |
+| *(infra only)* | `inbox_consumed_at` | Inbox consumption timestamp |
+| *(legacy infra)* | `status` | Legacy inbox/expiry column; do not use for delivery acceptance |
+| *(legacy infra)* | `handled_by` | Legacy inbox/manual consumer marker; not equivalent to delivery acceptance |
+| *(legacy infra)* | `result` | Legacy inbox/manual result marker; not equivalent to work completion |
+| *(legacy infra)* | `reason` | Legacy expiry/manual reason |
+| *(legacy infra)* | `retry_count` | Default 0; legacy retry placeholder |
 
-Effective query schema (verified 2026-06-06 against live DDL). The base
-`CREATE TABLE` defined the first 6 columns; the remainder were added by
-migrations. Agents should rely on this effective schema, not hand-copy base DDL.
+Target query schema after delivery/inbox convergence. The current live schema
+still lacks the `delivery_*` and `inbox_*` columns; implementation should add
+them by migration and keep legacy reads during the transition.
 
 ```sql
 CREATE TABLE events (
@@ -99,23 +107,32 @@ CREATE TABLE events (
   owner        TEXT,                -- responsible owner / inbox route
   data         TEXT,                -- event-specific JSON payload
   timestamp    INTEGER NOT NULL,
-  -- migration-added columns below this line:
-  status       TEXT DEFAULT 'pending',  -- legacy inbox/expiry status; not delivery acceptance
-  handled_by   TEXT,                -- legacy inbox/manual consumer marker
-  result       TEXT,                -- legacy inbox/manual result marker
-  reason       TEXT,                -- expiry/manual reason
-  retry_count  INTEGER DEFAULT 0,  -- reserved; retry logic not yet implemented
-  ttl_ms       INTEGER,            -- auto-expire after this duration
+  -- delivery metadata:
+  delivery_status    TEXT DEFAULT 'pending', -- pending | accepted | unhandled
+  accepted_by        TEXT,
+  accepted_at        INTEGER,
+  delivery_route     TEXT,                   -- direct | owner_fallback | inbox | noop
+  delivery_note      TEXT,
+  -- inbox metadata for pull-based owner consumption:
+  inbox_status       TEXT,                   -- pending | consumed | expired
+  inbox_consumed_by  TEXT,
+  inbox_consumed_at  INTEGER,
+  -- legacy columns retained during migration:
+  status       TEXT DEFAULT 'pending',
+  handled_by   TEXT,
+  result       TEXT,
+  reason       TEXT,
+  retry_count  INTEGER DEFAULT 0,
+  ttl_ms       INTEGER,
   urgency      TEXT DEFAULT 'normal'
 );
 ```
 
 > **Note on mutable columns:** `status`, `handled_by`, `result`, `reason`, and
-> `retry_count` are legacy operational columns. They are useful for current
-> inbox/manual cleanup and expiry, but they do not answer "did a responsible
-> subscriber accept this event?" The delivery-acceptance work below should either
-> introduce explicit acceptance fields or deliberately migrate these columns to
-> that meaning; do not assume today's `handled` rows mean work is done.
+> `retry_count` are legacy operational columns. They may be read during
+> migration, but new runtime behavior should write `delivery_*` and `inbox_*`
+> fields instead. Do not assume today's `handled` rows mean delivery happened or
+> work is done.
 
 ## Event Types
 
@@ -513,17 +530,77 @@ and is effectively dead — do not use them as the canonical example.
 health metrics and historical rows; do not use it as the general task
 lifecycle example.
 
-## Inbox (time-window based)
+## Inbox (Owner Pull Route)
 
-Agents see recent events in their heartbeat as context. This query is passive:
-reading an event for context is not delivery consumption. If an owner workflow
-accepts a targeted event from the inbox, that workflow should report acceptance;
-otherwise the row remains available for normal delivery tracking.
+Inbox is not a separate event lifecycle. It is one delivery route in the unified
+event model.
+
+Use inbox when an event is addressed to an owner and should be picked up by that
+owner's heartbeat/review loop instead of a direct runtime handler. The inbox
+route is useful for human feedback, project feedback, async agent messages, and
+owner-review items.
+
+```text
+event emitted
+→ direct handler accepts it
+  OR owner-inbox accepts it as fallback
+→ owner heartbeat/review later consumes the inbox item
+```
+
+The states are intentionally separate:
+
+```text
+delivery_status = did a responsible route accept the event?
+inbox_status    = did the owner consume the pull-based inbox item?
+pair/work state = did the lifecycle work close or complete?
+```
+
+Example:
+
+```text
+message.created owner=agent:dev
+→ no direct handler needed
+→ owner-inbox accepts it
+→ delivery_status=accepted
+→ accepted_by=owner-inbox
+→ delivery_route=inbox
+→ inbox_status=pending
+
+dev heartbeat reads it
+→ inbox_status=consumed
+→ inbox_consumed_by=dev
+```
+
+Project feedback uses the same path:
+
+```json
+{
+  "type": "project.feedback.created",
+  "source": "human:operator",
+  "owner": "agent:aks-explorer",
+  "data": {
+    "projectId": "aks-rp-e2e.app",
+    "projectPath": "/app/projects/aks-rp-e2e.app",
+    "target": { "kind": "task", "id": "vm-pipeline-coverage" },
+    "message": "Prioritize extracting every scenario before running live tests."
+  }
+}
+```
+
+If the project app has a direct handler, it accepts the event directly. If not,
+the owner inbox accepts it and the project owner/planner reacts from the next
+review packet.
+
+Agents see recent inbox-routed events in their heartbeat as context. Reading an
+event for passive context is not delivery acceptance. Consuming an inbox item is
+not work completion.
 
 ```sql
 SELECT id, event_type, data, urgency, timestamp
 FROM events
 WHERE owner = ?
+  AND delivery_route = 'inbox'
+  AND inbox_status = 'pending'
   AND timestamp > ?              -- now - 2h
   AND (ttl_ms IS NULL OR timestamp + ttl_ms > ?)
 ORDER BY CASE WHEN urgency = 'immediate' THEN 0 ELSE 1 END,
@@ -531,7 +608,21 @@ ORDER BY CASE WHEN urgency = 'immediate' THEN 0 ELSE 1 END,
 LIMIT 20
 ```
 
-Events are retained for 7 days, then bulk-deleted by the `db-retention` handler (daily cron). Agents act within the retention window or they don't. The `ttl_ms` column exists on the envelope/schema but no current producer populates it; expiry is enforced solely by the retention handler's `DELETE FROM events WHERE timestamp < ?`.
+After heartbeat/review acts on an inbox item, it marks only inbox consumption:
+
+```text
+inbox_status=consumed
+inbox_consumed_by=<agent/session>
+inbox_consumed_at=<now>
+```
+
+Do not use inbox consumption to mean delivery acceptance or domain completion.
+
+Events are retained for 7 days, then bulk-deleted by the `db-retention` handler
+(daily cron). Agents act within the retention window or they don't. The `ttl_ms`
+column exists on the envelope/schema but no current producer populates it;
+expiry is enforced solely by the retention handler's
+`DELETE FROM events WHERE timestamp < ?`.
 
 ## Handler Event Payloads
 
@@ -641,7 +732,7 @@ table.
 ### Emitter Reality
 
 Query `SELECT event_type, COUNT(*) FROM events GROUP BY event_type` for current numbers.
-Row counts below are **surviving rows** (7-day retention applies to `events` table — see Data Retention section). Snapshot refreshed 2026-06-13.
+Row counts below are **surviving rows** (7-day retention applies to `events` table — see Data Retention section). Snapshot refreshed 2026-06-18.
 
 **Handler lifecycle**
 
@@ -663,7 +754,7 @@ Row counts below are **surviving rows** (7-day retention applies to `events` tab
 | `session.completed` | session lifecycle translator after `session.end`; carries `outcome ∈ {done,error,interrupted}` | ✅ canonical subscriber-facing terminal event (4.3k rows) |
 | `session.receipt` | runtime on session completion receipt | ✅ live (6.7k rows) |
 | `session.cancel.requested` | cancel intent from CLI/UI; currently also accepted as a flat socket command | ✅ live (248 rows) |
-| `session.resume_failed` | session-recovery when a resume target session is not found or cannot be resumed | ✅ live (~2,800 rows as of 2026-06-15 post-retention); rate rebounded after initial Spec-3 collapse: 14–48/hr Jun 14 13:00–Jun 15 05:00Z across task/planner/problem sessions, then dropped to 0/hr by ~05:00Z Jun 15 (last event 04:53Z). The initial "collapse" (KE-2005) was transient — resume attempts resumed within hours and persisted for ~16h before truly stopping. Fix: dedup_key (KE-1837, ORDER-010 src/ change required); KE-1962: no handler subscriber |
+| `session.resume_failed` | session-recovery when a resume target session is not found or cannot be resumed | ⚠️ dormant (2,333 rows aging out; last event 2026-06-15 04:53Z, rate 0/hr for 3+ days). Originally rebounded after Spec-3 collapse (14–48/hr Jun 14–15) then stopped permanently. Fix: dedup_key (KE-1837, ORDER-010 src/ change required); KE-1962: no handler subscriber |
 | `session.watchdog.cancelled` | watchdog cancellation of stale sessions | ⚠️ rare (10 rows) |
 
 **Human control intents**
@@ -720,7 +811,7 @@ Row counts below are **surviving rows** (7-day retention applies to `events` tab
 
 | Event type | Emitted by | Status |
 |---|---|---|
-| `project.health.checked` | project health checker on every check cycle | ⛔ emission removed (commit 73d989fdb, 2026-06-10); 22.8k rows remain in DB, aging out via 7-day retention |
+| `project.health.checked` | project health checker on every check cycle | ⛔ emission removed (commit 73d989fdb, 2026-06-10); all rows purged by 7-day retention (0 rows as of 2026-06-18) |
 | `project.health.finding` | project health checker on detected issues | ✅ live (178 rows) |
 
 **Task lifecycle (generic)**
@@ -983,7 +1074,7 @@ event:
 delivery_status TEXT DEFAULT 'pending', -- pending | accepted | unhandled
 accepted_by     TEXT,                   -- cron:..., app:..., runtime:...
 accepted_at     INTEGER,
-delivery_route  TEXT,                   -- direct | owner_fallback | noop
+delivery_route  TEXT,                   -- direct | owner_fallback | inbox | noop
 delivery_note   TEXT
 ```
 
@@ -1028,6 +1119,11 @@ the matching project-app handler, the targeted runtime/session handler, the
 owner inbox/default-owner handler, or an explicit no-op handler. Broad
 subscribers such as DbWriter, UI tailing, logging, and passive metrics readers
 must not report acceptance, because that would hide routing gaps.
+
+Owner inbox acceptance is a real delivery acceptance, but it is not the same as
+owner consumption. It means "this event has been routed to the owner's pull
+queue." The owner heartbeat/review later marks `inbox_status=consumed` after it
+has read and acted on the item.
 
 Infra does not decide the domain outcome. It only verifies that events reached a
 responsible consumer. Dead letters go to the owner path.
@@ -1175,13 +1271,39 @@ problem-solver results (no closure tracking), or stale workflow runs.
 3. Define the responsible consumer for each event type or route pattern
 4. Cron handler dispatcher accepts events it dispatches to a matching handler
 5. App event router accepts events it routes to a matching project app
-6. Owner/default-owner inbox accepts events that no target handler owns
+6. Owner/default-owner inbox accepts owner-addressed events that no target
+   handler owns by setting `delivery_route='inbox'` and `inbox_status='pending'`
 7. Delivery acceptance updates the original event row; it does not append an
    accepted event
-8. Periodic sweep marks unaccepted events past TTL as `unhandled`
-9. Pair tracker opens/closes `event_pair_runs` from naming/key conventions
-10. Periodic sweep finds orphan openings (no closing event) → surfaces
-11. Ops health packet includes unhandled count + orphan count
+8. Heartbeat/review marks inbox items consumed through `inbox_status`, not
+   legacy `status='handled'`
+9. Periodic sweep marks unaccepted events past TTL as `unhandled`
+10. Pair tracker opens/closes `event_pair_runs` from naming/key conventions
+11. Periodic sweep finds orphan openings (no closing event) → surfaces
+12. Ops health packet includes unhandled count + inbox backlog + orphan count
+
+### Legacy State Cleanup
+
+Current runtime code uses `events.status`, `handled_by`, and `result` for manual
+inbox draining. That should converge to the unified fields:
+
+| Current behavior | Target behavior |
+|------------------|-----------------|
+| `status='pending'` for unread inbox rows | `delivery_status='accepted'`, `delivery_route='inbox'`, `inbox_status='pending'` |
+| `markInboxHandled()` | `markInboxConsumed()` |
+| `status='handled'`, `handled_by=<agent>` | `inbox_status='consumed'`, `inbox_consumed_by=<agent>`, `inbox_consumed_at=<now>` |
+| `status='expired'`, `reason='stale'` for old inbox rows | `inbox_status='expired'` for inbox rows; delivery state remains separate |
+| schedule/orphan metrics infer from legacy pending rows | metrics read `delivery_status`, `delivery_route`, `inbox_status`, and `event_pair_runs` |
+
+Migration can be compatibility-first:
+
+1. Add the new columns and write them for new rows.
+2. Keep reading legacy `status` as a fallback while backfilling.
+3. Rename query APIs semantically (`markInboxHandled` → `markInboxConsumed`).
+4. Update heartbeat/review queries to prefer `delivery_route='inbox'` and
+   `inbox_status='pending'`.
+5. Remove metrics and code paths that infer delivery or completion from legacy
+   `status`.
 
 ### What This Is Not
 
