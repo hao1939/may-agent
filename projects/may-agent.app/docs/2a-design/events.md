@@ -904,106 +904,118 @@ Approved 2026-06-04 via `shared/work-queue.md`; proposal at
 - KE-455 — every event-only handler has fired zero times
 - KE-468 — `project.iteration` has two incompatible payload shapes
 
-## Proposal: Events as State Transitions (2026-06-18)
+## Proposal: Infra Ensures Every Event is Consumed (2026-06-18)
 
-### The Simple Model
+### The Simple Rule
 
-Events record state transitions. The event is the transition. The state
-lives in the entity.
-
-```
-Entity (alert, session, task, escalation)
-  has a state machine
-  transitions are recorded as events
-  current state is queryable on the entity
-```
-
-Examples that already work:
-
-| Entity | State machine | Transition events |
-|--------|--------------|-------------------|
-| Metric alert | open → resolved | `metric.breach` opens, `metric.recovered` closes |
-| Session | running → done/error/interrupted | `session.start` opens, `session.end` closes |
-| Workflow run | running → done/error | `handler.workflow_dispatched` opens, `handler.completed` closes |
-
-These work because:
-1. The entity table stores current state (`metric_alerts.resolved_at`,
-   `sessions.status`, `workflow_runs.status`)
-2. Events record each transition with timestamp and context
-3. You can query "what's open?" on the entity table
-4. You can query "what happened?" on the events table
-
-### What's Missing
-
-Two entity types have events but **no entity state to query**:
-
-**Escalations** — `escalation.created` fires, but the only record is in the
-events table with `status='pending'`. There's no `escalations` entity table
-with current state. We bulk-resolved 400+ by updating `events.status`
-directly — treating the events table as both the log and the state store.
-
-**Problem-solver results** — `project.problem.escalated` /
-`project.problem.resolved` / `project.problem.unknown` fire, but nothing
-tracks whether the affected task branch was reconciled by the owner. The
-event records what the solver said, but nothing tracks whether the owner
-acted on it.
-
-### The Fix Is Entity State, Not Event Lifecycle
-
-Don't add `acked → done` lifecycle to the events table. Events are
-transitions — they don't need their own state machine. Instead, make sure
-every entity that has meaningful state transitions has:
-
-1. **An entity record** with queryable current state
-2. **Transition events** that record each state change
-3. **A clear terminal state** so "what's open?" is always answerable
-
-For the events table itself:
-- Most events are **traces** (logs of what happened). They don't need
-  a `pending → handled` lifecycle. `handler.started` is a fact, not a
-  request.
-- The `status` column on events should reflect whether the event represents
-  an **open entity** or a **closed entity** — not whether the event itself
-  was "processed."
-- The existing `expireStaleMessages` and `expireStaleSignalEvents` are
-  correct: they expire events whose entities are no longer actionable.
-
-### Concrete Gaps to Close
-
-**1. Escalations need an entity table or clear entity lifecycle.**
-
-Currently escalations live only as event rows. Options:
-- Add an `escalations` table with `id, type, project, owner, status,
-  created_at, resolved_at, resolution` — same pattern as `metric_alerts`
-- Or: use the events table's `status` column as the entity state, which
-  is what we've been doing manually. This works but conflates the event
-  record with entity state.
-
-The first option is cleaner: escalation events are transitions,
-escalation entity stores current state.
-
-**2. Problem-solver results need owner closure tracking.**
-
-When a problem-solver emits `project.problem.resolved/escalated/unknown`,
-the owner should record whether they reconciled the affected task branch.
-This is a task-tree concern, not an event concern: the task node's
-state and trace should show the problem was addressed.
-
-**3. Metric breach → owner judgment needs closure.**
-
-When `metric.breach` fires and routes to the app owner, there's no
-record of what the owner decided. The `metric_alerts` table tracks
-open/resolved, but not "owner judged this as noise" vs "owner created
-a fix task" vs "owner escalated to human." That judgment should be
-recorded on the alert entity or in the task tree.
-
-### Principle
+Every event that enters the bus must reach a consumer. If it doesn't,
+infra notices and escalates.
 
 ```
-Events = transitions (immutable log entries)
-Entities = current state (queryable, mutable)
+event emitted → bus delivers to subscribers
+             → consumed by at least one subscriber → done
+             → no subscriber consumed it → unhandled
+             → unhandled → default owner investigates
 ```
 
-Don't give events their own state machine. Make sure every meaningful
-entity has one. When you can't answer "what's open?" — the entity
-table or state field is missing, not the event lifecycle.
+Infra doesn't need to know whether the event is a trace, signal, request,
+or state transition. It doesn't need to know what the consumer does with it.
+It just answers one question: **was it consumed?**
+
+### Current Gap
+
+The bus fires and forgets. Subscribers react in-memory. Nobody records
+whether any subscriber actually processed the event. If all subscribers
+skip it (wrong filter, missing handler, routing gap), the event silently
+disappears. 255K events sit at `pending` because nothing ever writes back
+"consumed."
+
+### The Fix: Bus-Level Consumption Tracking
+
+When `bus.emit(event)` runs:
+
+1. Event is persisted to DB with `status = 'pending'`
+2. Bus delivers to all subscribers
+3. If any subscriber signals consumption → mark `handled`
+4. If no subscriber consumed → remains `pending`
+5. Periodic sweep: `pending` events older than TTL → mark `unhandled`
+6. `unhandled` events → surface to default owner (may)
+
+Subscriber consumption is a simple callback:
+
+```typescript
+bus.subscribe((event, ack) => {
+  if (!shouldHandle(event)) return;  // skip — not my event
+  ack();                              // claim — I'm handling this
+  // ... do work ...
+});
+```
+
+`ack()` means "I consumed this event." The bus records who consumed it.
+If nobody calls `ack()`, the event is unhandled.
+
+### What This Gives Us
+
+- **Unhandled event detection**: if a new event type is emitted but no
+  subscriber handles it, infra knows within one TTL window.
+- **Routing gap detection**: if an app's `events[]` filter is too narrow
+  and misses an event it should handle, the event shows up as unhandled.
+- **Dead letter visibility**: the default owner (may) sees unhandled
+  events and decides: add a handler, fix routing, or classify as noise.
+- **No per-event-type tracking logic**: infra treats all events the same.
+  The consumer decides what to do. Infra just ensures delivery.
+
+### What Consumers Do (Not Infra's Job)
+
+What happens after consumption is the consumer's concern:
+
+- **Trace event**: consumer acks, does nothing else. The ack itself is
+  the record.
+- **State transition**: consumer acks, updates entity state (alert,
+  session, task).
+- **Signal**: consumer acks, routes to owner for judgment.
+- **Request**: consumer acks, dispatches work, tracks response in
+  its own domain (task tree, escalation table, etc.).
+
+Infra doesn't distinguish these. It just ensures the event reached
+someone.
+
+### Default Owner
+
+Unhandled events escalate to the default owner (may). May's ops-health
+review decides:
+
+- Is this a routing gap? → fix the app's event subscription
+- Is this a new event type nobody handles? → add a handler or mark terminal
+- Is this noise? → add to a suppress list
+
+### TTL
+
+Events without a consumer within their TTL window are unhandled:
+
+| Urgency | Default TTL |
+|---------|-------------|
+| `immediate` | 5 min |
+| `high` | 30 min |
+| `normal` | 2 hours |
+| `low` | 24 hours |
+
+Trace events (handler.started, session.start, etc.) can use a short TTL
+or be acked immediately by the DbWriter subscriber since persistence IS
+their consumption.
+
+### Implementation
+
+1. Add `ack` callback parameter to bus subscriber functions
+2. DbWriter acks all events it persists (persistence = consumption for traces)
+3. Cron handler dispatcher acks events it dispatches to handlers
+4. App event router acks events it routes to onEvent or workflow handlers
+5. Periodic sweep marks un-acked events past TTL as `unhandled`
+6. Ops health packet surfaces unhandled event count
+
+### What This Is Not
+
+- Not event sourcing — events are still a log, not a state store
+- Not a message queue — bus is still in-memory pub/sub
+- Not per-event-type logic — infra treats all events the same way
+- Not blocking — ack is fire-and-forget, doesn't slow the bus
