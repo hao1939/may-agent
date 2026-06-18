@@ -201,6 +201,25 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
 
     totalDeleted += oversizedDeleted;
 
+    // ── Column truncation: session_digests.task ──────────────────────────
+    // session_digests.task duplicates sessions.task on every step (avg 12KB,
+    // total ~530MB for 46K rows). The task text is already in sessions; the
+    // digest only needs a short reference. Truncate to 2KB to save ~500MB.
+    let truncatedDigestTasks = 0;
+    const DIGEST_TASK_MAX_BYTES = 2048;
+    try {
+      const result = db.run(
+        `UPDATE session_digests SET task = SUBSTR(task, 1, ?) || '... [truncated by db-retention]' WHERE LENGTH(task) > ?`,
+        [DIGEST_TASK_MAX_BYTES, DIGEST_TASK_MAX_BYTES + 100]
+      );
+      truncatedDigestTasks = (result as any)?.changes ?? 0;
+      if (truncatedDigestTasks > 0) {
+        ctx.sdk.log("info", `[db-retention] Truncated ${truncatedDigestTasks} session_digests.task columns (>${DIGEST_TASK_MAX_BYTES}B)`);
+      }
+    } catch (e) {
+      ctx.sdk.log("info", `[db-retention] Error truncating session_digests.task: ${e}`);
+    }
+
     // ── WAL checkpoint to reclaim WAL disk space (KE-2016) ────────────────
     // WAL grows unboundedly when concurrent connections hold read transactions.
     // TRUNCATE mode resets WAL to zero bytes if no readers are active; PASSIVE
@@ -213,9 +232,11 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
       ctx.sdk.log("info", `[db-retention] WAL checkpoint failed (non-critical): ${e}`);
     }
 
-    // ── VACUUM if significant deletions occurred ─────────────────────────
-    // Always VACUUM if oversized rows were deleted — they can be 200MB+ each
-    if (totalDeleted >= VACUUM_THRESHOLD || oversizedDeleted > 0) {
+    // ── VACUUM if significant deletions/truncations occurred ───────────────
+    // Always VACUUM if oversized rows were deleted — they can be 200MB+ each.
+    // Also VACUUM when many digest tasks were truncated — reclaims ~500MB.
+    const needsVacuum = totalDeleted >= VACUUM_THRESHOLD || oversizedDeleted > 0 || truncatedDigestTasks > 1000;
+    if (needsVacuum) {
       try {
         ctx.sdk.log("info", `[db-retention] Running VACUUM (${totalDeleted} rows deleted)...`);
         db.run("VACUUM");
@@ -239,7 +260,8 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
       handler: "db-retention",
       deletedEvents: totalDeleted,
       oversizedDeleted,
-      vacuumed: totalDeleted >= VACUUM_THRESHOLD || oversizedDeleted > 0,
+      truncatedDigestTasks,
+      vacuumed: needsVacuum,
     });
 
     ctx.sdk.log("info", `[db-retention] Complete. Total deleted: ${totalDeleted}`);
