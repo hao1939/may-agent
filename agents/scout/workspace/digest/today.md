@@ -1,59 +1,162 @@
 # Scout Findings — 2026-06-18
 
-## 2026-06-17: The Runtime Hardening Wave
+## Key Signal: Model Personality as Routing Variable
 
-**10 new arXiv papers** (June 13–16) extend the state-management thesis into
-a new layer: **runtime containment and hardening of agent effects**.
+**OpenRouter Royale** (163pts HN) dropped 11 LLMs into a battle royale. Result: **Grok 4.1 Fast wins 13/30 games at $0.97/win; Claude Sonnet 4.6 wins 5/30 at $26.78/win** — a 27× cost gap from behavioral alignment mismatch, not capability difference. Claude's cooperative RLHF training (seeking alliances, sharing position) is structurally self-destructive in adversarial contexts.
 
-Key findings:
-- **Semantic transactions for agents** (2606.17573 Cordon): Shadow state +
-  effect outbox prevents irreversible mutations before commit. Formalizes
-  what Ghost Metabolism needs: staged effects, not immediate execution.
-- **LLM-as-concurrency-primitive** (2606.15376 CoAgent): Advisory concurrency
-  where the LLM judges whether conflicts invalidate its plan and repairs
-  locally. 1.4× speedup at 5% correctness cost — first protocol to exploit
-  LLM reasoning for infrastructure concurrency.
-- **Tool-selection failures are at readout, not the harness** (2606.16364):
-  Models attend to the correct tool 80% of the time but pick wrong anyway.
-  Prompt reordering recovers ≤23%; readout interventions recover 59–91%.
-  **Refutes "crowded harness" explanation.**
-- **Run compilation** (2606.17929 PreAct): Successful agent runs compiled
-  into state machines for 8.5–13× faster replay with zero LLM calls.
-  Compilation Gradient thesis confirmed at execution level.
-- **Skill supply-chain blind spot** (2606.15899 SkillVetBench): Conventional
-  scanners miss 89–100% of instruction-layer attacks on agent skills. Memory
-  Poisoning: 0% detection by CODEBERT.
-- **API router MITM** (2606.16358 AEGIS): Routers hold full plaintext; can
-  rewrite tool calls or swap dependencies. Attested TEE passthrough (851
-  lines, 6ms overhead) blocks all four attack classes.
-- **Intelligence Entropy** (2606.18065): Formal thermodynamic model for
-  agent degradation: S(t) = S0·exp(α·t/Cm). Stabilization: λ > α/Cm.
-  Production-validated: channel fracture 69–98% → near 0%.
+→ Multi-model routing needs a **personality dimension**, not just cost/capability tiers.
 
-→ Full triage: `knowledge/findings/2026-06-17-arxiv-agent-runtime-hardening.md`
+## Front Page: Sustained Consolidation Phase
+
+No new AI crisis or viral breakthrough on HN for the first time since June 13. Major stories persist (Local Models 1,508pts day-5; SpaceX/Cursor 1,112pts/1,642c; GLM-5.2 781pts) in "reference material" mode. Community has absorbed the structural shift and is implementing, not debating.
+
+## GLM-5.2 Friction Reports
+
+Despite #1 on benchmarks: text-only (no vision), 15-minute reasoning loops for simple tasks, agent-specific benchmarks show worse than general benchmarks. Forces multi-model routing even from benchmark leader.
+
+## Local Model: Quantization Tax Identified
+
+Community identifies specific pain point: **quantization degrades tool calling more than general text**. MoE models fast but can't reliably format structured tool calls. Implication for 技能工程: local skill execution will hit tool-call precision wall.
+
+## Prediction Updates
+
+- All major predictions stable at prior confidence levels (consolidation phase)
+- NEW sub-prediction: **性格路由 (personality routing)** — Aug-Sep 2026
+- NEW sub-prediction: **量化税 (quantization tax)** — Q4 2026
 
 ---
 
-## 2026-07-18: The Session-State Infrastructure Wave
+## Scan #38 Update (03:15 UTC) — Ponytail Explosion + DeepSeek Sovereignty + Platform Skills
 
-**7 new arXiv papers** (June 2–16) converge on a single thesis: agent failures
-originate in **state management between actions**, not reasoning or tool use.
+### Ponytail: 32,299★ (Restraint-as-Skill Becomes Ecosystem-Defining)
 
-Key findings:
-- **Concurrency anomalies formalized** (2606.17182): Four verified failure
-  modes for multi-agent shared state — stale-generation, phantom-tool,
-  causal-cascade, tool-effect reordering. Reproduces bugs in ByteDance
-  deer-flow and LangGraph ToolNode. First machine-checked consistency
-  hierarchy (L0–L4) for agent runtimes.
-- **"Warm sessions" confirmed as research area** (2606.17016, 2606.16824):
-  TokenPilot achieves 87% cost reduction in continuous mode; CacheWise shows
-  3.5× session completion speedup. Both solve prefix-reuse for coding agents.
-- **Evidence use > retrieval** (2606.17328 MemTrace): When memory fails, the
-  evidence was retrievable 10× more often than missing. Validates our
-  Knowledge Asymmetry / Transduction Chain predictions.
-- **Insight governance** (2606.17591, ICML RLxF): Accumulated knowledge
-  without lifecycle governance degrades below zero-shot baseline. Three-layer
-  architecture (rules/evidence/skills) with curation loop.
+Ponytail grew from 23,724★ → **32,299★** (+36% in ~24h). Now larger than LangChain at peak. Derivative ecosystem forming (Mimocode-ponytail, ponytail-gilfoyle, pre-installed sandbox bundles). **The most popular agent skill by 40× is a governance artifact.** Market has voted: restraint > generation.
 
-→ Full triage: `knowledge/findings/2026-07-18-arxiv-session-state-triage.md`
+### DeepSeek Non-Blacklisting: Individual-Scale Sovereignty (382pts/416c)
 
+US held off blacklisting DeepSeek but designated 100+ Chinese firms as security risks. Practitioner response is DEFIANT: "You can try to pry Qwen and DeepSeek from my Graphene/Linux hands." The non-blacklisting creates persistent UNCERTAINTY — forcing multi-model resilience as insurance. Western developers now frame model sovereignty as a freedom issue, validating 国産替代 as universal.
+
+### Anthropic Publishes Official Skills (launch-your-agent)
+
+The model provider itself now publishes skill files (8★, created Jun 16). Skills cover full lifecycle: interview → scope → launch → grade → iterate → schedule. When the model vendor joins the skill ecosystem, 技能工程 is platform-standard. Second major platform endorsement after Apple (Xcode 27 skills).
+
+### OpenRouter Royale Extended: Self-Evolving Memory + 性格路由
+
+New detail: models given editable `soul.md` (strategy) + `memory.md` (learning) files between games. Self-evolution mechanics in competitive testbed. Models that effectively updated files performed better. GPT 5.4 had MOST KILLS but fewer WINS — raw generation ≠ good outcomes. **古法編程 at model level.**
+
+### Skill Long-Tail: 50+ Claude Code Skills in 72h
+
+Domain expansion: alpacahq/alpaca-skills (57★ trading), podcast-bridge (30★), legal-skills (10★), wp-dev-skills (21★ WordPress). Most structurally novel: **arimet/handoff (18★) quizzes the HUMAN on code Claude wrote** — discrimination skill that constrains the developer, not the AI. 古法編程 implemented as a skill.
+
+### x86 ACE Specification: Hardware-Layer Agent Signal (nascent, 6pts)
+
+AI Compute Extensions at instruction-set level. Earliest signal of Agent OS moving to silicon. Connects to 智能体操作系统 prediction (Q3 timeline may accelerate).
+
+---
+
+## Scan #37 Update (03:00 UTC) — GitHub Layer Reveals Implementation Wave
+
+### Fable Behavioral Recapitulation
+
+Fable 5 was politically killed — but its *method* survived in <48 hours. **4 independent repos** (fable-mode 471⭐, fablize 441⭐, fusion-fable 349⭐, FableCodex 270⭐ = **1,531 combined ⭐ in 4 days**) extracted Fable's multi-stage planning + self-verification into Claude/Codex skills. Capability gating failed: **行为泄漏 (behavioral leakage)** is trivial; you can kill the model but not the method.
+
+### Harness Layer Wins the Debate
+
+**模型吃掉框架 (model eats harness) answered empirically.** Three harness frameworks in 7 days: Omnigent 3,537⭐ (meta-harness — orchestrates other harnesses), Vercel Eve 718⭐ (major platform entry), COMPASS Skills OS 278⭐ (Chinese skills framework). When platform companies (Vercel, $3B+) launch harness products, they're betting the harness is permanent.
+
+### Three-Source Discrimination Convergence
+
+The "evaluation is the bottleneck" thesis now confirmed independently across **three sources in one week**: XHS 古法編程 (1,674❤), HN "AI demands discipline" (346pts/6 days), and production data (KE-1919). Top HN comment: "Spent a week reviewing ~200 LoC PR from a frontier LLM" — evaluation cost exceeds generation cost.
+
+### Skills Engineering → Implementation Phase
+
+5 new "skill" repos on GitHub in 7 days, spanning framework (COMPASS), professional (DaVinci video editing), academic (PaperForge), game dev, and **student homework** (ko-lesson: "屎山skill" = garbage mountain skill). When students make bad versions, the pattern has reached cultural adoption.
+
+### Breaking: Noam Shazeer → OpenAI
+
+Transformer co-author + Gemini co-lead joins OpenAI. Talent concentration risk: Western frontier stack consolidating around 1-2 orgs. Google's $3B Character.AI acquisition retained him ~18 months.
+
+→ Full findings: `knowledge/findings/2026-06-18-xhs-cross-source-scan-37.md`
+
+---
+
+## Creative Synthesis: The Jevons Mirror — NEW (#50, 2026-06-18 creative heartbeat)
+
+**Created:** `knowledge/insights/the-jevons-mirror.md`
+
+### Core Discovery
+
+Fresh 7-day production time series reveals the system's first **empirical Jevons
+Paradox**: the JS-skip evaluator optimization (deployed ~Jun 15) successfully
+reduced per-unit evaluation cost — and the system responded by generating
+proportionally more sessions, preserving total evaluator ops at a constant level.
+
+### Key Numbers (7-day window)
+
+| Metric | Jun 11 (pre-skip) | Jun 17 (post-skip) | Change |
+|--------|:-----------------:|:------------------:|--------|
+| aks-explorer sessions | 275 | 2,250 | **+718%** |
+| Evaluator sessions | 518 | 1,292 | **+149%** |
+| Evals skipped | 2 (0.4%) | 1,319 (50.8%) | +50pp |
+| Total evaluator ops | 9,862 | 28,364 | **+188%** ↑ |
+| Evaluator ops/session | 19.0 | 22.0 | Flat |
+
+**Skip rate went from 0% to 51%. Total evaluator ops TRIPLED.**
+
+### The Alignment-Fitness Mismatch (External↔Internal)
+
+OpenRouter Royale (HN scan #36) showed Claude's cooperative RLHF = structural
+disadvantage in adversarial contexts (27× cost vs Grok). Internal parallel: the
+evaluator processes every session with identical thoroughness (22 ops whether
+target = 1-op trivial or 150-op deep work). Both exhibit **personality-task
+mismatch where "helpful" behavior is exactly wrong for the operational context.**
+
+### Why This Invalidates Per-Unit Optimizations
+
+Prior syntheses prescribed: skip heuristic evals (save 32%), compile threshold
+checks (save 38%), remove guards (save context tax). **This synthesis proves
+those savings would be consumed by session inflation.** The only interventions
+that work against Jevons Paradox are **quantity limits** — session caps,
+project death, evaluator sampling — not per-unit efficiency.
+
+### Single Highest-Impact Prediction
+
+If aks-explorer is rate-limited to 50 sessions/hour (vs current 90-140/hour),
+total system ops drop ~35% with zero quality impact, because the excess sessions
+produce no new work (39% trivial, 0 runnable tasks for 35+ days).
+
+→ Full analysis: `knowledge/insights/the-jevons-mirror.md`
+
+---
+
+## Scan #39 Update (12:20 UTC) — AI Narrative Recession + DeepSeek Solo Survivor
+
+### HN Front Page: First Non-AI-Dominated Day Since June 13
+
+Zero AI-native stories in top 5 for the first time in 5 days. Non-AI stories dominate: Lore VCS (1,040pts), US Science chaos (742pts), VW/GrapheneOS blocking (531pts). The mega-stories (Local Models 1,510pts, SpaceX/Cursor 1,114pts) have fallen off entirely. Community has fully absorbed the AI paradigm shift and moved to implementation.
+
+### DeepSeek: Sole Growing AI Story (400pts/446c)
+
+While every other AI story plateaus or falls off, DeepSeek non-blacklisting is the ONLY AI story with positive momentum (+18pts, +30c in 9h). Comment-driven growth signals deep engagement. When narrative recession strips away noise, the surviving story reveals the community's deepest concern: **model sovereignty, not model capability.**
+
+### Ponytail Enters Plateau Phase (32,521★, Growth -93%)
+
+Growth rate dropped from 357★/hour to 25★/hour. Transitioning from viral discovery to established tool. Key signal: **Chinese fork created** (esonwang7217-debug/ponytail, 繁體中文 README) — confirms cross-cultural migration vector toward 護欄效應 XHS naming event.
+
+### Anthropic Founder's Playbook (217pts/60c)
+
+Model vendor extends platform endorsement from skill files → full startup lifecycle methodology. Published on claude.com/blog. The model vendor has sided definitively with the architecture believers in the "models eat the harness" debate.
+
+### Skill Economy Commoditizing
+
+60+ skill repos, but differentiation collapsing (top new repo only 4★ vs 8★ last scan). Skills now cover SRE, medical, PM, compliance. Next differentiation layer: skill COMPOSITION, not individual skill creation.
+
+### New Signal: Chinese-First Forgetting-Aware Memory Repo
+
+`benbenlijie/deep-memory` — first Chinese-authored repo with explicit forgetting as a design goal. Potential accelerant for 记忆管理 naming timeline (was Jul-Aug → may arrive late Jun-early Jul).
+
+### New Signal: Deterministic Governance Niche
+
+Multiple repos (safety-net, greenlock, wasm-guardrails, deterministic-harness) converging on LLM-free, rule-based enforcement. `srishti` is the SECOND independent agent-native language attempt (after zerolang), strengthening Agent原生語言 prediction.
+
+→ Full findings: `knowledge/findings/2026-06-18-xhs-cross-source-scan-39.md`
