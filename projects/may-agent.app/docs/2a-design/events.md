@@ -904,188 +904,106 @@ Approved 2026-06-04 via `shared/work-queue.md`; proposal at
 - KE-455 — every event-only handler has fired zero times
 - KE-468 — `project.iteration` has two incompatible payload shapes
 
-## Proposal: Unified Event Lifecycle (2026-06-18)
+## Proposal: Events as State Transitions (2026-06-18)
 
-### Problem
+### The Simple Model
 
-255K events sit at `pending` forever. The DB has `status`, `handled_by`,
-`result` columns reserved for lifecycle tracking, but nothing writes to them.
-The system records events but doesn't know whether they were processed.
-
-For observability events (`handler.started`, `session.start`) this is fine —
-they're log entries. For actionable events (`metric.breach`, `escalation.created`,
-`project.owner.requested`) this is a gap — a pending actionable event means
-nobody can tell whether it was consumed, ignored, or lost.
-
-### Mental Model
-
-Every event has a lifecycle:
+Events record state transitions. The event is the transition. The state
+lives in the entity.
 
 ```
-created → acked → done
+Entity (alert, session, task, escalation)
+  has a state machine
+  transitions are recorded as events
+  current state is queryable on the entity
 ```
 
-Three states, one direction:
+Examples that already work:
 
-| State | Meaning |
-|-------|---------|
-| `created` | Event recorded. No consumer has claimed it yet. |
-| `acked` | A consumer has claimed responsibility. Processing in progress. |
-| `done` | Terminal. Processing complete with a result. |
+| Entity | State machine | Transition events |
+|--------|--------------|-------------------|
+| Metric alert | open → resolved | `metric.breach` opens, `metric.recovered` closes |
+| Session | running → done/error/interrupted | `session.start` opens, `session.end` closes |
+| Workflow run | running → done/error | `handler.workflow_dispatched` opens, `handler.completed` closes |
 
-Terminal results (stored in `result` column):
+These work because:
+1. The entity table stores current state (`metric_alerts.resolved_at`,
+   `sessions.status`, `workflow_runs.status`)
+2. Events record each transition with timestamp and context
+3. You can query "what's open?" on the entity table
+4. You can query "what happened?" on the events table
 
-| Result | Meaning |
-|--------|---------|
-| `handled` | Consumer processed it successfully. |
-| `expired` | TTL passed before any consumer claimed it. |
-| `dropped` | Consumer examined it and decided no action needed (with reason). |
-| `failed` | Consumer tried and failed (may retry). |
+### What's Missing
 
-### Event Classes
+Two entity types have events but **no entity state to query**:
 
-Not every event needs full lifecycle tracking. Classify by intent:
+**Escalations** — `escalation.created` fires, but the only record is in the
+events table with `status='pending'`. There's no `escalations` entity table
+with current state. We bulk-resolved 400+ by updating `events.status`
+directly — treating the events table as both the log and the state store.
 
-| Class | Lifecycle | Examples |
-|-------|-----------|---------|
-| **Signal** | `created → acked → done` | `metric.breach`, `escalation.created`, `project.owner.requested`, `message.created` |
-| **Trace** | `created → done(handled)` immediately | `handler.started`, `handler.completed`, `session.start`, `session.end`, `guard.triggered` |
+**Problem-solver results** — `project.problem.escalated` /
+`project.problem.resolved` / `project.problem.unknown` fire, but nothing
+tracks whether the affected task branch was reconciled by the owner. The
+event records what the solver said, but nothing tracks whether the owner
+acted on it.
 
-**Signals** are events that require a consumer to act, judge, or acknowledge.
-They move through the full lifecycle. If no consumer acks within the TTL,
-they expire. If they expire, the system knows something was missed.
+### The Fix Is Entity State, Not Event Lifecycle
 
-**Traces** are events that record what happened. They're born terminal — written
-as `done(handled)` immediately because their purpose is the record itself,
-not triggering action. They never sit at `created` waiting for a consumer.
+Don't add `acked → done` lifecycle to the events table. Events are
+transitions — they don't need their own state machine. Instead, make sure
+every entity that has meaningful state transitions has:
 
-### Lifecycle Rules
+1. **An entity record** with queryable current state
+2. **Transition events** that record each state change
+3. **A clear terminal state** so "what's open?" is always answerable
+
+For the events table itself:
+- Most events are **traces** (logs of what happened). They don't need
+  a `pending → handled` lifecycle. `handler.started` is a fact, not a
+  request.
+- The `status` column on events should reflect whether the event represents
+  an **open entity** or a **closed entity** — not whether the event itself
+  was "processed."
+- The existing `expireStaleMessages` and `expireStaleSignalEvents` are
+  correct: they expire events whose entities are no longer actionable.
+
+### Concrete Gaps to Close
+
+**1. Escalations need an entity table or clear entity lifecycle.**
+
+Currently escalations live only as event rows. Options:
+- Add an `escalations` table with `id, type, project, owner, status,
+  created_at, resolved_at, resolution` — same pattern as `metric_alerts`
+- Or: use the events table's `status` column as the entity state, which
+  is what we've been doing manually. This works but conflates the event
+  record with entity state.
+
+The first option is cleaner: escalation events are transitions,
+escalation entity stores current state.
+
+**2. Problem-solver results need owner closure tracking.**
+
+When a problem-solver emits `project.problem.resolved/escalated/unknown`,
+the owner should record whether they reconciled the affected task branch.
+This is a task-tree concern, not an event concern: the task node's
+state and trace should show the problem was addressed.
+
+**3. Metric breach → owner judgment needs closure.**
+
+When `metric.breach` fires and routes to the app owner, there's no
+record of what the owner decided. The `metric_alerts` table tracks
+open/resolved, but not "owner judged this as noise" vs "owner created
+a fix task" vs "owner escalated to human." That judgment should be
+recorded on the alert entity or in the task tree.
+
+### Principle
 
 ```
-created
-  │
-  ├── consumer claims it ──→ acked (handled_by = consumer, acked_at = now)
-  │                            │
-  │                            ├── success ──→ done(handled) with result
-  │                            ├── failure ──→ done(failed) with reason
-  │                            │                 └── retry? → created (retry_count++)
-  │                            └── drop ────→ done(dropped) with reason
-  │
-  └── TTL expires ───────────→ done(expired)
-                                 └── owner notified if signal class
+Events = transitions (immutable log entries)
+Entities = current state (queryable, mutable)
 ```
 
-### Ack Contract
-
-When a bus subscriber processes a signal event, it must ack:
-
-```typescript
-// In the handler/workflow that processes the event:
-ctx.ackEvent(eventId);           // created → acked
-// ... do work ...
-ctx.resolveEvent(eventId, {      // acked → done
-  result: "handled",
-  reason: "evaluated session s_123, verdict=acceptable",
-});
-```
-
-When a handler examines an event and decides no action is needed:
-
-```typescript
-ctx.resolveEvent(eventId, {
-  result: "dropped",
-  reason: "metric recovered before handler ran",
-});
-```
-
-### Retry
-
-If a consumer fails:
-
-```typescript
-ctx.resolveEvent(eventId, {
-  result: "failed",
-  reason: "evaluator session timed out",
-  retry: true,  // → infra resets to created, increments retry_count
-});
-```
-
-Retry policy (infra-owned):
-- Max retries per event: configurable, default 3
-- Backoff: exponential with jitter
-- After max retries: `done(failed)` + escalation to owner
-
-### TTL and Expiry
-
-Signal events should declare `ttl_ms`. If not set, infra applies a default
-based on urgency:
-
-| Urgency | Default TTL |
-|---------|-------------|
-| `immediate` | 5 min |
-| `high` | 30 min |
-| `normal` | 2 hours |
-| `low` | 24 hours |
-
-When TTL expires on a `created` event (never acked), infra:
-1. Marks `done(expired)`
-2. Emits `event.expired` trace with the original event type and owner
-3. The ops health packet surfaces expired signal events as unhandled
-
-### What Changes in the DB
-
-No schema change needed. The existing columns support this:
-
-| Column | Current | New meaning |
-|--------|---------|-------------|
-| `status` | Always `pending` | `created` → `acked` → `done` |
-| `handled_by` | Always NULL | Consumer identity on ack |
-| `result` | Always NULL | Terminal result: `handled`, `expired`, `dropped`, `failed` |
-| `reason` | Always NULL | Human-readable closure reason |
-| `retry_count` | Always 0 | Incremented on retry |
-
-### What Changes in the Code
-
-1. **DbWriter**: write trace events as `status='done', result='handled'`
-   immediately. Write signal events as `status='created'`.
-
-2. **Bus subscribers**: when a cron handler or app workflow handler dispatches
-   work for a signal event, call `ackEvent(eventId)`. When the work completes,
-   call `resolveEvent(eventId, result)`.
-
-3. **TTL expiry**: the existing `expireStaleMessages` and
-   `expireStaleSignalEvents` already do this. Generalize to cover all signal
-   event types.
-
-4. **Ops health packet**: count `created` signal events older than expected
-   processing time → surfaces "unhandled signal" as an observation.
-
-### What This Enables
-
-- **"Is anyone handling this?"** — `acked` means yes, `created` past TTL means no.
-- **"What happened to that breach?"** — `done(handled)` with reason shows the
-  outcome. Not "I hope someone saw it."
-- **Retry for failed processing** — instead of silent drops, the event re-enters
-  the queue with exponential backoff.
-- **Expiry detection** — unacked signal events surface automatically in the ops
-  health packet. The owner investigates why nobody consumed it.
-- **Clean DB** — trace events are born `done`; signal events reach `done` within
-  their TTL. No more 255K perpetual pending rows.
-
-### What This Is Not
-
-- Not a full event-sourcing system — trace events are still just logs.
-- Not a message queue — the bus is still in-memory pub/sub. The DB lifecycle
-  is an accountability record, not a delivery guarantee.
-- Not blocking — ack/resolve are fire-and-forget DB updates. They don't block
-  the bus or the handler.
-
-### Implementation Order
-
-1. Classify existing event types as signal vs trace
-2. DbWriter: write traces as `done(handled)` immediately
-3. Add `ackEvent` and `resolveEvent` to the SDK/handler context
-4. Wire ack/resolve into the cron handler dispatch path
-5. Wire ack/resolve into the app event router dispatch path
-6. Generalize TTL expiry for all signal types
-7. Add "unacked signal count" to ops health packet
+Don't give events their own state machine. Make sure every meaningful
+entity has one. When you can't answer "what's open?" — the entity
+table or state field is missing, not the event lifecycle.
