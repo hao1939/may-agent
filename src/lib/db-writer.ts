@@ -7,7 +7,7 @@
  * See: shared/may-agent-docs/events.md
  */
 
-import type { AgentEvent } from "../app/event-bus.js";
+import { EVENT_ROW_ID, type AgentEvent, type DeliveryResult } from "../app/event-bus.js";
 import { getDb, upsertSession, updateSessionDb } from "./requests.js";
 import type { SqliteDb } from "./db.js";
 import { isCanonicalEventEnvelope, isRecord } from "../../packages/control/src/event-envelope.js";
@@ -26,6 +26,9 @@ const DURABLE_COMMAND_EVENTS = new Set([
   "restart",
   "shutdown",
 ]);
+
+const DEFAULT_UNACCEPTED_TTL_MS = 2 * 60 * 1000;
+const DEFAULT_PAIR_TTL_MS = 45 * 60 * 1000;
 
 function eventPayload(event: Record<string, unknown>): Record<string, unknown> {
   if (isCanonicalEventEnvelope(event)) return event.data as Record<string, unknown>;
@@ -58,9 +61,47 @@ function capEventData(json: string): string {
   return `${json.slice(0, MAX_EVENT_DATA)}...[TRUNCATED: ${json.length} chars]`;
 }
 
+function keyPart(value: unknown): string | undefined {
+  if (typeof value === "string" && value.trim()) return value.trim();
+  if (typeof value === "number" && Number.isFinite(value)) return String(value);
+  return undefined;
+}
+
+function correlationKey(eventType: string, payload: Record<string, unknown>): string | undefined {
+  if (eventType.startsWith("session.")) return keyPart(payload.sessionId);
+  if (eventType.startsWith("workflow.")) return keyPart(payload.workflowRunId);
+  if (eventType.startsWith("handler.")) return keyPart(payload.handlerRunId) ?? keyPart(payload.workflowRunId) ?? keyPart(payload.handler);
+  if (eventType.startsWith("escalation.")) return keyPart(payload.escalationId);
+  if (eventType.startsWith("project.task.")) {
+    const taskId = keyPart(payload.taskId);
+    if (!taskId) return undefined;
+    const attemptId = keyPart(payload.attemptId);
+    return attemptId ? `${taskId}:${attemptId}` : taskId;
+  }
+  return keyPart(payload.requestId);
+}
+
+function openingPair(eventType: string): { name: string; base: string; timeoutMs: number } | undefined {
+  if (eventType === "session.start") return { name: "session", base: "session", timeoutMs: 60 * 60 * 1000 };
+  if (eventType.endsWith(".started")) return { name: eventType.slice(0, -".started".length), base: eventType.slice(0, -".started".length), timeoutMs: DEFAULT_PAIR_TTL_MS };
+  if (eventType.endsWith(".requested")) return { name: eventType.slice(0, -".requested".length), base: eventType.slice(0, -".requested".length), timeoutMs: 60 * 60 * 1000 };
+  if (eventType.endsWith(".created")) return { name: eventType.slice(0, -".created".length), base: eventType.slice(0, -".created".length), timeoutMs: 24 * 60 * 60 * 1000 };
+  if (eventType.endsWith(".assigned")) return { name: eventType.slice(0, -".assigned".length), base: eventType.slice(0, -".assigned".length), timeoutMs: DEFAULT_PAIR_TTL_MS };
+  return undefined;
+}
+
+function closingPair(eventType: string): { base: string } | undefined {
+  if (eventType === "session.end") return { base: "session" };
+  for (const suffix of [".completed", ".failed", ".accepted", ".rejected", ".resolved", ".dismissed", ".closed", ".blocked"]) {
+    if (eventType.endsWith(suffix)) return { base: eventType.slice(0, -suffix.length) };
+  }
+  return undefined;
+}
+
 export class DbWriter {
   private db: SqliteDb;
   private persistDir: string;
+  private deliveryTrackingStartedAt = Date.now();
 
   constructor(persistDir: string) {
     this.persistDir = persistDir;
@@ -89,18 +130,7 @@ export class DbWriter {
             stepLabel: payload.stepLabel as string | undefined,
             startedAt: Date.now(),
           });
-          // Also write event row for analytics / audit
-          try {
-            this.db.run("INSERT INTO events (event_type, source, owner, data, timestamp) VALUES (?,?,?,?,?)", [
-              event.type,
-              eventSource(ev, payload.agent),
-              eventOwner(ev, payload.agent),
-              capEventData(JSON.stringify(payload)),
-              Date.now(),
-            ]);
-          } catch {
-            /* best-effort */
-          }
+          this.insertEventRow(event, payload, eventSource(ev, payload.agent), eventOwner(ev, payload.agent));
           break;
         }
 
@@ -116,18 +146,7 @@ export class DbWriter {
             lastActivityAt: Date.now(),
             endedAt: Date.now(),
           });
-          // Also write event row for analytics / audit
-          try {
-            this.db.run("INSERT INTO events (event_type, source, owner, data, timestamp) VALUES (?,?,?,?,?)", [
-              event.type,
-              eventSource(ev, payload.agent),
-              eventOwner(ev, payload.agent),
-              capEventData(JSON.stringify(payload)),
-              Date.now(),
-            ]);
-          } catch {
-            /* best-effort */
-          }
+          this.insertEventRow(event, payload, eventSource(ev, payload.agent), eventOwner(ev, payload.agent));
           break;
         }
 
@@ -139,21 +158,20 @@ export class DbWriter {
           const urgency = eventUrgency(ev);
           // v2 inter-agent message — persist with canonical source/owner so
           // inbox queries key on the event owner.
-          this.db.run("INSERT INTO events (event_type, source, owner, data, timestamp, urgency) VALUES (?,?,?,?,?,?)", [
-            "message.created",
-            eventSource(ev),
-            eventOwner(ev),
-            JSON.stringify({
+          this.insertEventRow(
+            event,
+            {
               from: payload.from,
               to: payload.to,
               content: payload.content,
               intent: payload.intent ?? null,
               artifact: payload.artifact ?? null,
               priority,
-            }),
-            Date.now(),
+            },
+            eventSource(ev),
+            eventOwner(ev),
             urgency,
-          ]);
+          );
           break;
         }
 
@@ -162,18 +180,7 @@ export class DbWriter {
             try {
               const ev = event as any;
               const data = eventPayload(ev);
-              this.db.run(
-                "INSERT INTO events (event_type, source, owner, data, timestamp, urgency, ttl_ms) VALUES (?, ?, ?, ?, ?, ?, ?)",
-                [
-                  event.type,
-                  eventSource(ev),
-                  eventOwner(ev),
-                  capEventData(JSON.stringify(data)),
-                  Date.now(),
-                  eventUrgency(ev),
-                  eventTtlMs(ev),
-                ],
-              );
+              this.insertEventRow(event, data, eventSource(ev), eventOwner(ev), eventUrgency(ev), eventTtlMs(ev));
             } catch {
               /* table may not exist */
             }
@@ -186,18 +193,7 @@ export class DbWriter {
               const ev = event as any;
               if (!isCanonicalEventEnvelope(ev)) break;
               const data = eventPayload(ev);
-              this.db.run(
-                "INSERT INTO events (event_type, source, owner, data, timestamp, urgency, ttl_ms) VALUES (?, ?, ?, ?, ?, ?, ?)",
-                [
-                  event.type,
-                  eventSource(ev),
-                  eventOwner(ev),
-                  capEventData(JSON.stringify(data)),
-                  Date.now(),
-                  eventUrgency(ev),
-                  eventTtlMs(ev),
-                ],
-              );
+              this.insertEventRow(event, data, eventSource(ev), eventOwner(ev), eventUrgency(ev), eventTtlMs(ev));
             } catch {
               /* table may not exist */
             }
@@ -209,4 +205,171 @@ export class DbWriter {
       console.error(`[db-writer] Error persisting ${event.type}:`, err instanceof Error ? err.message : err);
     }
   };
+
+  recordDelivery = (event: AgentEvent, result: DeliveryResult): void => {
+    try {
+      const rowId = (event as AgentEvent & { [EVENT_ROW_ID]?: number })[EVENT_ROW_ID];
+      if (typeof rowId !== "number" || !Number.isFinite(rowId)) return;
+      const now = Date.now();
+      this.db.run(
+        `UPDATE events
+         SET delivery_status = 'accepted',
+             accepted_by = ?,
+             accepted_at = ?,
+             delivery_route = ?,
+             delivery_note = ?
+         WHERE id = ?`,
+        [result.by, now, result.route ?? "direct", result.note ?? null, rowId],
+      );
+      if (result.route === "owner_inbox") this.openOwnerInboxPair(event, rowId, now);
+    } catch {
+      /* best-effort delivery metadata */
+    }
+  };
+
+  private insertEventRow(
+    event: AgentEvent,
+    payload: Record<string, unknown>,
+    source: string | null,
+    owner: string | null,
+    urgency = eventUrgency(event as Record<string, unknown>),
+    ttlMs = eventTtlMs(event as Record<string, unknown>),
+  ): number | null {
+    const timestamp = Date.now();
+    this.sweepStalePairs(timestamp);
+    this.sweepUnacceptedEvents(timestamp);
+    const info = this.db.run(
+      "INSERT INTO events (event_type, source, owner, data, timestamp, urgency, ttl_ms) VALUES (?, ?, ?, ?, ?, ?, ?)",
+      [
+        event.type,
+        source,
+        owner,
+        capEventData(JSON.stringify(payload)),
+        timestamp,
+        urgency,
+        ttlMs,
+      ],
+    );
+    const rowId = Number(info.lastInsertRowid);
+    if (Number.isFinite(rowId) && rowId > 0) {
+      try {
+        Object.defineProperty(event, EVENT_ROW_ID, {
+          value: rowId,
+          configurable: true,
+        });
+      } catch {
+        /* event may be frozen; delivery metadata will be skipped */
+      }
+      this.closePairForFollowup(payload, rowId, timestamp);
+      this.closeConventionPairs(event.type, payload, rowId, timestamp);
+      this.openConventionPair(event.type, payload, rowId, eventOwner(event as Record<string, unknown>), timestamp);
+      return rowId;
+    }
+    return null;
+  }
+
+  private closePairForFollowup(payload: Record<string, unknown>, closeEventId: number, closedAt: number): void {
+    const rawOpenEventId = payload.openEventId ?? payload.open_event_id;
+    const openEventId = typeof rawOpenEventId === "number" ? rawOpenEventId : Number(rawOpenEventId);
+    if (!Number.isFinite(openEventId) || openEventId <= 0) return;
+    this.db.run(
+      `UPDATE event_pair_runs
+       SET status = 'closed',
+           close_event_id = ?,
+           closed_at = ?,
+           note = COALESCE(note, 'closed by follow-up event')
+       WHERE open_event_id = ?
+         AND status = 'open'`,
+      [closeEventId, closedAt, openEventId],
+    );
+  }
+
+  private openOwnerInboxPair(event: AgentEvent, openEventId: number, openedAt: number): void {
+    const ttlMs = eventTtlMs(event as Record<string, unknown>) ?? 2 * 60 * 60 * 1000;
+    const owner = eventOwner(event as Record<string, unknown>);
+    this.db.run(
+      `INSERT OR IGNORE INTO event_pair_runs
+       (pair_name, correlation_key, open_event_id, owner, status, opened_at, expected_close_at, note)
+       VALUES (?, ?, ?, ?, 'open', ?, ?, ?)`,
+      [
+        "owner_inbox",
+        `event:${openEventId}`,
+        openEventId,
+        owner,
+        openedAt,
+        openedAt + ttlMs,
+        `owner inbox item opened by ${event.type}`,
+      ],
+    );
+  }
+
+  private openConventionPair(eventType: string, payload: Record<string, unknown>, openEventId: number, owner: string | null, openedAt: number): void {
+    const pair = openingPair(eventType);
+    if (!pair) return;
+    const key = correlationKey(eventType, payload);
+    if (!key) return;
+    this.db.run(
+      `INSERT OR IGNORE INTO event_pair_runs
+       (pair_name, correlation_key, open_event_id, owner, status, opened_at, expected_close_at, note)
+       VALUES (?, ?, ?, ?, 'open', ?, ?, ?)`,
+      [
+        pair.name,
+        key,
+        openEventId,
+        owner,
+        openedAt,
+        openedAt + pair.timeoutMs,
+        `opened by ${eventType}`,
+      ],
+    );
+  }
+
+  private closeConventionPairs(eventType: string, payload: Record<string, unknown>, closeEventId: number, closedAt: number): void {
+    const pair = closingPair(eventType);
+    if (!pair) return;
+    const key = correlationKey(eventType, payload);
+    if (!key) return;
+    this.db.run(
+      `UPDATE event_pair_runs
+       SET status = 'closed',
+           close_event_id = ?,
+           closed_at = ?,
+           note = COALESCE(note, ?)
+       WHERE status IN ('open', 'orphan')
+         AND pair_name = ?
+         AND correlation_key = ?`,
+      [closeEventId, closedAt, `closed by ${eventType}`, pair.base, key],
+    );
+  }
+
+  private sweepStalePairs(now: number): void {
+    try {
+      this.db.run(
+        `UPDATE event_pair_runs
+         SET status = 'orphan',
+             note = COALESCE(note, 'expected closing event did not arrive before timeout')
+         WHERE status = 'open'
+           AND expected_close_at < ?`,
+        [now],
+      );
+    } catch {
+      /* best-effort pair sweep */
+    }
+  }
+
+  private sweepUnacceptedEvents(now: number): void {
+    try {
+      this.db.run(
+        `UPDATE events
+         SET delivery_status = 'unhandled',
+             delivery_note = COALESCE(delivery_note, 'no responsible consumer accepted event before timeout')
+         WHERE delivery_status = 'pending'
+           AND timestamp >= ?
+           AND timestamp + COALESCE(ttl_ms, ?) < ?`,
+        [this.deliveryTrackingStartedAt, DEFAULT_UNACCEPTED_TTL_MS, now],
+      );
+    } catch {
+      /* best-effort delivery sweep */
+    }
+  }
 }
