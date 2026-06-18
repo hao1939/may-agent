@@ -130,9 +130,15 @@ function recentEvents(
         Record<string, unknown>
       >;
       // Track message.created event IDs so the caller can mark them handled.
+      // CRITICAL: only collect IDs where owner is agent:may — otherwise we
+      // steal messages belonging to other agents (aks-explorer, scout, etc.).
       if (type === "message.created") {
         for (const row of rows) {
-          if (typeof row.id === "number" && row.status === "pending") {
+          if (
+            typeof row.id === "number" &&
+            row.status === "pending" &&
+            row.owner === "agent:may"
+          ) {
             consumedMessageIds.push(row.id);
           }
         }
@@ -161,7 +167,7 @@ function queryRows(
 function buildReviewPacket(
   ctx: WorkflowContext,
   appDir: string,
-): { packet: Record<string, unknown>; consumedMessageIds: number[] } {
+): { packet: Record<string, unknown>; consumedMessageIds: number[]; consumedEscalationIds: number[]; consumedSignalEventIds: number[] } {
   const projectJson = parseJsonFile(join(appDir, "project.json"));
   const projectRows = queryRows(ctx, () =>
     ctx.query.projects({ id: "may-agent.app", limit: 5 }),
@@ -179,6 +185,7 @@ function buildReviewPacket(
   const abnormalEvents = recentEvents(ctx, [
     "handler.failed",
     "session.resume_failed",
+    "session.recovery_failed",
     "subscriber.failed",
     "message.delivery_failed",
     "agent.config_invalid",
@@ -215,6 +222,55 @@ function buildReviewPacket(
     /* best-effort: fall back to recentEvents IDs only */
   }
 
+  // Collect pending escalation.created events owned by agent:may from
+  // project agents (aks-explorer, evaluator, scout, etc.). These are
+  // informational "waiting_with_evidence" escalations that the owner review
+  // consumes by reading the packet. Without draining them, escalation.pending-count
+  // grows unbounded and triggers metric breach alerts.
+  const pendingEscalationIds: number[] = [];
+  try {
+    const ESCALATION_LOOKBACK_MS = 48 * 60 * 60_000; // 48h to catch any backlog
+    const pendingEscalations = ctx.query.events({
+      type: "escalation.created",
+      owner: "agent:may",
+      since: Date.now() - ESCALATION_LOOKBACK_MS,
+      limit: 200,
+    }).rows as Array<Record<string, unknown>>;
+    for (const row of pendingEscalations) {
+      if (typeof row.id === "number" && row.status === "pending") {
+        pendingEscalationIds.push(row.id);
+      }
+    }
+  } catch {
+    /* best-effort: don't block review if escalation collection fails */
+  }
+
+  // Collect pending metric.breach and metric.recovered events owned by agent:may.
+  // These are informational signals that the owner review consumes by including
+  // them in the review packet. Without draining them, they accumulate indefinitely
+  // (the expireStaleSignalEvents helper only catches events >24h old, so recent
+  // ones pile up between creation and the 24h threshold).
+  const pendingSignalEventIds: number[] = [];
+  try {
+    const SIGNAL_LOOKBACK_MS = 48 * 60 * 60_000; // 48h to catch backlog
+    const signalTypes = ["metric.breach", "metric.recovered", "metric.stalled"];
+    for (const type of signalTypes) {
+      const pendingSignals = ctx.query.events({
+        type,
+        owner: "agent:may",
+        since: Date.now() - SIGNAL_LOOKBACK_MS,
+        limit: 200,
+      }).rows as Array<Record<string, unknown>>;
+      for (const row of pendingSignals) {
+        if (typeof row.id === "number" && row.status === "pending") {
+          pendingSignalEventIds.push(row.id);
+        }
+      }
+    }
+  } catch {
+    /* best-effort: don't block review if signal collection fails */
+  }
+
   return {
     packet: {
       generated_at: new Date().toISOString(),
@@ -235,6 +291,8 @@ function buildReviewPacket(
       active_may_sessions: compactRows(activeMaySessions, 10),
     },
     consumedMessageIds: allPendingMessageIds,
+    consumedEscalationIds: pendingEscalationIds,
+    consumedSignalEventIds: pendingSignalEventIds,
   };
 }
 
@@ -295,7 +353,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     /* best-effort: don't block review if signal expiry fails */
   }
 
-  const { packet, consumedMessageIds } = buildReviewPacket(ctx, appDir);
+  const { packet, consumedMessageIds, consumedEscalationIds, consumedSignalEventIds } = buildReviewPacket(ctx, appDir);
   const packetJson = JSON.stringify(packet, null, 2);
 
   // Mark consumed message.created events as handled so they don't reappear.
@@ -310,6 +368,50 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     }
   } catch {
     /* best-effort: don't block review if marking fails */
+  }
+
+  // Mark consumed escalation.created events as handled.
+  // These are project-agent escalations (aks-explorer, evaluator) that the
+  // owner review consumes by seeing them in the review packet. Without this,
+  // the escalation.pending-count metric grows unbounded and triggers alerts.
+  try {
+    if (
+      consumedEscalationIds.length > 0 &&
+      typeof ctx.query.markInboxHandled === "function"
+    ) {
+      ctx.query.markInboxHandled(consumedEscalationIds, "may");
+      if (consumedEscalationIds.length > 0) {
+        ctx.emit({
+          type: "escalation.lifecycle",
+          action: "drain_pending",
+          drained: consumedEscalationIds.length,
+          reason: "owner-review consumed escalation events",
+        });
+      }
+    }
+  } catch {
+    /* best-effort: don't block review if escalation marking fails */
+  }
+
+  // Mark consumed metric.breach/recovered/stalled events as handled.
+  // These are signal events the owner review includes in the packet for
+  // context. Without draining them, pending counts grow between measurement
+  // cycles and trigger cascading metric alerts.
+  try {
+    if (
+      consumedSignalEventIds.length > 0 &&
+      typeof ctx.query.markInboxHandled === "function"
+    ) {
+      ctx.query.markInboxHandled(consumedSignalEventIds, "may");
+      ctx.emit({
+        type: "signal.lifecycle",
+        action: "drain_pending_signals",
+        drained: consumedSignalEventIds.length,
+        reason: "owner-review consumed metric signal events",
+      });
+    }
+  } catch {
+    /* best-effort: don't block review if signal marking fails */
   }
 
   // Safety cap: if the serialized packet exceeds 200KB, something is wrong.
