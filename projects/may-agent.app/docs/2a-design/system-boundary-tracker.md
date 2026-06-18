@@ -1,5 +1,16 @@
 # Infra Surface Refactor Plan
 
+> **Status (2026-06-18):** This tracker was written during the handler-centric
+> era. Many phases are now complete or superseded by the project-app migration.
+> Key completed items: project-app loader, app-local agent registration,
+> centralized cron lifecycle, legacy project handler disabled, evaluation/scout
+> migrated to apps. The remaining work is tracked in
+> [system-operations-model.md](../3-proposals/system-operations-model.md)
+> (handler consolidation, static checks, ops health packet).
+>
+> This file is preserved as historical context for the phases that shipped.
+> For current architecture direction, see [project-app-v3.md](project-app-v3.md).
+
 **Status**: Canonical implementation tracker. This is the single go-forward
 plan for the infra surface work. The older implementation tracker has been
 folded into this file; the gap mitigation notes are incorporated here.

@@ -2,6 +2,19 @@
 
 **Status**: Active. This is the system's architecture reference.
 
+> **Update (2026-06-18):** The system has evolved from handler-centric to
+> **project-app-centric**. The canonical execution model is now:
+>
+> ```
+> project-app (app.ts) → schedules/events → workflow handlers → agent sessions
+> ```
+>
+> Project-apps own their agents, schedules, event routing, and task trees.
+> Legacy handlers on may's cron are being consolidated — see
+> [project-app-v3.md](project-app-v3.md) for the canonical app model and
+> [system-operations-model.md](../3-proposals/system-operations-model.md) for
+> the ops consolidation plan.
+
 Core primitive:
 
 ```
@@ -13,12 +26,17 @@ Migration must be incremental. The current system is production-active.
 ---
 
 A **project-centered, event-based autonomous agent system** where:
+- **Project-apps are the primary unit.** Each `*.app/app.ts` declares its
+  owner agent, schedules, workflow handlers, event subscriptions, and task tree.
+  The app is how May-agent drives a domain project.
 - **Projects are context and ownership.** Each project carries its own history,
   background, goals, accumulated experience, and current lifecycle state.
   `active` means push now; `waiting` means watch until a resume signal makes
   work actionable again.
 - **Metrics are signals.** Typed metrics measure progress toward project goals and system health. Metrics do not judge or decide; they signal what may need attention.
-- **Heartbeats are agency.** A heartbeat is the recurring moment when an agent has the chance to be autonomous: read context, decide what's worth doing, act, record. Heartbeats are how ownership manifests. See `heartbeat.md`.
+- **App schedules replace heartbeats.** For app-owned agents, recurring work
+  fires from app.ts schedules, not blind heartbeat timers. Heartbeats remain
+  for standalone agents (dev, arc) without a project-app.
 - Agents are role/responsibility/context scopes — accountability boundaries that own a domain.
 - Everything is an event: timers, metric changes, messages, session completions.
 - Workflows relieve agents from orchestration decisions.

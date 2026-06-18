@@ -1,15 +1,23 @@
 # Projects
 
+> **Status (2026-06-18):** The project model has two tiers:
+>
+> 1. **Project-apps** (`*.app/app.ts`) — the primary model. App declares owner,
+>    schedules, workflow handlers, events, task tree. The legacy project handler
+>    is disabled for `.app` projects. See [project-app-v3.md](project-app-v3.md).
+>
+> 2. **Legacy projects** (`projects/<name>/project.md`) — still valid for simple
+>    one-off work, but no active legacy projects remain. The project handler
+>    (`agents/may/handlers/project.ts`) is disabled as of 2026-06-15.
+>
+> New projects should use the `.app` model. This doc describes the shared
+> conventions that both tiers use (status lifecycle, frontmatter, project.json).
+
 ## Overview
 
 Projects are the unit of explicit multi-session work. A project holds the
 durable goal and context; its `status` says whether the owner should push now
 or wait for a resume signal.
-
-Heartbeat is the implicit self-maintenance project for an agent. Do not create a
-shared project for routine heartbeat behavior. Create a shared project when
-there is a durable goal that needs explicit ownership, metrics, state, and a
-journal.
 
 ## Location
 
