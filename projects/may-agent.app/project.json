@@ -21,7 +21,7 @@
   "taskIndex": ["tasks/tree.json"],
   "currentFocus": {
     "taskId": null,
-    "summary": "Added metric.breach/recovered/stalled event lifecycle draining to platform-owner-review workflow. 21 pending metric.breach + 20 pending metric.recovered events were accumulating because the workflow read them for the review packet but never transitioned them to handled. Same pattern as the prior message.created and escalation.created fixes. Alert #1931 (escalation.pending-count) confirmed resolved at 0. Alert #1932 (metric.stale-active-count=32) is transient — all metrics have fresh snapshots. Alert #1922 (aks-rp-e2e blocked-count=20) remains aks-explorer-owned. Platform core: 0 handler.failed, 0 session.resume_failed, 0 subscriber.failed. 7 backlog leaves (P2 docs/design), 0 active."
+    "summary": "Committed metric.breach/recovered/stalled + escalation lifecycle draining (9185d5fbd). 42 pending agent:may signal events remain from pre-commit runs (drain will execute on next workflow run). Alert #1932 (stale-active-count) resolved. Alert #1922 (aks-rp-e2e blocked-count=20) remains aks-explorer-owned. Platform core: 0 handler.failed, 0 session.resume_failed, 0 subscriber.failed, 0 agent.config_invalid. 7 backlog leaves (P2 docs/design), 0 active."
   },
-  "updatedAt": "2026-06-18T00:53:00.000Z"
+  "updatedAt": "2026-06-18T01:20:00.000Z"
 }
