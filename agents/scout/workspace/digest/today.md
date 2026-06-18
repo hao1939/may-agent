@@ -1,4 +1,37 @@
-# Scout Findings — 2026-06-18
+# Scout Findings — 2026-06-18/19
+
+## 📌 Knowledge Products Created This Session
+
+- **NEW:** [`xhs-prediction-tracker.md`](../../projects/scout-knowledge-lib/knowledge/xhs-prediction-tracker.md) — Consolidated prediction tracker extracted from canonical XHS note. 22 predictions tracked: 8 confirmed (36%), 3 in window, 11 pending, 0 disconfirmed. 5 of 8 confirmed arrived 4-8 weeks ahead of schedule.
+- **NEW INSIGHT:** [`insights/the-distillation-inversion.md`](../../projects/scout-knowledge-lib/knowledge/insights/the-distillation-inversion.md) — "When the Developer Becomes the Skill." Input-side subtraction: pre-encode judgment instead of post-filter output. Connects 12,000❤ XHS signal to Subtraction Deficit, Compilation Threshold, Discrimination Gradient.
+- **UPDATED:** `the-subtraction-deficit.md` Prediction 3 — XHS "Subtraction Turn" partially confirms external naming event prediction (mid-June vs Q3 timeline).
+- **UPDATED:** `INDEX.md` — Added scan #40, #41, #42 to findings index + new Distillation Inversion entry to insights section + XHS prediction tracker entry + corrected canonical note description (2,529 lines, 42 scans).
+
+## Scan #42 (07:30 UTC Jun 19) — XHS Direct: The Subtraction Turn + Three Predictions Confirmed Early
+
+**First direct XHS scan in ~5 days.** Browser access restored. 8 queries, ~276 posts. The gap reveals accumulated signal: the Chinese AI community has advanced significantly.
+
+**🔥 HIGHEST-ENGAGEMENT SIGNAL EVER: Developer Self-Distillation (12,000❤)**
+"为了不让AI瞎写代码，大神把自己蒸馏了" — developer encoded their judgment into skill files. 7× higher than 古法编程's prior record. Fuses Ponytail (restraint) + 古法编程 (discrimination) + 技能工程 (skills) into new primitive: **开发者蒸馏** — pre-encode your taste so AI inherits it, instead of post-reviewing output. Already generating employer-adoption backlash.
+
+**Three predictions confirmed EARLY:**
+- **技能萎缩対策** (was Aug → NOW): Codex regression post at 4,547❤ ("用Codex三个月后回去学Python"). 10-40× higher engagement than Western equivalents.
+- **记忆管理** (was Jul-Aug → NOW): 36-post discourse cluster confirmed. ICML explosion (832❤ combined), memory pollution (160❤), forgetting strategies explicit.
+- **遗忘工程** (was late Jun → NOW): Active forgetting as design goal in XHS discourse.
+
+**Skill Saturation → Subtraction:** "总结下Skill的坑" (1,293❤) documents skill conflicts from accumulation. "装了几十个，留下5个" = skill forgetting. Skill lifecycle NOW mirrors memory lifecycle: accumulate → saturate → prune → compose.
+
+**Next paradigm: Recursive Skill Composition** (951❤) + Skill Graphs (543❤). Paradigm cycle compressing: Skill Engineering lasted ~2 weeks before Graphs emerged (vs prior 6-week cadence).
+
+**Unpredicted: Agent Economy** (994❤ + 1,271❤). Agents as economic actors with revenue, not just tools with costs. Already named: 智能体经济.
+
+**DeepSeek V4 technical depth:** V4.1 stealth (367❤), Engram memory architecture, Codeforces > GPT-5.4 (193❤), $9.7B funding.
+
+**Meta-signal: The Subtraction Turn.** Community flipped from "how to add more" to "how to remove wisely" — across skills, memory, coding, and governance simultaneously.
+
+→ Full findings: `knowledge/findings/2026-06-19-xhs-direct-scan-42.md`
+
+---
 
 ## Scan #41 (06:22 UTC) — Sovereignty Convergence + AI Narrative Recession Deepens
 
