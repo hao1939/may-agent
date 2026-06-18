@@ -736,7 +736,14 @@ export class SubagentManager {
   // ── Session resume (v1 carryover; pi-agent-core has agent.continue() but we don't wire it yet) ──
 
   /** Resume or interrupt sessions left running by a previous process. */
-  resumeStaleSessions(opts?: { abort?: boolean; kinds?: SessionKind[] }): {
+  resumeStaleSessions(opts?: {
+    abort?: boolean;
+    kinds?: SessionKind[];
+    shouldResume?: (
+      sessionId: string,
+      session: PersistedSession,
+    ) => { resume: true } | { resume: false; reason?: string };
+  }): {
     resumed: SessionInfo[];
     interrupted: SessionInfo[];
   } {
@@ -810,6 +817,15 @@ export class SubagentManager {
         continue;
       }
 
+      const resumeDecision = opts?.shouldResume?.(sessionId, persisted);
+      if (resumeDecision?.resume === false) {
+        const error = resumeDecision.reason ?? "Stale session skipped by startup recovery policy";
+        this._registry.updateSessionStatus(sessionId, "interrupted", error);
+        updateSessionDb(this._persistDir, sessionId, { status: "interrupted", endedAt: Date.now(), error });
+        interrupted.push(this.sessionInfoFromMeta(sessionId, { ...persisted, status: "interrupted", error }));
+        continue;
+      }
+
       if (!this.agents.has(persisted.agent)) {
         const error = "Process restarted (agent not registered)";
         this._registry.updateSessionStatus(sessionId, "interrupted", error);
@@ -865,11 +881,18 @@ export class SubagentManager {
    * should check `_sessions.has(sessionId)` first and use steer/input for
    * live sessions.
    */
-  resumeSession(sessionId: string, message: string, opts?: { source?: string; timeoutMs?: number; suppressBenignRaceEvent?: boolean }): string {
+  resumeSession(
+    sessionId: string,
+    message: string,
+    opts?: { source?: string; timeoutMs?: number; suppressBenignRaceEvent?: boolean },
+  ): string {
     if (this._sessions.has(sessionId)) {
       const reason = `Session "${sessionId}" is already active — use steer/input instead`;
       if (opts?.suppressBenignRaceEvent) {
-        log("debug", `[resume] Skipping already-active resume failure for ${sessionId} from ${opts.source ?? "unknown"}`);
+        log(
+          "debug",
+          `[resume] Skipping already-active resume failure for ${sessionId} from ${opts.source ?? "unknown"}`,
+        );
         throw new Error(reason);
       }
       this.emitSessionResumeFailed(sessionId, this._registry.getSession(sessionId), reason, "already_active", true);
@@ -884,7 +907,9 @@ export class SubagentManager {
             .prepare("SELECT status FROM sessions WHERE sessionId = ?")
             .get(sessionId) as { status: string } | null;
           dbStatus = row?.status ?? null;
-        } catch { /* best-effort DB lookup */ }
+        } catch {
+          /* best-effort DB lookup */
+        }
         log(
           "debug",
           `[resume] Suppressing resume_failed event for dead/missing session ${sessionId} from ${opts?.source ?? "unknown"}; dbStatus=${dbStatus ?? "missing"}`,
