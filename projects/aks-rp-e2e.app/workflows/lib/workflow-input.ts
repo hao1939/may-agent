@@ -71,21 +71,28 @@ export function triggerString(event: TriggerEvent | null, key: string): string {
   return typeof value === "string" ? value : "";
 }
 
+function nonEmptyString(value: unknown): string {
+  return typeof value === "string" && value.trim() ? value : "";
+}
+
 export function resultText(result: unknown): string {
   if (result == null) return "";
   if (typeof result === "string") return result;
   const typed = result as {
     message?: string;
     summary?: string;
-    lastAssistantText?: string;
+    lastAssistantText?: string | null;
+    finishResult?: { summary?: unknown };
     status?: string;
   };
+  const finishSummary = nonEmptyString(typed.finishResult?.summary);
   return (
-    typed.message ??
-    typed.summary ??
-    typed.lastAssistantText ??
-    typed.status ??
-    JSON.stringify(result) ??
+    nonEmptyString(typed.message) ||
+    nonEmptyString(typed.summary) ||
+    finishSummary ||
+    nonEmptyString(typed.lastAssistantText) ||
+    nonEmptyString(typed.status) ||
+    JSON.stringify(result) ||
     String(result)
   );
 }

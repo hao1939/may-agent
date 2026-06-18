@@ -10,6 +10,9 @@ import {
   repairTaskTreeRollups,
   seedModelGapBacklog,
   taskTreeConfig,
+  updateAcceptedReviewMetadata,
+  updateTaskOutputs,
+  updateTaskText,
 } from "./lib/task-tree-tools.ts";
 
 async function makeProject() {
@@ -131,6 +134,84 @@ describe("task tree tools", () => {
       await readFile(join(projectDir, "tasks", "tree.json"), "utf8"),
     );
     expect(tree.tasks.project.children).toEqual([]);
+  });
+
+  test("model gap seeding skips execution-variant metadata paths", async () => {
+    const projectDir = await makeProject();
+    await mkdir(join(projectDir, "model", "knowledge-map"), {
+      recursive: true,
+    });
+    await mkdir(join(projectDir, "specs"), { recursive: true });
+    await mkdir(join(projectDir, "replays"), { recursive: true });
+    await writeFile(
+      join(projectDir, "model", "knowledge-map", "model.json"),
+      `${JSON.stringify({
+        featurePaths: [
+          {
+            id: "path.feature-a.execution-variant",
+            featureId: "feature-a",
+            status: "unknown",
+            variantOfSpecId: "spec.feature-a",
+            executionVariantId: "variant.feature-a.exec",
+            specCoverage: {
+              type: "execution-variant",
+              specId: "spec.feature-a",
+              variantId: "variant.feature-a.exec",
+            },
+          },
+        ],
+      })}\n`,
+      "utf8",
+    );
+    await writeFile(
+      join(projectDir, "tasks", "tree.json"),
+      `${JSON.stringify(
+        {
+          version: 1,
+          project: "aks-rp-e2e",
+          project_lifecycle: "active",
+          root_task_id: "project",
+          active_task_id: null,
+          active_task_ids: [],
+          tasks: {
+            project: {
+              id: "project",
+              state: "backlog",
+              children: ["spec-runner-and-replays"],
+              goal: "project",
+              outputs: ["tasks/tree.json"],
+              acceptance: ["done"],
+            },
+            "spec-runner-and-replays": {
+              id: "spec-runner-and-replays",
+              parent_id: "project",
+              state: "backlog",
+              children: [],
+              goal: "runner lane",
+              outputs: ["runs/executions/"],
+              acceptance: ["done"],
+            },
+          },
+        },
+        null,
+        2,
+      )}\n`,
+      "utf8",
+    );
+
+    const result = seedModelGapBacklog(config(projectDir), { limit: 1 });
+
+    expect(result.created).toEqual([]);
+    expect(result.skipped).toEqual([
+      {
+        pathId: "path.feature-a.execution-variant",
+        reason: "execution-variant-metadata",
+      },
+    ]);
+    const tree = JSON.parse(
+      await readFile(join(projectDir, "tasks", "tree.json"), "utf8"),
+    );
+    expect(tree.tasks["spec-runner-and-replays"].children).toEqual([]);
   });
 
   test("repairs parent rollups and lifecycle from active leaves", async () => {
@@ -461,5 +542,261 @@ describe("task tree tools", () => {
     );
     expect(kanban.kanban.column_counts.backlog).toBe(1);
     expect(kanban.kanban.column_counts.done).toBe(1);
+  });
+
+  test("replaces outputs on an existing task and preserves other metadata", async () => {
+    const projectDir = await makeProject();
+    await writeFile(
+      join(projectDir, "tasks", "tree.json"),
+      `${JSON.stringify(
+        {
+          version: 1,
+          project: "aks-rp-e2e",
+          project_lifecycle: "active",
+          root_task_id: "project",
+          active_task_id: null,
+          active_task_ids: [],
+          tasks: {
+            project: {
+              id: "project",
+              state: "backlog",
+              children: ["promotion-task"],
+              goal: "project",
+              outputs: ["tasks/tree.json"],
+              acceptance: ["done"],
+            },
+            "promotion-task": {
+              id: "promotion-task",
+              parent_id: "project",
+              state: "done",
+              kind: "domain_leaf",
+              priority: "P2",
+              owner: "aks-explorer",
+              children: [],
+              goal: "repair malformed outputs metadata",
+              outputs: [
+                "evidence/archive/old.md,features/wrong.yaml,specs/extra.json",
+              ],
+              acceptance: ["outputs repaired"],
+              conflict_scope: ["feature:managedsystem"],
+              trace: {
+                created_at: "2026-06-17T00:00:00.000Z",
+              },
+            },
+          },
+        },
+        null,
+        2,
+      )}\n`,
+      "utf8",
+    );
+
+    const updated = updateTaskOutputs(config(projectDir), {
+      taskId: "promotion-task",
+      outputs: [
+        "evidence/archive/managedsystem-create-time-initial-pool-feature-packet-promotion-20260617.md",
+        "features/managedsystem-pool/create-time-initial-pool.yaml",
+      ],
+    });
+
+    expect(updated.outputs).toEqual([
+      "evidence/archive/managedsystem-create-time-initial-pool-feature-packet-promotion-20260617.md",
+      "features/managedsystem-pool/create-time-initial-pool.yaml",
+    ]);
+    expect(updated.goal).toBe("repair malformed outputs metadata");
+    expect(updated.acceptance).toEqual(["outputs repaired"]);
+    expect(updated.conflict_scope).toEqual(["feature:managedsystem"]);
+
+    const tree = JSON.parse(
+      await readFile(join(projectDir, "tasks", "tree.json"), "utf8"),
+    );
+    expect(tree.tasks["promotion-task"].outputs).toEqual([
+      "evidence/archive/managedsystem-create-time-initial-pool-feature-packet-promotion-20260617.md",
+      "features/managedsystem-pool/create-time-initial-pool.yaml",
+    ]);
+    expect(tree.tasks["promotion-task"].goal).toBe(
+      "repair malformed outputs metadata",
+    );
+    expect(tree.tasks["promotion-task"].acceptance).toEqual([
+      "outputs repaired",
+    ]);
+
+    const journal = await readFile(
+      join(projectDir, ".state", "journal.jsonl"),
+      "utf8",
+    );
+    expect(journal).toContain('"kind":"task_outputs_updated"');
+    expect(journal).toContain('"task_id":"promotion-task"');
+  });
+
+  test("updates existing task text fields and preserves outputs/conflict scope", async () => {
+    const projectDir = await makeProject();
+    await writeFile(
+      join(projectDir, "tasks", "tree.json"),
+      `${JSON.stringify(
+        {
+          version: 1,
+          project: "aks-rp-e2e",
+          project_lifecycle: "active",
+          root_task_id: "project",
+          active_task_id: null,
+          active_task_ids: [],
+          tasks: {
+            project: {
+              id: "project",
+              state: "backlog",
+              children: ["blocked-task"],
+              goal: "project",
+              outputs: ["tasks/tree.json"],
+              acceptance: ["done"],
+            },
+            "blocked-task": {
+              id: "blocked-task",
+              parent_id: "project",
+              state: "blocked",
+              kind: "domain_leaf",
+              priority: "P2",
+              owner: "aks-explorer",
+              children: [],
+              goal: "old goal",
+              outputs: ["evidence/archive/blocked.md"],
+              acceptance: ["old acceptance"],
+              blocker: "old blocker",
+              conflict_scope: ["feature:test"],
+              trace: {
+                created_at: "2026-06-18T00:00:00.000Z",
+              },
+            },
+          },
+        },
+        null,
+        2,
+      )}\n`,
+      "utf8",
+    );
+
+    const updated = updateTaskText(config(projectDir), {
+      taskId: "blocked-task",
+      goal: "new goal",
+      acceptance: ["new acceptance"],
+      blocker: "new blocker",
+    });
+
+    expect(updated.goal).toBe("new goal");
+    expect(updated.acceptance).toEqual(["new acceptance"]);
+    expect(updated.blocker).toBe("new blocker");
+    expect(updated.outputs).toEqual(["evidence/archive/blocked.md"]);
+    expect(updated.conflict_scope).toEqual(["feature:test"]);
+
+    const tree = JSON.parse(
+      await readFile(join(projectDir, "tasks", "tree.json"), "utf8"),
+    );
+    expect(tree.tasks["blocked-task"].goal).toBe("new goal");
+    expect(tree.tasks["blocked-task"].acceptance).toEqual(["new acceptance"]);
+    expect(tree.tasks["blocked-task"].blocker).toBe("new blocker");
+    expect(tree.tasks["blocked-task"].outputs).toEqual(["evidence/archive/blocked.md"]);
+
+    const journal = await readFile(
+      join(projectDir, ".state", "journal.jsonl"),
+      "utf8",
+    );
+    expect(journal).toContain('"kind":"task_text_updated"');
+    expect(journal).toContain('"task_id":"blocked-task"');
+  });
+
+  test("updates only accepted-review metadata fields on an existing task", async () => {
+    const projectDir = await makeProject();
+    await writeFile(
+      join(projectDir, "tasks", "tree.json"),
+      `${JSON.stringify(
+        {
+          version: 1,
+          project: "aks-rp-e2e",
+          project_lifecycle: "active",
+          root_task_id: "project",
+          active_task_id: null,
+          active_task_ids: [],
+          tasks: {
+            project: {
+              id: "project",
+              state: "review",
+              children: ["accepted-task"],
+              goal: "project",
+              outputs: ["tasks/tree.json"],
+              acceptance: ["done"],
+            },
+            "accepted-task": {
+              id: "accepted-task",
+              parent_id: "project",
+              state: "done",
+              kind: "domain_leaf",
+              priority: "P2",
+              owner: "aks-explorer",
+              children: [],
+              goal: "keep all non-review fields untouched",
+              outputs: ["evidence/archive/original.md"],
+              acceptance: ["accepted wording is synced"],
+              conflict_scope: ["tooling:task-tree-review-metadata"],
+              trace: {
+                created_at: "2026-06-18T00:00:00.000Z",
+                reviewed_by: "task-tree-tool",
+                review_summary: "old accepted summary",
+              },
+              context: {
+                acceptance_note: "old accepted note",
+                keep: "preserve-me",
+              },
+            },
+          },
+        },
+        null,
+        2,
+      )}\n`,
+      "utf8",
+    );
+
+    const updated = updateAcceptedReviewMetadata(config(projectDir), {
+      taskId: "accepted-task",
+      reviewSummary: "fresh review summary",
+      acceptanceNote: "fresh acceptance note",
+    });
+
+    expect(updated.state).toBe("done");
+    expect(updated.goal).toBe("keep all non-review fields untouched");
+    expect(updated.outputs).toEqual(["evidence/archive/original.md"]);
+    expect(updated.acceptance).toEqual(["accepted wording is synced"]);
+    expect(updated.trace?.review_summary).toBe("fresh review summary");
+    expect(
+      (updated.context as { acceptance_note?: string; keep?: string }).acceptance_note,
+    ).toBe("fresh acceptance note");
+    expect((updated.context as { keep?: string }).keep).toBe("preserve-me");
+
+    const tree = JSON.parse(
+      await readFile(join(projectDir, "tasks", "tree.json"), "utf8"),
+    );
+    expect(tree.tasks["accepted-task"].state).toBe("done");
+    expect(tree.tasks["accepted-task"].goal).toBe(
+      "keep all non-review fields untouched",
+    );
+    expect(tree.tasks["accepted-task"].outputs).toEqual([
+      "evidence/archive/original.md",
+    ]);
+    expect(tree.tasks["accepted-task"].acceptance).toEqual([
+      "accepted wording is synced",
+    ]);
+    expect(tree.tasks["accepted-task"].trace.review_summary).toBe(
+      "fresh review summary",
+    );
+    expect(tree.tasks["accepted-task"].context.acceptance_note).toBe(
+      "fresh acceptance note",
+    );
+    expect(tree.tasks["accepted-task"].context.keep).toBe("preserve-me");
+
+    const journal = await readFile(
+      join(projectDir, ".state", "journal.jsonl"),
+      "utf8",
+    );
+    expect(journal).toContain('"kind":"task_accepted_review_metadata_updated"');
+    expect(journal).toContain('"task_id":"accepted-task"');
   });
 });

@@ -13,8 +13,13 @@ import {
   markTaskDone,
   planningPacket,
   readTask,
+  rejectTaskReview,
+  requeueStaleActiveTasks,
   repairTaskTreeRollups,
   summarizeTaskTree,
+  updateAcceptedReviewMetadata,
+  updateTaskOutputs,
+  updateTaskText,
   taskTreeConfig,
   type TaskCompletionClaim,
   writeKanbanSnapshot,
@@ -37,6 +42,11 @@ function usage(): never {
   bun run task-tree drain-assignments
   bun run task-tree show <task-id>
   bun run task-tree complete <task-id> --result done|partial|blocked --summary "..."
+  bun run task-tree set-outputs <task-id> --output <path> [--output <path> ...]
+  bun run task-tree update-text <task-id> [--goal "..."] [--acceptance "..."] [--acceptance "..."] [--blocker "..."] [--clear-blocker]
+  bun run task-tree update-accepted-review <task-id> [--review-summary "..."] [--acceptance-note "..."]
+  bun run task-tree reject-review <task-id> --reason "acceptance not met" [--fresh-session]
+  bun run task-tree requeue-active <task-id> [--reason "session not running"] [--fresh-session]
 
 Environment:
   APP_DIR=/app/projects/aks-rp-e2e.app
@@ -57,6 +67,10 @@ function numberOption(name: string, fallback: number): number {
   if (!raw) return fallback;
   const parsed = Number.parseInt(raw, 10);
   return Number.isFinite(parsed) ? parsed : fallback;
+}
+
+function hasFlag(name: string): boolean {
+  return process.argv.includes(name);
 }
 
 function repeatedStringOption(name: string): string[] {
@@ -233,6 +247,35 @@ if (command === "summary") {
       2,
     ),
   );
+} else if (command === "reject-review") {
+  const taskId = process.argv[3];
+  const reason = option("--reason") ?? option("--summary");
+  if (!taskId || !reason) usage();
+  console.log(
+    JSON.stringify(
+      rejectTaskReview(config, {
+        taskId,
+        reason,
+        freshSession: hasFlag("--fresh-session"),
+      }),
+      null,
+      2,
+    ),
+  );
+} else if (command === "requeue-active") {
+  const taskId = process.argv[3];
+  if (!taskId) usage();
+  console.log(
+    JSON.stringify(
+      requeueStaleActiveTasks(config, {
+        taskIds: [taskId],
+        reason: option("--reason") ?? "operator requested active-task retry",
+        freshSession: hasFlag("--fresh-session"),
+      }),
+      null,
+      2,
+    ),
+  );
 } else if (command === "complete") {
   const taskId = process.argv[3];
   const result =
@@ -257,6 +300,58 @@ if (command === "summary") {
         claim: result,
         summary,
         evidence,
+      }),
+      null,
+      2,
+    ),
+  );
+} else if (command === "set-outputs") {
+  const taskId = process.argv[3];
+  const outputs = repeatedStringOption("--output");
+  if (!taskId || outputs.length === 0) usage();
+  console.log(
+    JSON.stringify(
+      updateTaskOutputs(config, {
+        taskId,
+        outputs,
+      }),
+      null,
+      2,
+    ),
+  );
+} else if (command === "update-text") {
+  const taskId = process.argv[3];
+  if (!taskId) usage();
+  const goal = option("--goal");
+  const acceptance = repeatedStringOption("--acceptance");
+  const blocker = option("--blocker");
+  const clearBlocker = hasFlag("--clear-blocker");
+  if (!goal && acceptance.length === 0 && blocker === undefined && !clearBlocker) usage();
+  console.log(
+    JSON.stringify(
+      updateTaskText(config, {
+        taskId,
+        goal,
+        acceptance: acceptance.length ? acceptance : undefined,
+        blocker,
+        clearBlocker,
+      }),
+      null,
+      2,
+    ),
+  );
+} else if (command === "update-accepted-review") {
+  const taskId = process.argv[3];
+  if (!taskId) usage();
+  const reviewSummary = option("--review-summary");
+  const acceptanceNote = option("--acceptance-note");
+  if (reviewSummary === undefined && acceptanceNote === undefined) usage();
+  console.log(
+    JSON.stringify(
+      updateAcceptedReviewMetadata(config, {
+        taskId,
+        reviewSummary,
+        acceptanceNote,
       }),
       null,
       2,

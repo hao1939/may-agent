@@ -172,4 +172,107 @@ describe("problem solver", () => {
       },
     });
   });
+
+  test("uses status when assistant text is present but empty", async () => {
+    const { appDir, projectDir } = await makeWorkspace();
+    const dispatched: Array<{
+      type: string;
+      payload: Record<string, unknown>;
+    }> = [];
+
+    const result = await execute({
+      task: [
+        `app: ${appDir}`,
+        `project: ${projectDir}`,
+        "agent: aks-explorer",
+        triggerEvent({
+          type: "project.problem.requested",
+          project: "aks-rp-e2e",
+          problemKey: "aks-rp-e2e:task-problem:test-empty-text",
+          affectedTasks: ["triage-task"],
+        }),
+      ].join("\n"),
+      agent: "aks-explorer",
+      done: (message: string) => ({ status: "done", message }),
+      escalate: (message: string) => ({ status: "escalated", message }),
+      emit() {},
+      dispatchEvent(type: string, payload: Record<string, unknown>) {
+        dispatched.push({ type, payload });
+      },
+      runAgent: async () => ({ status: "error" }),
+      runAgentSession: async () => ({
+        sessionId: "s_problem_test_empty",
+        status: "error",
+        lastAssistantText: "",
+      }),
+      summarize: () => "",
+    } as any);
+
+    expect(result.status).toBe("done");
+    expect(dispatched).toHaveLength(1);
+    expect(dispatched[0]).toMatchObject({
+      type: "project.problem.unknown",
+      payload: {
+        project: "aks-rp-e2e",
+        problemKey: "aks-rp-e2e:task-problem:test-empty-text",
+        affectedTasks: ["triage-task"],
+        summary: "error",
+      },
+    });
+  });
+
+  test("uses finish summary text to classify escalated result when message is absent", async () => {
+    const { appDir, projectDir } = await makeWorkspace();
+    const dispatched: Array<{
+      type: string;
+      payload: Record<string, unknown>;
+    }> = [];
+
+    const result = await execute({
+      task: [
+        `app: ${appDir}`,
+        `project: ${projectDir}`,
+        "agent: aks-explorer",
+        triggerEvent({
+          type: "project.problem.requested",
+          project: "aks-rp-e2e",
+          problemKey: "aks-rp-e2e:task-problem:test",
+          affectedTasks: ["triage-task"],
+        }),
+      ].join("\n"),
+      agent: "aks-explorer",
+      done: (message: string) => ({ status: "done", message }),
+      escalate: (message: string) => ({ status: "escalated", message }),
+      emit() {},
+      dispatchEvent(type: string, payload: Record<string, unknown>) {
+        dispatched.push({ type, payload });
+      },
+      runAgent: async () => ({ status: "success" }),
+      runAgentSession: async () => ({
+        sessionId: "s_problem_test",
+        status: "done",
+        lastAssistantText: null,
+        messages: [],
+        duration: "1s",
+        outputDir: "/tmp/problem-test",
+        finishResult: {
+          status: "blocked",
+          summary:
+            "ROOT_CAUSE: external quota\nACTION_TAKEN: verified quota\nVERIFICATION: quota check failed\nPLANNER_NEXT: request quota increase\nPROBLEM_RESULT: escalated",
+        },
+      }),
+      summarize: () => "",
+    } as any);
+
+    expect(result.status).toBe("done");
+    expect(dispatched).toHaveLength(1);
+    expect(dispatched[0]).toMatchObject({
+      type: "project.problem.escalated",
+      payload: {
+        project: "aks-rp-e2e",
+        problemKey: "aks-rp-e2e:task-problem:test",
+        affectedTasks: ["triage-task"],
+      },
+    });
+  });
 });

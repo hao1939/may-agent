@@ -26,7 +26,10 @@ export {
   peekTaskAssignments,
   planningPacket,
   readTask,
+  rejectTaskReview,
   requeueStaleActiveTasks,
+  updateTaskOutputs,
+  updateTaskText,
   repairTaskTreeRollups,
   saveTaskTreeWithKanbanSnapshot,
   summarizeTaskTree,
@@ -43,13 +46,22 @@ export type {
   TaskKanbanProjection,
   TaskKanbanSnapshot,
   TaskKanbanState,
+  RejectTaskReviewInput,
   TaskPlanningPacket,
   TaskPlanningSnapshot,
   TaskTreeCompactResult,
   TaskTreeRepairResult,
   TaskTreeSummary,
   TaskTreeToolConfig,
+  UpdateTaskOutputsInput,
+  UpdateTaskTextInput,
 } from "@may-agent/sdk";
+
+export type UpdateAcceptedReviewMetadataInput = {
+  taskId: string;
+  reviewSummary?: string;
+  acceptanceNote?: string;
+};
 
 export type ModelGapBacklogSeedResult = {
   created: string[];
@@ -65,6 +77,14 @@ type KnowledgeFeaturePath = {
   verdictFinal?: boolean;
   rootCauseClass?: string;
   remediationStatus?: string;
+  variantOfSpecId?: string;
+  executionVariantId?: string;
+  specCoverage?: {
+    type?: string;
+    specId?: string;
+    variantId?: string;
+    reason?: string;
+  };
 };
 
 function readJsonFile<T>(path: string, fallback: T): T {
@@ -186,6 +206,58 @@ function appendSeededTask(
   ];
 }
 
+export function updateAcceptedReviewMetadata(
+  config: TaskTreeConfig,
+  input: UpdateAcceptedReviewMetadataInput,
+): TaskNode {
+  return withTreeLock(config, () => {
+    const tree = readTaskTree(config);
+    const task = tree.tasks[input.taskId];
+    if (!task) throw new Error(`Task not found: ${input.taskId}`);
+
+    const hasReviewSummary = typeof input.reviewSummary === "string";
+    const hasAcceptanceNote = typeof input.acceptanceNote === "string";
+    if (!hasReviewSummary && !hasAcceptanceNote) {
+      throw new Error(
+        "Provide at least one of reviewSummary or acceptanceNote",
+      );
+    }
+
+    if (hasReviewSummary) {
+      const reviewSummary = input.reviewSummary?.trim() ?? "";
+      if (!reviewSummary) throw new Error("reviewSummary cannot be empty");
+      task.trace = {
+        ...(task.trace ?? {}),
+        review_summary: reviewSummary,
+      };
+    }
+
+    if (hasAcceptanceNote) {
+      const acceptanceNote = input.acceptanceNote?.trim() ?? "";
+      if (!acceptanceNote) throw new Error("acceptanceNote cannot be empty");
+      const context =
+        task.context &&
+        typeof task.context === "object" &&
+        !Array.isArray(task.context)
+          ? task.context
+          : {};
+      task.context = {
+        ...context,
+        acceptance_note: acceptanceNote,
+      };
+    }
+
+    saveTaskTreeWithKanbanSnapshot(config, tree);
+    appendToolJournal(config, {
+      kind: "task_accepted_review_metadata_updated",
+      task_id: task.id,
+      review_summary_updated: hasReviewSummary,
+      acceptance_note_updated: hasAcceptanceNote,
+    });
+    return task;
+  });
+}
+
 export function seedModelGapBacklog(
   config: TaskTreeConfig,
   input: {
@@ -243,6 +315,14 @@ export function seedModelGapBacklog(
       const stem = findArtifactStem(path, specs, replays);
       if (path.status === "blocked" || path.status === "blocked-infra") {
         skipped.push({ pathId, reason: "blocked-status" });
+        continue;
+      }
+      if (
+        path.specCoverage?.type === "execution-variant" ||
+        path.variantOfSpecId ||
+        path.executionVariantId
+      ) {
+        skipped.push({ pathId, reason: "execution-variant-metadata" });
         continue;
       }
       if (path.terminal === true || path.verdictFinal === true) {

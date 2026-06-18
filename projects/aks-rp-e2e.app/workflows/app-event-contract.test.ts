@@ -144,6 +144,128 @@ describe("app event contract", () => {
     });
   });
 
+  test("blocked checkpoint artifact review stays owner-visible without problem solver escalation", async () => {
+    const { ctx, emitted } = testContext();
+
+    await app.onEvent(ctx, {
+      type: "project.task.completed",
+      project: "aks-rp-e2e",
+      data: {
+        taskId: "go-e2ev3-knowledge-map-done-slice-checkpoint-20260617",
+        status: "review",
+        result: "blocked",
+        summary:
+          "Wrote the requested checkpoint artifact at evidence/archive/go-e2ev3-knowledge-map-done-slice-checkpoint-20260617.md after auditing the live workspace, running checks from the correct app/domain roots, and determining the VM/WI/localdns knowledge-map repairs cannot be sliced into a trustworthy done-only commit from the current mixed model/spec state.",
+      },
+    });
+
+    expect(emitted).toHaveLength(1);
+    expect(emitted[0]).toMatchObject({
+      type: "project.owner.requested",
+      reason: "task-completed",
+      params: {
+        completedTaskId: "go-e2ev3-knowledge-map-done-slice-checkpoint-20260617",
+        status: "review",
+        task: {
+          taskId: "go-e2ev3-knowledge-map-done-slice-checkpoint-20260617",
+          result: "blocked",
+        },
+      },
+    });
+  });
+
+  test("blocked owner-owned checkpoint handoff stays owner-visible without problem solver escalation", async () => {
+    const { ctx, emitted } = testContext();
+
+    await app.onEvent(ctx, {
+      type: "project.task.completed",
+      project: "aks-rp-e2e",
+      data: {
+        taskId: "app-routing-default-domain-tls-owner-checkpoint-commit-20260617",
+        status: "review",
+        result: "blocked",
+        summary:
+          "Prepared owner-facing checkpoint evidence for the narrow App Routing default-domain TLS boundary-hardening slice in evidence/archive/app-routing-default-domain-tls-owner-checkpoint-commit-20260617.md, including exact stage set, exact excluded dirty files, and targeted check results. The actual checkpoint commit hash could not be produced because project policy reserves domain repo commits for owner review, so the remaining step is an owner-owned commit.",
+      },
+    });
+
+    expect(emitted).toHaveLength(1);
+    expect(emitted[0]).toMatchObject({
+      type: "project.owner.requested",
+      reason: "task-completed",
+      params: {
+        completedTaskId:
+          "app-routing-default-domain-tls-owner-checkpoint-commit-20260617",
+        status: "review",
+        task: {
+          taskId:
+            "app-routing-default-domain-tls-owner-checkpoint-commit-20260617",
+          result: "blocked",
+        },
+      },
+    });
+  });
+
+  test("blocked worker-mode owner-review output for live tree metadata repair stays owner-visible", async () => {
+    const { ctx, emitted } = testContext();
+
+    await app.onEvent(ctx, {
+      type: "project.task.completed",
+      project: "aks-rp-e2e",
+      data: {
+        taskId: "row82-live-output-lineage-apply-20260618",
+        status: "review",
+        result: "blocked",
+        summary:
+          "Wrote a blocked worker packet at evidence/archive/row82-live-output-lineage-apply-20260618.md documenting the exact live set-outputs commands, fresh checkpoint evidence, and the worker-mode instruction conflict that prevented mutating the live task tree.",
+      },
+    });
+
+    expect(emitted).toHaveLength(1);
+    expect(emitted[0]).toMatchObject({
+      type: "project.owner.requested",
+      reason: "task-completed",
+      params: {
+        completedTaskId: "row82-live-output-lineage-apply-20260618",
+        status: "review",
+        task: {
+          taskId: "row82-live-output-lineage-apply-20260618",
+          result: "blocked",
+        },
+      },
+    });
+  });
+
+  test("blocked wording-only reconcile with unrelated pre-existing validator debt stays owner-visible", async () => {
+    const { ctx, emitted } = testContext();
+
+    await app.onEvent(ctx, {
+      type: "project.task.completed",
+      project: "aks-rp-e2e",
+      data: {
+        taskId: "aad-rbac-reset-model-wording-reconcile-20260618",
+        status: "review",
+        result: "blocked",
+        summary:
+          "Reconciled AAD RBAC ResetAAD wording in model/knowledge-map/model.json and regenerated views so managed-v2 and non-AAD rows now state the exact preview-empty HTTP 400 baseline and stable-empty rerun ordering/gates. Acceptance remains blocked because the repo-wide knowledge-map validator still fails on many unrelated pre-existing model issues outside the AAD RBAC scope.",
+      },
+    });
+
+    expect(emitted).toHaveLength(1);
+    expect(emitted[0]).toMatchObject({
+      type: "project.owner.requested",
+      reason: "task-completed",
+      params: {
+        completedTaskId: "aad-rbac-reset-model-wording-reconcile-20260618",
+        status: "review",
+        task: {
+          taskId: "aad-rbac-reset-model-wording-reconcile-20260618",
+          result: "blocked",
+        },
+      },
+    });
+  });
+
   test("rejected review completions request problem solving and wake owner review", async () => {
     const { ctx, emitted, noops } = testContext();
 

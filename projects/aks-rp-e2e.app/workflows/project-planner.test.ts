@@ -631,6 +631,9 @@ describe("project owner workflow", () => {
     expect(updated.tasks["stale-task"].trace.stale_active_requeue_reason).toBe(
       "watchdog-stale-active-review",
     );
+    expect(updated.tasks["stale-task"].trace.stale_active_fresh_session).toBe(
+      false,
+    );
 
     const plannerRuns = await readFile(
       join(appDir, ".state", "planner-runs.jsonl"),
@@ -748,6 +751,427 @@ describe("project owner workflow", () => {
       "Watchdog stale-active review was a false positive",
     );
     expect(plannerRuns).toContain('"ran_agent":false');
+  });
+
+  test("skips owner session for false-positive stale-active watchdog review even with unrelated blocked frontier", async () => {
+    const { appDir, projectDir } = await makeWorkspace();
+    await writeFile(
+      join(appDir, "tasks", "tree.json"),
+      `${JSON.stringify(
+        {
+          version: 1,
+          project: "aks-rp-e2e",
+          project_lifecycle: "active",
+          root_task_id: "project",
+          updated_at: new Date().toISOString(),
+          active_task_id: "active-task",
+          active_task_ids: ["active-task"],
+          tasks: {
+            project: {
+              id: "project",
+              state: "active",
+              children: [
+                "active-task",
+                "already-done-task",
+                "blocked-task",
+              ],
+              goal: "project",
+              outputs: ["tasks/tree.json"],
+              acceptance: ["done"],
+            },
+            "active-task": {
+              id: "active-task",
+              parent_id: "project",
+              state: "active",
+              kind: "domain_leaf",
+              priority: "P1",
+              owner: "aks-explorer",
+              session_id: "s_task_active-task",
+              children: [],
+              goal: "Keep doing real work.",
+              outputs: ["evidence/archive/active-task.md"],
+              acceptance: ["done"],
+            },
+            "already-done-task": {
+              id: "already-done-task",
+              parent_id: "project",
+              state: "done",
+              kind: "domain_leaf",
+              priority: "P2",
+              children: [],
+              goal: "Already complete.",
+              outputs: ["evidence/archive/done-task.md"],
+              acceptance: ["done"],
+            },
+            "blocked-task": {
+              id: "blocked-task",
+              parent_id: "project",
+              state: "blocked",
+              kind: "domain_leaf",
+              priority: "P2",
+              owner: "aks-explorer",
+              children: [],
+              goal: "Unrelated blocked work.",
+              outputs: ["evidence/archive/blocked-task.md"],
+              acceptance: ["done"],
+              blocker: "Awaiting external unblock.",
+            },
+          },
+        },
+        null,
+        2,
+      )}\n`,
+      "utf8",
+    );
+
+    const prompts: string[] = [];
+    const dispatched: Array<{
+      type: string;
+      payload: Record<string, unknown>;
+    }> = [];
+    const result = await execute({
+      task: [
+        `app: ${appDir}`,
+        `project: ${projectDir}`,
+        "agent: aks-explorer",
+        "maxConcurrent: 5",
+        "## Trigger Event",
+        "```json",
+        JSON.stringify({
+          type: "project.owner.requested",
+          data: {
+            project: "aks-rp-e2e",
+            reason: "watchdog-stale-active-review",
+            staleActiveTasks: [
+              { taskId: "missing-task", reason: "session-not-running" },
+              { taskId: "already-done-task", reason: "session-not-running" },
+            ],
+          },
+        }),
+        "```",
+      ].join("\n"),
+      agent: "aks-explorer",
+      done: (message: string) => ({ status: "done", message }),
+      escalate: (message: string) => ({ status: "escalated", message }),
+      emit() {},
+      dispatchEvent(type: string, payload: Record<string, unknown>) {
+        dispatched.push({ type, payload });
+      },
+      runAgent: async () => ({ status: "success" }),
+      runAgentSession: async (_agent: string, task: string) => {
+        prompts.push(task);
+        return { status: "success", message: "should not run" };
+      },
+      summarize: () => "",
+    } as any);
+
+    expect(result.status).toBe("done");
+    expect(result.message).toContain("false positive");
+    expect(result.message).toContain("settled/non-active");
+    expect(prompts).toHaveLength(0);
+    expect(dispatched).toHaveLength(0);
+
+    const updated = JSON.parse(
+      await readFile(join(appDir, "tasks", "tree.json"), "utf8"),
+    );
+    expect(updated.tasks["blocked-task"].state).toBe("blocked");
+    expect(updated.tasks["blocked-task"].blocker).toBe(
+      "Awaiting external unblock.",
+    );
+
+    const plannerRuns = await readFile(
+      join(appDir, ".state", "planner-runs.jsonl"),
+      "utf8",
+    );
+    expect(plannerRuns).toContain('"steps":["settled-active-noop"]');
+    expect(plannerRuns).toContain(
+      "Watchdog stale-active review was a false positive",
+    );
+    expect(plannerRuns).toContain("settled/non-active after live-tree revalidation");
+    expect(plannerRuns).toContain('"ran_agent":false');
+  });
+
+  test("skips owner session for stale watchdog-runnable-backlog packets whose ids already moved active", async () => {
+    const { appDir, projectDir } = await makeWorkspace();
+    const treeUpdatedAt = "2026-06-17T20:30:13.409Z";
+    await writeFile(
+      join(appDir, "tasks", "tree.json"),
+      `${JSON.stringify(
+        {
+          version: 1,
+          project: "aks-rp-e2e",
+          project_lifecycle: "active",
+          root_task_id: "project",
+          updated_at: treeUpdatedAt,
+          active_task_id: "policy-addon-audit",
+          active_task_ids: ["policy-addon-audit", "policy-addon-pubsub"],
+          tasks: {
+            project: {
+              id: "project",
+              state: "active",
+              children: ["policy-addon-audit", "policy-addon-pubsub"],
+              goal: "project",
+              outputs: ["tasks/tree.json"],
+              acceptance: ["done"],
+            },
+            "policy-addon-audit": {
+              id: "policy-addon-audit",
+              parent_id: "project",
+              state: "active",
+              kind: "domain_leaf",
+              priority: "P1",
+              owner: "aks-explorer",
+              session_id: "s_task_policy-addon-audit",
+              children: [],
+              goal: "Continue audit spec authoring.",
+              outputs: ["evidence/archive/policy-addon-audit.md"],
+              acceptance: ["done"],
+            },
+            "policy-addon-pubsub": {
+              id: "policy-addon-pubsub",
+              parent_id: "project",
+              state: "active",
+              kind: "domain_leaf",
+              priority: "P1",
+              owner: "aks-explorer",
+              session_id: "s_task_policy-addon-pubsub",
+              children: [],
+              goal: "Continue pubsub spec authoring.",
+              outputs: ["evidence/archive/policy-addon-pubsub.md"],
+              acceptance: ["done"],
+            },
+          },
+        },
+        null,
+        2,
+      )}\n`,
+      "utf8",
+    );
+
+    const prompts: string[] = [];
+    const dispatched: Array<{
+      type: string;
+      payload: Record<string, unknown>;
+    }> = [];
+    const result = await execute({
+      task: [
+        `app: ${appDir}`,
+        `project: ${projectDir}`,
+        "agent: aks-explorer",
+        "maxConcurrent: 5",
+        "## Trigger Event",
+        "```json",
+        JSON.stringify({
+          type: "project.owner.requested",
+          data: {
+            project: "aks-rp-e2e",
+            reason: "watchdog-runnable-backlog",
+            runnableBacklogTaskIds: [
+              "policy-addon-audit",
+              "policy-addon-pubsub",
+            ],
+            runnableBacklogTreeUpdatedAt: treeUpdatedAt,
+            runnableBacklogSnapshotAt: "2026-06-17T20:30:13.258Z",
+          },
+        }),
+        "```",
+      ].join("\n"),
+      agent: "aks-explorer",
+      done: (message: string) => ({ status: "done", message }),
+      escalate: (message: string) => ({ status: "escalated", message }),
+      emit() {},
+      dispatchEvent(type: string, payload: Record<string, unknown>) {
+        dispatched.push({ type, payload });
+      },
+      runAgent: async () => ({ status: "success" }),
+      runAgentSession: async (_agent: string, task: string) => {
+        prompts.push(task);
+        return { status: "success", message: "should not run" };
+      },
+      summarize: () => "",
+    } as any);
+
+    expect(result.status).toBe("done");
+    expect(result.message).toContain("Watchdog runnable-backlog wake is stale");
+    expect(result.message).toContain("policy-addon-audit");
+    expect(prompts).toHaveLength(0);
+    expect(dispatched).toHaveLength(0);
+
+    const plannerRuns = await readFile(
+      join(appDir, ".state", "planner-runs.jsonl"),
+      "utf8",
+    );
+    expect(plannerRuns).toContain('"steps":["stale-runnable-backlog-noop"]');
+    expect(plannerRuns).toContain('"ran_agent":false');
+    expect(plannerRuns).toContain('"active_task_ids":["policy-addon-audit","policy-addon-pubsub"]');
+    expect(plannerRuns).toContain("trigger tree updated_at=2026-06-17T20:30:13.409Z");
+  });
+
+  test("skips owner session for stale watchdog-runnable-backlog packets even when unrelated blocked leaves exist", async () => {
+    const { appDir, projectDir } = await makeWorkspace();
+    const treeUpdatedAt = "2026-06-18T01:52:39.649Z";
+    await writeFile(
+      join(appDir, "tasks", "tree.json"),
+      `${JSON.stringify(
+        {
+          version: 1,
+          project: "aks-rp-e2e",
+          project_lifecycle: "active",
+          root_task_id: "project",
+          updated_at: treeUpdatedAt,
+          active_task_id: "managedsystem-disable-migration-staging-frontier-20260618",
+          active_task_ids: [
+            "managedsystem-disable-migration-staging-frontier-20260618",
+            "vm-prerelease-app-routing-ownership-repair-20260618",
+          ],
+          tasks: {
+            project: {
+              id: "project",
+              state: "active",
+              children: [
+                "managedsystem-disable-migration-staging-frontier-20260618",
+                "vm-prerelease-app-routing-ownership-repair-20260618",
+                "app-routing-vm-prerelease-handwritten-gap-matrix-20260618",
+                "app-routing-vm-prerelease-handwritten-source-blocker-matrix-20260618",
+                "aad-rbac-managed-v2-reset-stable-empty-rerun-await-aad-env-20260617",
+              ],
+              goal: "project",
+              outputs: ["tasks/tree.json"],
+              acceptance: ["done"],
+            },
+            "managedsystem-disable-migration-staging-frontier-20260618": {
+              id: "managedsystem-disable-migration-staging-frontier-20260618",
+              parent_id: "project",
+              state: "active",
+              kind: "domain_leaf",
+              priority: "P1",
+              owner: "aks-explorer",
+              session_id: "s_task_managedsystem-disable-migration-staging-frontier-20260618",
+              children: [],
+              goal: "Continue ManagedSystem staging frontier work.",
+              outputs: ["evidence/archive/managedsystem-disable-migration-staging-frontier-20260618.md"],
+              acceptance: ["done"],
+            },
+            "vm-prerelease-app-routing-ownership-repair-20260618": {
+              id: "vm-prerelease-app-routing-ownership-repair-20260618",
+              parent_id: "project",
+              state: "active",
+              kind: "domain_leaf",
+              priority: "P1",
+              owner: "aks-explorer",
+              session_id: "s_task_vm-prerelease-app-routing-ownership-repair-20260618",
+              children: [],
+              goal: "Repair VM prerelease app-routing ownership mapping.",
+              outputs: ["evidence/archive/vm-prerelease-app-routing-ownership-repair-20260618.md"],
+              acceptance: ["done"],
+            },
+            "app-routing-vm-prerelease-handwritten-gap-matrix-20260618": {
+              id: "app-routing-vm-prerelease-handwritten-gap-matrix-20260618",
+              parent_id: "project",
+              state: "done",
+              kind: "domain_leaf",
+              priority: "P2",
+              owner: "aks-explorer",
+              children: [],
+              goal: "Old superseded handwritten gap matrix leaf.",
+              outputs: ["evidence/archive/app-routing-vm-prerelease-handwritten-gap-matrix-20260618.md"],
+              acceptance: ["done"],
+            },
+            "app-routing-vm-prerelease-handwritten-source-blocker-matrix-20260618": {
+              id: "app-routing-vm-prerelease-handwritten-source-blocker-matrix-20260618",
+              parent_id: "project",
+              state: "done",
+              kind: "domain_leaf",
+              priority: "P2",
+              owner: "aks-explorer",
+              children: [],
+              goal: "Replacement blocker matrix leaf already accepted.",
+              outputs: ["evidence/archive/app-routing-vm-prerelease-handwritten-source-blocker-matrix-20260618.md"],
+              acceptance: ["done"],
+            },
+            "aad-rbac-managed-v2-reset-stable-empty-rerun-await-aad-env-20260617": {
+              id: "aad-rbac-managed-v2-reset-stable-empty-rerun-await-aad-env-20260617",
+              parent_id: "project",
+              state: "blocked",
+              kind: "domain_leaf",
+              priority: "P2",
+              owner: "aks-explorer",
+              children: [],
+              goal: "Unrelated blocked AAD rerun leaf.",
+              outputs: ["evidence/archive/aad-rbac-managed-v2-reset-stable-empty-rerun-await-aad-env-20260617.md"],
+              acceptance: ["done"],
+              blocker: "Awaiting external AAD environment gate.",
+            },
+          },
+        },
+        null,
+        2,
+      )}\n`,
+      "utf8",
+    );
+
+    const prompts: string[] = [];
+    const dispatched: Array<{
+      type: string;
+      payload: Record<string, unknown>;
+    }> = [];
+    const result = await execute({
+      task: [
+        `app: ${appDir}`,
+        `project: ${projectDir}`,
+        "agent: aks-explorer",
+        "maxConcurrent: 5",
+        "## Trigger Event",
+        "```json",
+        JSON.stringify({
+          type: "project.owner.requested",
+          data: {
+            project: "aks-rp-e2e",
+            reason: "watchdog-runnable-backlog",
+            runnableBacklogTaskIds: [
+              "app-routing-vm-prerelease-handwritten-gap-matrix-20260618",
+            ],
+            runnableBacklogTreeUpdatedAt: treeUpdatedAt,
+            runnableBacklogSnapshotAt: "2026-06-18T01:52:52.759Z",
+          },
+        }),
+        "```",
+      ].join("\n"),
+      agent: "aks-explorer",
+      done: (message: string) => ({ status: "done", message }),
+      escalate: (message: string) => ({ status: "escalated", message }),
+      emit() {},
+      dispatchEvent(type: string, payload: Record<string, unknown>) {
+        dispatched.push({ type, payload });
+      },
+      runAgent: async () => ({ status: "success" }),
+      runAgentSession: async (_agent: string, task: string) => {
+        prompts.push(task);
+        return { status: "success", message: "should not run" };
+      },
+      summarize: () => "",
+    } as any);
+
+    expect(result.status).toBe("done");
+    expect(result.message).toContain("Watchdog runnable-backlog wake is stale");
+    expect(result.message).toContain(
+      "app-routing-vm-prerelease-handwritten-gap-matrix-20260618",
+    );
+    expect(result.message).toContain(
+      'settled/missing=["app-routing-vm-prerelease-handwritten-gap-matrix-20260618"]',
+    );
+    expect(prompts).toHaveLength(0);
+    expect(dispatched).toHaveLength(0);
+
+    const plannerRuns = await readFile(
+      join(appDir, ".state", "planner-runs.jsonl"),
+      "utf8",
+    );
+    expect(plannerRuns).toContain('"steps":["stale-runnable-backlog-noop"]');
+    expect(plannerRuns).toContain('"ran_agent":false');
+    expect(plannerRuns).toContain(
+      '"active_task_ids":["managedsystem-disable-migration-staging-frontier-20260618","vm-prerelease-app-routing-ownership-repair-20260618"]',
+    );
   });
 
   test("skips owner session for already-settled task completion while active work runs", async () => {

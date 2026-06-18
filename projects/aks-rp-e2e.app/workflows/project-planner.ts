@@ -242,6 +242,7 @@ Use these commands from the app directory:
 - bun run task-tree add <task-id> --parent <lane-id> --goal "..." --output <path> --acceptance "..." --conflict-scope <scope> [--state backlog|blocked]
 - bun run task-tree mark-done <task-id> --summary "why the review is accepted"
 - bun run task-tree assign <task-id> [--worker ${input.agent}]
+- bun run task-tree update-text <task-id> [--goal "..."] [--acceptance "..."] [--acceptance "..."] [--blocker "..."] [--clear-blocker]
 - bun run task-tree show <task-id>
 - bun run domain:checkpoint
 - bun run domain:checkpoint -- --json
@@ -418,20 +419,26 @@ function settledActiveNoopResult(input: {
   requeuedStaleTaskIds: string[];
 }): string | null {
   const reason = triggerValue(parseTriggerEvent(input.rawTask), "reason");
-  const settledWithActiveWork =
+  const noHumanOrRequeueWork =
     input.humanSteering.length === 0 &&
-    input.requeuedStaleTaskIds.length === 0 &&
+    input.requeuedStaleTaskIds.length === 0;
+  const hasOnlyActiveFrontier =
     input.packet.active_task_ids.length > 0 &&
     input.packet.frontier.runnable.length === 0 &&
-    input.packet.frontier.review.length === 0 &&
+    input.packet.frontier.review.length === 0;
+  const settledWithActiveWork =
+    noHumanOrRequeueWork &&
+    hasOnlyActiveFrontier &&
     input.packet.frontier.blocked.length === 0;
-  if (!settledWithActiveWork) return null;
   if (
     reason === "watchdog-stale-active-review" &&
-    staleActiveTaskIds(input.rawTask).length > 0
+    staleActiveTaskIds(input.rawTask).length > 0 &&
+    noHumanOrRequeueWork &&
+    hasOnlyActiveFrontier
   ) {
-    return "Watchdog stale-active review was a false positive: no listed task was requeued, active work is still running, and no runnable/review/blocked frontier needs owner judgment.";
+    return "Watchdog stale-active review was a false positive: no listed task was requeued, active work is still running, and every cited stale-active task is already settled/non-active after live-tree revalidation.";
   }
+  if (!settledWithActiveWork) return null;
   if (reason === "task-completed") {
     return "Task-completed wake is already settled in the task tree: no review task remains, active work is still running, and no runnable/blocked frontier needs owner judgment.";
   }
@@ -465,6 +472,77 @@ function staleActiveTaskIds(rawTask: string): string[] {
       return "";
     })
     .filter(Boolean);
+}
+
+function triggerRunnableBacklogTaskIds(rawTask: string): string[] {
+  const trigger = parseTriggerEvent(rawTask);
+  const value = triggerValue(trigger, "runnableBacklogTaskIds");
+  if (!Array.isArray(value)) return [];
+  return value.filter((entry): entry is string => typeof entry === "string");
+}
+
+function triggerRunnableBacklogTreeUpdatedAt(rawTask: string): string {
+  const trigger = parseTriggerEvent(rawTask);
+  const value = triggerValue(trigger, "runnableBacklogTreeUpdatedAt");
+  return typeof value === "string" ? value : "";
+}
+
+function triggerRunnableBacklogSnapshotAt(rawTask: string): string {
+  const trigger = parseTriggerEvent(rawTask);
+  const value = triggerValue(trigger, "runnableBacklogSnapshotAt");
+  return typeof value === "string" ? value : "";
+}
+
+function staleRunnableBacklogNoopResult(input: {
+  rawTask: string;
+  packet: TaskPlanningPacket;
+  humanSteering: Record<string, unknown>[];
+  quickAssignments: TaskAssignment[];
+  requeuedStaleTaskIds: string[];
+}): string | null {
+  if (routineRefillReason(input.rawTask) !== "watchdog-runnable-backlog")
+    return null;
+  if (input.humanSteering.length > 0) return null;
+  if (input.quickAssignments.length > 0) return null;
+  if (input.requeuedStaleTaskIds.length > 0) return null;
+
+  const triggerIds = triggerRunnableBacklogTaskIds(input.rawTask);
+  if (triggerIds.length === 0) return null;
+  if (input.packet.frontier.runnable.length > 0) return null;
+
+  const liveRunnable = new Set(input.packet.frontier.runnable);
+  const liveReview = new Set(input.packet.frontier.review);
+  const liveActiveOrReview = new Set([
+    ...input.packet.active_task_ids,
+    ...input.packet.frontier.review,
+  ]);
+  const nonRunnableIds = triggerIds.filter((taskId) => !liveRunnable.has(taskId));
+  if (nonRunnableIds.length !== triggerIds.length) return null;
+
+  const citedReviewIds = triggerIds.filter((taskId) => liveReview.has(taskId));
+  if (citedReviewIds.length > 0) return null;
+
+  const movedActiveOrReview = triggerIds.filter((taskId) =>
+    liveActiveOrReview.has(taskId),
+  );
+  const settledOrMissing = triggerIds.filter(
+    (taskId) => !liveActiveOrReview.has(taskId),
+  );
+  const treeUpdatedAt = triggerRunnableBacklogTreeUpdatedAt(input.rawTask);
+  const snapshotAt = triggerRunnableBacklogSnapshotAt(input.rawTask);
+  const freshnessParts = [
+    treeUpdatedAt ? `trigger tree updated_at=${treeUpdatedAt}` : "",
+    snapshotAt ? `snapshotAt=${snapshotAt}` : "",
+    `live runnable frontier=${JSON.stringify(input.packet.frontier.runnable)}`,
+    movedActiveOrReview.length
+      ? `moved active/review=${JSON.stringify(movedActiveOrReview)}`
+      : "",
+    settledOrMissing.length
+      ? `settled/missing=${JSON.stringify(settledOrMissing)}`
+      : "",
+  ].filter(Boolean);
+
+  return `Watchdog runnable-backlog wake is stale: trigger IDs ${JSON.stringify(triggerIds)} are no longer confirm-runnable in the live frontier. ${freshnessParts.join("; ")}.`;
 }
 
 function appendNoopPlannerRun(input: {
@@ -532,6 +610,25 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
       requeuedStaleTaskIds,
     });
     return ctx.done(noopResult);
+  }
+
+  const staleRunnableNoop = staleRunnableBacklogNoopResult({
+    rawTask: ctx.task,
+    packet,
+    humanSteering,
+    quickAssignments,
+    requeuedStaleTaskIds,
+  });
+  if (staleRunnableNoop) {
+    appendNoopPlannerRun({
+      appDir,
+      result: staleRunnableNoop,
+      steps: ["stale-runnable-backlog-noop"],
+      packet,
+      initialRepair,
+      requeuedStaleTaskIds,
+    });
+    return ctx.done(staleRunnableNoop);
   }
 
   if (

@@ -232,8 +232,9 @@ folder does not keep a parallel task event log.
   owner; it is not the controller. Task-tree processing code should be tools
   for the LLM. Use app-local commands such as `bun run task-tree summary`,
   `bun run task-tree frontier`, `bun run task-tree confirm-runnable`,
-  `bun run task-tree add`, `bun run task-tree assign`, and
-  `bun run task-tree complete` for reviewed task-tree operations.
+  `bun run task-tree add`, `bun run task-tree assign`,
+  `bun run task-tree update-text`, and `bun run task-tree complete` for
+  reviewed task-tree operations.
 - Owner work runs through the project owner. Each wake has two owner steps:
   event review first, then task-tree update. The event-review step receives a
   compact planning packet and should classify what changed without editing

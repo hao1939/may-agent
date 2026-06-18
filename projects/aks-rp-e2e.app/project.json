@@ -25,35 +25,48 @@
     "Continuously reconcile Go e2ev3 source coverage, including suite-condition variants, and tidy feature/spec/model structure so the knowledge base stays canonical."
   ],
   "currentState": {
-    "summary": "Active coverage-closure work. The project is not complete: the model has 404 features, 471 paths, 402 scenarios, and remaining fail/blocked/draft/unknown paths. The previous closure/ceiling summary was stale. Current priority is a full Go e2ev3 scenario inventory and coverage matrix so every source scenario is mapped to feature/path/spec/replay/plan/evidence or explicitly classified.",
-    "activeTaskId": null,
+    "summary": "Coverage-closure work remains live after the 2026-06-17 reopen. The reopened Go e2ev3 total-coverage branch now exposes 404 features with 349 pass, 471 paths with 413 pass, 0 unknown paths, and 974 evidence records; the live task tree currently shows 1043 total tasks with 1036 done, 6 active, 1 review, and 0 backlog. The executable frontier is 4 active closure leaves plus 1 review leaf while draft-sweep, evidence-gap closure, probe-wiring validation, metadata repair, and net-integration backfill reconciliation converge the remaining closure wave.",
+    "activeTaskId": "go-e2ev3-draft-sweep-artifact-reconciliation-20260617",
     "metrics": {
       "features": 404,
-      "featuresPass": 340,
+      "featuresPass": 349,
       "paths": 471,
-      "pathsPass": 411,
-      "passRatePaths": "87.3%",
-      "passRateFeatures": "84.2%",
-      "tasksCompleted": 996,
-      "tasksActive": 0,
-      "tasksInReview": 0,
-      "tasksTotal": 1023,
-      "uncommittedChanges": 500,
-      "lastCommit": "539dd88"
+      "pathsPass": 413,
+      "passRatePaths": "87.7%",
+      "passRateFeatures": "86.4%",
+      "tasksCompleted": 1036,
+      "tasksActive": 6,
+      "tasksInReview": 1,
+      "tasksBacklog": 0,
+      "tasksTotal": 1043,
+      "uncommittedChanges": 167,
+      "lastCommit": "4c41b57",
+      "evidence": 974,
+      "taskCompleted24h": 233,
+      "liveStarted24h": 59,
+      "liveSucceeded24h": 5,
+      "specUnverified": 382,
+      "specFailed": 0,
+      "unknownPaths": 0
     }
   },
   "currentFocus": {
-    "summary": "P0 focus reopened: close total Go e2ev3 coverage, not only the VM REST positive slice. A standing coverage-closure branch now requires refreshed source inventory, source-to-model/spec/evidence reconciliation, VM boundary-negative live execution, and source-family expansion backlog.",
-    "nextAction": "Assign and execute go-e2ev3-total-scenario-inventory-refresh-20260617 and vm-agentpool-boundary-negative-live-20260617, then use the coverage matrix to create grouped follow-up leaves for every uncovered or unverified scenario family.",
-    "activeTaskIds": [],
+    "summary": "The approved focus is still correct: close total Go e2ev3 coverage by reconciling abandoned worker output, validating landed CCP/traffic/RP and net-integration work, wiring remaining probe gaps, and converting anonymous evidence gaps into named path-scoped outcomes.",
+    "nextAction": "Keep the reopened closure branch moving: finish the 4 active leaves (draft-sweep artifact reconciliation, net-integration pass-evidence backfill queue, two-evidence-gap closure, and project-metadata repair), clear the 1 review leaf (probe-wiring batch-2 validation), then convert any residual unverified-spec or evidence gaps they expose into explicit follow-up leaves under the same closure plan.",
+    "activeTaskIds": [
+      "go-e2ev3-draft-sweep-artifact-reconciliation-20260617",
+      "go-e2ev3-net-integration-pass-evidence-backfill-queue-20260617",
+      "go-e2ev3-two-evidence-gap-closure-20260617",
+      "project-metadata-live-surface-repair-20260617"
+    ],
     "focusPlanId": "go-e2ev3-total-coverage-closure-20260617",
     "focusPlanStatus": "active",
     "priorFocusPlanId": "focus-plan-20260614-combined-source-hygiene",
     "priorFocusResult": "completed",
     "focusReview": {
-      "reviewedAt": "2026-06-17T02:47:00.000Z",
-      "result": "off_track",
-      "note": "The project had stopped because stale closure state treated a local VM REST slice and prior ceiling numbers as project completion. That was wrong: source coverage and model gaps remain. Reopened with P0 total coverage closure tasks."
+      "reviewedAt": "2026-06-17T06:18:00.000Z",
+      "result": "on_track",
+      "note": "The reopened total-coverage effort is now producing concrete results, not just alarms: 233 tasks completed in 24h, 59 live starts, 5 live successes, specs/index.json repaired with 56 missing specs, source-grounded speculor verification landed, and the remaining work is broken into bounded audit/reconciliation leaves. The project is no longer off_track; it is actively converging on full source-to-model accountability."
     }
   },
   "focusPlan": {
@@ -70,5 +83,5 @@
     "tasks/README.md",
     "tasks/tree.json"
   ],
-  "updatedAt": "2026-06-17T02:47:00.000Z"
+  "updatedAt": "2026-06-17T06:32:54.000Z"
 }

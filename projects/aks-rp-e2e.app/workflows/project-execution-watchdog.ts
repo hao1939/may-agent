@@ -28,6 +28,7 @@ type WatchdogConfig = {
   stateDbPath: string;
   agent: string;
   maxConcurrent: number;
+  staleNoActivityMs: number;
 };
 
 type ActiveTaskSnapshot = {
@@ -37,6 +38,8 @@ type ActiveTaskSnapshot = {
 
 type WatchdogTreeSnapshot = {
   runnableBacklogTaskIds: string[];
+  runnableBacklogTreeUpdatedAt?: string;
+  runnableBacklogSnapshotAt: string;
   activeTasks: ActiveTaskSnapshot[];
   activeCount: number;
   hasOpenWork: boolean;
@@ -54,6 +57,7 @@ function parseInput(raw: string, defaultAgent: string): WatchdogConfig {
     stateDbPath: field(raw, "stateDb") ?? "/app/.state/may.db",
     agent: field(raw, "agent") ?? defaultAgent,
     maxConcurrent: Number(field(raw, "maxConcurrent") ?? 3),
+    staleNoActivityMs: Number(field(raw, "staleNoActivityMs") ?? 600_000),
   };
 }
 
@@ -114,25 +118,85 @@ function activeProjectNeedsRefill(tree: TaskTree): boolean {
   return tree.project_lifecycle !== "closed" && !hasOpenWork(tree);
 }
 
-function sessionIsRunning(dbPath: string, sessionId: string): boolean {
-  if (!existsSync(dbPath)) return false;
+function sessionRestartReasonFromRow(
+  row: Record<string, unknown> | null,
+  staleNoActivityMs: number,
+): string | null {
+  if (!row) return "session-not-running";
+  if (row.status !== "running") return "session-not-running";
+  if (row.outcome === "error" || row.outcome === "interrupted")
+    return `session-${row.outcome}`;
+
+  const opCount =
+    typeof row.opCount === "number" && Number.isFinite(row.opCount)
+      ? row.opCount
+      : null;
+  const startedAt =
+    typeof row.startedAt === "number" && Number.isFinite(row.startedAt)
+      ? row.startedAt
+      : null;
+  const lastActivityAt =
+    typeof row.lastActivityAt === "number" &&
+    Number.isFinite(row.lastActivityAt)
+      ? row.lastActivityAt
+      : startedAt;
+  const staleSince = lastActivityAt ?? startedAt;
+  if (
+    opCount === 0 &&
+    staleSince !== null &&
+    Date.now() - staleSince > staleNoActivityMs
+  ) {
+    return "session-no-activity";
+  }
+
+  return null;
+}
+
+function sessionRestartReason(
+  dbPath: string,
+  sessionId: string,
+  staleNoActivityMs: number,
+): string | null {
+  if (!existsSync(dbPath)) return "session-not-running";
   const db = new Database(dbPath, { readonly: true });
   try {
     const row = db
       .query(
         `
-      select 1
+      select status, outcome, opCount, startedAt, lastActivityAt
       from sessions
-      where sessionId = ? and status = 'running'
+      where sessionId = ?
       limit 1
     `,
       )
-      .get(sessionId);
-    return Boolean(row);
+      .get(sessionId) as Record<string, unknown> | null;
+    return sessionRestartReasonFromRow(row, staleNoActivityMs);
   } catch {
-    return false;
+    const row = db
+      .query(
+        `
+      select status
+      from sessions
+      where sessionId = ?
+      limit 1
+    `,
+      )
+      .get(sessionId) as Record<string, unknown> | null;
+    return sessionRestartReasonFromRow(row, staleNoActivityMs);
   } finally {
     db.close();
+  }
+}
+
+function restartReasonForSession(
+  dbPath: string,
+  sessionId: string,
+  staleNoActivityMs: number,
+): string | null {
+  try {
+    return sessionRestartReason(dbPath, sessionId, staleNoActivityMs);
+  } catch {
+    return "session-not-running";
   }
 }
 
@@ -141,9 +205,11 @@ function activeTaskRestartReason(
   task: ActiveTaskSnapshot,
 ): string | null {
   if (!task.sessionId) return "missing-session";
-  if (!sessionIsRunning(config.stateDbPath, task.sessionId))
-    return "session-not-running";
-  return null;
+  return restartReasonForSession(
+    config.stateDbPath,
+    task.sessionId,
+    config.staleNoActivityMs,
+  );
 }
 
 function staleActiveTasks(
@@ -191,6 +257,9 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
         runnableBacklogTaskIds: runnableBacklogLeaves(tree)
           .map((task) => task.id)
           .sort(),
+        runnableBacklogTreeUpdatedAt:
+          typeof tree.updated_at === "string" ? tree.updated_at : undefined,
+        runnableBacklogSnapshotAt: new Date().toISOString(),
         activeTasks,
         activeCount: activeTasks.length,
         hasOpenWork: hasOpenWork(tree),
@@ -218,6 +287,8 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     const reason = "watchdog-runnable-backlog";
     emitOwnerRequested(ctx, config, reason, {
       runnableBacklogTaskIds: recovery.runnableBacklogTaskIds,
+      runnableBacklogTreeUpdatedAt: recovery.runnableBacklogTreeUpdatedAt,
+      runnableBacklogSnapshotAt: recovery.runnableBacklogSnapshotAt,
     });
     return ctx.done(`Watchdog emitted project.owner.requested: ${reason}.`);
   }

@@ -136,10 +136,65 @@ function parseGitStatus(): GitChange[] {
     });
 }
 
+const derivedPathSignalsCache = new Map<string, string[]>();
+
+function featureSignalsFromSpecPath(specPath: string): string[] {
+  try {
+    const fullPath = resolve(projectDir, specPath);
+    const spec = JSON.parse(readFileSync(fullPath, "utf-8")) as {
+      featureId?: unknown;
+      featurePathIds?: unknown;
+    };
+    const signals: string[] = [];
+    if (typeof spec.featureId === "string" && spec.featureId.trim()) {
+      signals.push(`feature:${spec.featureId.trim()}`);
+    }
+    if (Array.isArray(spec.featurePathIds)) {
+      for (const featurePathId of spec.featurePathIds) {
+        if (typeof featurePathId === "string" && featurePathId.trim()) {
+          signals.push(featurePathId.trim());
+          signals.push(`path:${featurePathId.trim()}`);
+        }
+      }
+    }
+    return signals;
+  } catch {
+    return [];
+  }
+}
+
+function derivedPathSignals(path: string): string[] {
+  const cached = derivedPathSignalsCache.get(path);
+  if (cached) return cached;
+
+  const parts = path.split("/");
+  let signals: string[] = [];
+
+  if (parts[0] === "specs" && parts[1]?.endsWith(".json")) {
+    signals = featureSignalsFromSpecPath(path);
+  }
+
+  if (parts[0] === "replays" && parts[1]?.endsWith(".ts")) {
+    const siblingSpecPath = path
+      .replace(/^replays\//, "specs/")
+      .replace(/\.ts$/, ".json");
+    signals = featureSignalsFromSpecPath(siblingSpecPath);
+  }
+
+  const normalized = [...new Set(signals.filter(Boolean).map((signal) => signal.toLowerCase()))];
+  derivedPathSignalsCache.set(path, normalized);
+  return normalized;
+}
+
 function pathSignals(path: string): string[] {
   const withoutExt = path.replace(/\.[^.]+$/, "");
   const parts = path.split("/");
-  const signals = new Set<string>([path, withoutExt, changeSlice(path)]);
+  const signals = new Set<string>([
+    path,
+    withoutExt,
+    changeSlice(path),
+    ...derivedPathSignals(path),
+  ]);
   if (parts[0] === "features" && parts[1]) {
     signals.add(parts[1].replace(/\.(yaml|json|md)$/, ""));
   }
@@ -152,6 +207,7 @@ function pathSignals(path: string): string[] {
 function normalizePath(value: string): string {
   return value
     .replace(/^\/app\/projects\/aks-rp-e2e\//, "")
+    .replace(/^\.\.\/aks-rp-e2e\//, "")
     .replace(/^\.?\//, "")
     .replace(/\/+$/, "");
 }

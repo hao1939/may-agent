@@ -93,6 +93,39 @@ function writeSession(dbPath: string, sessionId: string, status: string) {
   db.close();
 }
 
+function writeRuntimeSession(
+  dbPath: string,
+  row: {
+    sessionId: string;
+    status: string;
+    outcome?: string | null;
+    opCount?: number;
+    startedAt?: number;
+    lastActivityAt?: number | null;
+  },
+) {
+  const db = new Database(dbPath);
+  db.exec(`
+    create table sessions (
+      sessionId text primary key,
+      status text not null,
+      outcome text,
+      opCount integer default 0,
+      startedAt integer not null,
+      lastActivityAt integer
+    )
+  `);
+  db.query("insert into sessions values (?, ?, ?, ?, ?, ?)").run(
+    row.sessionId,
+    row.status,
+    row.outcome ?? null,
+    row.opCount ?? 0,
+    row.startedAt ?? Date.now(),
+    row.lastActivityAt ?? null,
+  );
+  db.close();
+}
+
 function context(input: {
   projectDir: string;
   stateDbPath?: string;
@@ -156,6 +189,8 @@ describe("project execution watchdog", () => {
           maxConcurrent: 3,
           requested_by: "project-execution-watchdog",
           runnableBacklogTaskIds: ["backlog-task"],
+          runnableBacklogTreeUpdatedAt: expect.any(String),
+          runnableBacklogSnapshotAt: expect.any(String),
         },
       },
     ]);
@@ -220,6 +255,98 @@ describe("project execution watchdog", () => {
     expect(updated.tasks["active-task"].trace?.stale_active_restart_count).toBe(
       undefined,
     );
+  });
+
+  test("wakes owner for an active leaf whose runtime session has error outcome", async () => {
+    const projectDir = await makeProject();
+    const stateDbPath = join(projectDir, "may.db");
+    writeRuntimeSession(stateDbPath, {
+      sessionId: "s_error",
+      status: "running",
+      outcome: "error",
+      opCount: 4,
+      startedAt: Date.now(),
+    });
+    await writeTree(
+      projectDir,
+      {
+        "active-task": task("active-task", "active", {
+          session_id: "s_error",
+        }),
+      },
+      {
+        active_task_id: "active-task",
+        active_task_ids: ["active-task"],
+      },
+    );
+
+    const dispatched: Array<{
+      type: string;
+      payload: Record<string, unknown>;
+    }> = [];
+    const result = await execute(
+      context({ projectDir, stateDbPath, dispatched }),
+    );
+
+    expect(result.status).toBe("done");
+    expect(dispatched[0]).toMatchObject({
+      type: "project.owner.requested",
+      payload: {
+        reason: "watchdog-stale-active-review",
+        staleActiveTasks: [{ taskId: "active-task", reason: "session-error" }],
+      },
+    });
+  });
+
+  test("wakes owner for an active leaf with no session activity past grace", async () => {
+    const projectDir = await makeProject();
+    const stateDbPath = join(projectDir, "may.db");
+    writeRuntimeSession(stateDbPath, {
+      sessionId: "s_idle",
+      status: "running",
+      opCount: 0,
+      startedAt: Date.now() - 60_000,
+      lastActivityAt: Date.now() - 60_000,
+    });
+    await writeTree(
+      projectDir,
+      {
+        "active-task": task("active-task", "active", {
+          session_id: "s_idle",
+        }),
+      },
+      {
+        active_task_id: "active-task",
+        active_task_ids: ["active-task"],
+      },
+    );
+
+    const dispatched: Array<{
+      type: string;
+      payload: Record<string, unknown>;
+    }> = [];
+    const result = await execute({
+      ...context({ projectDir, stateDbPath, dispatched }),
+      task: [
+        `app: ${projectDir}`,
+        `project: ${projectDir}`,
+        `stateDb: ${stateDbPath}`,
+        "maxAttempts: 2",
+        "maxConcurrent: 3",
+        "staleNoActivityMs: 1000",
+      ].join("\n"),
+    } as any);
+
+    expect(result.status).toBe("done");
+    expect(dispatched[0]).toMatchObject({
+      type: "project.owner.requested",
+      payload: {
+        reason: "watchdog-stale-active-review",
+        staleActiveTasks: [
+          { taskId: "active-task", reason: "session-no-activity" },
+        ],
+      },
+    });
   });
 
   test("does not mutate repeatedly stale active leaves", async () => {

@@ -9,13 +9,16 @@
 import { join } from "node:path";
 import type { WorkflowContext, WorkflowResult } from "@may-agent/sdk";
 import {
+  readTaskTree,
   taskEventSnapshot,
+  withTreeLock,
   type TaskTreeConfig,
   type TaskNode,
 } from "./lib/task-tree-store.ts";
 import {
+  appendToolJournal,
   completeTask,
-  readTask,
+  saveTaskTreeWithKanbanSnapshot,
   taskTreeConfig,
   type TaskCompletionClaim,
 } from "./lib/task-tree-tools.ts";
@@ -75,10 +78,15 @@ function buildWorkerPrompt(input: {
 You are executing exactly one aks-rp-e2e task assigned by the project owner.
 Do not reshape the tree, create sibling branches, roll up parents, or run
 planner work from this session.
-If the assigned task mentions tasks/tree.json, child-task creation, branch
-creation, rollout tasks, or tree updates, treat that as owner-review output:
-write the plan/proposal/evidence in the domain workspace and report what the
-project owner should add to the tree. Do not edit the live task tree yourself.
+If the assigned task asks for planning work, child-task creation, branch
+creation, assignment, acceptance/review decisions, rollups, or other broad tree
+changes, treat that as owner-review output: write the plan/proposal/evidence in
+the domain workspace and report what the project owner should add to the tree.
+If the assigned task is a bounded existing-task metadata repair that explicitly
+names supported task-tree commands such as \`task-tree set-outputs\` or
+\`task-tree update-text\`, you may run only those exact commands against the
+named existing task ids. Never edit tasks/tree.json directly, and do not
+add/reassign/accept/reject tasks from this session.
 
 Use the task as the context container. Read the relevant domain files, do the
 task body, write the requested output/evidence, then finish your response with
@@ -179,6 +187,64 @@ function taskAttemptId(task: TaskNode): string {
   return typeof value === "string" ? value : "";
 }
 
+function traceValue(task: TaskNode, key: string): unknown {
+  const trace = task.trace;
+  return trace && typeof trace === "object" && !Array.isArray(trace)
+    ? (trace as Record<string, unknown>)[key]
+    : undefined;
+}
+
+function markAttemptStartedOnce(
+  config: TaskTreeConfig,
+  input: {
+    taskId: string;
+    attemptId: string;
+  },
+): { ok: true; task: TaskNode } | { ok: false; reason: string } {
+  return withTreeLock(config, () => {
+    const tree = readTaskTree(config);
+    const task = tree.tasks[input.taskId];
+    if (!task)
+      return {
+        ok: false,
+        reason: `Assigned task ${input.taskId} was not found.`,
+      };
+    if (task.status !== "active")
+      return {
+        ok: false,
+        reason: `Assigned task ${input.taskId} is ${task.status}, not active.`,
+      };
+    if (taskAttemptId(task) !== input.attemptId)
+      return {
+        ok: false,
+        reason: `Assigned task ${input.taskId} attempt ${input.attemptId} is stale.`,
+      };
+
+    if (traceValue(task, "worker_started_attempt_id") === input.attemptId) {
+      return {
+        ok: false,
+        reason: `Assigned task ${input.taskId} attempt ${input.attemptId} is already running or already started.`,
+      };
+    }
+
+    const now = new Date().toISOString();
+    task.trace = {
+      ...(task.trace ?? {}),
+      worker_started_attempt_id: input.attemptId,
+      worker_started_at: now,
+    };
+    saveTaskTreeWithKanbanSnapshot(config, tree);
+    appendToolJournal(config, {
+      kind: "task_worker_started",
+      task_id: task.id,
+      attempt_id: input.attemptId,
+      session_id: task.session_id,
+      worker: config.worker,
+    });
+    return { ok: true, task };
+  });
+}
+
 async function runAssignedMode(
   ctx: WorkflowContext,
   appDir: string,
@@ -201,12 +267,9 @@ async function runAssignedMode(
       `Task assignment for ${taskId} ignored because it did not include attemptId.`,
     );
 
-  const task = readTask(config, taskId);
-  if (!task) return ctx.done(`Assigned task ${taskId} was not found.`);
-  if (task.status !== "active")
-    return ctx.done(`Assigned task ${taskId} is ${task.status}, not active.`);
-  if (taskAttemptId(task) !== attemptId)
-    return ctx.done(`Assigned task ${taskId} attempt ${attemptId} is stale.`);
+  const start = markAttemptStartedOnce(config, { taskId, attemptId });
+  if (!start.ok) return ctx.done(start.reason);
+  const task = start.task;
 
   const result = await runTaskAgent({
     ctx,
