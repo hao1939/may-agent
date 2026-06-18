@@ -903,3 +903,189 @@ Approved 2026-06-04 via `shared/work-queue.md`; proposal at
 - KE-454 — `handler.completed` fires on failed sessions
 - KE-455 — every event-only handler has fired zero times
 - KE-468 — `project.iteration` has two incompatible payload shapes
+
+## Proposal: Unified Event Lifecycle (2026-06-18)
+
+### Problem
+
+255K events sit at `pending` forever. The DB has `status`, `handled_by`,
+`result` columns reserved for lifecycle tracking, but nothing writes to them.
+The system records events but doesn't know whether they were processed.
+
+For observability events (`handler.started`, `session.start`) this is fine —
+they're log entries. For actionable events (`metric.breach`, `escalation.created`,
+`project.owner.requested`) this is a gap — a pending actionable event means
+nobody can tell whether it was consumed, ignored, or lost.
+
+### Mental Model
+
+Every event has a lifecycle:
+
+```
+created → acked → done
+```
+
+Three states, one direction:
+
+| State | Meaning |
+|-------|---------|
+| `created` | Event recorded. No consumer has claimed it yet. |
+| `acked` | A consumer has claimed responsibility. Processing in progress. |
+| `done` | Terminal. Processing complete with a result. |
+
+Terminal results (stored in `result` column):
+
+| Result | Meaning |
+|--------|---------|
+| `handled` | Consumer processed it successfully. |
+| `expired` | TTL passed before any consumer claimed it. |
+| `dropped` | Consumer examined it and decided no action needed (with reason). |
+| `failed` | Consumer tried and failed (may retry). |
+
+### Event Classes
+
+Not every event needs full lifecycle tracking. Classify by intent:
+
+| Class | Lifecycle | Examples |
+|-------|-----------|---------|
+| **Signal** | `created → acked → done` | `metric.breach`, `escalation.created`, `project.owner.requested`, `message.created` |
+| **Trace** | `created → done(handled)` immediately | `handler.started`, `handler.completed`, `session.start`, `session.end`, `guard.triggered` |
+
+**Signals** are events that require a consumer to act, judge, or acknowledge.
+They move through the full lifecycle. If no consumer acks within the TTL,
+they expire. If they expire, the system knows something was missed.
+
+**Traces** are events that record what happened. They're born terminal — written
+as `done(handled)` immediately because their purpose is the record itself,
+not triggering action. They never sit at `created` waiting for a consumer.
+
+### Lifecycle Rules
+
+```
+created
+  │
+  ├── consumer claims it ──→ acked (handled_by = consumer, acked_at = now)
+  │                            │
+  │                            ├── success ──→ done(handled) with result
+  │                            ├── failure ──→ done(failed) with reason
+  │                            │                 └── retry? → created (retry_count++)
+  │                            └── drop ────→ done(dropped) with reason
+  │
+  └── TTL expires ───────────→ done(expired)
+                                 └── owner notified if signal class
+```
+
+### Ack Contract
+
+When a bus subscriber processes a signal event, it must ack:
+
+```typescript
+// In the handler/workflow that processes the event:
+ctx.ackEvent(eventId);           // created → acked
+// ... do work ...
+ctx.resolveEvent(eventId, {      // acked → done
+  result: "handled",
+  reason: "evaluated session s_123, verdict=acceptable",
+});
+```
+
+When a handler examines an event and decides no action is needed:
+
+```typescript
+ctx.resolveEvent(eventId, {
+  result: "dropped",
+  reason: "metric recovered before handler ran",
+});
+```
+
+### Retry
+
+If a consumer fails:
+
+```typescript
+ctx.resolveEvent(eventId, {
+  result: "failed",
+  reason: "evaluator session timed out",
+  retry: true,  // → infra resets to created, increments retry_count
+});
+```
+
+Retry policy (infra-owned):
+- Max retries per event: configurable, default 3
+- Backoff: exponential with jitter
+- After max retries: `done(failed)` + escalation to owner
+
+### TTL and Expiry
+
+Signal events should declare `ttl_ms`. If not set, infra applies a default
+based on urgency:
+
+| Urgency | Default TTL |
+|---------|-------------|
+| `immediate` | 5 min |
+| `high` | 30 min |
+| `normal` | 2 hours |
+| `low` | 24 hours |
+
+When TTL expires on a `created` event (never acked), infra:
+1. Marks `done(expired)`
+2. Emits `event.expired` trace with the original event type and owner
+3. The ops health packet surfaces expired signal events as unhandled
+
+### What Changes in the DB
+
+No schema change needed. The existing columns support this:
+
+| Column | Current | New meaning |
+|--------|---------|-------------|
+| `status` | Always `pending` | `created` → `acked` → `done` |
+| `handled_by` | Always NULL | Consumer identity on ack |
+| `result` | Always NULL | Terminal result: `handled`, `expired`, `dropped`, `failed` |
+| `reason` | Always NULL | Human-readable closure reason |
+| `retry_count` | Always 0 | Incremented on retry |
+
+### What Changes in the Code
+
+1. **DbWriter**: write trace events as `status='done', result='handled'`
+   immediately. Write signal events as `status='created'`.
+
+2. **Bus subscribers**: when a cron handler or app workflow handler dispatches
+   work for a signal event, call `ackEvent(eventId)`. When the work completes,
+   call `resolveEvent(eventId, result)`.
+
+3. **TTL expiry**: the existing `expireStaleMessages` and
+   `expireStaleSignalEvents` already do this. Generalize to cover all signal
+   event types.
+
+4. **Ops health packet**: count `created` signal events older than expected
+   processing time → surfaces "unhandled signal" as an observation.
+
+### What This Enables
+
+- **"Is anyone handling this?"** — `acked` means yes, `created` past TTL means no.
+- **"What happened to that breach?"** — `done(handled)` with reason shows the
+  outcome. Not "I hope someone saw it."
+- **Retry for failed processing** — instead of silent drops, the event re-enters
+  the queue with exponential backoff.
+- **Expiry detection** — unacked signal events surface automatically in the ops
+  health packet. The owner investigates why nobody consumed it.
+- **Clean DB** — trace events are born `done`; signal events reach `done` within
+  their TTL. No more 255K perpetual pending rows.
+
+### What This Is Not
+
+- Not a full event-sourcing system — trace events are still just logs.
+- Not a message queue — the bus is still in-memory pub/sub. The DB lifecycle
+  is an accountability record, not a delivery guarantee.
+- Not blocking — ack/resolve are fire-and-forget DB updates. They don't block
+  the bus or the handler.
+
+### Implementation Order
+
+1. Classify existing event types as signal vs trace
+2. DbWriter: write traces as `done(handled)` immediately
+3. Add `ackEvent` and `resolveEvent` to the SDK/handler context
+4. Wire ack/resolve into the cron handler dispatch path
+5. Wire ack/resolve into the app event router dispatch path
+6. Generalize TTL expiry for all signal types
+7. Add "unacked signal count" to ops health packet
