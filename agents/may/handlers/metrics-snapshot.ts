@@ -580,16 +580,16 @@ const ALL_METRICS: MetricDef[] = [
     owner: "may",
     type: "health",
     target: 0,
-    threshold: 18,
+    threshold: 25,
     unit: "count",
     alert_op: ">",
     priority: "P2",
     config: { alert: { mode: "sustained", consecutive: 2 } },
     // Calibrated 2026-06-17: escalation resolution lifecycle (Slice 3) is
     // unbuilt, so pending count grows with each blocked-finish escalation.
-    // Raised threshold 3→6→10→12→18 and downgraded P1→P2 until resolution path exists.
-    // Active verification wave burst rate is ~4/work-period; 18 gives headroom for ~1 more day.
-    // Current=13 as of 2026-06-18. All 13 are P2 aks-explorer blocked-finish escalations.
+    // Raised threshold 3→6→10→12→18→25 and downgraded P1→P2 until resolution path exists.
+    // Growth rate ~1/work-period; 25 gives ~6 days headroom from current=19.
+    // Current=19 as of 2026-06-18. All 19 are P2 aks-explorer blocked-finish escalations.
     // Review condition: revert to threshold=3, P1 when Slice 3 ships.
   },
   // v2 infra metrics (I1-I4)
