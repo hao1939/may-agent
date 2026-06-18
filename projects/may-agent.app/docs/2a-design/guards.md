@@ -455,6 +455,26 @@ approved. Ghost deliverable fix (KE-2022) needs planner workflow
 change. Combined projected reduction if both land: ~2061 events/day,
 bringing total to ~2657/day (52% headroom at 5500).
 
+**Snapshot 2026-06-18 ~05:10Z** (6h window, 1279 total; 24h ~5072, threshold 5500 = 92.2%):
+
+| Signal | 6h Count | 6h Share |
+|--------|-------:|------:|
+| READ_DEDUP | 361 | 28.2% |
+| OTHER (misc) | 236 | 18.5% |
+| SESSION_BASH_CAT | 205 | 16.0% |
+| FINISH_UNCOMMITTED | 180 | 14.1% |
+| GHOST_DELIVERABLE | 169 | 13.2% |
+| SESSION_READ | 62 | 4.8% |
+| SESSION_BASH_GREP | 61 | 4.8% |
+| EDIT_WITHOUT_READ | 5 | 0.4% |
+
+**All 1279 events are `action=warned`, zero blocks.** Tier 1 guards: 5 read-before-edit, 1 knowledge-entry-overwrite.
+Throughput: ~4500 sessions/day. Guard rate ~213/hr. Headroom to 5500: 428 (7.8%).
+
+**Notable shift from ~02:30Z snapshot**: GHOST_DELIVERABLE maintained at ~169/6h (~677/day projected), consistent with KE-2022 finding that 21.7% of planner sessions claim unwritten deliverables. Per-session dedup would NOT help this signal (each session triggers ~1 event). The GHOST_DELIVERABLE pattern is the new structural floor after READ_DEDUP dedup would land.
+
+**Convergence note**: Both DB (1918/2000, 95.9%) and guard triggers (5072/5500, 92.2%) are converging toward their thresholds simultaneously, driven by the same root cause: aks-explorer throughput at ~2568 sessions/day. DB breach timeline: ~3h. Guard breach timeline: ~2h at current rate unless rolling-window outflow increases. See KE-2024.
+
 **Snapshot 2026-06-18 ~05:00Z** (24h window, ~4974 total, threshold 5500 = 90.4%):
 
 | Signal | 24h Count | 6h Count | 6h Share |
