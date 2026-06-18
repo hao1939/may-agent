@@ -416,10 +416,44 @@ Combined projected reduction from filed fixes:
 - Planner ghost deliverable fix: ~345 events/day
 - **Post-fix projected total: ~2495/day** (threshold 4500, 44% headroom)
 
-Both guard alerts (triggered + warned) are **open, unresolved**.
-DB at 1828 MB (91.4% of 2000 threshold).
-3 proposals pending ORDER-010 approval: threshold 4500→6000 (stopgap),
-per-session dedup (structural), DB threshold 2000→2500.
+Both guard alerts (triggered + warned) resolved by 6th calibration
+(4500→5500, commit 3de3d78e2, 2026-06-18 ~02:01Z by may).
+DB at 1843 MB (92.2% of 2000 threshold).
+2 proposals pending ORDER-010 approval: per-session dedup (structural),
+DB threshold 2000→2500.
+
+**Snapshot 2026-06-18 ~02:30Z** (24h window, 4673 total, threshold 5500 = 85%):
+
+| Signal | 24h Count | 6h Count | 6h Share |
+|--------|-------:|-------:|------:|
+| READ_DEDUP (combined) | 2153 | 618 | 45% |
+| FINISH_UNCOMMITTED | 845 | 182 | 13% |
+| SESSION_BASH_CAT | 756 | 227 | 17% |
+| GHOST_DELIVERABLE | 397 | 167 | 12% |
+| SESSION_BASH_GREP | 242 | 77 | 6% |
+| SESSION_READ | 211 | 67 | 5% |
+| EDIT_WITHOUT_READ | 24 | 5 | 0% |
+| OTHER | 90 | 29 | 2% |
+
+Throughput: 4321 sessions/day (aks-explorer 2487, evaluator 1424,
+may 221, scout 60, dev 47, arc 43). Guard rate ~195/hr. Headroom
+to 5500: 827 triggers (15%), ~4h at current rate of ingress minus
+rolling-off window.
+
+**Threshold calibration history (updated):**
+```
+d950cdf52  → 1500
+9da357108  1500 → 2000
+483ca44d8  2000 → 2500
+d5a0dfbb6  2500 → 3500
+ac70bb0ab  3500 → 4500
+3de3d78e2  4500 → 5500  (2026-06-18, 6th calibration)
+```
+
+**Structural fix status**: Per-session dedup proposal filed but not
+approved. Ghost deliverable fix (KE-2022) needs planner workflow
+change. Combined projected reduction if both land: ~2061 events/day,
+bringing total to ~2657/day (52% headroom at 5500).
 
 ### Known issue: guard name conflation
 
