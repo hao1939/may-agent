@@ -167,17 +167,53 @@ describe("SubagentManager.resumeStaleSessions()", () => {
 
     const meta = readSessionMeta(persistDir, "session-x");
     expect(meta!.status).toBe("interrupted");
-    expect(events).toContainEqual(expect.objectContaining({
-      type: "session.resume_failed",
-      source: "manager",
-      owner: "agent:unknown-agent",
-      data: expect.objectContaining({
-        sessionId: "session-x",
-        agent: "unknown-agent",
-        category: "agent_not_registered",
-        recoverable: false,
+    expect(events).toContainEqual(
+      expect.objectContaining({
+        type: "session.resume_failed",
+        source: "manager",
+        owner: "agent:unknown-agent",
+        data: expect.objectContaining({
+          sessionId: "session-x",
+          agent: "unknown-agent",
+          category: "agent_not_registered",
+          recoverable: false,
+        }),
       }),
-    }));
+    );
+  });
+
+  it("interrupts stale sessions rejected by the startup recovery policy", () => {
+    writeRegistryState(persistDir, {
+      "session-old": {
+        agent: "agent-a",
+        task: "superseded task",
+        status: "running",
+        startedAt: Date.now() - 10000,
+      },
+      "session-current": {
+        agent: "agent-a",
+        task: "current task",
+        status: "running",
+        startedAt: Date.now() - 5000,
+      },
+    });
+    setupSession(persistDir, "session-old");
+    setupSession(persistDir, "session-current");
+
+    const manager = new SubagentManager({ persistDir });
+    registerAgent(manager, "agent-a");
+
+    const { resumed, interrupted } = manager.resumeStaleSessions({
+      shouldResume: (sessionId) =>
+        sessionId === "session-old"
+          ? { resume: false, reason: "superseded by newer project task attempt" }
+          : { resume: true },
+    });
+
+    expect(resumed.map((s) => s.sessionId).sort()).toEqual(["session-current"]);
+    expect(interrupted.map((s) => s.sessionId).sort()).toEqual(["session-old"]);
+    expect(readSessionMeta(persistDir, "session-old")?.status).toBe("interrupted");
+    expect(readSessionMeta(persistDir, "session-old")?.error).toBe("superseded by newer project task attempt");
   });
 
   it("emits session.resume_failed when cold resume cannot find the session", () => {
@@ -188,16 +224,18 @@ describe("SubagentManager.resumeStaleSessions()", () => {
 
     expect(() => manager.resumeSession("missing-session", "continue")).toThrow(/not found/);
 
-    expect(events).toContainEqual(expect.objectContaining({
-      type: "session.resume_failed",
-      source: "manager",
-      owner: "agent:may",
-      data: expect.objectContaining({
-        sessionId: "missing-session",
-        category: "session_not_found",
-        recoverable: false,
+    expect(events).toContainEqual(
+      expect.objectContaining({
+        type: "session.resume_failed",
+        source: "manager",
+        owner: "agent:may",
+        data: expect.objectContaining({
+          sessionId: "missing-session",
+          category: "session_not_found",
+          recoverable: false,
+        }),
       }),
-    }));
+    );
   });
 
   it("can suppress missing-session event only for known benign resume races", () => {
@@ -239,7 +277,9 @@ describe("SubagentManager.resumeStaleSessions()", () => {
 
     manager.resumeSession("session-chat", "help", { source: "may-console" });
 
-    const start = events.find((event) => event.type === "session.start" && (event as any).data?.sessionId === "session-chat");
+    const start = events.find(
+      (event) => event.type === "session.start" && (event as any).data?.sessionId === "session-chat",
+    );
     expect(start).toMatchObject({
       type: "session.start",
       source: "may-console",
@@ -271,20 +311,27 @@ describe("SubagentManager.resumeStaleSessions()", () => {
       },
     });
     setupSession(persistDir, "session-heartbeat");
-    writeFileSync(join(persistDir, "dispatch-dedup.json"), JSON.stringify({
-      records: {
-        "may::heartbeat": {
-          agent: "may",
-          taskPrefix: "heartbeat",
-          attempts: 1,
-          failures: 0,
-          lastAttempt: new Date().toISOString(),
-          lastStatus: "running",
-          blocked: false,
+    writeFileSync(
+      join(persistDir, "dispatch-dedup.json"),
+      JSON.stringify(
+        {
+          records: {
+            "may::heartbeat": {
+              agent: "may",
+              taskPrefix: "heartbeat",
+              attempts: 1,
+              failures: 0,
+              lastAttempt: new Date().toISOString(),
+              lastStatus: "running",
+              blocked: false,
+            },
+          },
+          version: 1,
         },
-      },
-      version: 1,
-    }, null, 2));
+        null,
+        2,
+      ),
+    );
 
     const manager = new SubagentManager({ persistDir });
     const { resumed, interrupted } = manager.resumeStaleSessions();
@@ -309,20 +356,27 @@ describe("SubagentManager.resumeStaleSessions()", () => {
       },
     });
     setupSession(persistDir, "session-heartbeat");
-    writeFileSync(join(persistDir, "dispatch-dedup.json"), JSON.stringify({
-      records: {
-        "dev::heartbeat": {
-          agent: "dev",
-          taskPrefix: "heartbeat",
-          attempts: 1,
-          failures: 0,
-          lastAttempt: new Date().toISOString(),
-          lastStatus: "running",
-          blocked: false,
+    writeFileSync(
+      join(persistDir, "dispatch-dedup.json"),
+      JSON.stringify(
+        {
+          records: {
+            "dev::heartbeat": {
+              agent: "dev",
+              taskPrefix: "heartbeat",
+              attempts: 1,
+              failures: 0,
+              lastAttempt: new Date().toISOString(),
+              lastStatus: "running",
+              blocked: false,
+            },
+          },
+          version: 1,
         },
-      },
-      version: 1,
-    }, null, 2));
+        null,
+        2,
+      ),
+    );
 
     const manager = new SubagentManager({ persistDir });
     const { resumed, interrupted } = manager.resumeStaleSessions();

@@ -1,13 +1,11 @@
 import type { ChatSession } from "./chat-session.js";
 import type { EventBus } from "./event-bus.js";
-import {
-  getAgentCrons,
-  getAgentSessionId,
-  loadAgentHandlers,
-  type AgentLoaderOptions,
-} from "./agent-loader.js";
+import { existsSync, readFileSync } from "node:fs";
+import { join } from "node:path";
+import { getAgentCrons, getAgentSessionId, loadAgentHandlers, type AgentLoaderOptions } from "./agent-loader.js";
 import type { SubagentManager } from "../lib/index.js";
 import { log } from "../lib/log.js";
+import type { PersistedSession } from "../lib/persistence.js";
 
 export interface CronRuntimeOptions {
   manager: SubagentManager;
@@ -17,10 +15,97 @@ export interface CronRuntimeOptions {
   chatSession?: ChatSession;
 }
 
+function fieldFromPrompt(prompt: string, name: string): string | null {
+  const match = prompt.match(new RegExp(`^${name}:\\s*(.+)$`, "m"));
+  return match?.[1]?.trim() ?? null;
+}
+
+function assignedTaskFromPrompt(prompt: string): Record<string, unknown> | null {
+  const marker = "Assigned task:";
+  const markerIndex = prompt.indexOf(marker);
+  if (markerIndex < 0) return null;
+  const fenceStart = prompt.indexOf("```json", markerIndex);
+  if (fenceStart < 0) return null;
+  const jsonStart = prompt.indexOf("\n", fenceStart);
+  if (jsonStart < 0) return null;
+  const fenceEnd = prompt.indexOf("```", jsonStart + 1);
+  if (fenceEnd < 0) return null;
+  try {
+    const parsed = JSON.parse(prompt.slice(jsonStart + 1, fenceEnd));
+    return parsed && typeof parsed === "object" && !Array.isArray(parsed) ? (parsed as Record<string, unknown>) : null;
+  } catch {
+    return null;
+  }
+}
+
+function traceString(task: Record<string, unknown>, key: string): string | null {
+  const trace = task.trace;
+  if (!trace || typeof trace !== "object" || Array.isArray(trace)) return null;
+  const value = (trace as Record<string, unknown>)[key];
+  return typeof value === "string" ? value : null;
+}
+
+function currentTaskFromTree(appDir: string, taskId: string): Record<string, unknown> | null {
+  const treePath = join(appDir, "tasks", "tree.json");
+  if (!existsSync(treePath)) return null;
+  try {
+    const tree = JSON.parse(readFileSync(treePath, "utf8")) as {
+      tasks?: Record<string, unknown>;
+    };
+    const task = tree.tasks?.[taskId];
+    return task && typeof task === "object" && !Array.isArray(task) ? (task as Record<string, unknown>) : null;
+  } catch {
+    return null;
+  }
+}
+
+function shouldResumeStartupSession(
+  sessionId: string,
+  session: PersistedSession,
+): { resume: true } | { resume: false; reason?: string } {
+  if (session.source !== "workflow:task-worker") return { resume: true };
+  if (!session.projectId) return { resume: true };
+
+  const appDir = fieldFromPrompt(session.task, "App") ?? `/app/projects/${session.projectId}.app`;
+  const assignedTask = assignedTaskFromPrompt(session.task);
+  const taskId = typeof assignedTask?.id === "string" ? assignedTask.id : null;
+  if (!taskId) return { resume: true };
+
+  const currentTask = currentTaskFromTree(appDir, taskId);
+  if (!currentTask) {
+    return {
+      resume: false,
+      reason: `Project task ${taskId} no longer exists in ${appDir}/tasks/tree.json`,
+    };
+  }
+
+  const currentSessionId = typeof currentTask.session_id === "string" ? currentTask.session_id : null;
+  if (currentSessionId && currentSessionId !== sessionId) {
+    return {
+      resume: false,
+      reason: `Project task ${taskId} moved to newer session ${currentSessionId}`,
+    };
+  }
+
+  const promptAttempt = fieldFromPrompt(session.task, "Attempt");
+  const currentAttempt = traceString(currentTask, "current_attempt_id");
+  if (promptAttempt && currentAttempt && promptAttempt !== currentAttempt) {
+    return {
+      resume: false,
+      reason: `Project task ${taskId} moved to newer attempt ${currentAttempt}`,
+    };
+  }
+
+  return { resume: true };
+}
+
 export async function startCronRuntime(options: CronRuntimeOptions): Promise<void> {
   const { manager, bus, loaderOpts, chatMode, chatSession } = options;
 
-  const { resumed, interrupted } = manager.resumeStaleSessions({ kinds: ["job", "call"] });
+  const { resumed, interrupted } = manager.resumeStaleSessions({
+    kinds: ["job", "call"],
+    shouldResume: shouldResumeStartupSession,
+  });
   const orphansCleaned: typeof interrupted = [];
   if (!chatMode) {
     const { interrupted: chatCleaned } = manager.resumeStaleSessions({ abort: true, kinds: ["chat"] });
@@ -79,11 +164,12 @@ export async function startCronRuntime(options: CronRuntimeOptions): Promise<voi
     cron.subscribeToBus(bus);
 
     cron.onFire((entry) => {
-      const handler = typeof entry.handler === "string"
-        ? entry.handler
-        : entry.handler
-          ? `workflow:${entry.handler.agent ? `${entry.handler.agent}/` : ""}${entry.handler.workflow}`
-          : entry.name;
+      const handler =
+        typeof entry.handler === "string"
+          ? entry.handler
+          : entry.handler
+            ? `workflow:${entry.handler.agent ? `${entry.handler.agent}/` : ""}${entry.handler.workflow}`
+            : entry.name;
       bus.emit({
         type: "info",
         message: `[cron] ${entry.name} fired (handler -> ${handler})`,
