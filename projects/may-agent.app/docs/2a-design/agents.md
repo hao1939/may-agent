@@ -1,5 +1,15 @@
 # Agent Cooperation
 
+> **Status (2026-06-18):** Agent registration has two paths:
+> 1. **Global agents** — `agents/<name>/agent.json` discovered at startup
+> 2. **App-local agents** — `projects/<name>.app/agents/<agent>/agent.json`
+>    auto-registered when the app loads (see project-app-v3.md)
+>
+> App-local agents are preferred for app-owned work. The global `agents/`
+> directory is for standalone agents (dev, arc) that don't have a project-app.
+> Evaluator, scout, and aks-explorer are app-local — their identity lives in
+> their `.app/agents/` directory.
+
 ## Calling Patterns
 
 There are two tool surfaces: the `agents` tool (for session management) and the

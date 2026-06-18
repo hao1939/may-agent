@@ -1,5 +1,15 @@
 # Timer Triggers & Handlers
 
+> **Status (2026-06-18):** Cron lifecycle is centralized in `cron-startup.ts`.
+> All crons (agent-level from toolset-loader, app-level from ensureOwnerCron)
+> are created and loaded by their respective loaders, but subscribe+start
+> happens in ONE place: `startCronRuntime()`. This prevents double-dispatch
+> bugs from multiple `subscribeToBus()` calls.
+>
+> Project-app schedules (from `app.ts`) are installed as synthetic cron
+> entries by the project-app-loader. They fire through the same mechanism as
+> legacy cron.json entries.
+
 ## Overview
 
 Timer triggers are one way to invoke a handler. Event subscriptions and manual

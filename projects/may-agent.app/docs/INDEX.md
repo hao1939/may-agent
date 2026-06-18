@@ -44,6 +44,7 @@ System architecture and subsystem designs.
 | [agents.md](2a-design/agents.md) | Agent cooperation: call/message, session tree, context |
 | [projects.md](2a-design/projects.md) | Project system: format, lifecycle, handler, shared location |
 | [project-app-v3.md](2a-design/project-app-v3.md) | Final project-app model: sibling `*.app`, owner-first events, app/runtime/domain boundary |
+| [app-root-layout.md](2a-design/app-root-layout.md) | App directory structure: app.ts, tasks/, workflows/, agents/, scripts/, .state/ |
 | [task-tree-engine.md](2a-design/task-tree-engine.md) | Task tree data/tool model: owner review, worker completion, Kanban projection, human steering |
 
 ### Design Decisions
@@ -78,6 +79,7 @@ Proposals under consideration and historical docs preserved for context.
 
 | Doc | Status | What |
 |-----|--------|------|
+| [system-operations-model.md](3-proposals/system-operations-model.md) | Accepted | Ops health as may-agent.app responsibility: static checks, runtime metrics, signal-gated review |
 | [stigmergic-coordination.md](3-proposals/stigmergic-coordination.md) | Draft | Formalize stigmergic coordination as a first-class pattern |
 | [retired-design-alternatives.md](3-proposals/retired-design-alternatives.md) | Thoughts / alternatives | Useful ideas preserved from deleted legacy design archive |
 

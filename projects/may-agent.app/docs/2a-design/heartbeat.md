@@ -1,5 +1,12 @@
 # Heartbeat System
 
+> **Status (2026-06-18):** Heartbeats are being replaced by project-app
+> schedules for app-owned agents. Scout, evaluator, and may heartbeats are
+> disabled — their apps own their wake schedules via `app.ts`. Only `dev` and
+> `arc` still use heartbeats (they have no app yet). The design below remains
+> valid for standalone agents without a project-app. For app-owned agents, see
+> [project-app-v3.md](project-app-v3.md) §schedules and §workflowHandlers.
+
 ## Design Rationale
 
 A heartbeat is not a polling interval. It is **the recurring moment when an agent has the chance to be autonomous.**
