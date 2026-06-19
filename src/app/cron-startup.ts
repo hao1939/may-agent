@@ -163,6 +163,26 @@ export async function startCronRuntime(options: CronRuntimeOptions): Promise<voi
     // that responsibility lives here so each cron activates exactly once.
     cron.subscribeToBus(bus);
 
+    // Defensive: rebuild event subscriptions after bus subscription to
+    // prevent stale-map dispatch gaps (evaluation-aftermath-session-dispatch-fix).
+    // Idempotent — if subscriptions are already correct, this is a no-op rebuild.
+    cron.rebuildEventSubscriptions();
+
+    // Verify all enabled entries with `on` events are properly subscribed.
+    // If any are missing, log a warning so the issue is visible in daemon logs.
+    const gaps = cron.verifyEventSubscriptions();
+    if (gaps.length > 0) {
+      for (const gap of gaps) {
+        bus.emit({
+          type: "info",
+          message: `[cron:${name}] ⚠️ Subscription gap: ${gap.entryName} missing events [${gap.missingEvents.join(", ")}]`,
+        });
+      }
+      // Re-rebuild as a last resort — should not be needed but provides
+      // defense-in-depth for the intermittent startup-ordering bug.
+      cron.rebuildEventSubscriptions();
+    }
+
     cron.onFire((entry) => {
       const handler =
         typeof entry.handler === "string"
