@@ -112,6 +112,7 @@ export async function prepareDaemonAgents(opts: {
       projectRoot: opts.projectRoot,
       apiKey: model.apiKey,
       memoryLimit: config.memoryLimit,
+      compaction: config.compaction,
       contextFiles: config.context_files?.map((f) => resolve(agentDir, f)),
     });
 

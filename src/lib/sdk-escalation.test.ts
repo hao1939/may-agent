@@ -232,6 +232,6 @@ describe("WorkflowSDK escalation", () => {
 
     expect(events.some((event) => event.type === "escalation.created")).toBe(false);
     expect(events.some((event) => event.type === "message.created")).toBe(false);
-    expect(finished).toEqual([{ status: "escalated", summary: "missing approval" }]);
+    expect(finished).toEqual([{ status: "blocked", summary: "missing approval" }]);
   });
 });

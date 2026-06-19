@@ -70,7 +70,8 @@ function keyPart(value: unknown): string | undefined {
 function correlationKey(eventType: string, payload: Record<string, unknown>): string | undefined {
   if (eventType.startsWith("session.")) return keyPart(payload.sessionId);
   if (eventType.startsWith("workflow.")) return keyPart(payload.workflowRunId);
-  if (eventType.startsWith("handler.")) return keyPart(payload.handlerRunId) ?? keyPart(payload.workflowRunId) ?? keyPart(payload.handler);
+  if (eventType.startsWith("handler."))
+    return keyPart(payload.handlerRunId) ?? keyPart(payload.workflowRunId) ?? keyPart(payload.handler);
   if (eventType.startsWith("escalation.")) return keyPart(payload.escalationId);
   if (eventType.startsWith("project.task.")) {
     const taskId = keyPart(payload.taskId);
@@ -83,16 +84,46 @@ function correlationKey(eventType: string, payload: Record<string, unknown>): st
 
 function openingPair(eventType: string): { name: string; base: string; timeoutMs: number } | undefined {
   if (eventType === "session.start") return { name: "session", base: "session", timeoutMs: 60 * 60 * 1000 };
-  if (eventType.endsWith(".started")) return { name: eventType.slice(0, -".started".length), base: eventType.slice(0, -".started".length), timeoutMs: DEFAULT_PAIR_TTL_MS };
-  if (eventType.endsWith(".requested")) return { name: eventType.slice(0, -".requested".length), base: eventType.slice(0, -".requested".length), timeoutMs: 60 * 60 * 1000 };
-  if (eventType.endsWith(".created")) return { name: eventType.slice(0, -".created".length), base: eventType.slice(0, -".created".length), timeoutMs: 24 * 60 * 60 * 1000 };
-  if (eventType.endsWith(".assigned")) return { name: eventType.slice(0, -".assigned".length), base: eventType.slice(0, -".assigned".length), timeoutMs: DEFAULT_PAIR_TTL_MS };
+  if (eventType.endsWith(".started"))
+    return {
+      name: eventType.slice(0, -".started".length),
+      base: eventType.slice(0, -".started".length),
+      timeoutMs: DEFAULT_PAIR_TTL_MS,
+    };
+  if (eventType.endsWith(".requested"))
+    return {
+      name: eventType.slice(0, -".requested".length),
+      base: eventType.slice(0, -".requested".length),
+      timeoutMs: 60 * 60 * 1000,
+    };
+  if (eventType.endsWith(".created"))
+    return {
+      name: eventType.slice(0, -".created".length),
+      base: eventType.slice(0, -".created".length),
+      timeoutMs: 24 * 60 * 60 * 1000,
+    };
+  if (eventType.endsWith(".assigned"))
+    return {
+      name: eventType.slice(0, -".assigned".length),
+      base: eventType.slice(0, -".assigned".length),
+      timeoutMs: DEFAULT_PAIR_TTL_MS,
+    };
   return undefined;
 }
 
 function closingPair(eventType: string): { base: string } | undefined {
+  if (eventType === "session.idle") return { base: "session" };
   if (eventType === "session.end") return { base: "session" };
-  for (const suffix of [".completed", ".failed", ".accepted", ".rejected", ".resolved", ".dismissed", ".closed", ".blocked"]) {
+  for (const suffix of [
+    ".completed",
+    ".failed",
+    ".accepted",
+    ".rejected",
+    ".resolved",
+    ".dismissed",
+    ".closed",
+    ".blocked",
+  ]) {
     if (eventType.endsWith(suffix)) return { base: eventType.slice(0, -suffix.length) };
   }
   return undefined;
@@ -145,6 +176,20 @@ export class DbWriter {
             opCount: payload.opCount as number | undefined,
             lastActivityAt: Date.now(),
             endedAt: Date.now(),
+          });
+          this.insertEventRow(event, payload, eventSource(ev, payload.agent), eventOwner(ev, payload.agent));
+          break;
+        }
+
+        case "session.idle": {
+          const ev = event as any;
+          if (!isCanonicalEventEnvelope(ev)) break;
+          const payload = eventPayload(ev);
+          updateSessionDb(this.persistDir, payload.sessionId as string, {
+            status: "idle",
+            outcome: payload.summary as string | undefined,
+            opCount: payload.opCount as number | undefined,
+            lastActivityAt: Date.now(),
           });
           this.insertEventRow(event, payload, eventSource(ev, payload.agent), eventOwner(ev, payload.agent));
           break;
@@ -240,15 +285,7 @@ export class DbWriter {
     this.sweepUnacceptedEvents(timestamp);
     const info = this.db.run(
       "INSERT INTO events (event_type, source, owner, data, timestamp, urgency, ttl_ms) VALUES (?, ?, ?, ?, ?, ?, ?)",
-      [
-        event.type,
-        source,
-        owner,
-        capEventData(JSON.stringify(payload)),
-        timestamp,
-        urgency,
-        ttlMs,
-      ],
+      [event.type, source, owner, capEventData(JSON.stringify(payload)), timestamp, urgency, ttlMs],
     );
     const rowId = Number(info.lastInsertRowid);
     if (Number.isFinite(rowId) && rowId > 0) {
@@ -303,7 +340,13 @@ export class DbWriter {
     );
   }
 
-  private openConventionPair(eventType: string, payload: Record<string, unknown>, openEventId: number, owner: string | null, openedAt: number): void {
+  private openConventionPair(
+    eventType: string,
+    payload: Record<string, unknown>,
+    openEventId: number,
+    owner: string | null,
+    openedAt: number,
+  ): void {
     const pair = openingPair(eventType);
     if (!pair) return;
     const key = correlationKey(eventType, payload);
@@ -312,19 +355,16 @@ export class DbWriter {
       `INSERT OR IGNORE INTO event_pair_runs
        (pair_name, correlation_key, open_event_id, owner, status, opened_at, expected_close_at, note)
        VALUES (?, ?, ?, ?, 'open', ?, ?, ?)`,
-      [
-        pair.name,
-        key,
-        openEventId,
-        owner,
-        openedAt,
-        openedAt + pair.timeoutMs,
-        `opened by ${eventType}`,
-      ],
+      [pair.name, key, openEventId, owner, openedAt, openedAt + pair.timeoutMs, `opened by ${eventType}`],
     );
   }
 
-  private closeConventionPairs(eventType: string, payload: Record<string, unknown>, closeEventId: number, closedAt: number): void {
+  private closeConventionPairs(
+    eventType: string,
+    payload: Record<string, unknown>,
+    closeEventId: number,
+    closedAt: number,
+  ): void {
     const pair = closingPair(eventType);
     if (!pair) return;
     const key = correlationKey(eventType, payload);

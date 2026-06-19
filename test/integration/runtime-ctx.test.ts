@@ -182,6 +182,7 @@ describe("buildRuntimeCtx", () => {
       runFunction: async () => ({} as any),
       summarize: () => "",
       done: (s: string) => ({ type: "done" as const, summary: s }),
+      blocked: (r: string) => ({ type: "blocked" as const, reason: r }),
       escalate: (r: string) => ({ type: "escalate" as const, reason: r }),
     };
 

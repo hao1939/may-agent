@@ -26,15 +26,64 @@ export type AgentCommand =
     }
   | { type: "input"; sessionId?: string; message: string; source?: string }
   | { type: "steer"; sessionId?: string; message: string; source?: string }
-  | { type: "chat.start.requested"; source: string; owner: string; data: { agent?: string; message: string; channel?: string; channelThreadId?: string; channelMessageId?: number; forceNew?: boolean; requestId?: string } }
+  | {
+      type: "human.input.received";
+      source: string;
+      owner: string;
+      data: {
+        inputId?: string;
+        actor?: string;
+        text: string;
+        conversation?: {
+          id?: string;
+          channel?: string;
+          channelThreadId?: string;
+          channelMessageId?: number;
+          replyToInputId?: string;
+        };
+        target?: {
+          owner?: string;
+          agent?: string;
+          sessionId?: string;
+          projectPath?: string;
+          taskId?: string;
+        };
+        context?: Record<string, unknown>;
+      };
+    }
+  | {
+      type: "chat.start.requested";
+      source: string;
+      owner: string;
+      data: {
+        agent?: string;
+        message: string;
+        channel?: string;
+        channelThreadId?: string;
+        channelMessageId?: number;
+        forceNew?: boolean;
+        requestId?: string;
+      };
+    }
   | { type: "session.steer.requested"; source: string; owner: string; data: { sessionId: string; message: string } }
   | { type: "cancel"; sessionId: string }
   | { type: "cancel_all" }
   | { type: "resume"; sessionId: string }
   | { type: "session.cancel.requested"; sessionId: string; source?: string }
-  | { type: "session.cancel.requested"; source: string; owner: string; urgency?: string; data: { sessionId: string; reason?: string } }
+  | {
+      type: "session.cancel.requested";
+      source: string;
+      owner: string;
+      urgency?: string;
+      data: { sessionId: string; reason?: string };
+    }
   | { type: "session.cancel_all.requested"; source: string; owner: string; urgency?: string; data: { reason?: string } }
-  | { type: "project.comment.created"; source?: string; owner: string; data: { projectPath: string; comment: string; author?: string } };
+  | {
+      type: "project.comment.created";
+      source?: string;
+      owner: string;
+      data: { projectPath: string; comment: string; author?: string };
+    };
 
 /** Management commands (to core / supervisord) */
 export type ManagementCommand =
@@ -50,7 +99,15 @@ export type SessionEvent =
   | { type: "text"; sessionId: string; agent: string; text: string }
   | { type: "tool_call"; sessionId: string; agent: string; tool: string; args: unknown }
   | { type: "tool_result"; sessionId: string; agent: string; tool: string; preview: string; isError: boolean }
-  | { type: "turn_end"; sessionId: string; agent: string; toolCalls: number; durationMs: number; turnCount?: number; errorCount?: number }
+  | {
+      type: "turn_end";
+      sessionId: string;
+      agent: string;
+      toolCalls: number;
+      durationMs: number;
+      turnCount?: number;
+      errorCount?: number;
+    }
   | {
       type: "session.start";
       source?: string;
@@ -102,6 +159,29 @@ export type SessionEvent =
         requestId?: string;
         stepLabel?: string;
       };
+    }
+  | {
+      type: "session.idle";
+      source?: string;
+      owner: string;
+      timestamp?: number;
+      data: {
+        sessionId: string;
+        agent: string;
+        summary: string;
+        durationMs: number;
+        status: "idle";
+        task?: string;
+        opCount?: number;
+        turnCount?: number;
+        finishParams?: Record<string, unknown>;
+        parentSessionId?: string;
+        workflowRunId?: string;
+        projectId?: string;
+        kind?: string;
+        requestId?: string;
+        stepLabel?: string;
+      };
     };
 
 type EventUrgency = "low" | "normal" | "high" | "immediate";
@@ -131,22 +211,119 @@ type MetricEventData = {
 export type SystemEvent =
   | { type: "heartbeat"; agent: string; entry: string }
   | { type: "heartbeat.trigger"; source?: string; owner: string; data: { agent: string } }
-  | { type: "heartbeat.skipped"; source?: string; owner: string; data: { agent: string; gate: string; reason?: string; attempts?: number } }
-  | { type: "heartbeat.step_started"; source?: string; owner: string; data: { agent?: string; workflow: string; step: string } }
+  | {
+      type: "heartbeat.skipped";
+      source?: string;
+      owner: string;
+      data: { agent: string; gate: string; reason?: string; attempts?: number };
+    }
+  | {
+      type: "heartbeat.step_started";
+      source?: string;
+      owner: string;
+      data: { agent?: string; workflow: string; step: string };
+    }
   | { type: "heartbeat.diagnostics_started"; source?: string; owner: string; data: { agent: string; step: string } }
-  | { type: "heartbeat.diagnostics_completed"; source?: string; owner: string; data: { agent: string; step: string; summary: string } }
-  | { type: "runtime.daemon.heartbeat"; source: "daemon"; owner: "agent:may"; data: { pid: number; interfaceAgent: string; socketEnabled: boolean } }
+  | {
+      type: "heartbeat.diagnostics_completed";
+      source?: string;
+      owner: string;
+      data: { agent: string; step: string; summary: string };
+    }
+  | {
+      type: "runtime.daemon.heartbeat";
+      source: "daemon";
+      owner: "agent:may";
+      data: { pid: number; interfaceAgent: string; socketEnabled: boolean };
+    }
   | { type: "handler.started"; source: "cron"; owner: string; data: { handler: string; agent: string } }
-  | { type: "handler.completed"; source: "cron"; owner: string; data: { handler: string; agent: string; durationMs: number } }
-  | { type: "handler.failed"; source: "cron"; owner: string; data: { handler: string; agent: string; error: string; durationMs: number } }
-  | { type: "handler.load-failed"; source: "handler-loader"; owner: string; data: { handler: string; agent: string; path: string; error: string } }
-  | { type: "handler.skipped"; source?: string; owner: string; data: { handler: string; reason: string; eventType?: string | null; [key: string]: unknown } }
-  | { type: "handler.workflow_dispatched"; source?: string; owner: string; data: { handler: string; workflow: string; source?: string | null; projectId?: string | null; workflowRunId?: string | null; status: string; [key: string]: unknown } }
-  | { type: "session.completed"; source: "runtime"; owner: string; data: { sessionId: string; agent: string; parentSessionId?: string; outcome?: string; status?: string; source?: string; kind?: string; error?: string; task?: string } }
-  | { type: "project.iteration"; source?: string; owner: string; data: { iteration: number; project?: string; projectId?: string; projectPath?: string } }
-  | { type: "project.status_changed"; source?: string; owner: string; data: { from: string; to: string; project?: string; projectId?: string; projectPath?: string } }
-  | { type: "project.nudge"; source: string; owner: string; data: { projectPath: string; comment?: boolean; commentText?: string } }
-  | { type: "telegram.reply"; source: "telegram"; owner: string; data: { enriched: boolean; originalMsgId?: number; projectPath?: string; delivery?: string; hasSessionCtx?: boolean; hasDbCtx?: boolean; fallback?: string; reason?: string } }
+  | {
+      type: "handler.completed";
+      source: "cron";
+      owner: string;
+      data: { handler: string; agent: string; durationMs: number };
+    }
+  | {
+      type: "handler.failed";
+      source: "cron";
+      owner: string;
+      data: { handler: string; agent: string; error: string; durationMs: number };
+    }
+  | {
+      type: "handler.load-failed";
+      source: "handler-loader";
+      owner: string;
+      data: { handler: string; agent: string; path: string; error: string };
+    }
+  | {
+      type: "handler.skipped";
+      source?: string;
+      owner: string;
+      data: { handler: string; reason: string; eventType?: string | null; [key: string]: unknown };
+    }
+  | {
+      type: "handler.workflow_dispatched";
+      source?: string;
+      owner: string;
+      data: {
+        handler: string;
+        workflow: string;
+        source?: string | null;
+        projectId?: string | null;
+        workflowRunId?: string | null;
+        status: string;
+        [key: string]: unknown;
+      };
+    }
+  | {
+      type: "session.completed";
+      source: "runtime";
+      owner: string;
+      data: {
+        sessionId: string;
+        agent: string;
+        parentSessionId?: string;
+        outcome?: string;
+        status?: string;
+        source?: string;
+        kind?: string;
+        error?: string;
+        task?: string;
+      };
+    }
+  | {
+      type: "project.iteration";
+      source?: string;
+      owner: string;
+      data: { iteration: number; project?: string; projectId?: string; projectPath?: string };
+    }
+  | {
+      type: "project.status_changed";
+      source?: string;
+      owner: string;
+      data: { from: string; to: string; project?: string; projectId?: string; projectPath?: string };
+    }
+  | {
+      type: "project.nudge";
+      source: string;
+      owner: string;
+      data: { projectPath: string; comment?: boolean; commentText?: string };
+    }
+  | {
+      type: "telegram.reply";
+      source: "telegram";
+      owner: string;
+      data: {
+        enriched: boolean;
+        originalMsgId?: number;
+        projectPath?: string;
+        delivery?: string;
+        hasSessionCtx?: boolean;
+        hasDbCtx?: boolean;
+        fallback?: string;
+        reason?: string;
+      };
+    }
   | {
       type: "escalation.created";
       source: string;
@@ -292,9 +469,21 @@ export type SystemEvent =
         priority?: "P0" | "P1" | "P2" | "P3";
       };
     }
-  | { type: "metric.breach"; source?: string; owner: string; urgency?: EventUrgency; data: MetricEventData & { message: string } }
+  | {
+      type: "metric.breach";
+      source?: string;
+      owner: string;
+      urgency?: EventUrgency;
+      data: MetricEventData & { message: string };
+    }
   | { type: "metric.recovered"; source?: string; owner: string; urgency?: EventUrgency; data: MetricEventData }
-  | { type: "metric.stalled"; source?: string; owner: string; urgency?: EventUrgency; data: MetricEventData & { message: string } }
+  | {
+      type: "metric.stalled";
+      source?: string;
+      owner: string;
+      urgency?: EventUrgency;
+      data: MetricEventData & { message: string };
+    }
   | {
       type: "metric.feedback.routed";
       source?: string;
@@ -310,12 +499,49 @@ export type SystemEvent =
         eventType?: string;
       };
     }
-  | { type: "metric.threshold_changed"; source?: string; owner: string; data: { metricId: string; from?: number | null; to: number } }
-  | { type: "metric.alert_resolved"; source?: string; owner: string; data: { metricId: string; alertId: number; reason?: string | null } }
-  | { type: "metric.alert_judged"; source?: string; owner: string; data: { metricId: string; alertId: string | number; verdict?: string; reason?: string; evidence?: Record<string, unknown> } }
-  | { type: "agent.decision"; source?: string; owner: string; data: { agent: string; sessionId?: string; decision: string; evidence?: Record<string, unknown> } }
-  | { type: "context.read"; source?: string; owner: string; data: { agent?: string; sessionId?: string; [key: string]: unknown } }
-  | { type: "learning.feedback"; source?: string; owner: string; urgency?: "low" | "normal" | "high" | "immediate"; data: { [key: string]: unknown } }
+  | {
+      type: "metric.threshold_changed";
+      source?: string;
+      owner: string;
+      data: { metricId: string; from?: number | null; to: number };
+    }
+  | {
+      type: "metric.alert_resolved";
+      source?: string;
+      owner: string;
+      data: { metricId: string; alertId: number; reason?: string | null };
+    }
+  | {
+      type: "metric.alert_judged";
+      source?: string;
+      owner: string;
+      data: {
+        metricId: string;
+        alertId: string | number;
+        verdict?: string;
+        reason?: string;
+        evidence?: Record<string, unknown>;
+      };
+    }
+  | {
+      type: "agent.decision";
+      source?: string;
+      owner: string;
+      data: { agent: string; sessionId?: string; decision: string; evidence?: Record<string, unknown> };
+    }
+  | {
+      type: "context.read";
+      source?: string;
+      owner: string;
+      data: { agent?: string; sessionId?: string; [key: string]: unknown };
+    }
+  | {
+      type: "learning.feedback";
+      source?: string;
+      owner: string;
+      urgency?: "low" | "normal" | "high" | "immediate";
+      data: { [key: string]: unknown };
+    }
   | {
       type: "guard.triggered";
       owner: string;
@@ -382,6 +608,24 @@ export type SystemEvent =
       };
     }
   | {
+      type: "workflow.owner.requested";
+      source: "workflow-tool";
+      owner: string;
+      timestamp?: number;
+      data: {
+        reason: "workflow-blocked";
+        workflowRunId: string;
+        workflow: string;
+        workflowOwner: string;
+        projectId?: string;
+        parentSessionId?: string;
+        parentWorkflowRunId?: string;
+        task?: string;
+        blockerReason: string;
+        context?: unknown;
+      };
+    }
+  | {
       type: "workflow";
       agent: string;
       workflow: string;
@@ -403,7 +647,7 @@ export type SystemEvent =
         subscriberPriority: "first" | "normal";
         error: string;
       };
-    }
+    };
 
 /** All typed event types — commands + observations + system */
 export type AgentEvent =
@@ -414,8 +658,6 @@ export type AgentEvent =
   | { type: "info"; message: string; channel?: string }
   | { type: "prompt"; message: string; channel?: string };
 
-
-
 // ── Helpers ────────────────────────────────────────────────────────────
 
 /** Check if an event is session-scoped (has sessionId). */
@@ -425,9 +667,9 @@ export function isSessionEvent(event: AgentEvent): event is SessionEvent {
 
 /** Return an event's domain payload. Canonical envelopes use data; flat stream events are their own payload. */
 export function eventData(event: unknown): Record<string, unknown> {
-  const record = event && typeof event === "object" && !Array.isArray(event) ? event as Record<string, unknown> : {};
+  const record = event && typeof event === "object" && !Array.isArray(event) ? (event as Record<string, unknown>) : {};
   return record.data && typeof record.data === "object" && !Array.isArray(record.data)
-    ? record.data as Record<string, unknown>
+    ? (record.data as Record<string, unknown>)
     : record;
 }
 
@@ -594,7 +836,7 @@ function defaultOwnerFallback(event: AgentEvent): DeliveryResult | undefined {
 }
 
 function isPairTrackedEvent(eventType: string): boolean {
-  if (eventType === "session.start" || eventType === "session.end") return true;
+  if (eventType === "session.start" || eventType === "session.end" || eventType === "session.idle") return true;
   return [
     ".started",
     ".completed",
@@ -615,7 +857,8 @@ function hasPairCorrelationKey(event: AgentEvent): boolean {
   const data = eventData(event);
   if (event.type.startsWith("session.")) return hasKey(data.sessionId);
   if (event.type.startsWith("workflow.")) return hasKey(data.workflowRunId);
-  if (event.type.startsWith("handler.")) return hasKey(data.handlerRunId) || hasKey(data.workflowRunId) || hasKey(data.handler);
+  if (event.type.startsWith("handler."))
+    return hasKey(data.handlerRunId) || hasKey(data.workflowRunId) || hasKey(data.handler);
   if (event.type.startsWith("escalation.")) return hasKey(data.escalationId);
   if (event.type.startsWith("project.task.")) return hasKey(data.taskId);
   return hasKey(data.requestId);

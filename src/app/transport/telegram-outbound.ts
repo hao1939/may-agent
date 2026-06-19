@@ -135,7 +135,12 @@ export function attachTelegramOutbound(opts: TelegramOutboundOptions): TelegramO
       replyToMessageIdBySession.delete(sessionId);
     }
 
-    if (event.type === "session.end" && sessionId && sessionId === rootSid && pendingChatId) {
+    if (
+      (event.type === "session.end" || event.type === "session.idle") &&
+      sessionId &&
+      sessionId === rootSid &&
+      pendingChatId
+    ) {
       const state = sessionState(sessionId);
       flushPendingText(sessionId);
       if (session.error) {
@@ -152,7 +157,7 @@ export function attachTelegramOutbound(opts: TelegramOutboundOptions): TelegramO
         const summary = String(session.summary ?? "").trim();
         if (summary && shouldSendSummary(sessionId, summary)) {
           sendToUser(summary, {
-            eventType: "session.end",
+            eventType: event.type,
             agent: String(session.agent),
             sessionId,
             summary,
@@ -169,10 +174,12 @@ export function attachTelegramOutbound(opts: TelegramOutboundOptions): TelegramO
           });
         }
       }
-      rootChatSessionId = null;
-      watchedSessions.clear();
-      replyToMessageIdBySession.delete(sessionId);
-      outboundBySession.delete(sessionId);
+      if (event.type === "session.end") {
+        rootChatSessionId = null;
+        watchedSessions.clear();
+        replyToMessageIdBySession.delete(sessionId);
+        outboundBySession.delete(sessionId);
+      }
     }
 
     if (event.type === "message.created") {

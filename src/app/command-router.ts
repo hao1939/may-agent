@@ -36,6 +36,12 @@ function nonEmptyString(value: unknown): string | null {
   return typeof value === "string" && value.trim() ? value.trim() : null;
 }
 
+function ownerAgent(owner: unknown): string | null {
+  if (typeof owner !== "string" || !owner.trim()) return null;
+  const trimmed = owner.trim();
+  return trimmed.startsWith("agent:") ? trimmed.slice("agent:".length) : trimmed;
+}
+
 /**
  * Routes human/control input from console, socket, Telegram, and the event bus.
  *
@@ -47,16 +53,15 @@ export function attachCommandRouter(options: CommandRouterOptions): CommandRoute
 
   function normalizeProjectPath(value: unknown): string | null {
     if (typeof value !== "string" || !value.trim()) return null;
-    let path = value.trim()
+    let path = value
+      .trim()
       .replace(/^\/app\//, "")
       .replace(new RegExp(`^${escapeRegExp(options.projectRoot)}/`), "")
       .replace(/^\.?\//, "")
       .replace(/\/project\.md$/, "")
       .replace(/[),.;:]+$/, "")
       .replace(/\/$/, "");
-    path = path
-      .replace(/^agents\/shared\/projects\//, "projects/")
-      .replace(/^shared\/projects\//, "projects/");
+    path = path.replace(/^agents\/shared\/projects\//, "projects/").replace(/^shared\/projects\//, "projects/");
     if (/^projects\/[^/\s]+$/.test(path)) return path;
     if (!path.startsWith("agents/")) path = `agents/${path}`;
     if (!/^agents\/[^/]+\/workspace\/projects\/[^/\s]+$/.test(path)) return null;
@@ -79,11 +84,19 @@ export function attachCommandRouter(options: CommandRouterOptions): CommandRoute
     return "may";
   }
 
-  function appendProjectDiscussionEntry(projectPath: unknown, comment: unknown, source?: string, author?: string): boolean {
+  function appendProjectDiscussionEntry(
+    projectPath: unknown,
+    comment: unknown,
+    source?: string,
+    author?: string,
+  ): boolean {
     const normalized = normalizeProjectPath(projectPath);
     const trimmed = typeof comment === "string" ? comment.trim() : "";
     if (!normalized || !trimmed) {
-      bus.emit({ type: "info", message: `[project.comment] Invalid project comment event from ${source ?? "unknown"}` });
+      bus.emit({
+        type: "info",
+        message: `[project.comment] Invalid project comment event from ${source ?? "unknown"}`,
+      });
       return false;
     }
 
@@ -136,10 +149,49 @@ export function attachCommandRouter(options: CommandRouterOptions): CommandRoute
   }
 
   function handleInput(message: string, source?: string): void {
+    const text = message.trim();
+    if (!text) return;
+    const channel = source ?? "human";
+    bus.emit({
+      type: "human.input.received",
+      source: channel,
+      owner: "agent:may",
+      data: {
+        actor: "human",
+        text,
+        conversation: { channel },
+      },
+    } as any);
+  }
+
+  function handleHumanInput(event: unknown): void {
     options.clearCancelLatch();
-    const chatSession = options.getChatSession();
-    if (chatSession) {
-      chatSession.handleInput(message, source);
+    const data = eventData(event);
+    const message = nonEmptyString(data.text) ?? nonEmptyString(data.message);
+    if (!message) return;
+    const conversation = isRecord(data.conversation) ? data.conversation : {};
+    const target = isRecord(data.target) ? data.target : {};
+    const source = eventSource(event, nonEmptyString(conversation.channel) ?? "human");
+
+    const targetSessionId = nonEmptyString(target.sessionId);
+    if (targetSessionId) {
+      bus.emit({
+        type: "session.steer.requested",
+        source,
+        owner: typeof event === "object" && event && "owner" in event ? String((event as any).owner) : "agent:may",
+        data: { sessionId: targetSessionId, message },
+      } as any);
+      return;
+    }
+
+    const targetProjectPath = nonEmptyString(target.projectPath);
+    if (targetProjectPath) {
+      bus.emit({
+        type: "project.comment.created",
+        source,
+        owner: typeof event === "object" && event && "owner" in event ? String((event as any).owner) : "agent:may",
+        data: { projectPath: targetProjectPath, comment: message, author: nonEmptyString(data.actor) ?? "human" },
+      } as any);
       return;
     }
 
@@ -157,26 +209,63 @@ export function attachCommandRouter(options: CommandRouterOptions): CommandRoute
       return;
     }
     if (lower === "cancel" || lower === "cancel all") {
-      for (const s of manager.status()) {
-        if (s.status === "running") manager.cancel(s.sessionId);
-      }
-      bus.emit({ type: "info", message: "[cmd] Cancelled all running sessions" });
+      bus.emit({
+        type: "session.cancel_all.requested",
+        source,
+        owner: "agent:may",
+        urgency: "high",
+        data: { reason: "human requested cancel all" },
+      } as any);
       return;
     }
     if (lower === "reload") {
-      void options.reload();
+      bus.emit({
+        type: "runtime.reload.requested",
+        source,
+        owner: "agent:may",
+        data: { reason: "human requested reload" },
+      } as any);
       return;
     }
     if (lower === "restart") {
-      options.restart();
+      bus.emit({
+        type: "runtime.restart.requested",
+        source,
+        owner: "agent:may",
+        urgency: "high",
+        data: { reason: "human requested restart" },
+      } as any);
       return;
     }
     if (lower === "close") {
-      options.shutdown();
+      bus.emit({
+        type: "runtime.shutdown.requested",
+        source,
+        owner: "agent:may",
+        urgency: "high",
+        data: { reason: "human requested close" },
+      } as any);
       return;
     }
 
-    bus.emit({ type: "info", message: "[cmd] Input ignored (no chat session). Use --chat for interactive mode." });
+    const eventOwner =
+      typeof event === "object" && event && "owner" in event ? String((event as any).owner) : "agent:may";
+    const agent = nonEmptyString(target.agent) ?? ownerAgent(eventOwner) ?? "may";
+    const context = isRecord(data.context) ? data.context : {};
+    bus.emit({
+      type: "chat.start.requested",
+      source,
+      owner: normalizeEventOwner(agent),
+      data: {
+        agent,
+        message,
+        channel: nonEmptyString(conversation.channel) ?? source,
+        channelThreadId: nonEmptyString(conversation.channelThreadId) ?? undefined,
+        channelMessageId: typeof conversation.channelMessageId === "number" ? conversation.channelMessageId : undefined,
+        requestId: nonEmptyString(data.inputId) ?? undefined,
+        forceNew: context.forceNew === true,
+      },
+    } as any);
   }
 
   function handleSteer(sessionId: unknown, message: unknown, source?: string): void {
@@ -241,6 +330,8 @@ export function attachCommandRouter(options: CommandRouterOptions): CommandRoute
     } as any);
     const sessionId = manager.run(agent, message, {
       kind: "chat",
+      autoClose: "never",
+      source,
       requestId: nonEmptyString(data.requestId) ?? undefined,
     });
     log("info", `[chat.start] Started ${agent} chat session: ${sessionId}`);
@@ -278,6 +369,9 @@ export function attachCommandRouter(options: CommandRouterOptions): CommandRoute
       case "input":
         if (typeof event.message !== "string") break;
         handleInput(event.message, event.source);
+        break;
+      case "human.input.received":
+        handleHumanInput(event);
         break;
       case "steer": {
         handleSteer(event.sessionId, event.message, event.source);

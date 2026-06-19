@@ -139,8 +139,8 @@ export async function buildTools(config: AgentConfig, opts: ToolsetLoaderOptions
                 bus.emit({ type: "info", message: `[${label}] Starting: ${event.workflow}` });
               } else if (event.type === "workflow.completed") {
                 bus.emit({ type: "info", message: `[${label}] Done: ${event.summary.slice(0, 100)}` });
-              } else if (event.type === "workflow.escalated") {
-                bus.emit({ type: "info", message: `[${label}] Escalated: ${event.reason}` });
+              } else if (event.type === "workflow.blocked" || event.type === "workflow.escalated") {
+                bus.emit({ type: "info", message: `[${label}] Blocked: ${event.reason}` });
               } else if (event.type === "workflow.step_started") {
                 bus.emit({ type: "info", message: `[${label}] Step: ${event.step}` });
               }

@@ -21,15 +21,28 @@ async function loadMetricsTab() {
     }
     const hardAlerts = (data.alerts || []).filter(m => metricSurface(m) !== 'watch');
     const watchSignals = (data.alerts || []).filter(m => metricSurface(m) === 'watch');
+    function alertCard(a, tone) {
+      var u = a.unit === 'ratio' ? '' : (a.unit ? ' ' + a.unit : '');
+      var desc = (a.alert_op === 'above' || a.alert_op === '>') ? 'exceeds' : 'below';
+      var color = tone === 'watch' ? 'var(--fg2)' : 'var(--red)';
+      var bg = tone === 'watch' ? 'var(--bg2)' : 'rgba(244,67,54,0.1)';
+      var border = tone === 'watch' ? 'var(--border)' : 'rgba(244,67,54,0.3)';
+      return '<div style="padding:8px 12px;background:' + bg + ';border:1px solid ' + border + ';border-radius:6px;margin-bottom:6px;font-size:13px;color:' + color + '">'
+        + (tone === 'watch' ? '' : '\u26a0 ')
+        + '<b>' + esc(a.name || a.metricId) + '</b> (' + esc(a.owner || 'may') + '): '
+        + esc(a.current) + esc(u) + ' — ' + esc(desc) + ' threshold ' + esc(a.threshold) + esc(u)
+        + renderAlertJudgment(a)
+        + '</div>';
+    }
 
     // Alerts
     if (hardAlerts.length === 0) {
       alertsEl.innerHTML = '<div style="padding:8px 12px;background:rgba(76,175,80,0.1);border:1px solid rgba(76,175,80,0.3);border-radius:6px;color:var(--green);font-size:13px">✓ No health/gauge alerts</div>';
     } else {
-      alertsEl.innerHTML = hardAlerts.map(function(a) { var u = a.unit === 'ratio' ? '' : (a.unit ? ' ' + a.unit : ''); var desc = (a.alert_op === 'above' || a.alert_op === '>') ? 'exceeds' : 'below'; return '<div style="padding:8px 12px;background:rgba(244,67,54,0.1);border:1px solid rgba(244,67,54,0.3);border-radius:6px;margin-bottom:6px;font-size:13px;color:var(--red)">\u26a0 <b>' + a.name + '</b> (' + a.owner + '): ' + a.current + u + ' — ' + desc + ' threshold ' + a.threshold + u + '</div>'; }).join('');
+      alertsEl.innerHTML = hardAlerts.map(function(a) { return alertCard(a, 'hard'); }).join('');
     }
     if (watchSignals.length > 0) {
-      alertsEl.innerHTML += '<div style="padding:8px 12px;background:var(--bg2);border:1px solid var(--border);border-radius:6px;margin-top:6px;font-size:13px;color:var(--fg2)">' + watchSignals.length + ' watch signal' + (watchSignals.length === 1 ? '' : 's') + ' outside threshold</div>';
+      alertsEl.innerHTML += '<div style="margin-top:6px">' + watchSignals.map(function(a) { return alertCard(a, 'watch'); }).join('') + '</div>';
     }
 
     const snapMap = {};

@@ -10,6 +10,10 @@ function sessionEnd(data: Record<string, unknown>, source = "runtime") {
   return { type: "session.end", source, owner: `agent:${data.agent}`, data };
 }
 
+function sessionIdle(data: Record<string, unknown>, source = "runtime") {
+  return { type: "session.idle", source, owner: `agent:${data.agent}`, data };
+}
+
 describe("telegram outbound routing", () => {
   it("binds Telegram input to an existing canonical chat session and replies to the triggering message", () => {
     const bus = new EventBus();
@@ -62,6 +66,28 @@ describe("telegram outbound routing", () => {
 
     expect(sent).toEqual(["hello"]);
     expect(outbound.getRootChatSessionId()).toBeNull();
+    outbound.close();
+  });
+
+  it("uses session.idle as root chat turn completion without closing the conversation", () => {
+    const bus = new EventBus();
+    const sent: Array<{ text: string; eventType?: string }> = [];
+    const outbound = attachTelegramOutbound({
+      bus,
+      interfaceAgent: "may",
+      projectRoot: "/tmp/project",
+      pendingChatId: "12345",
+      getSessionId: () => "s_root",
+      sendToUser: (text, context) => sent.push({ text, eventType: context?.eventType }),
+    });
+
+    bus.emit(sessionStart({ sessionId: "s_root", agent: "may", kind: "chat" }, "telegram") as any);
+    bus.emit(
+      sessionIdle({ sessionId: "s_root", agent: "may", status: "idle", summary: "ready for the next turn" }) as any,
+    );
+
+    expect(sent).toEqual([{ text: "ready for the next turn", eventType: "session.idle" }]);
+    expect(outbound.getRootChatSessionId()).toBe("s_root");
     outbound.close();
   });
 

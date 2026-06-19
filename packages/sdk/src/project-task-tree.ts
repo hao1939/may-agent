@@ -182,6 +182,11 @@ export type UpdateTaskTextInput = {
   clearBlocker?: boolean;
 };
 
+export type UnblockTaskInput = {
+  taskId: string;
+  reason: string;
+};
+
 export type RejectTaskReviewInput = {
   taskId: string;
   reason: string;
@@ -706,6 +711,18 @@ export function summarizeTaskTree(config: ToolConfig): TaskTreeSummary {
   return withTreeLock(config, () => {
     const tree = readTaskTree(config);
     return summarizeLoadedTree(tree);
+  });
+}
+
+export function listRunnableBacklogTaskIds(config: ToolConfig, limit = 20): string[] {
+  if (!existsSync(config.treePath)) return [];
+  return withTreeLock(config, () => {
+    const tree = readTaskTree(config);
+    return Object.values(tree.tasks)
+      .filter((task) => isRunnableBacklogLeaf(tree, task))
+      .sort(taskSort)
+      .slice(0, limit)
+      .map((task) => task.id);
   });
 }
 
@@ -1243,6 +1260,40 @@ export function updateTaskText(config: ToolConfig, input: UpdateTaskTextInput): 
       blocker_updated: hasBlocker || clearBlocker,
       acceptance_count: acceptance?.length,
       blocked_state: task.blocker ? "present" : "cleared",
+    });
+    return task;
+  });
+}
+
+export function unblockTask(config: ToolConfig, input: UnblockTaskInput): TaskNode {
+  return withTreeLock(config, () => {
+    const tree = readTaskTree(config);
+    const task = tree.tasks[input.taskId];
+    if (!task) throw new Error(`Task not found: ${input.taskId}`);
+    if (!isLeaf(task)) throw new Error(`Task ${task.id} is not a leaf`);
+    if (task.status !== "blocked") throw new Error(`Task ${task.id} is ${task.status}, not blocked`);
+
+    const reason = input.reason.trim();
+    if (!reason) throw new Error("Unblock reason cannot be empty");
+
+    const now = new Date().toISOString();
+    task.status = "backlog";
+    task.state = "backlog";
+    task.blocker = undefined;
+    task.trace = {
+      ...(task.trace ?? {}),
+      unblocked_at: now,
+      unblocked_by: "task-tree-tool",
+      unblock_reason: reason,
+      current_attempt_id: undefined,
+    };
+    tree.active_task_ids = activeIds(tree);
+    tree.active_task_id = tree.active_task_ids[0] ?? null;
+    saveTaskTreeWithKanbanSnapshot(config, tree);
+    appendToolJournal(config, {
+      kind: "task_unblocked",
+      task_id: task.id,
+      reason,
     });
     return task;
   });

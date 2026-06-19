@@ -205,14 +205,14 @@ describe("workflow tool: run", () => {
     }
   });
 
-  it("executes a workflow that escalates", async () => {
+  it("executes a workflow that blocks", async () => {
     writeWorkflow(
       "escalating.ts",
       `
       export const name = "escalating";
       export const description = "Always escalates";
       export async function execute(ctx) {
-        return ctx.escalate("can't handle this", { reason: "too complex" });
+        return ctx.blocked("can't handle this", { reason: "too complex" });
       }
     `,
     );
@@ -227,8 +227,8 @@ describe("workflow tool: run", () => {
     });
     const parsed = JSON.parse(result.content[0].text) as WorkflowToolResult;
 
-    expect(parsed.type).toBe("escalated");
-    if (parsed.type === "escalated") {
+    expect(parsed.type).toBe("blocked");
+    if (parsed.type === "blocked") {
       expect(parsed.workflow).toBe("escalating");
       expect(parsed.reason).toBe("can't handle this");
       expect(parsed.context).toEqual({ reason: "too complex" });
@@ -299,14 +299,14 @@ describe("workflow tool: run", () => {
     expect(events[3].type).toBe("workflow.completed");
   });
 
-  it("emits workflow.escalated event on escalation", async () => {
+  it("emits workflow.blocked event on local workflow blocker", async () => {
     writeWorkflow(
       "esc-event.ts",
       `
       export const name = "esc-event";
       export const description = "Escalates with event";
       export async function execute(ctx) {
-        return ctx.escalate("nope");
+        return ctx.blocked("nope");
       }
     `,
     );
@@ -327,7 +327,7 @@ describe("workflow tool: run", () => {
 
     expect(events.length).toBe(2);
     expect(events[0].type).toBe("workflow.started");
-    expect(events[1].type).toBe("workflow.escalated");
+    expect(events[1].type).toBe("workflow.blocked");
   });
 
   it("keeps ctx.escalate local and does not emit escalation.created", async () => {
@@ -378,8 +378,8 @@ describe("workflow tool: run", () => {
     });
     const parsed = JSON.parse(result.content[0].text) as WorkflowToolResult;
 
-    expect(parsed.type).toBe("escalated");
-    if (parsed.type === "escalated") {
+    expect(parsed.type).toBe("blocked");
+    if (parsed.type === "blocked") {
       expect(parsed.reason).toBe("missing sessionId");
       expect(parsed.context).toEqual({
         owner: "agent:may",
@@ -387,8 +387,219 @@ describe("workflow tool: run", () => {
         evidence: { triggerType: "session.completed" },
       });
     }
-    expect(lifecycleEvents.map((event) => event.type)).toEqual(["workflow.started", "workflow.escalated"]);
+    expect(lifecycleEvents.map((event) => event.type)).toEqual(["workflow.started", "workflow.blocked"]);
     expect(runtimeEvents.some((event) => event.type === "escalation.created")).toBe(false);
+  });
+
+  it("wakes the project owner when a top-level project workflow blocks", async () => {
+    writeWorkflow(
+      "project-blocked.ts",
+      `
+      export const name = "project-blocked";
+      export const description = "Blocks a project workflow";
+      export async function execute(ctx) {
+        return ctx.blocked("need owner judgment", { detail: "x" });
+      }
+    `,
+    );
+
+    const runtimeEvents: Array<{ type: string; [key: string]: unknown }> = [];
+    const manager = new SubagentManager({ persistDir: mkdtempSync(join(tmpdir(), "may-test-")) });
+    const tool = createWorkflowTool({
+      manager,
+      workflowDir,
+      agentName: "may",
+      projectId: "may-agent",
+      runtimeCtx: {
+        emit: (event: { type: string; [key: string]: unknown }) => runtimeEvents.push(event),
+        dispatchEvent: () => {},
+        getDb: () => {
+          throw new Error("getDb should not be called");
+        },
+        query: {} as never,
+        log: () => {},
+        notify: () => {},
+        metrics: {} as never,
+        persistDir: "",
+        projectRoot: "",
+        agentsRoot: "",
+        sharedRoot: "",
+        projectsRoot: "",
+      },
+    });
+
+    const result = await tool.execute("tc1", {
+      action: "run",
+      name: "project-blocked",
+      task: "task",
+    });
+    const parsed = JSON.parse(result.content[0].text) as WorkflowToolResult;
+
+    expect(parsed.type).toBe("blocked");
+    if (parsed.type !== "blocked") return;
+    expect(runtimeEvents.some((event) => event.type === "escalation.created")).toBe(false);
+    expect(runtimeEvents).toContainEqual(
+      expect.objectContaining({
+        type: "project.owner.requested",
+        project: "may-agent",
+        reason: "workflow-blocked",
+        params: expect.objectContaining({
+          workflowRunId: parsed.workflowRunId,
+          workflow: "project-blocked",
+          workflowOwner: "agent:may",
+          projectId: "may-agent",
+          reason: "need owner judgment",
+          context: { detail: "x" },
+        }),
+      }),
+    );
+  });
+
+  it("returns to the project task when a task-assigned workflow blocks", async () => {
+    writeWorkflow(
+      "task-blocked.ts",
+      `
+      export const name = "task-blocked";
+      export const description = "Blocks while handling a project task";
+      export async function execute(ctx) {
+        return ctx.blocked("worker preflight failed", { detail: "missing token" });
+      }
+    `,
+    );
+
+    const runtimeEvents: Array<{ type: string; [key: string]: unknown }> = [];
+    const manager = new SubagentManager({ persistDir: mkdtempSync(join(tmpdir(), "may-test-")) });
+    const tool = createWorkflowTool({
+      manager,
+      workflowDir,
+      agentName: "aks-explorer",
+      projectId: "alpha-project",
+      runtimeCtx: {
+        emit: (event: { type: string; [key: string]: unknown }) => runtimeEvents.push(event),
+        dispatchEvent: () => {},
+        getDb: () => {
+          throw new Error("getDb should not be called");
+        },
+        query: {} as never,
+        log: () => {},
+        notify: () => {},
+        metrics: {} as never,
+        persistDir: "",
+        projectRoot: "",
+        agentsRoot: "",
+        sharedRoot: "",
+        projectsRoot: "",
+      },
+    });
+
+    const result = await tool.execute("tc1", {
+      action: "run",
+      name: "task-blocked",
+      task: [
+        "app: /app/projects/alpha-project.app",
+        "project: /app/projects/alpha-project",
+        "",
+        "## Trigger Event",
+        "```json",
+        JSON.stringify({
+          type: "project.task.assigned",
+          project: "alpha-project",
+          data: {
+            taskId: "vm-pipeline-rest-plan",
+            attemptId: "a_vm_pipeline_rest_plan_1",
+          },
+        }),
+        "```",
+      ].join("\n"),
+    });
+    const parsed = JSON.parse(result.content[0].text) as WorkflowToolResult;
+
+    expect(parsed.type).toBe("blocked");
+    expect(runtimeEvents.some((event) => event.type === "escalation.created")).toBe(false);
+    expect(runtimeEvents.some((event) => event.type === "project.owner.requested")).toBe(false);
+    expect(runtimeEvents.some((event) => event.type === "workflow.owner.requested")).toBe(false);
+    expect(runtimeEvents).toContainEqual(
+      expect.objectContaining({
+        type: "project.task.completed",
+        project: "alpha-project",
+        data: expect.objectContaining({
+          project: "alpha-project",
+          taskId: "vm-pipeline-rest-plan",
+          task_id: "vm-pipeline-rest-plan",
+          attemptId: "a_vm_pipeline_rest_plan_1",
+          attempt_id: "a_vm_pipeline_rest_plan_1",
+          status: "blocked",
+          result: "blocked",
+          claim: "blocked",
+          reason: "worker preflight failed",
+          context: { detail: "missing token" },
+          workflow: "task-blocked",
+          workflowOwner: "agent:aks-explorer",
+        }),
+      }),
+    );
+  });
+
+  it("wakes the workflow owner when a top-level non-project workflow blocks", async () => {
+    writeWorkflow(
+      "owner-blocked.ts",
+      `
+      export const name = "owner-blocked";
+      export const description = "Blocks a non-project workflow";
+      export async function execute(ctx) {
+        return ctx.blocked("need workflow owner", { detail: "generic" });
+      }
+    `,
+    );
+
+    const runtimeEvents: Array<{ type: string; [key: string]: unknown }> = [];
+    const manager = new SubagentManager({ persistDir: mkdtempSync(join(tmpdir(), "may-test-")) });
+    const tool = createWorkflowTool({
+      manager,
+      workflowDir,
+      agentName: "may",
+      runtimeCtx: {
+        emit: (event: { type: string; [key: string]: unknown }) => runtimeEvents.push(event),
+        dispatchEvent: () => {},
+        getDb: () => {
+          throw new Error("getDb should not be called");
+        },
+        query: {} as never,
+        log: () => {},
+        notify: () => {},
+        metrics: {} as never,
+        persistDir: "",
+        projectRoot: "",
+        agentsRoot: "",
+        sharedRoot: "",
+        projectsRoot: "",
+      },
+    });
+
+    const result = await tool.execute("tc1", {
+      action: "run",
+      name: "owner-blocked",
+      task: "task",
+    });
+    const parsed = JSON.parse(result.content[0].text) as WorkflowToolResult;
+
+    expect(parsed.type).toBe("blocked");
+    if (parsed.type !== "blocked") return;
+    expect(runtimeEvents.some((event) => event.type === "escalation.created")).toBe(false);
+    expect(runtimeEvents).toContainEqual(
+      expect.objectContaining({
+        type: "workflow.owner.requested",
+        owner: "agent:may",
+        data: expect.objectContaining({
+          reason: "workflow-blocked",
+          workflowRunId: parsed.workflowRunId,
+          workflow: "owner-blocked",
+          workflowOwner: "agent:may",
+          blockerReason: "need workflow owner",
+          context: { detail: "generic" },
+        }),
+      }),
+    );
   });
 
   // NOTE: hot-reload works under plain Node (cache-bust via ?t=counter)
@@ -773,14 +984,14 @@ describe("workflow tool: steering", () => {
     expect(tool.activeWorkflow).toBeNull();
   });
 
-  it("isRunning is false after a workflow escalates", async () => {
+  it("isRunning is false after a workflow blocks", async () => {
     writeWorkflow(
       "esc.ts",
       `
       export const name = "esc";
-      export const description = "Escalates";
+      export const description = "Blocks";
       export async function execute(ctx) {
-        return ctx.escalate("nope");
+        return ctx.blocked("nope");
       }
     `,
     );

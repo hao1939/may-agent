@@ -160,7 +160,7 @@ describe("ExecutionResult", () => {
     expect(getExecutionResultFromDb(db, "wr_db")).toMatchObject({
       id: "wr_db",
       kind: "workflow",
-      status: "escalated",
+      status: "blocked",
       summary: "blocked by missing comment",
       traceId: "wr_db",
       parentId: "s_parent",

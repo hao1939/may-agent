@@ -79,6 +79,31 @@
   .liveness-item strong { color: var(--fg); }
   .liveness-item .meta { color: var(--fg2); margin-bottom: 2px; }
   .liveness-alert { border-left: 3px solid var(--yellow); }
+  .project-health-item { cursor: pointer; display: grid; gap: 7px; }
+  .project-health-item:hover { border-color: var(--accent); }
+  .project-health-main { display: flex; align-items: center; gap: 8px; min-width: 0; }
+  .project-health-title { flex: 1 1 auto; min-width: 120px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .project-health-status, .project-health-alert, .project-health-ok, .project-health-muted {
+    flex: 0 0 auto; border: 1px solid var(--border); border-radius: 999px; padding: 1px 7px; font-size: 10px; line-height: 1.5;
+  }
+  .project-health-alert { color: var(--red); border-color: rgba(248,81,73,.55); background: rgba(248,81,73,.08); }
+  .project-health-ok { color: var(--green); border-color: rgba(63,185,80,.45); background: rgba(63,185,80,.08); }
+  .project-health-muted { color: var(--fg2); }
+  .project-health-metrics { display: flex; flex-wrap: wrap; gap: 5px; padding-left: 22px; min-width: 0; }
+  .project-metric-chip {
+    display: inline-flex; align-items: center; gap: 6px; max-width: 230px; min-width: 0;
+    border: 1px solid var(--border); border-radius: 999px; background: var(--bg2); color: var(--fg2);
+    padding: 2px 8px; cursor: pointer; font-size: 11px; line-height: 1.45;
+  }
+  .project-metric-chip:hover { color: var(--fg); border-color: var(--accent); }
+  .project-metric-chip.alerting { color: var(--red); border-color: rgba(248,81,73,.6); background: rgba(248,81,73,.08); }
+  .project-metric-label { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  @media (max-width: 720px) {
+    .project-health-main { flex-wrap: wrap; }
+    .project-health-title { flex-basis: 100%; }
+    .project-health-metrics { padding-left: 0; }
+    .project-metric-chip { max-width: 100%; }
+  }
 
   /* Filters */
   .filters { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; align-items: center; }

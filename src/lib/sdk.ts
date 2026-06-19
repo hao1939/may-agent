@@ -108,7 +108,7 @@ export interface Deliverable {
 }
 
 export interface WorkflowResult {
-  status: "done" | "escalated";
+  status: "done" | "blocked";
   summary: string;
   runId?: string;
 }

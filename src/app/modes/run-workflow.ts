@@ -67,9 +67,10 @@ export async function runWorkflowMode(opts: {
       const output = await fn();
       return { sessionId: `fn_${label}`, status: "done" as const, lastAssistantText: output, messages: [] as any[], duration: "0s", outputDir: "", turnsUsed: 0 };
     },
-    runWorkflow: async () => ({ type: "escalate" as const, reason: "Sub-workflows not supported in CLI mode" }),
+    runWorkflow: async () => ({ type: "blocked" as const, reason: "Sub-workflows not supported in CLI mode" }),
     summarize: (r: any) => r?.lastAssistantText?.slice(0, 500) ?? "",
     done: (s: string) => ({ type: "done" as const, summary: s }),
+    blocked: (r: string, c?: unknown) => ({ type: "blocked" as const, reason: r, context: c }),
     escalate: (r: string, c?: unknown) => ({ type: "escalate" as const, reason: r, context: c }),
     createSession: opts.dryRun
       ? async (sessionOpts: { systemPrompt: string; tools: "full" | "readonly"; label?: string }) => {
@@ -131,7 +132,7 @@ export async function runWorkflowMode(opts: {
   const result = await wfMod.execute(ctx);
   console.log(`\nResult: ${result.type}`);
   if (result.type === "done") console.log(result.summary);
-  if (result.type === "escalate") console.log("Reason:", result.reason);
+  if (result.type === "blocked" || result.type === "escalate") console.log("Reason:", result.reason);
 }
 
 async function findWorkflowPath(agentsRoot: string, sharedRoot: string, workflowName: string): Promise<string | null> {
