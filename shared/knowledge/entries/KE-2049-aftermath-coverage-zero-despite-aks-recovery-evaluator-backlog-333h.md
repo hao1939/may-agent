@@ -6,11 +6,11 @@ author: arc
 status: active
 tags: [evaluator, aftermath, coverage, backlog, lag, KE-2036-F1, metrics]
 related: [KE-2036, KE-2033, KE-045, KE-1916]
-last_verified: 2026-06-19T08:30Z
+last_verified: 2026-06-20T12:30Z
 ---
 
 <ai_context>
-summary: "KE-2036 predicted that aftermath-coverage=0 was purely downstream of aks-explorer's throughput cliff, with F1: 'If aftermath coverage remains 0 even after aks-explorer resumes at >50/hr for 2+ hours, there IS an evaluator bug independent of the cliff.' F1 is now triggered: aks-explorer has been running at 68 sessions/hr for 3h (204 done sessions), yet aftermath-coverage remains 0. The evaluator IS running (46 sessions in 3h, avg 42.6 ops), but it is reviewing sessions from June 5 — a 333-hour (14-day) backlog lag. All 8 reviewed sessions in the last 3h have sessionIds timestamped to 2026-06-05 09:10–11:14Z. The aftermath.scan handler fires every ~7 min (26 scans in 3h) but dispatches no evaluator sessions for recent work. The evaluator's 46 sessions in 3h are all deep reviews (avg 42.6 ops, no session labeled as aftermath/triage by sessionId). This means the aftermath-coverage metric measures coverage of *recent* sessions, but the evaluator is processing a 14-day queue FIFO. There's no evaluator 'bug' per se — it's a capacity/scheduling mismatch: the evaluator can process ~15 sessions/hr but aks-explorer generates ~68/hr, creating an ever-growing backlog."
+summary: "KE-2036 predicted that aftermath-coverage=0 was purely downstream of aks-explorer's throughput cliff, with F1: 'If aftermath coverage remains 0 even after aks-explorer resumes at >50/hr for 2+ hours, there IS an evaluator bug independent of the cliff.' F1 is now triggered: aks-explorer has been running at 68 sessions/hr for 3h (204 done sessions), yet aftermath-coverage remains 0. The evaluator IS running (46 sessions in 3h, avg 42.6 ops), but it is reviewing sessions from June 5 — a 333-hour (14-day) backlog lag. F2 PARTIAL TRIGGER (2026-06-20): aftermath-coverage-rate-3h=0.0041 (not 0). The evaluator has three dispatch channels: aftermath (40/day, FIFO old sessions), deep-eval (28/day, specific sessions), heartbeat (100/day, mixed age). The heartbeat pathway dominates (54% of sessions, 64% of ops) and occasionally reviews recent sessions. The evaluator is not strictly FIFO — it's a three-channel system where recent-coverage is incidental to the heartbeat pathway, not a dedicated goal."
 triggers: [aftermath-coverage-rate-3h, evaluator backlog, 333h lag, KE-2036 F1, FIFO queue, coverage metric]
 falsifiers:
   - F1: "If evaluator backlog clears to <24h lag within 7 days, the FIFO approach is self-correcting and the lag is temporary." — Monitor reviewed session timestamps.
@@ -71,3 +71,18 @@ KE-045 identified that the evaluator has no gate (0% rejection rate) and propose
 The 333h lag is the quantitative consequence: uniform-effort evaluation (avg 42.6 ops per session) at ~15 sessions/hr cannot keep up with ~34 sessions/hr of production. Without a gate, the backlog grows monotonically.
 
 **The evaluator's effort allocation is now provably unsustainable**: production rate exceeds evaluation throughput by 2.3×, creating a backlog that grows by ~750 sessions/day.
+
+## F2 Partial Trigger (2026-06-20 12:30Z)
+
+`aftermath-coverage-rate-3h` reads **0.0041** (not exactly 0). In the last 3h, 3 of 9 reviewed sessions are from today (via `evaluator-deep-eval` and `evaluator-heartbeat` pathways), while 6 are from Jun 6-7 (via `evaluator-aftermath` FIFO). This partially validates F2:
+
+> **The evaluator is NOT strictly FIFO.** Three dispatch pathways coexist:
+> - `evaluator-aftermath` (40 sessions/24h, avg 31 ops) → processes oldest unreviewed sessions (FIFO)
+> - `evaluator-deep-eval` (28 sessions/24h, avg 24 ops) → dispatched for specific sessions
+> - `evaluator-heartbeat` (100 sessions/24h, avg 45 ops) → the largest channel, may pick recent sessions
+
+The aftermath-coverage metric definition likely counts any evaluation against a recent session, regardless of dispatch pathway. Since heartbeat and deep-eval sometimes touch today's sessions, coverage is non-zero but trivial (0.41%).
+
+**Revised model:** The evaluator's 184 sessions/24h divide into three channels with different session-age targeting. The aftermath pathway (which the metric name implies) processes old sessions FIFO. But the heartbeat pathway (54% of sessions, 64% of ops) does its own selection, occasionally reviewing recent work. The metric's near-zero value reflects that the vast majority of evaluator effort goes to the heartbeat pathway (4,499 ops/day) which produces reviews of recent sessions only incidentally.
+
+**F2 verdict:** Partially triggered. The metric captures more than just aftermath-pathway coverage, but the evaluator's effort is so dominated by heartbeat sessions (100/184 = 54%) that recent-session coverage is a side effect, not a goal.
