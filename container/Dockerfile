@@ -128,6 +128,7 @@ COPY container/codex-config.toml /etc/codex/config.toml
 
 # Copy supervisord config
 COPY container/supervisord.conf /etc/supervisord.conf
+RUN mkdir -p /app/.state/runtime-logs && chown -R mayagent:mayagent /app/.state/runtime-logs
 
 # Copy entrypoints and helpers
 COPY container/entrypoint.sh container/start-chrome.sh container/setup-codex-config.sh container/may-agent-supervisor-restart.sh /usr/local/bin/
