@@ -171,9 +171,11 @@ export type SessionEvent =
         summary: string;
         durationMs: number;
         status: "idle";
+        error?: string;
         task?: string;
         opCount?: number;
         turnCount?: number;
+        retry?: { reason?: string; attempts: number; recovered: boolean };
         finishParams?: Record<string, unknown>;
         parentSessionId?: string;
         workflowRunId?: string;
