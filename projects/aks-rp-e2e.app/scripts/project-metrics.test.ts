@@ -256,4 +256,93 @@ describe("project metrics", () => {
       await metricValue(fixture, "aks-rp-e2e.run.live-idle-with-runnable-work"),
     ).toBe("0");
   });
+
+  test("blocked task metric counts all blocked leaves, not the capped frontier display", async () => {
+    const fixture = await makeFixture();
+    const blockedTasks: Record<string, TreeTask> = {};
+    for (let i = 0; i < 25; i++) {
+      blockedTasks[`blocked-${i}`] = {
+        id: `blocked-${i}`,
+        parent_id: "project",
+        state: "blocked",
+        children: [],
+        goal: `Blocked leaf ${i}.`,
+        kind: "domain_leaf",
+      };
+    }
+    await writeTree(fixture.appDir, { session_id: "s_running" }, blockedTasks);
+    writeSession(fixture.dbPath, {
+      sessionId: "s_running",
+      status: "running",
+      opCount: 1,
+      startedAt: Date.now() - 10_000,
+      lastActivityAt: Date.now(),
+    });
+
+    expect(await metricValue(fixture, "aks-rp-e2e.task.blocked-count")).toBe(
+      "25",
+    );
+  });
+
+  test("counts execute-mode result files as live runs even when dryRun is absent", async () => {
+    const fixture = await makeFixture();
+    await writeTree(fixture.appDir, { session_id: "s_running" });
+    writeSession(fixture.dbPath, {
+      sessionId: "s_running",
+      status: "running",
+      opCount: 1,
+      startedAt: Date.now() - 10_000,
+      lastActivityAt: Date.now(),
+    });
+    await mkdir(join(fixture.projectDir, "runs", "executions", "execute-run"), {
+      recursive: true,
+    });
+    await writeFile(
+      join(fixture.projectDir, "runs", "executions", "execute-run", "result.json"),
+      `${JSON.stringify(
+        {
+          mode: "execute",
+          status: "passed",
+          completedAt: new Date().toISOString(),
+        },
+        null,
+        2,
+      )}\n`,
+    );
+
+    expect(await metricValue(fixture, "aks-rp-e2e.run.live-started-24h")).toBe(
+      "1",
+    );
+  });
+
+  test("counts cloud-execution probe evidence as live runs", async () => {
+    const fixture = await makeFixture();
+    await writeTree(fixture.appDir, { session_id: "s_running" });
+    writeSession(fixture.dbPath, {
+      sessionId: "s_running",
+      status: "running",
+      opCount: 1,
+      startedAt: Date.now() - 10_000,
+      lastActivityAt: Date.now(),
+    });
+    await mkdir(join(fixture.projectDir, "runs", "executions", "cloud-run"), {
+      recursive: true,
+    });
+    await writeFile(
+      join(fixture.projectDir, "runs", "executions", "cloud-run", "result.json"),
+      `${JSON.stringify(
+        {
+          status: "passed",
+          completedAt: new Date().toISOString(),
+          probeEvidence: { mode: "cloud-execution", status: "pass" },
+        },
+        null,
+        2,
+      )}\n`,
+    );
+
+    expect(await metricValue(fixture, "aks-rp-e2e.run.live-started-24h")).toBe(
+      "1",
+    );
+  });
 });

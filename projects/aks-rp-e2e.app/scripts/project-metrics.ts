@@ -15,6 +15,7 @@ type TaskNode = {
   kind?: string;
   goal?: string;
   children?: string[];
+  depends_on?: string[];
   session_id?: string;
   updated_at?: string;
   trace?: Record<string, unknown>;
@@ -39,6 +40,7 @@ type ModelStatus = {
 
 type RunResult = {
   status?: string;
+  mode?: string;
   dryRun?: boolean;
   startedAt?: string;
   completedAt?: string;
@@ -214,6 +216,9 @@ function taskCounts() {
   }).length;
   const activeStale = staleActiveTaskCount();
   const activeRunning = runningActiveTaskCount();
+  const blockedLeaves = tasks.filter(
+    (task) => isLeaf(task) && taskState(task) === "blocked",
+  ).length;
   return {
     total: tasks.length,
     runnable:
@@ -224,7 +229,7 @@ function taskCounts() {
     activeStale,
     review: frontier?.review.length ?? byStatus.get("review") ?? 0,
     backlog: byStatus.get("backlog") ?? 0,
-    blocked: frontier?.blocked.length ?? byStatus.get("blocked") ?? 0,
+    blocked: blockedLeaves,
     done: byStatus.get("done") ?? 0,
     completed24h,
     projectClosed:
@@ -574,7 +579,14 @@ function runResults(): RunResult[] {
 }
 
 function isLiveRun(run: RunResult): boolean {
-  return run.dryRun === false || run.probeEvidence?.mode === "execute";
+  return (
+    run.dryRun === false ||
+    run.mode === "execute" ||
+    run.mode === "executing" ||
+    run.probeEvidence?.mode === "execute" ||
+    run.probeEvidence?.mode === "executing" ||
+    run.probeEvidence?.mode === "cloud-execution"
+  );
 }
 
 function runTime(run: RunResult): number | null {
