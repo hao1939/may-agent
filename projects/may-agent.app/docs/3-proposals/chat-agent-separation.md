@@ -169,21 +169,19 @@ It still registers and updates a normal session record. The distinction is:
 
 ```typescript
 class ChatSession {
-  private agent: Agent;           // long-lived, never destroyed
-  private sessionId: string;      // normal tracked session
+  private sessionId: string | null = null; // normal tracked session
 
-  constructor() {
-    this.sessionId = sessions.create({ kind: "chat", autoClose: "never" });
-    this.agent = new Agent({
-      initialState: { systemPrompt, model, tools },
-      transformContext,  // compaction when context grows
-    });
-  }
+  async handleInput(message: string) {
+    if (!this.sessionId) {
+      this.sessionId = manager.run("may", message, {
+        kind: "chat",
+        autoClose: "never",
+      });
+      return;
+    }
 
-  handleInput(message: string) {
-    sessions.markRunning(this.sessionId);
-    this.agent.prompt(message);   // same agent, same transcript
-    sessions.markIdle(this.sessionId);
+    manager.send(this.sessionId, message); // same Agent, same transcript
+    await manager.waitForIdle(this.sessionId);
   }
 }
 ```
@@ -247,14 +245,18 @@ May can delegate hard problems to external CLI agents (Claude Code, Codex)
 without the human leaving the conversation. The result comes back through
 May, not a separate terminal tab.
 
+CLI delegation is not a new may-agent agent type. It is a durable subprocess
+runner with structured outputs and normal events.
+
 ### Pattern
 
 ```
 Human asks hard question
-  → May spawns CLI async with focused prompt
+  → May starts a durable CLI task with focused prompt and safety mode
   → May tells human "investigating..."
   → Chat stays responsive for other messages
   → CLI finishes → cli.task.completed event
+  → event routes to the conversation owner
   → May reads result, summarizes, presents in chat
 ```
 
@@ -263,32 +265,46 @@ Human asks hard question
 CLI tasks use the same event model as all other work:
 
 ```
-cli.task.started    { taskId, tool: "claude"|"codex", prompt, cwd }
-cli.task.completed  { taskId, resultPath, exitCode, summary }
-cli.task.failed     { taskId, error, exitCode }
+cli.task.started    { taskId, tool, mode, cwd, promptPath, resultPath, sourceSessionId }
+cli.task.completed  { taskId, tool, resultPath, exitCode, summary }
+cli.task.failed     { taskId, tool, resultPath, error, exitCode }
+cli.task.orphaned   { taskId, tool, pid, reason }
 ```
 
-May's chat session sees `cli.task.completed` and presents the result.
-No polling, no terminal switching, no special integration.
+`cli.task.completed` is routed to May or the conversation owner. May then
+presents the result in the chat. The chat session does not subscribe to every
+CLI event directly.
 
 ### Tracking
 
 CLI tasks are tracked like any other work:
-- Visible in session/task list
-- Duration and terminal state recorded
+- Persisted before process spawn: task id, command, cwd, pid, prompt path,
+  result path, source session, timeout, and status
+- Visible in a CLI task read model and linked from sessions/tasks/UI
+- Duration, terminal state, stdout/stderr tail, and structured result recorded
 - Pair tracker detects orphans (started but never completed)
 - Ops health metrics cover them
+- Restart recovery marks dead in-flight processes as `cli.task.orphaned`
+  instead of silently losing them
+
+Existing `background_exec` is useful for interactive process control, but CLI
+delegation needs a dedicated durable runner because May should be able to
+restart and still know which delegated tasks were running, completed, failed,
+or orphaned.
 
 ### When to use which CLI
 
-| Need | CLI | Why |
-|------|-----|-----|
-| Deep investigation, code review, analysis | Claude Code | Strong reasoning, multi-step exploration |
-| Implementation, fixes, bulk changes | Codex | Fast execution, code generation |
-| Quick question, explanation | Neither — May answers directly | No delegation needed |
+| Need | Default |
+|------|---------|
+| Quick question or explanation | May answers directly |
+| Bounded investigation or review | Use configured read-only CLI worker |
+| Patch/fix proposal | Use configured workspace-write CLI worker in isolated workspace/worktree |
+| Project-owned work | Prefer project owner/task agent; CLI only if explicitly useful |
 
-May decides based on the human's question. Simple questions she answers
-herself. Hard investigations or implementation work she delegates.
+May chooses the CLI from policy and current availability, not hard-coded vendor
+preference. Codex should use `codex exec` for non-interactive automation, with
+JSONL or schema output when the result is consumed by code. Claude Code should
+use its non-interactive/scriptable mode with the same runner contract.
 
 ### Tool shape
 
@@ -299,17 +315,38 @@ herself. Hard investigations or implementation work she delegates.
   description: "Delegate a task to Claude Code or Codex CLI",
   parameters: {
     tool: "claude" | "codex",
-    prompt: string,        // what to investigate or implement
-    cwd: string,           // working directory
-    files?: string[],      // relevant files to focus on
+    mode: "investigate" | "review" | "patch",
+    prompt: string,          // what to investigate or implement
+    cwd: string,             // working directory
+    files?: string[],        // relevant files to focus on
+    sandbox?: "read-only" | "workspace-write",
+    timeoutMs?: number,
+    outputSchema?: string,   // JSON schema path/name for structured result
+    worktree?: string,       // required or auto-created for patch mode
   }
 }
 ```
 
-The tool spawns the CLI in the background, emits `cli.task.started`,
-and returns immediately. May continues the conversation. When the CLI
-finishes, the event carries the result path. May reads it on the next
-turn or proactively presents it.
+The tool writes the prompt and task record first, spawns the CLI, emits
+`cli.task.started`, and returns `{ taskId, status: "running", resultPath }`
+immediately. May continues the conversation. When the CLI finishes, the runner
+writes a structured result file and emits `cli.task.completed` or
+`cli.task.failed`.
+
+For Codex, the command shape should be based on non-interactive execution:
+
+```bash
+codex exec --json --sandbox read-only -o "$RESULT_PATH" "$PROMPT" \
+  > "$EVENTS_JSONL"
+```
+
+`$RESULT_PATH` stores the final response. `$EVENTS_JSONL` stores the streamed
+Codex event log for progress, tool calls, and diagnostics.
+
+For patch mode, use `--sandbox workspace-write` only in an isolated workspace
+or worktree. The result should include the diff summary, changed files,
+verification commands, and any remaining risk. Raw stdout/stderr is supporting
+evidence, not the primary result format.
 
 ## What This Is Not
 
@@ -325,9 +362,9 @@ turn or proactively presents it.
 
 ## Implementation Order
 
-1. Introduce `ChatRuntime` / revised `ChatSession` that owns a long-lived
-   `Agent` directly while still creating/updating a tracked `kind: "chat"`
-   session.
+1. Route `kind: "chat"` / `autoClose: "never"` through the manager's chat-turn
+   path so successful turns move running → idle instead of emitting terminal
+   `session.end`.
 2. Add chat turn states/events: running → idle, visible error/recovery, source
    channel, op count, and last activity.
 3. Build chat-specific system prompt: identity, user preferences, fresh system
@@ -338,8 +375,10 @@ turn or proactively presents it.
 5. Add compaction support through pi-agent-core `transformContext`.
 6. Verify restart recovery: persisted transcript reloads, fresh system summary
    injects, and failed recovery produces an explicit event/notification.
-7. Add CLI delegation tool: spawn Claude Code / Codex in background, emit
-   cli.task events, present results in chat.
+7. Add durable CLI delegation runner: persist task before spawn, run Claude
+   Code / Codex in non-interactive mode, write structured result files, emit
+   `cli.task.*` events, recover orphans after restart, and present results in
+   chat.
 8. Create `platform-owner` agent in may-agent.app and transfer may-agent.app
    ownership away from May.
 9. Route Deputy-May system judgments through infra handlers, but route concrete
