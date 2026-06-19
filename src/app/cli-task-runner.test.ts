@@ -85,7 +85,7 @@ describe("CLI task runner", () => {
       const completed = events.find((event) => event.type === "cli.task.completed") as any;
       expect(completed?.data?.cliSessionId).toBe("codex-session-1");
       expect(completed?.data?.resumeCommand).toContain("resume");
-      expect(completed?.data?.effectiveSandbox).toBe("read-only");
+      expect(completed?.data?.effectiveSandbox).toBe("danger-full-access");
       expect(completed?.data?.sandboxFallbackReason).toBeUndefined();
       const steer = events.find((event) => event.type === "session.steer.requested") as any;
       expect(steer?.data?.sessionId).toBe("chat-1");
@@ -153,6 +153,7 @@ describe("CLI task runner", () => {
         mode: "investigate",
         prompt: "Find the issue.",
         cwd: root,
+        sandbox: "read-only",
       });
       await waitFor(() => events.some((event) => event.type === "cli.task.completed"));
 
@@ -200,6 +201,45 @@ describe("CLI task runner", () => {
       await waitFor(() => spawnedArgs.length > 0);
       expect(spawnedArgs).toContain("resume");
       expect(spawnedArgs).toContain("codex-session-1");
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it("runs Claude patch tasks with non-interactive write permissions", async () => {
+    const root = mkdtempSync(join(tmpdir(), "may-cli-claude-patch-"));
+    const persistDir = join(root, ".state");
+    mkdirSync(persistDir, { recursive: true });
+    const bus = new EventBus();
+    let spawnedArgs: string[] = [];
+    attachCliTaskRunner({
+      bus,
+      persistDir,
+      projectRoot: root,
+      spawnCommand: ((command: string, args: string[]) => {
+        spawnedArgs = [command, ...args];
+        return fakeSpawn(command, args);
+      }) as any,
+    });
+
+    const tool = createRunCliAgentTool({
+      agentName: "may",
+      projectRoot: root,
+      persistDir,
+      emit: (event) => bus.emit(event as any),
+    });
+
+    try {
+      await tool.execute("call-1", {
+        tool: "claude",
+        mode: "patch",
+        prompt: "Write a file.",
+        cwd: root,
+      });
+      await waitFor(() => spawnedArgs.length > 0);
+      expect(spawnedArgs).toContain("--permission-mode");
+      expect(spawnedArgs).toContain("bypassPermissions");
+      expect(spawnedArgs).toContain("--dangerously-skip-permissions");
     } finally {
       rmSync(root, { recursive: true, force: true });
     }
