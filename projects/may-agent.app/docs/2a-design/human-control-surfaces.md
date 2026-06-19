@@ -186,6 +186,26 @@ the request to supervisor, normal supervisor `autorestart` owns process
 recovery. If supervisord or the container dies, the container runtime owns
 recovery.
 
+Runtime code deployment follows the same ownership rule. The agent may build
+the binary in the mounted workspace, but install and restart must be a
+supervisor-owned one-shot:
+
+```bash
+cd /app/projects/may-agent
+bun run deploy
+```
+
+`bun run deploy` bundles the runtime, writes the staged deploy marker, then
+asks supervisor to start `may-agent-restarter`. The restarter installs
+`bundle/may-agent` to `/usr/local/bin/may-agent` while the runtime is stopped,
+then starts `may-agent` / `may-agent-web`. If the live restarter does not
+support staged deploy, recreate the container from the updated image; do not
+do an inline stop/copy/start from the agent process.
+
+The deploy command returns after supervisor accepts the one-shot. The caller
+must verify closure by checking supervisor status, the restarter log, and that
+`bundle/deploy-requested` was removed.
+
 ```json
 {
   "type": "runtime.shutdown.requested",

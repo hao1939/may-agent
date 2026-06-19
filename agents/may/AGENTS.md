@@ -72,6 +72,26 @@ accepts the start request, it survives the `may-agent` process stopping or
 crashing. If `may-agent` crashes before sending the request, normal supervisor
 `autorestart` owns recovery.
 
+For code changes that need a new live binary, use the supervisor-owned deploy
+path from inside the container:
+
+```bash
+cd /app/projects/may-agent
+bun run check
+bun test <targeted tests>
+bun run deploy
+supervisorctl status may-agent may-agent-web may-agent-restarter
+tail -80 /tmp/may-agent-supervisor-restart.log
+```
+
+`bun run deploy` builds `bundle/may-agent`, writes the staged deploy marker,
+then starts the `may-agent-restarter` one-shot. If the live restarter does not
+support staged deploy, recreate the container from the updated image; do not
+fall back to an inline stop/copy/start sequence.
+
+Deploy is accepted-then-async: verify the restarter log, running process
+status, and that `bundle/deploy-requested` was removed.
+
 ## CLI Workers
 
 Use `run_cli_agent` when Hao asks to "ask Claude", "ask Codex", get a second

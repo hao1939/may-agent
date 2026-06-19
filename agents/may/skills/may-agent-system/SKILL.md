@@ -198,6 +198,36 @@ Distinguish local blockers from ownership-boundary escalations.
   `may-agent` stopping or crashing. If `may-agent` crashes before sending the
   request, normal supervisor `autorestart` owns recovery.
 
+## Build And Deploy Runtime Binary
+
+When a runtime code change needs to become live inside the container, build the
+binary in the workspace and hand the install/restart to supervisor:
+
+```bash
+cd /app/projects/may-agent
+bun run check
+bun test <targeted tests>
+bun run deploy
+supervisorctl status may-agent may-agent-web may-agent-restarter
+tail -80 /tmp/may-agent-supervisor-restart.log
+```
+
+`bun run deploy` runs `bun run bundle`, writes the staged deploy marker, then
+starts the supervisor-owned one-shot `may-agent-restarter`. The restarter
+copies `/app/projects/may-agent/bundle/may-agent` to
+`/usr/local/bin/may-agent` while the runtime is stopped, then starts
+`may-agent` / `may-agent-web`. Do not inline
+`cp ... /usr/local/bin/may-agent && supervisorctl restart ...` from an agent
+shell.
+
+If the live restarter does not support staged deploy, the command fails with a
+recreate message. Recreate the container from the updated image; do not
+silently fall back to an inline stop/copy/start sequence from May.
+
+Treat deploy as accepted-then-async: after `bun run deploy` returns, verify the
+restarter log, confirm `may-agent` and `may-agent-web` are `RUNNING`, and make
+sure the deploy marker is gone.
+
 ## Key Principles
 
 - Reactive work is event-driven and must close the loop.

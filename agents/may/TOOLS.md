@@ -43,6 +43,16 @@ caller exits. Once supervisor accepts the start request, it survives
 `may-agent` stopping or crashing; if `may-agent` crashes before sending the
 request, normal supervisor `autorestart` owns recovery.
 
+For runtime code deployment inside the container, use `cd
+/app/projects/may-agent && bun run deploy`. The `deploy` script builds the
+binary, writes the staged deploy marker, and starts supervisor's
+`may-agent-restarter` one-shot, which installs the binary while the runtime is
+stopped and then starts the runtime again. If the live restarter does not
+support staged deploy, recreate the container from the updated image.
+After deploy, check `supervisorctl status may-agent may-agent-web
+may-agent-restarter`, tail `/tmp/may-agent-supervisor-restart.log`, and confirm
+`bundle/deploy-requested` is gone.
+
 ## `run_cli_agent`
 Delegate focused work to Claude Code or Codex through the durable async CLI
 task runner. Use when Hao asks for Claude/Codex, a second opinion, comparison,
