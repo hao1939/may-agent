@@ -456,7 +456,7 @@ export type SystemEvent =
         promptPath: string;
         resultPath: string;
         eventsPath?: string;
-        sandbox?: "read-only" | "workspace-write";
+        sandbox?: "read-only" | "workspace-write" | "danger-full-access";
         effectiveSandbox?: "read-only" | "workspace-write" | "danger-full-access";
         sandboxFallbackReason?: string;
         timeoutMs?: number;

@@ -5,8 +5,8 @@ import { eventData, type AgentEvent, type EventBus, type SubscriberResult } from
 
 type CliTool = "claude" | "codex";
 type CliMode = "investigate" | "review" | "patch";
-type SandboxMode = "read-only" | "workspace-write";
-type EffectiveSandboxMode = SandboxMode | "danger-full-access";
+type SandboxMode = "read-only" | "workspace-write" | "danger-full-access";
+type EffectiveSandboxMode = SandboxMode;
 
 type CliTaskRecord = {
   taskId: string;
@@ -120,7 +120,8 @@ function codexArgs(record: CliTaskRecord, prompt: string): string[] {
 
 function claudeArgs(record: CliTaskRecord, prompt: string): string[] {
   const args = ["-p", prompt, "--output-format", "stream-json", "--verbose"];
-  if (record.mode !== "patch") args.push("--permission-mode", "plan");
+  if (record.mode === "patch") args.push("--permission-mode", "bypassPermissions", "--dangerously-skip-permissions");
+  else args.push("--permission-mode", "plan");
   if (record.resumeSessionId) args.push("--resume", record.resumeSessionId);
   return args;
 }
@@ -198,6 +199,11 @@ function shouldRetryCodexWithSandboxFallback(record: CliTaskRecord, output: stri
     text.includes("unprivileged namespace") ||
     text.includes("operation not permitted")
   );
+}
+
+function sandboxMode(value: unknown): SandboxMode {
+  if (value === "workspace-write" || value === "danger-full-access") return value;
+  return "read-only";
 }
 
 type CliAttemptResult = {
@@ -388,7 +394,7 @@ export function attachCliTaskRunner(opts: CliTaskRunnerOptions): () => void {
         typeof data.eventsPath === "string"
           ? ensureInside(opts.projectRoot, data.eventsPath)
           : join(taskDir(opts.persistDir, taskId), "events.jsonl"),
-      sandbox: data.sandbox === "workspace-write" ? "workspace-write" : "read-only",
+      sandbox: sandboxMode(data.sandbox),
       timeoutMs:
         typeof data.timeoutMs === "number" && Number.isFinite(data.timeoutMs) ? data.timeoutMs : DEFAULT_TIMEOUT_MS,
       sourceOwner,
