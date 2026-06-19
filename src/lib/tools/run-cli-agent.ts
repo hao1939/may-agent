@@ -28,8 +28,9 @@ const paramsSchema = Type.Object({
     }),
   ),
   sandbox: Type.Optional(
-    Type.Union([Type.Literal("read-only"), Type.Literal("workspace-write")], {
-      description: "Execution sandbox. Default: read-only. Patch mode may use workspace-write.",
+    Type.Union([Type.Literal("read-only"), Type.Literal("workspace-write"), Type.Literal("danger-full-access")], {
+      description:
+        "Execution sandbox. Codex defaults to danger-full-access in this container; Claude defaults to read-only unless patch mode uses workspace-write.",
     }),
   ),
   timeoutMs: Type.Optional(
@@ -79,6 +80,11 @@ function safeCwd(projectRoot: string, cwd?: string): string {
   return ensureInside(projectRoot, cwd);
 }
 
+function defaultSandbox(tool: RunCliAgentParams["tool"], mode: NonNullable<RunCliAgentParams["mode"]>): string {
+  if (tool === "codex") return "danger-full-access";
+  return mode === "patch" ? "workspace-write" : "read-only";
+}
+
 export function createRunCliAgentTool(opts: RunCliAgentToolOptions): AgentTool {
   return {
     name: "run_cli_agent",
@@ -99,7 +105,7 @@ export function createRunCliAgentTool(opts: RunCliAgentToolOptions): AgentTool {
       const eventsPath = join(dir, "events.jsonl");
       const cwd = safeCwd(opts.projectRoot, params.cwd);
       const mode = params.mode ?? "investigate";
-      const sandbox = params.sandbox ?? (mode === "patch" ? "workspace-write" : "read-only");
+      const sandbox = params.sandbox ?? defaultSandbox(params.tool, mode);
       const timeoutMs = params.timeoutMs && Number.isFinite(params.timeoutMs) ? params.timeoutMs : DEFAULT_TIMEOUT_MS;
 
       mkdirSync(dir, { recursive: true });
