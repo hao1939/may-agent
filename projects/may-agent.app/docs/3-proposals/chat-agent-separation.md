@@ -337,6 +337,11 @@ CLI tasks are tracked like any other work:
   explicitly requests Codex `read-only` for testing, the runner may retry
   `investigate`/`review` tasks once with a clearly recorded compatibility
   fallback when the sandbox fails to start.
+- Worker-spawned Codex sessions use the runner skill home. The runner exports
+  `CODEX_HOME` from the May persist directory by default, so reusable skills
+  installed under `.state/.codex/skills` are available to May's delegated Codex
+  workers. An explicit service-level `CODEX_HOME` may override this when a
+  deployment wants a different skill home.
 - Visible in a CLI task read model and linked from sessions/tasks/UI
 - Duration, terminal state, stdout/stderr tail, and structured result recorded
 - Pair tracker detects orphans (started but never completed)
