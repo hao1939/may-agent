@@ -463,6 +463,7 @@ export type SystemEvent =
         sourceOwner: string;
         sourceSessionId?: string;
         resumeSessionId?: string;
+        reuseSession?: boolean;
         files?: string[];
         worktree?: string;
       };
@@ -484,6 +485,7 @@ export type SystemEvent =
         attempt?: number;
         effectiveSandbox?: "read-only" | "workspace-write" | "danger-full-access";
         sandboxFallbackReason?: string;
+        reuseSession?: boolean;
       };
     }
   | {
@@ -502,6 +504,7 @@ export type SystemEvent =
         resumeCommand?: string[];
         effectiveSandbox?: "read-only" | "workspace-write" | "danger-full-access";
         sandboxFallbackReason?: string;
+        reuseSession?: boolean;
       };
     }
   | {
@@ -520,6 +523,7 @@ export type SystemEvent =
         resumeCommand?: string[];
         effectiveSandbox?: "read-only" | "workspace-write" | "danger-full-access";
         sandboxFallbackReason?: string;
+        reuseSession?: boolean;
       };
     }
   | {
@@ -536,6 +540,7 @@ export type SystemEvent =
         resumeCommand?: string[];
         effectiveSandbox?: "read-only" | "workspace-write" | "danger-full-access";
         sandboxFallbackReason?: string;
+        reuseSession?: boolean;
       };
     }
   | {

@@ -47,6 +47,11 @@ const paramsSchema = Type.Object({
       description: "Optional native Claude/Codex session id to resume.",
     }),
   ),
+  reuseSession: Type.Optional(
+    Type.Boolean({
+      description: "Resume/store May's default native CLI session for this tool.",
+    }),
+  ),
 });
 
 type RunCliAgentParams = Static<typeof paramsSchema>;
@@ -124,6 +129,7 @@ export function createRunCliAgentTool(opts: RunCliAgentToolOptions): AgentTool {
             sourceOwner: `agent:${opts.agentName}`,
             sourceSessionId: opts.getCallerSessionId?.(),
             resumeSessionId: params.resumeSessionId,
+            reuseSession: params.reuseSession === true,
             files: params.files,
             worktree: params.worktree,
             requestedAt: new Date().toISOString(),
@@ -151,6 +157,7 @@ export function createRunCliAgentTool(opts: RunCliAgentToolOptions): AgentTool {
           sourceOwner: `agent:${opts.agentName}`,
           sourceSessionId: opts.getCallerSessionId?.(),
           resumeSessionId: params.resumeSessionId,
+          reuseSession: params.reuseSession === true,
           files: params.files,
           worktree: params.worktree,
         },

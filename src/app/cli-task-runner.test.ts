@@ -1,6 +1,6 @@
 import { describe, expect, it } from "bun:test";
 import { EventEmitter } from "node:events";
-import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
+import { mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { PassThrough } from "node:stream";
@@ -201,6 +201,60 @@ describe("CLI task runner", () => {
       await waitFor(() => spawnedArgs.length > 0);
       expect(spawnedArgs).toContain("resume");
       expect(spawnedArgs).toContain("codex-session-1");
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it("reuses May's stored native CLI session when requested", async () => {
+    const root = mkdtempSync(join(tmpdir(), "may-cli-reuse-"));
+    const persistDir = join(root, ".state");
+    mkdirSync(persistDir, { recursive: true });
+    const bus = new EventBus();
+    const events: AgentEvent[] = [];
+    const spawnedArgs: string[][] = [];
+    bus.subscribe((event) => {
+      events.push(event);
+    });
+    attachCliTaskRunner({
+      bus,
+      persistDir,
+      projectRoot: root,
+      spawnCommand: ((command: string, args: string[]) => {
+        spawnedArgs.push([command, ...args]);
+        return fakeSpawn(command, args);
+      }) as any,
+    });
+
+    const tool = createRunCliAgentTool({
+      agentName: "may",
+      projectRoot: root,
+      persistDir,
+      emit: (event) => bus.emit(event as any),
+    });
+
+    try {
+      await tool.execute("call-1", {
+        tool: "codex",
+        prompt: "First task.",
+        cwd: root,
+        reuseSession: true,
+      });
+      await waitFor(() => events.filter((event) => event.type === "cli.task.completed").length >= 1);
+
+      const store = JSON.parse(readFileSync(join(persistDir, "cli-sessions", "may.json"), "utf8")) as any;
+      expect(store.codex.cliSessionId).toBe("codex-session-1");
+
+      await tool.execute("call-2", {
+        tool: "codex",
+        prompt: "Second task.",
+        cwd: root,
+        reuseSession: true,
+      });
+      await waitFor(() => spawnedArgs.length >= 2);
+
+      expect(spawnedArgs[1]).toContain("resume");
+      expect(spawnedArgs[1]).toContain("codex-session-1");
     } finally {
       rmSync(root, { recursive: true, force: true });
     }
