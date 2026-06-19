@@ -123,10 +123,53 @@ move to `may-agent.app/agents/` as task agents:
 
 After migration, `agents/` contains only `may/` — the one chat agent.
 
+## Ownership and Escalation
+
+May serves two roles through separate sessions:
+
+```
+Chat-May  ← persistent REPL, always responsive to human
+Job-May   ← background work via may-agent.app workflows
+```
+
+Same agent identity, same AGENTS.md, same context.md. Different sessions.
+They never block each other.
+
+**Escalation chain:**
+
+```
+Worker can't resolve
+  → problem-solver investigates
+  → planner judges (project owner)
+  → planner can't resolve
+  → escalates to May (job session via may-agent.app)
+  → Job-May reviews, judges, acts
+  → Job-May can't resolve
+  → writes finding to task tree / emits escalation for human
+  → Chat-May surfaces it when human asks or proactively mentions it
+  → human decides via chat
+  → decision flows back down
+```
+
+**Nothing blocks the chat session except the human's own conversation.**
+Escalations, platform reviews, metric judgments, and ops health reviews
+all run as may-agent.app job sessions. The chat REPL stays idle and
+responsive.
+
+The chat session is the **top of the escalation chain** — where
+unresolvable issues land and human decisions enter the system. There is
+only one chat agent because there is one human at the top.
+
+**may-agent.app stays as-is** — it owns May's background work through
+schedules and workflow handlers (platform-review, ops-health-review,
+metric-alert-triage). The only change is the chat session is separated
+out as its own lifecycle, not another `manager.run()` call.
+
 ## What This Is Not
 
 - Not building a new chat framework — reusing pi-agent-core Agent as-is
 - Not replacing the manager — job sessions still use `manager.run()`
+- Not removing may-agent.app — it still owns May's background job work
 - Not adding memory infrastructure — system state is the memory
 - Not changing the agent model — still LLM + tools + context
 
