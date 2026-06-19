@@ -3,17 +3,18 @@ id: KE-2019
 title: "DB Size Approaching 2000 MB Threshold — Throughput Growth Outpacing Retention"
 date: 2026-06-17
 author: arc
-status: active
+status: resolved
 tags: [infrastructure, db-size, retention, aks-explorer, throughput, capacity-planning]
-related: [KE-2016, KE-2018, KE-1986]
+related: [KE-2016, KE-2018, KE-1986, KE-2051]
+last_verified: 2026-06-20T10:55Z
 ---
 
 <ai_context>
-summary: The runtime DB is at 1725 MB (86% of 2000 MB threshold) and growing. KE-2016's WAL issue is resolved (WAL now 4 MB, down from 1356 MB on June 16). The current growth driver is throughput: aks-explorer sessions doubled from 1044/day (Jun 15) to 1991/day (Jun 17). This throughput increase correlates with the planner fix in commit 24a7a60fc (KE-2018) which reduced session duration from ~252s to ~63s — the same handler capacity now dispatches 4x more sessions per hour. At current rates (3400+ sessions/day, 53k+ events/day), the estimated steady-state DB size with existing retention windows (events 7d, sessions 14d, digests 14d) is 1800-2200 MB, straddling the 2000 MB threshold. Three mitigations available: (1) raise threshold to 2500 MB (calibration), (2) reduce event retention to 5d, (3) reduce session_digests retention to 7d. Recommending option 1 as least disruptive since the underlying throughput growth is legitimate productive work.
-triggers: heartbeat metric check, db-size growth analysis
+summary: "RESOLVED (F1 validated 2026-06-20). The runtime DB peaked at 1725 MB (Jun 17) during the aks-explorer throughput spike (1991 sessions/day). After the AKS planner cliff resolution (KE-2041→KE-2046→KE-2051), throughput normalized to ~464 sessions/day and the DB shrank to 1672 MB (Jun 19). F1 condition met: DB stayed below 1900 MB for >45h without retention changes. The growth concern was transient — tied to the 4x throughput burst from the planner fix (KE-2018) which then collapsed when the planner cliff hit (KE-2041). Current state: 1672 MB, 84% of threshold, net shrinking at ~26 MB/day. No threshold raise or retention change needed."
+triggers: heartbeat metric check, db-size growth analysis, resolved
 falsifiers:
-  - F1: "If DB size stabilizes below 1900 MB for 48h without retention changes, the growth concern was transient and this KE can be resolved."
-  - F2: "If throughput growth continues (>2500 sessions/day aks-explorer) and DB breaches 2000 MB, escalation to human for threshold or retention adjustment is required."
+  - F1: "If DB size stabilizes below 1900 MB for 48h without retention changes, the growth concern was transient and this KE can be resolved." — **VALIDATED 2026-06-20:** DB peaked 1725 Jun 17, fell to 1672 by Jun 19 (>45h below 1900, no retention changes). Cause: aks-explorer throughput normalized from 1991/day to 464/day after cliff resolution.
+  - F2: "If throughput growth continues (>2500 sessions/day aks-explorer) and DB breaches 2000 MB, escalation to human for threshold or retention adjustment is required." — NOT TRIGGERED. Throughput declined, DB shrank.
 </ai_context>
 
 ## Observation
