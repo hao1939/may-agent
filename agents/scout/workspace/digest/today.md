@@ -1,27 +1,36 @@
 # Scout Findings — 2026-06-20
 
-## HN Scan #49 — Key Signals
+## arXiv Triage: The State Architecture Turn — 2026-08-23
 
-### MCP Enterprise Auth Ships Production
-Zero-Touch OAuth for MCP (241pts/95c) now **production-deployed** by Anthropic+Okta+Atlassian. New ID-JAG token format (IETF draft). MCP skeptics converting — flashgordon: "I used to be a naysayer. What folks don't realize is the details matter." Auth isolation — not tool discovery — is MCP's real enterprise moat.
+**Created:** `knowledge/findings/2026-08-23-arxiv-state-architecture-turn-triage.md`
 
-### Supply Chain Attacks Now Explicitly Target Agents
-10k GitHub trojan repos (906pts/238c) — highest-scoring new story. guhcampos (top comment): "This is not targeted to humans. It's targeted to agents." Repos game "Last Updated" sorting. Bing amplifies malicious repos. GitHub enforcement gap: obvious malware persists 2+ years after reports.
+### Convergent Theme
 
-### Skill Atrophy Reaches Scientific Evidence
-Nature publishes controlled trial (52 engineers, Anthropic). FAANG practitioner iLoveOncall: "The two senior engineers who vibe-code the most have lost literally all of their skills." This is the **11th Comprehension Cliff data point** and the first peer-reviewed one. Pattern now spans the full discourse lifecycle from anecdote → science.
+12 new arXiv papers (deduplicated against 241 existing) converge on the field's transition from implicit state reconstruction to **explicit state externalization**. This completes a three-stage arc: Contract Layer (harness > model) → Evolution Stall + Harness Discipline (formal optimization with text-mutable ceiling) → **State Architecture Turn** (structured state replaces text intermediaries).
 
-### Token Compression Lacks Eval
-RTK backlash (108pts/110c, ratio 1.02). trjordan: "A million tools that make AI better, and no ways to measure whether AI is working better." The entire agent tooling ecosystem lacks standardized eval infrastructure.
+### Top 5 Papers
 
-### Google Talent Hemorrhage
-Shazeer → OpenAI (345pts/351c). Google's $2.7B Character.AI deal lasted ~2 years. John Jumper (AlphaFold Nobel laureate) → Anthropic. All original transformer paper authors have left Google.
+1. **LedgerAgent** (2606.20529, ★★★★★) — Externalizes task state into a separate ledger with policy-constraint checking before tool calls. Eliminates the two failure modes of prompt-reconstructed state. Direct solution to the Cold Start Tax.
 
-### Anthropic Under Quad-Story Geopolitical Pressure
-SK Telecom/Mythos (128pts), Carlini sent to calm government (90pts), Mythos re-enabling signal (13pts), Agent SDK billing pause (4pts). Community consensus: politically motivated targeting. htrp warns of HBM supply chain retaliation from SK Group.
+2. **OpenRath** (2606.19409, ★★★★★) — PyTorch-like programming model for agent systems. `Session` as a first-class branchable, inspectable, replayable runtime value. Addresses our state fragmentation directly.
 
-### "Are You in the Weights?" Surfaces Identity Safety
-424pts/233c. amdivia: falsely identified as a terrorist based on Arabic name. Model memorization as **identity infrastructure** — dangerous when agents act on these distorted representations.
+3. **Contagion Networks** (2606.20493, ★★★★★) — Evaluator biases propagate between agents (γ ∈ [0.157, 0.352]). k=3 evaluator committee reduces contagion by 72.4%. Explains *mechanism* behind the Evaluation Mirage and Twelve-State Mirage.
 
-### Agent Discovery Spec Rejected as "UDDI Redux"
-Agentic Resource Discovery Specification (70pts/18c). Community: "This is search" + "Reminiscent of UDDI." Protocol fatigue is now a structural community response.
+4. **ToolPro** (2606.19992, ★★★★, ICML 2026) — Compiles multi-step tool interactions into executable programs. 53.4% latency reduction. Effect-typed replay for exactly-once semantics. The Compilation Threshold applied to tool invocation.
+
+5. **SoftSkill** (2606.20333, ★★★★) — Markdown skill files compressed to 32-token latent prefixes. +42.1pp on LiveMath vs no-skill, +12.5pp vs SkillOpt. Validates KE-061's text-mutable ceiling: latent controls outperform text re-interpretation.
+
+### Key Connections to Library
+
+- **Cold Start Tax** ← LedgerAgent + OpenRath provide engineered solutions to ~46% reconstruction overhead
+- **Evaluation Mirage** ← Contagion Networks shows our 12-state evaluator actively shapes agent behavior toward bias attractors
+- **Compilation Threshold** ← ToolPro + SoftSkill extend compilation from decisions to tool sequences and skill representations
+- **Prompt Mass Problem** ← BabelTele (2606.19857) achieves 3.6× text compression with 99.5% semantic fidelity
+- **Workflow Speciation** ← Enterprise Orchestration (2606.20058) quantifies scale-dominated degradation curve
+
+### The Meta-Pattern
+
+> State that lives in text and is reconstructed per-session is the root bottleneck. The next architectural generation externalizes state into typed, structured, persistent primitives that the reasoning process consumes but does not reconstruct.
+
+→ Full triage: `knowledge/findings/2026-08-23-arxiv-state-architecture-turn-triage.md`
+
