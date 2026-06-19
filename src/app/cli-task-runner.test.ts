@@ -206,6 +206,46 @@ describe("CLI task runner", () => {
     }
   });
 
+  it("sets Codex skill home from the runner persist directory", async () => {
+    const root = mkdtempSync(join(tmpdir(), "may-cli-codex-home-"));
+    const persistDir = join(root, ".state");
+    mkdirSync(persistDir, { recursive: true });
+    const bus = new EventBus();
+    let spawnedEnv: NodeJS.ProcessEnv | undefined;
+    const originalCodexHome = process.env.CODEX_HOME;
+    delete process.env.CODEX_HOME;
+    attachCliTaskRunner({
+      bus,
+      persistDir,
+      projectRoot: root,
+      spawnCommand: ((command: string, args: string[], options: { env?: NodeJS.ProcessEnv }) => {
+        spawnedEnv = options.env;
+        return fakeSpawn(command, args);
+      }) as any,
+    });
+
+    const tool = createRunCliAgentTool({
+      agentName: "may",
+      projectRoot: root,
+      persistDir,
+      emit: (event) => bus.emit(event as any),
+    });
+
+    try {
+      await tool.execute("call-1", {
+        tool: "codex",
+        prompt: "Use a skill.",
+        cwd: root,
+      });
+      await waitFor(() => Boolean(spawnedEnv));
+      expect(spawnedEnv?.CODEX_HOME).toBe(join(persistDir, ".codex"));
+    } finally {
+      if (originalCodexHome === undefined) delete process.env.CODEX_HOME;
+      else process.env.CODEX_HOME = originalCodexHome;
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
   it("runs Claude patch tasks with non-interactive write permissions", async () => {
     const root = mkdtempSync(join(tmpdir(), "may-cli-claude-patch-"));
     const persistDir = join(root, ".state");
