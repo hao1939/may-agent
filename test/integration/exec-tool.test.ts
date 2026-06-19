@@ -81,4 +81,12 @@ describe("isMetaRecursionCommand", () => {
     expect(isMetaRecursionCommand("node test.js")).toBe(false);
     expect(isMetaRecursionCommand("cat run/may.ts")).toBe(false);
   });
+
+  it("allows the supervisor-owned restart handoff", () => {
+    expect(isMetaRecursionCommand("supervisorctl start may-agent-restarter")).toBe(false);
+  });
+
+  it("blocks direct supervisor process control", () => {
+    expect(isMetaRecursionCommand("supervisorctl restart may-agent may-agent-web")).toBe(true);
+  });
 });

@@ -1,11 +1,18 @@
 import { mkdirSync, writeFileSync } from "node:fs";
-import { exec } from "node:child_process";
+import { execFile } from "node:child_process";
 import { resolve } from "node:path";
 import type { EventBus } from "./event-bus.js";
 import type { SubagentManager } from "../lib/index.js";
 import type { AgentLoaderOptions } from "./agent-loader.js";
 import { getAgentCrons, reloadAgents } from "./agent-loader.js";
 import { installProjectApps } from "./loader/project-app-loader.js";
+
+type ExecFileFn = (
+  file: string,
+  args: string[],
+  options: { timeout: number },
+  callback: (error: Error | null, stdout: string, stderr: string) => void,
+) => unknown;
 
 export interface InstanceIdentity {
   pid: number;
@@ -43,6 +50,15 @@ export function createIdentityWriter(opts: {
     mkdirSync(dir, { recursive: true });
     writeFileSync(identityPath, JSON.stringify(data, null, 2));
   };
+}
+
+export function startSupervisorRestarter(bus: Pick<EventBus, "emit">, execFileImpl: ExecFileFn = execFile): void {
+  execFileImpl("supervisorctl", ["start", "may-agent-restarter"], { timeout: 10000 }, (err, stdout, stderr) => {
+    if (err) {
+      const detail = stderr.trim() || stdout.trim() || err.message;
+      bus.emit({ type: "info", message: `[restart] Failed to start supervisor restarter: ${detail}` });
+    }
+  });
 }
 
 export function createDaemonLifecycle(opts: {
@@ -102,10 +118,7 @@ export function createDaemonLifecycle(opts: {
   };
 
   const gracefulRestart = () => {
-    exec(
-      "nohup sh -c 'sleep 0.2; supervisorctl restart may-agent may-agent-web; supervisorctl start may-agent may-agent-web' >/tmp/may-agent-supervisor-restart.log 2>&1 &",
-      { timeout: 10000 },
-    );
+    startSupervisorRestarter(opts.bus);
   };
 
   const handleReload = async (): Promise<void> => {
