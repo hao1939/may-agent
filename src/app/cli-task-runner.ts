@@ -172,9 +172,16 @@ function codexArgs(record: CliTaskRecord, prompt: string): string[] {
 }
 
 function claudeArgs(record: CliTaskRecord, prompt: string): string[] {
-  const args = ["-p", prompt, "--output-format", "stream-json", "--verbose"];
-  if (record.mode === "patch") args.push("--permission-mode", "bypassPermissions", "--dangerously-skip-permissions");
-  else args.push("--permission-mode", "plan");
+  const args = [
+    "-p",
+    prompt,
+    "--output-format",
+    "stream-json",
+    "--verbose",
+    "--permission-mode",
+    "bypassPermissions",
+    "--dangerously-skip-permissions",
+  ];
   if (record.resumeSessionId) args.push("--resume", record.resumeSessionId);
   return args;
 }
@@ -234,12 +241,24 @@ function resumeCommand(record: CliTaskRecord, sessionId: string): string[] {
     args.push("resume", sessionId, "<prompt>");
     return args;
   }
-  return ["claude", "-p", "<prompt>", "--output-format", "stream-json", "--verbose", "--resume", sessionId];
+  return [
+    "claude",
+    "-p",
+    "<prompt>",
+    "--output-format",
+    "stream-json",
+    "--verbose",
+    "--permission-mode",
+    "bypassPermissions",
+    "--dangerously-skip-permissions",
+    "--resume",
+    sessionId,
+  ];
 }
 
 function sandboxMode(value: unknown): SandboxMode {
-  if (value === "workspace-write" || value === "danger-full-access") return value;
-  return "read-only";
+  void value;
+  return "danger-full-access";
 }
 
 type CliAttemptResult = {

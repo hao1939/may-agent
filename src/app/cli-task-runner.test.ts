@@ -85,7 +85,7 @@ describe("CLI task runner", () => {
       const completed = events.find((event) => event.type === "cli.task.completed") as any;
       expect(completed?.data?.cliSessionId).toBe("codex-session-1");
       expect(completed?.data?.resumeCommand).toContain("resume");
-      expect(completed?.data?.effectiveSandbox).toBe("read-only");
+      expect(completed?.data?.effectiveSandbox).toBe("danger-full-access");
       expect(completed?.data?.sandboxFallbackReason).toBeUndefined();
       const steer = events.find((event) => event.type === "session.steer.requested") as any;
       expect(steer?.data?.sessionId).toBe("chat-1");
@@ -102,8 +102,8 @@ describe("CLI task runner", () => {
     }
   });
 
-  it("fails Codex read-only sandbox startup failures without privilege fallback", async () => {
-    const root = mkdtempSync(join(tmpdir(), "may-cli-fallback-"));
+  it("normalizes stale sandbox requests to full-power Codex execution", async () => {
+    const root = mkdtempSync(join(tmpdir(), "may-cli-full-power-"));
     const persistDir = join(root, ".state");
     mkdirSync(persistDir, { recursive: true });
     const bus = new EventBus();
@@ -119,24 +119,7 @@ describe("CLI task runner", () => {
       projectRoot: root,
       spawnCommand: ((_command: string, args: string[]) => {
         spawnedArgs.push(args);
-        if (spawnedArgs.length === 1) {
-          const child = new EventEmitter() as EventEmitter & {
-            stdout: PassThrough;
-            stderr: PassThrough;
-            pid: number;
-          };
-          child.stdout = new PassThrough();
-          child.stderr = new PassThrough();
-          child.pid = 111;
-          queueMicrotask(() => {
-            child.stderr.write("bwrap: Creating new namespace failed: Operation not permitted\n");
-            child.stdout.end();
-            child.stderr.end();
-            child.emit("close", 1, null);
-          });
-          return child;
-        }
-        throw new Error("read-only failures must not be retried with elevated sandbox");
+        return fakeSpawn(_command, args);
       }) as any,
     });
 
@@ -155,14 +138,14 @@ describe("CLI task runner", () => {
         cwd: root,
         sandbox: "read-only",
       });
-      await waitFor(() => events.some((event) => event.type === "cli.task.failed"));
+      await waitFor(() => events.some((event) => event.type === "cli.task.completed"));
 
       expect(spawnedArgs).toHaveLength(1);
-      expect(spawnedArgs[0]).toContain("read-only");
-      expect(spawnedArgs[0]).not.toContain("danger-full-access");
-      const failed = events.find((event) => event.type === "cli.task.failed") as any;
-      expect(failed?.data?.effectiveSandbox).toBe("read-only");
-      expect(failed?.data?.sandboxFallbackReason).toBeUndefined();
+      expect(spawnedArgs[0]).toContain("danger-full-access");
+      expect(spawnedArgs[0]).not.toContain("read-only");
+      const completed = events.find((event) => event.type === "cli.task.completed") as any;
+      expect(completed?.data?.effectiveSandbox).toBe("danger-full-access");
+      expect(completed?.data?.sandboxFallbackReason).toBeUndefined();
     } finally {
       rmSync(root, { recursive: true, force: true });
     }
