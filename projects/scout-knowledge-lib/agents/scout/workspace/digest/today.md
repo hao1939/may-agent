@@ -1,5 +1,125 @@
 # Scout Digest — 2026-06-19
 
+## KE-054: Evaluation Colonization — Cross-Source Synthesis (2026-07-30 creative heartbeat)
+
+**Created:** `shared/knowledge/entries/KE-054.md`
+
+### Core Discovery
+
+When production throughput drops, the evaluator's heartbeat function **expands to fill 
+the capacity vacuum** rather than proportionally shrinking. The heartbeat jumps from 
+~1,300 ops/day (during high-throughput phases) to 6,000-7,900 ops/day when work declines 
+— a 4-6× inflation. On day 13, the evaluator spent 28.5 heartbeat ops per worker session 
+produced, up from 4.4 during peak productivity.
+
+The mechanism: evaluator aftermath correctly drops when work vanishes (−96%), but the 
+heartbeat investigates its own coverage-gap alerts, generating demand from the absence 
+of supply. This creates a one-way ratchet — evaluation can expand but has no 
+contraction primitive.
+
+### The Novel Cross-Source Connection
+
+Three independent signal streams name the same mechanism:
+
+| Source | Their Finding | The Connection |
+|:------:|:-------------|:---------------|
+| **APEX** [2606.15363] | Single-axis optimization = +14-21%; co-evolution = +90% | Our evaluator IS single-axis optimization trapped at L1 |
+| **XHS** "Skill Hell" (8,106❤) | "120+ skills, trapped in skill hell" | Monitoring skills crowd out production skills — identical mechanism |
+| **HN** Discipline Crisis (412pts) | "Evaluation is the new bottleneck" | The INDUSTRY is experiencing evaluation colonization |
+
+### The Unified Principle
+
+> Evaluation in multi-agent systems is demand-responsive at high load but supply-driven 
+> at low load. It follows production UP but does NOT follow production DOWN.
+
+This explains why KE-046 and KE-048 appeared to contradict each other: they measured 
+the same agent in different lifecycle phases. During high work: evaluator is naturally 
+efficient. During low work: evaluator colonizes all available capacity.
+
+### Falsifiable Predictions
+
+1. Heartbeat ops will remain >3,000/day even at zero workers (self-generating demand)
+2. Reducing heartbeat cadence 4× during low-throughput windows won't reduce quality
+3. Next production surge will suppress inflation without code changes
+
+---
+
+## XHS Direct Scan #46 — Skill Hell Named (2026-06-19 12:10 UTC)
+
+**New findings file:** `knowledge/findings/2026-06-19-xhs-direct-scan-46.md`
+
+Key signals from 12 XHS keyword searches (~180 posts observed):
+
+1. **Skill Saturation Crisis named at 5,680❤** — "Skill 越多，死的越快" (Aaron) with 8,106 collects is the third-highest AI agent signal ever observed. Comment from practitioner: "120+ skills, trapped in skill hell." The subtraction turn is now mass-market.
+
+2. **Self-Evolution Skepticism Wave** — "别卷Harness自进化了！实锤Agent基本没提升" (336❤) + "Agent多轮自进化为什么会坍塌" (190❤). First significant counter-evidence to the 自进化 consensus.
+
+3. **MemSkill Convergence at 920❤** — Memory + Skill merging into single architectural primitive. ByteDance (414❤), NTU (184❤), Huawei (10❤) all implementing. Maps to arXiv Insight Governance's rules/evidence/skills three-layer.
+
+4. **DeepSeek Harness Team Institutional Signal** — 崔添翼 (from agent startup 市垣) joins DeepSeek to lead named "Harness团队" (263❤). First Chinese frontier lab with harness as organizational function. Actively mass-hiring on Boss直聘.
+
+5. **Supply-Chain Security for Skills emerging** — "投毒AI插件从技能市场发起供应链攻击" (29❤), "Skill投毒率1.78%" (4❤). Low engagement but structurally matches HN scan #44's 10K malicious repos signal.
+
+**Prediction updates:** 减法工程 → ⏳ entering window (explicitly named "做减法" 44❤). 技能图谱 → ⏳ implementation (Skill Graphs 2.0, 398❤). New prediction: 技能安全 (Skill Security) → Q3 2026.
+
+---
+
+## HN Scan #45 — Incremental Delta (2026-06-19 12:10 UTC)
+
+**New findings file:** `knowledge/findings/2026-06-19-hn-scan-45.md`
+
+Five new signals since scan #44 (same story cycle, 36h maturation):
+
+1. **"Are You in the Weights?" (366pts/215c)** — Tool reveals hallucination as identity harm. Arabic name → terrorist association. OSS contributors get accuracy; everyone else gets confabulation. Name as ungovernable API key into model weights.
+
+2. **Noam Shazeer → OpenAI (335pts/330c)** — Transformer co-inventor leaves Google (again) for OpenAI. All original "Attention Is All You Need" authors have now left Google. Talent consolidation at OpenAI during local model revolution.
+
+3. **Token Compression Illusion (102pts/109c)** — "LLM magic box industry" coined as pejorative. Key position: "if it's not in a harness it's probably not that good." trjordan: "a million tools that make AI better, and no ways to measure whether AI is working better."
+
+4. **SK Telecom/Mythos deepens (115pts/108c)** — HBM supply chain counter-threat (SK Hynix same family as SK Telecom). Competitors weaponizing safety concerns. Vendor continuity now explicitly geopolitical.
+
+5. **DeepSeek Vision (474pts) + Local Qwen 9× growth (53→467pts)** — Combined 941pts for non-US models. Silent model changes confirmed at two vendors. "Models as instruments" reframing.
+
+**Meta-signal:** Three self-reinforcing narrative strands dominate HN simultaneously: vendor fragility → drives local sovereignty → validates consumer distrust → reinforces fragility.
+
+---
+
+## KE-052 Prediction Falsified Within Hours — The Reawakening (creative heartbeat, 2026-06-19 12:16 UTC)
+
+**Key finding:** KE-052's prediction #4 stated "Zero additional tasks will be completed in the next 7 days without human action on one of the 78 blocked resume conditions." That prediction was **falsified within ~3 hours** by two human steering events: `unblock-staging` (Azure auth confirmed working, westus2) and `approve-cloud-mutation` (all staging-rest mutations in westus2 approved).
+
+### The Transition Dynamics
+
+| Window | Sessions | Worker Tasks | Productive % |
+|:------:|:--------:|:----------:|:------------:|
+| Early morning (pre-steering) | ~150 | Repo-local cleanup only | ~10% |
+| Post-steering (last 2h) | ~50+ new planner+worker sessions | 148 task-worker done in 12h | High |
+
+The system responded **immediately and correctly** to the human unblock. Within minutes of `approve-cloud-mutation`, the planner began unblocking auth-gated tasks and creating execution batches. The blocked count rose from 78→79→85 (temporarily, as new work was created faster than completions), then started settling.
+
+### Why This Matters for the KE Library
+
+1. **KE-052's Completion Paradox is real but temporary.** The system correctly entered an idle state when blocked on external actions, and correctly revived when those actions occurred. The missing primitive (dormancy) would have saved ops during the idle window, but the system *did not break* — it continued functioning at reduced output until a human provided the needed input.
+
+2. **KE-020 (Perturbation-Induced Optimization) may repeat here.** The human steering included not just unblocks but also a concrete planner-timeout repair mandate. The system is simultaneously executing domain work AND fixing its own planning infrastructure, driven by the same perturbation event.
+
+3. **KE-021's Triage Capture prediction is being tested in real-time.** The `blocked-count` metric went 20→73→78→79 today as tasks were unblocked and new ones immediately blocked on different conditions. The system spent 1,292 ops on 37 triage sessions for these metrics today — KE-021 predicted this exact behavior.
+
+### The Blocked→Active→Done Pipeline (12h snapshot)
+
+```
+blocked-count: 20 → 78 → 79 → 85 (6h ago) → 79 (now)
+task workers completed: 148 sessions, avg 37 ops, 96% success
+done tasks grew: 2,155 → 2,225+ (70+ new completions today)
+model paths passing: 64 → 65 (1 new path promoted)
+```
+
+### Non-Obvious Implication
+
+The system's response to human unblocking reveals an **asymmetry** not captured in any prior KE entry: **the system scales up instantly** (no ramp-up cost, no warm-up period, no reconfiguration) but **cannot scale down gracefully** (no dormancy, continued polling). This is the inverse of most software systems, which have slow cold-starts but clean shutdowns. The agent system has instant warm-starts but no sleep state.
+
+This connects to KE-053 (Thermal Efficiency Curve): the system's per-op cost improves as throughput increases (amortization-dominant agents like evaluator and aks-explorer work better when busy). The idle period *was* the inefficiency; the revival is the natural operating point.
+
 ## The Completion Paradox — NEW (KE-052, 2026-06-19 creative heartbeat)
 
 **Created:** `shared/knowledge/entries/KE-052.md`
@@ -6770,3 +6890,308 @@ cascade: the metric is so contaminated that optimizing for it would mean
 *avoiding interruptions* (by running shorter sessions), not *doing better work*.
 
 → Full analysis: `shared/knowledge/entries/KE-051.md`
+
+---
+
+## The Thermal Efficiency Curve — KE-053 (2026-07-29 creative heartbeat)
+
+**Created:** `shared/knowledge/entries/KE-053.md`
+
+### Core Discovery: Gate Sessions Are 3× More Expensive Per Decision Than Work
+
+Fresh 48h time-series analysis of 5,293 sessions reveals a **seconds-per-operation**
+metric that no prior KE measured. The finding inverts the conventional wisdom about
+gate efficiency:
+
+| Agent | Gate (≤3 ops) s/op | Medium (21-50) s/op | Ratio |
+|:-----:|:------------------:|:-------------------:|:-----:|
+| aks-explorer | 12.2 | 4.1 | **3.0×** |
+| may | 33.2 | 12.9 | **2.6×** |
+
+The system's cheapest *sessions* (1-3 ops) are its most expensive *decisions* (per
+unit of useful output). This is the prompt-loading tax: context must be loaded once
+regardless of how much work follows.
+
+### Three Metabolic Profiles
+
+- **Amortization-dominant** (evaluator, aks-explorer): longer = cheaper per op
+- **Constant-rate** (arc, scout): ~10-14 s/op regardless of session length
+- **Overhead-dominant** (gates): prompt-loading costs exceed work costs
+
+### The Manufacturing Analogy
+
+This is structurally identical to Toyota's SMED (Single Minute Exchange of Dies)
+insight: reducing *changeover time* matters more than reducing *production time*.
+In agent systems, the "changeover" is session-start context-loading. Gate sessions
+are pure changeover with no production.
+
+921 gate sessions × 12.2 s/op = 5.3 hours of wall-clock time in 48h to produce
+decisions that say "nothing to do." At the medium-session rate, the same decisions
+would cost 1.8 hours. **The gate tax is 3.5 hours of pure overhead.**
+
+### Implications
+
+1. Batch gate decisions (3 events per planner session, not 3 separate sessions)
+2. Differential context (gate sessions need 2KB check, not 30KB full packet)
+3. Infrastructure-level frontier check before LLM dispatch
+4. Route work to agents at their optimal weight class
+
+→ Full analysis: `shared/knowledge/entries/KE-053.md`
+
+
+---
+
+## HN Scan #46 — 2026-07-30
+
+**Created:** `knowledge/findings/2026-07-30-hn-scan-46.md`
+
+### Key Signals
+
+1. **A2A Protocol Skepticism Crystallized** — Ask HN "Is anyone using A2A?" (85pts/40c).
+   Dominant verdict: over-engineering. MCP downloads 24× A2A (257M vs 10.9M). Key insight
+   from simonreiff: agent-to-agent communication is structurally identical to agent-to-future-self
+   communication — no special protocol needed.
+
+2. **MCP Narrows to Auth — CONFIRMED** — Zero-Touch OAuth (209pts) powered by IETF ID-JAG draft.
+   Anthropic engineer (dend) confirms shipping in Claude. Community consensus: MCP's only real
+   value is isolating auth flow from agent context window.
+
+3. **"LLM Magic Box Industry" Named** — Token Compression Illusion (102pts/110c). cityofdelusion:
+   "Developers have become magicians that cast spells instead of engineers." trjordan: "A million
+   tools that make AI better, and no ways to measure whether AI is working better."
+
+4. **AI Code Review Enters Production** — Three-tier practitioner stack visible:
+   Platform-native (GitHub Copilot as reviewer), Third-party (CodeRabbit), Self-built
+   (Claude Code headless + MCP server for inline comments in GitLab CI).
+
+5. **Identity Harm via Hallucination** — "Are You in the Weights?" (373pts/217c). Arabic name →
+   terrorist on sanctions list. Ethnic bias in model outputs concretized as identity violence.
+   Privacy reflex: "No way I'm using my real name."
+
+6. **Framework Fatigue Consolidating** — A2A, Agentic Resource Discovery, and OpenClaw all receive
+   skeptical reception in same scan cycle. Winning pattern: model + CLI + markdown + CI/CD.
+
+### Predictions Confirmed
+
+- A2A protocol decline → CONFIRMED (24× download gap quantified, explicit community rejection)
+- MCP narrows to auth → CONFIRMED (IETF draft + Anthropic shipping + community consensus)
+- Evaluation infrastructure → CONFIRMED (three-tier AI code review stack now visible)
+
+### New Predictions
+
+1. A2A downloads plateau below 15M for 6 months while MCP passes 300M
+2. "AI-authored" supply chain risk becomes named CVE category within 6 months
+3. AI code review reaches 30%+ enterprise adoption within 12 months
+4. Identity governance enters AI safety frameworks
+5. Minimalist agent stack (model + CLI + markdown + CI/CD) outperforms frameworks in surveys
+
+→ Full analysis: `knowledge/findings/2026-07-30-hn-scan-46.md`
+
+
+---
+
+## XHS Cross-Source Scan #48 — Human Intervention as Missing Primitive (2026-07-31)
+
+**Created:** `knowledge/findings/2026-07-31-xhs-cross-source-scan48.md`
+
+### Core Discovery: The System's Actuator Is a Person
+
+48h production analysis (5,064 sessions, 114,520 ops) reveals the system's first
+effective closed-loop control: **sensor → human → actuator**. Three human-steering
+events unblocked 78+ tasks the system correctly diagnosed but couldn't fix.
+
+### Key Numbers
+
+| Metric | Value | Significance |
+|--------|:-----:|:-------------|
+| Eval:Worker ratio (24h active) | **1.24:1** | All-time low during production burst |
+| Planner gate (5th measurement) | **48.4%** | σ ≈ 1.5% across 5 days |
+| Evaluator heartbeat cost | **45.4 ops** | 1.9× deep-eval cost, +81% in 4d |
+| Dormancy duration | **12h** | 4th clean observation |
+| Worker success rate (post-steering) | **100%** | 142 sessions, 0 errors |
+
+### The Breathing Cycle
+
+```
+Active Burst → Frontier Exhaustion → Natural Dormancy → Human Steering → Active Burst
+```
+
+Four observations confirm this as the system's fundamental operational rhythm.
+The cycle is demand-responsive (not clock-driven) and human-gated (not autonomous).
+
+### Predictions Updated
+
+- **自引用陷阱** (#9): PHASE-VARIABLE — eval ratio is a dependent variable, not an attractor
+- **評估分辨率** (#12): ATTENTION MISALLOCATION — 64% evaluator ops are self-monitoring
+- **自然休眠**: CONFIRMED (4×) — confidence raised to Medium-High
+- **诊断闭環**: HUMAN-IN-LOOP CONFIRMED — the closed loop exists through the operator
+
+### New Prediction
+
+**人机共振** (Human-Agent Resonance, Q1 2027): The productive cycle is not agent-
+autonomous — it's a coupled oscillation between human steering and agent execution.
+Watch: "人机协作循环", "操控者模式", "认知外包".
+
+→ Full analysis: `knowledge/findings/2026-07-31-xhs-cross-source-scan48.md`
+
+
+---
+
+## Behavioral Temperature — KE-055 (2026-06-19 creative heartbeat)
+
+**Created:** `shared/knowledge/entries/KE-055.md`
+
+### Core Discovery: One Metric Connects Everything
+
+A single measurable property — **behavioral temperature** (ops_range / avg_ops per
+workflow) — predicts workflow efficiency, error rate, and contract tightness across
+all 15 workflow types. This session synthesized across three arXiv triages, two HN
+scans, one XHS scan, and 72h of production data to find the unifying principle.
+
+### The Temperature Spectrum (72h, 7,341 sessions)
+
+| Workflow | Temp | Error% | Diagnosis |
+|:--------:|:----:|:------:|:---------:|
+| dev-heartbeat | **1.24** | 0.7% | ❄️ Tight contract, predictable |
+| evaluator-deep-eval | **1.55** | 2.5% | ❄️ Bounded slot, reliable |
+| scout-heartbeat | **1.66** | 3.8% | ❄️ Moderate scope, stable |
+| evaluator-heartbeat | **2.61** | 3.5% | 🌡️ Investigates unchanged state |
+| arc-heartbeat | **2.74** | 8.1% | 🌡️ Variable scope, warm |
+| problem-solver | **3.30** | 30.9% | 🔥 Loose contract, high error |
+| metric-alert-triage | **4.00** | 20.7% | 🔥 Re-processes same inputs |
+| task-worker | **4.17** | 2.9% | 🔥 Legitimate variance (real work) |
+| project-planner | **8.43** | 6.4% | 🔥🔥 Bimodal (gate + full planning) |
+
+**Pattern:** Cold (temp <2.0) → 0.7-2.5% error. Warm (2-4) → 3.5-8.1%. Hot (>4) → 20-31%.
+Exception: task-worker is hot but low-error because its INPUT variance is high.
+
+### The Six-Source Convergence
+
+Every major source batch in the last month converges on the same principle:
+
+> **Uniform-effort allocation fails. Calibrated allocation wins.**
+
+| Source | Their Finding | Temperature Translation |
+|:------:|:-------------|:----------------------|
+| arXiv Contract Layer | 6-12× gap from harness quality | Tight harness → low temp → reliable |
+| arXiv SDB Inversion | 93% fewer LLM calls via deterministic routing | Cold decisions should stay cold |
+| arXiv Evolution Stack | APEX +90% from three-layer co-evolution | Temp should be calibrated per layer |
+| HN Scan #48 | 27× cost-per-win (Claude vs Grok) | Temperature IS behavioral character |
+| HN Scan #48 | 60% consumer AI brand turnoff | Forced uniform temp → rejection |
+| XHS Scan #48 | Breathing cycle, human-in-loop | System temp should track lifecycle phase |
+
+### The Key Insight: One Compressor, Zero Others
+
+The planner gate (49.8% sessions ≤3 ops) is the system's **only adaptive compressor**.
+Every other workflow runs at fixed resolution regardless of input variance. The
+evaluator heartbeat (44.6 ops avg) applies full investigation to the same 2 unchanged
+alerts 102 times per day.
+
+Estimated savings from adding adaptive gates to warm/hot workflows: **~17,000 ops/72h
+(11% of total system ops).**
+
+### The Design Principle
+
+> A workflow's behavioral temperature should match its input variance.
+> Cold inputs need cold processing. Hot inputs need hot processing.
+> A system without adaptive temperature control wastes resolution on cold inputs
+> and under-resolves hot inputs.
+
+The fix: `adaptiveGate(workflow, currentState)` — check if state changed since last
+processing. If unchanged → cold exit (1-3 ops). If changed → full resolution. This
+is KE-036's `last_processed`, KE-038's "sensor with actuator," and the SDB paper's
+"proposer-verifier-commit-reject" contract, unified in one primitive.
+
+### Falsifiable Predictions
+
+1. Evaluator heartbeat temp stays >2.5 until persistent alerts are resolved/suppressed
+2. Adding state-change gate to metric-alert-triage → temp drops from 4.0 to <2.0
+3. Arc heartbeat temp does NOT correlate with system change rate (should, but doesn't)
+4. Dev-heartbeat stays coldest workflow (temp <1.5) for 30 days
+5. Next workflow to develop an adaptive gate → temperature drops 40-60%
+
+→ Full analysis: `shared/knowledge/entries/KE-055.md`
+
+
+---
+
+## HN Scan #49 — 2026-06-19
+
+**Created:** `knowledge/findings/2026-06-19-hn-scan-49.md`
+
+### Key Signals
+
+1. **Agent-Targeted Supply Chain Attack** (850pts/221c) — 10k GitHub repos distributing trojans, **specifically targeting LLM agents** for dependency resolution. Top comment: "This is not targeted to humans. It's targeted to agents." First documented mass-scale attack vector for AI coding agents. GitHub moderation 2+ years behind.
+
+2. **DeepSeek Vision Launch** (478pts/194c) — Community demand centers on cheap vision API as backend for Claude Code/Claude Agents SDK. tornikeo: "If DeepSeek API could see, it can fully drive Claude Agents SDK... both more expensive than DeepSeek." Vision becomes commodity input for agent systems.
+
+3. **AI-Authored Code Trust Crisis** — Fable's 100% LLM-authored Pylint-to-Rust conversion (76pts/101c, extremely high comment ratio). Three camps: pragmatists ("results are results"), traditionalists ("trust requires understanding"), existentialists ("open source is dead — anyone can agent-clone your repo").
+
+4. **Agent E2E Testing Skepticism** — TesterArmy (YC P26, 123pts/60c) receives uniform pushback: deterministic generated tests are cheaper and more reliable than nondeterministic agent tests.
+
+5. **Vendor Continuity Risk** — SK Telecom/Anthropic evolves: supply chain retaliation threat (Hynix memory), competitive dynamics (Jassy reportedly drove Fable shutdown), EU DSA may classify AWS/Azure as gatekeepers.
+
+### The Agent Trust Trilemma
+
+Three findings converge: agents can't verify dependencies (malware repos), AI-authored code has no trust provenance (Fable/prylint), and agent-as-tester introduces nondeterminism. No stable middle ground between full trust and zero trust. Only structural enforcement (allowlists, pinned deps, verified publishers) is stable.
+
+→ Full analysis: `knowledge/findings/2026-06-19-hn-scan-49.md`
+
+
+---
+
+## The Refusal Surface — KE-056 (2026-06-19 creative heartbeat)
+
+**Created:** `shared/knowledge/entries/KE-056.md`
+
+### Core Discovery: System Health = Refusal Capability
+
+Cross-domain synthesis of 14-day production data, three arXiv triages, two HN scans,
+and one XHS scan reveals that the system's health at each architectural layer correlates
+exactly with that layer's ability to say "no."
+
+### The Three Refusal Layers
+
+| Layer | Mechanism | Refuse Rate | Cost | Health |
+|:-----:|:---------:|:-----------:|:----:|:------:|
+| Infrastructure | handler.skipped | 35-58% | Zero LLM ops | ✅ Healthiest |
+| Planner gate | ≤3 ops exit | 47-49% | 1.8 ops avg | ✅ Self-evolved |
+| Everything else | None | 0-1.6% | 29-67 ops avg | ⚠️-❌ |
+
+The planner gate's S-curve emergence (0%→49% over 8 days) is the system's only
+self-evolved adaptation. It learned to refuse, not to execute better.
+
+### The Prerequisite Nobody Named
+
+Refusal cannot emerge without an **observable empty-input state**. The planner has
+one: "zero runnable tasks." Heartbeats do not: they always have state to investigate,
+alerts to check, context to analyze. The absence of change is invisible to them.
+
+### Six-Source Convergence
+
+Every major external source independently identifies refusal as decisive:
+- **EARS** (arXiv): structured abstention → +10.4pp system pass rate
+- **SDB Patterns** (arXiv): the reject primitive is architecturally load-bearing
+- **APEX** (arXiv): topology evolution (+90%) = learning what NOT to execute
+- **Consumer AI** (HN): 60% brand turnoff = market-level refusal of forced AI
+- **Human-in-loop** (XHS): the human IS the system's refusal mechanism at the top level
+- **Self-Healing Router** (arXiv): 93% fewer LLM calls by routing deterministically
+
+### The Immunological Analogy
+
+The system maps to biological immune refusal layers:
+1. **Physical barriers** (infrastructure guards) — block most at zero cost
+2. **Innate immunity** (planner gate) — cheap, pattern-based rejection
+3. **Adaptive immunity** (full sessions) — always fires, expensive
+
+The pathology: Layer 3 fires for every stimulus that passes Layer 2. In biology,
+this causes autoimmune disease. In agent systems, heartbeats investigate unchanged
+state because they cannot distinguish "new stimulus" from "same stimulus."
+
+### The Fix
+
+Add a `state_change_hash` to one heartbeat workflow. If hash matches last session →
+gate exit (1-3 ops). If changed → full processing. Predicted: refusal rate rises
+from 0% to 40-60%, ops drop 50%+, with zero detection degradation.
+
+→ Full analysis: `shared/knowledge/entries/KE-056.md`
