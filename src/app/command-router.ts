@@ -282,11 +282,14 @@ export function attachCommandRouter(options: CommandRouterOptions): CommandRoute
         manager.send(targetSid, steerText);
       } else {
         try {
-          manager.resumeSession(targetSid, steerText, { source: source ?? "human" });
+          manager.resumeSession(targetSid, steerText, {
+            source: source ?? "human",
+            suppressBenignRaceEvent: true,
+          });
           log("info", `[steer] Resumed cold session ${targetSid}`);
         } catch (err) {
           const msg = err instanceof Error ? err.message : String(err);
-          log("error", `[steer] ${msg}`);
+          log("warn", `[steer] Could not resume ${targetSid}: ${msg}`);
         }
       }
     } catch (err) {
