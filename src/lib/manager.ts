@@ -627,7 +627,10 @@ export class SubagentManager {
         this.startChatTurn(
           session,
           async () => {
-            session.agent.followUp(msg as any);
+            // prompt() starts a new run. followUp() only extends an existing
+            // one — if the agent is idle, followUp queues forever because
+            // nobody starts a run to drain it.
+            await session.agent.prompt(msg as any);
           },
           text,
         );
