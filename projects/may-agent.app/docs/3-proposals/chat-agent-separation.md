@@ -223,6 +223,19 @@ class ChatSession {
   cannot be recovered, the daemon emits a visible recovery/failure event rather
   than silently dropping the next human message
 
+**Empty response recovery** — a provider can occasionally finish a turn with an
+empty assistant message. That is a failed turn, not a dead conversation:
+
+- The runtime trims the invalid empty assistant message from the live transcript.
+- It retries the same user request once from the cleaned transcript.
+- If the retry succeeds, the chat turn goes idle normally and the user receives
+  the answer.
+- If the retry is also empty, the runtime trims that empty message too, emits
+  `session.idle` with `error`, and keeps the chat session alive for the next
+  human message.
+- The runtime must not silently drop the request, start a parallel May chat
+  session, or archive the chat session for this retryable empty-output class.
+
 ## Event Boundary
 
 Chat-May should not be a privileged side channel that mutates runtime state
@@ -468,6 +481,9 @@ metrics. Production May delegation should use `run_cli_agent`.
    `session.end`.
 2. ✅ Add chat turn states/events: running → idle, visible error/recovery, source
    channel, op count, and last activity.
+   Empty assistant turns are handled as retryable chat-turn failures: trim the
+   invalid assistant message, retry the user's request once, then surface a
+   visible `session.idle.error` if the retry is still empty.
 3. ✅ Build chat-specific system prompt: identity, user preferences, fresh system
    state, and conversation summary; no task-tree packet unless requested.
    Current implementation injects a compact fresh system packet at chat turn

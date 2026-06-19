@@ -13,7 +13,7 @@ CREATE TABLE sessions (
   sessionId       TEXT PRIMARY KEY,
   agent           TEXT NOT NULL,
   task            TEXT NOT NULL,
-  status          TEXT NOT NULL DEFAULT 'running',  -- running | done | error | interrupted (idle is reserved but unused in practice)
+  status          TEXT NOT NULL DEFAULT 'running',  -- running | idle | done | error | interrupted
   kind            TEXT,             -- chat | job | call
   source          TEXT,             -- what triggered it
   parentSessionId TEXT,             -- who spawned this session
@@ -33,7 +33,7 @@ CREATE TABLE sessions (
 ## State Machine
 
 ```
-created → running → idle      (reserved for chat sessions; currently unused)
+created → running → idle      (chat turn completed; same chat session can receive the next message)
                   → done      (completed job/call sessions)
                   → error
                   → interrupted
@@ -41,6 +41,13 @@ created → running → idle      (reserved for chat sessions; currently unused)
 
 No "pending" or "queued" state. Sessions start running immediately when spawned.
 Heartbeats are `call` sessions spawned by the heartbeat workflow via `ctx.runAgent()`. Query by `source LIKE '%heartbeat%'`, not by `kind`.
+
+Chat sessions are persistent conversations. A successful chat turn moves the
+session from `running` back to `idle`; the next human message wakes the same
+session. A retryable empty assistant turn does not terminal-close the
+conversation: the runtime removes the empty assistant message, retries the same
+user request once, and if the retry is still empty leaves the session `idle`
+with a visible error on the `session.idle` event.
 
 ## Session Tree
 
@@ -154,7 +161,7 @@ See `events.md` → "Data Retention" for the full retention table.
 
 ## Design Decisions
 
-### autoClose is internal
+### kind and autoClose define the lifecycle policy
 
 `autoClose` controls filesystem persistence (archive session dir to `history/` vs keep in-place).
 It's an internal detail of the persistence layer, not a user-facing concept:
@@ -164,10 +171,9 @@ It's an internal detail of the persistence layer, not a user-facing concept:
 Callers don't set it directly — it's derived from `kind`. Eventually, when we move to
 pure-SQLite session tracking, `autoClose` disappears entirely.
 
-### kind is metadata
-
-`kind` ("chat" | "job" | "call") is a query/observability tag. It does not drive session
-lifecycle — `autoClose` does that internally. The only behavioral branch on `kind`:
-`chat-session.ts` finds the existing chat session by `kind === "chat"`.
+`kind` ("chat" | "job" | "call") is both an observability tag and a lifecycle
+policy selector. `kind: "chat"` with `autoClose: "never"` uses the persistent
+chat-turn path (`running → idle`) rather than the bounded job path
+(`running → done/error/interrupted`).
 
 Heartbeats are `call` kind sessions — the workflow system uses `ctx.runAgent()` which produces `call` sessions. There's no separate "heartbeat" kind.
