@@ -464,6 +464,61 @@ describe("project app loader", () => {
     }
   });
 
+  it("dispatches project events to installed workflow handler entries", async () => {
+    const root = tempRoot();
+    try {
+      const projectsRoot = join(root, "projects");
+      const appDir = join(projectsRoot, "sample.app");
+      writeAgent(appDir, "owner", "sample-owner");
+      writeApp(
+        appDir,
+        `{
+        id: "sample",
+        workflowHandlers: [{
+          name: "sample-planner",
+          enabled: true,
+          on: ["project.planning.requested"],
+          handler: { workflow: "planner", task: "plan", includeEvent: true }
+        }],
+        onEvent() { return undefined; }
+      }`,
+      );
+
+      const fired: string[] = [];
+      const bus = new EventBus();
+      const agentCrons = new Map<string, Cron>();
+      await installProjectApps({
+        projectsRoot,
+        projectRoot: root,
+        manager: { hasAgent: () => true } as any,
+        bus,
+        agentCrons,
+      });
+
+      const cron = agentCrons.get("sample-owner")!;
+      expect(cron.getEventSubscriptions()).toMatchObject({
+        "project.planning.requested": ["sample-planner"],
+      });
+      cron.registerHandler("sample-planner", async () => {
+        fired.push("sample-planner");
+      });
+      cron.subscribeToBus(bus);
+      cron.start();
+
+      bus.emit({
+        type: "project.planning.requested",
+        source: "test",
+        owner: "human:test",
+        data: { project: "sample" },
+      } as any);
+      await waitForMicrotasks();
+
+      expect(fired).toEqual(["sample-planner"]);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
   it("reinstalls project app handlers and router state on reload", async () => {
     const root = tempRoot();
     try {

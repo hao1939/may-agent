@@ -75,10 +75,12 @@ interface QueryAPI {
   metricAlertContext(filter: Record<string, unknown>): Record<string, unknown>;
   metricAlertReactorState(filter: Record<string, unknown>): Record<string, unknown>;
   closedLoopStewardContext(filter?: Record<string, unknown>): Record<string, unknown>;
+  eventDeliveryHealth(filter?: Record<string, unknown>): Record<string, unknown>;
   heartbeatContext(filter: Record<string, unknown>): Record<string, unknown>;
   evaluatorDeepEvalScan(filter?: Record<string, unknown>): Record<string, unknown>;
   evaluatorAftermathContext(filter: Record<string, unknown>): Record<string, unknown>;
   sql(sql: string, params?: unknown[], opts?: { limit?: number }): QueryResult;
+  reviewInboxEvents(eventIds: number[], reviewedBy?: string): number;
   markInboxHandled(eventIds: number[], handledBy?: string): number;
   expireStaleMessages(olderThanMs: number): number;
   expireStaleSignalEvents(olderThanMs: number): number;

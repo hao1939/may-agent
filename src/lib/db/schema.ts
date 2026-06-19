@@ -1,4 +1,5 @@
 import type { SqliteDb } from "../db.js";
+import { DEFAULT_OWNER_DELIVERY_NOTE } from "../event-delivery.js";
 
 export const SCHEMA = `
 -- Sessions: queryable index of per-session meta.json files.
@@ -206,6 +207,27 @@ CREATE TABLE IF NOT EXISTS events (
 CREATE INDEX IF NOT EXISTS idx_events_owner ON events(owner, timestamp);
 CREATE INDEX IF NOT EXISTS idx_events_type  ON events(event_type, timestamp);
 
+CREATE TABLE IF NOT EXISTS runtime_migrations (
+  key        TEXT PRIMARY KEY,
+  applied_at INTEGER NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS event_pair_runs (
+  id                 INTEGER PRIMARY KEY AUTOINCREMENT,
+  pair_name          TEXT NOT NULL,
+  correlation_key    TEXT NOT NULL,
+  open_event_id      INTEGER NOT NULL,
+  close_event_id     INTEGER,
+  owner              TEXT,
+  status             TEXT DEFAULT 'open',
+  opened_at          INTEGER NOT NULL,
+  expected_close_at  INTEGER NOT NULL,
+  closed_at          INTEGER,
+  note               TEXT
+);
+CREATE INDEX IF NOT EXISTS idx_event_pair_open_event ON event_pair_runs(open_event_id);
+CREATE INDEX IF NOT EXISTS idx_event_pair_status ON event_pair_runs(status, expected_close_at);
+
 CREATE TABLE IF NOT EXISTS metrics (
   id              TEXT PRIMARY KEY,
   name            TEXT,
@@ -302,6 +324,7 @@ CREATE INDEX IF NOT EXISTS idx_wfr_parent ON workflow_runs(parentSessionId);
 
 export function applyDbSchemaAndMigrations(db: SqliteDb): void {
   db.exec(SCHEMA);
+  const migrationStartedAt = Date.now();
 
   // gym_runs columns added after initial schema
   try {
@@ -422,27 +445,93 @@ export function applyDbSchemaAndMigrations(db: SqliteDb): void {
   }
 
   // Events table migrations (columns added after initial schema).
-  const eventCols = ["status", "handled_by", "result", "reason", "retry_count", "ttl_ms", "urgency"];
+  const eventCols = [
+    "status",
+    "handled_by",
+    "result",
+    "reason",
+    "retry_count",
+    "ttl_ms",
+    "urgency",
+    "delivery_status",
+    "accepted_by",
+    "accepted_at",
+    "delivery_route",
+    "delivery_note",
+  ];
   for (const col of eventCols) {
     try {
       const defaultVal =
-        col === "status"
+        col === "status" || col === "delivery_status"
           ? " DEFAULT 'pending'"
           : col === "retry_count"
             ? " DEFAULT 0"
             : col === "urgency"
               ? " DEFAULT 'normal'"
               : "";
-      const colType = col === "retry_count" ? "INTEGER" : col === "ttl_ms" ? "INTEGER" : "TEXT";
+      const colType = col === "retry_count" || col === "ttl_ms" || col === "accepted_at" ? "INTEGER" : "TEXT";
       db.exec(`ALTER TABLE events ADD COLUMN ${col} ${colType}${defaultVal}`);
     } catch {
       /* already exists */
     }
   }
   try {
+    db.exec("DROP INDEX IF EXISTS idx_event_pair_open_event");
+    db.exec("CREATE INDEX IF NOT EXISTS idx_event_pair_open_event ON event_pair_runs(open_event_id)");
     db.exec("CREATE INDEX IF NOT EXISTS idx_events_inbox ON events(owner, status, timestamp)");
+    db.exec("CREATE INDEX IF NOT EXISTS idx_events_delivery ON events(delivery_status, delivery_route, timestamp)");
   } catch {
     /* already exists */
+  }
+  try {
+    const marker = db.prepare("SELECT key FROM runtime_migrations WHERE key = ?").get("event_delivery_legacy_baseline");
+    if (!marker) {
+      db.run(
+        `UPDATE events
+         SET delivery_status = 'accepted',
+             accepted_by = 'legacy:event-store',
+             accepted_at = timestamp,
+             delivery_route = 'noop',
+             delivery_note = 'pre-delivery-tracking event baseline'
+         WHERE delivery_status = 'pending'
+           AND accepted_by IS NULL
+           AND delivery_route IS NULL
+           AND delivery_note IS NULL
+           AND timestamp < ?`,
+        [migrationStartedAt],
+      );
+      db.run("INSERT INTO runtime_migrations (key, applied_at) VALUES (?, ?)", [
+        "event_delivery_legacy_baseline",
+        migrationStartedAt,
+      ]);
+    }
+  } catch {
+    /* best-effort legacy baseline */
+  }
+  try {
+    const marker = db.prepare("SELECT key FROM runtime_migrations WHERE key = ?").get("event_delivery_default_owner_baseline");
+    if (!marker) {
+      const migrationStartedAt = Date.now();
+      db.run(
+        `UPDATE events
+         SET delivery_status = 'accepted',
+             accepted_by = 'default-owner:' || owner,
+             accepted_at = timestamp,
+             delivery_route = 'direct',
+             delivery_note = ?
+         WHERE delivery_status IN ('pending', 'unhandled')
+           AND owner IS NOT NULL
+           AND trim(owner) != ''
+           AND timestamp < ?`,
+        [DEFAULT_OWNER_DELIVERY_NOTE, migrationStartedAt],
+      );
+      db.run("INSERT INTO runtime_migrations (key, applied_at) VALUES (?, ?)", [
+        "event_delivery_default_owner_baseline",
+        migrationStartedAt,
+      ]);
+    }
+  } catch {
+    /* best-effort default owner baseline */
   }
 
   // Evaluations table migrations.

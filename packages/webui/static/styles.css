@@ -228,11 +228,15 @@
     min-width: 0; border: 1px solid var(--border); border-radius: 8px; background: var(--bg);
     display: flex; flex-direction: column; min-height: 190px;
   }
-  .kanban-lane header {
+  .kanban-lane header, .kanban-lane summary {
     display: flex; justify-content: space-between; align-items: center; gap: 8px;
     padding: 8px 10px; border-bottom: 1px solid var(--border); color: var(--fg2); font-size: 11px; text-transform: uppercase; letter-spacing: 0;
   }
-  .kanban-lane header b { color: var(--fg); font-size: 12px; }
+  .kanban-lane summary { cursor: pointer; list-style: none; }
+  .kanban-lane summary::-webkit-details-marker { display: none; }
+  .kanban-lane header b, .kanban-lane summary b { color: var(--fg); font-size: 12px; }
+  .done-lane:not([open]) { min-height: 0; }
+  .done-lane:not([open]) .kanban-lane-body { display: none; }
   .kanban-lane-body { display: grid; gap: 8px; padding: 8px; align-content: start; flex: 1; }
   .kanban-card {
     display: grid; gap: 5px; width: 100%; text-align: left; cursor: pointer; color: var(--fg);

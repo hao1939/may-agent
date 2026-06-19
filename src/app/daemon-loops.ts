@@ -81,12 +81,26 @@ export async function runDaemonKeepalive(opts: {
   interfaceAgent: string;
   socketEnabled: boolean;
 }): Promise<never> {
+  const emitHeartbeat = () => {
+    opts.bus.emit({
+      type: "runtime.daemon.heartbeat",
+      source: "daemon",
+      owner: "agent:may",
+      data: {
+        pid: process.pid,
+        interfaceAgent: opts.interfaceAgent,
+        socketEnabled: opts.socketEnabled,
+      },
+    });
+  };
+
   opts.bus.emit({
     type: "info",
     message: `[daemon] Running in daemon mode (no TTY). Interface agent: ${opts.interfaceAgent}.${opts.socketEnabled ? " Use socket for control." : " Socket disabled — no external control available."}`,
   });
 
-  setInterval(() => {}, 30_000);
+  emitHeartbeat();
+  setInterval(emitHeartbeat, 60_000);
 
   process.stdin.on("end", () => {});
   process.stdin.resume();

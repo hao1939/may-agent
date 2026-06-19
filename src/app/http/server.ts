@@ -173,6 +173,146 @@ export function projectPathsMatch(left: string | null | undefined, right: string
   return normalizeProjectPathForCompare(left) === normalizeProjectPathForCompare(right);
 }
 
+type ProjectTaskRecord = {
+  id?: string;
+  parent_id?: string | null;
+  state?: string;
+  status?: string;
+  kind?: string;
+  priority?: string;
+  owner?: string;
+  goal?: string;
+  children?: string[];
+  outputs?: string[];
+  gates?: string[];
+  gate_status?: string;
+  blocker?: unknown;
+  conflict_scope?: string[] | string;
+  verification?: { verdict?: string; ts?: string };
+  attempts?: unknown[];
+  [key: string]: unknown;
+};
+
+type ProjectTaskTreeRecord = {
+  updated_at?: string;
+  active_task_id?: string | null;
+  active_task_ids?: string[];
+  max_concurrent?: number;
+  root_task_id?: string;
+  tasks?: Record<string, ProjectTaskRecord>;
+};
+
+const CANONICAL_TASK_STATES = new Set(["backlog", "active", "review", "done", "blocked"]);
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return Boolean(value) && typeof value === "object" && !Array.isArray(value);
+}
+
+export function normalizeProjectTaskState(task: { state?: unknown; status?: unknown }): string {
+  const raw = String(task.state ?? task.status ?? "backlog");
+  if (raw === "accepted" || raw === "superseded" || raw === "cancelled") return "done";
+  if (raw === "ready" || raw === "proposed" || raw === "decomposed") return "backlog";
+  if (raw === "claimed_done" || raw === "rejected") return "review";
+  if (CANONICAL_TASK_STATES.has(raw)) return raw;
+  return "unknown";
+}
+
+export function buildProjectTasksReadModel(rawTree: unknown, opts: { path: string; treePath: string }) {
+  const errors: string[] = [];
+  if (!isRecord(rawTree)) {
+    return {
+      available: false,
+      path: opts.path,
+      treePath: opts.treePath,
+      reason: "Task tree JSON must be an object.",
+      errors: ["root: expected object"],
+    };
+  }
+
+  const tree = rawTree as ProjectTaskTreeRecord;
+  if (tree.tasks !== undefined && !isRecord(tree.tasks)) {
+    errors.push("tasks: expected object keyed by task id");
+  }
+  const rawTasks = isRecord(tree.tasks) ? tree.tasks : {};
+  if (tree.tasks === undefined) errors.push("tasks: missing task map");
+
+  const tasks: Record<string, ProjectTaskRecord & { id: string; state: string; status: string }> = {};
+  for (const [taskId, value] of Object.entries(rawTasks)) {
+    if (!isRecord(value)) {
+      errors.push(`tasks.${taskId}: expected object`);
+      continue;
+    }
+    const task = value as ProjectTaskRecord;
+    const id = typeof task.id === "string" && task.id ? task.id : taskId;
+    if (task.id !== undefined && task.id !== taskId) {
+      errors.push(`tasks.${taskId}.id: expected "${taskId}", got "${String(task.id)}"`);
+    }
+    if (task.parent_id !== undefined && task.parent_id !== null && typeof task.parent_id !== "string") {
+      errors.push(`tasks.${taskId}.parent_id: expected string or null`);
+    }
+    if (task.children !== undefined && (!Array.isArray(task.children) || task.children.some((child) => typeof child !== "string"))) {
+      errors.push(`tasks.${taskId}.children: expected string[]`);
+    }
+    const state = normalizeProjectTaskState(task);
+    const children =
+      Array.isArray(task.children) && task.children.every((child) => typeof child === "string")
+        ? task.children
+        : [];
+    tasks[taskId] = {
+      ...task,
+      id,
+      state,
+      status: state,
+      raw_state: task.state,
+      raw_status: task.status,
+      children,
+    };
+  }
+
+  const rootTaskId = typeof tree.root_task_id === "string" && tree.root_task_id ? tree.root_task_id : "project";
+  if (Object.keys(tasks).length > 0 && !tasks[rootTaskId]) {
+    errors.push(`root_task_id: "${rootTaskId}" is not present in tasks`);
+  }
+  for (const task of Object.values(tasks)) {
+    for (const childId of task.children ?? []) {
+      if (!tasks[childId]) errors.push(`tasks.${task.id}.children: missing child "${childId}"`);
+    }
+  }
+
+  if (errors.length > 0) {
+    return {
+      available: false,
+      path: opts.path,
+      treePath: opts.treePath,
+      reason: "Task tree is malformed.",
+      errors,
+    };
+  }
+
+  const statusCounts: Record<string, number> = {};
+  const kindCounts: Record<string, number> = {};
+  for (const task of Object.values(tasks)) {
+    const state = task.state ?? "unknown";
+    const kind = task.kind ?? "work";
+    statusCounts[state] = (statusCounts[state] ?? 0) + 1;
+    kindCounts[kind] = (kindCounts[kind] ?? 0) + 1;
+  }
+
+  return {
+    available: true,
+    path: opts.path,
+    treePath: opts.treePath,
+    updated_at: tree.updated_at ?? null,
+    root_task_id: rootTaskId,
+    active_task_id: tree.active_task_id ?? null,
+    active_task_ids: Array.isArray(tree.active_task_ids) ? tree.active_task_ids : [],
+    max_concurrent: tree.max_concurrent ?? null,
+    statusCounts,
+    kindCounts,
+    tasks,
+  };
+}
+
 export function startWebUI(opts: WebUIOptions): { port: number } {
   const STATE_DIR = opts.stateDir;
   const PORT = opts.port;
@@ -1953,54 +2093,16 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
     }
 
     try {
-      const tree = JSON.parse(readFileSync(treePath, "utf-8")) as {
-        updated_at?: string;
-        active_task_id?: string | null;
-        active_task_ids?: string[];
-        max_concurrent?: number;
-        root_task_id?: string;
-        tasks?: Record<string, {
-          id: string;
-          parent_id?: string | null;
-          status?: string;
-          kind?: string;
-          priority?: string;
-          owner?: string;
-          goal?: string;
-          children?: string[];
-          outputs?: string[];
-          gates?: string[];
-          gate_status?: string;
-          blocker?: string;
-          conflict_scope?: string[] | string;
-          verification?: { verdict?: string; ts?: string };
-          attempts?: unknown[];
-        }>;
-      };
-      const tasks = tree.tasks ?? {};
-      const statusCounts: Record<string, number> = {};
-      const kindCounts: Record<string, number> = {};
-      for (const task of Object.values(tasks)) {
-        const status = task.status ?? "unknown";
-        const kind = task.kind ?? "work";
-        statusCounts[status] = (statusCounts[status] ?? 0) + 1;
-        kindCounts[kind] = (kindCounts[kind] ?? 0) + 1;
-      }
+      const tree = JSON.parse(readFileSync(treePath, "utf-8"));
+      return json(buildProjectTasksReadModel(tree, { path, treePath: "tasks/tree.json" }));
+    } catch (e) {
       return json({
-        available: true,
+        available: false,
         path,
         treePath: "tasks/tree.json",
-        updated_at: tree.updated_at ?? null,
-        root_task_id: tree.root_task_id ?? "project",
-        active_task_id: tree.active_task_id ?? null,
-        active_task_ids: tree.active_task_ids ?? [],
-        max_concurrent: tree.max_concurrent ?? null,
-        statusCounts,
-        kindCounts,
-        tasks,
+        reason: "Task tree JSON could not be parsed.",
+        errors: [e instanceof Error ? e.message : String(e)],
       });
-    } catch (e) {
-      return json({ available: false, error: e instanceof Error ? e.message : String(e) }, 500);
     }
   }
 
@@ -2486,6 +2588,113 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
       return json(rows);
     } catch {
       return json([]); // table may not exist yet
+    }
+  }
+
+  function handleEventDeliveryHealth(url: URL): Response {
+    const db = _db();
+    const now = Date.now();
+    const lookbackMs = Math.max(1, Math.min(24 * 60 * 60_000, Number(url.searchParams.get("lookbackMs") || 6 * 60 * 60_000)));
+    const limit = Math.max(1, Math.min(100, Number(url.searchParams.get("limit") || 25)));
+    const since = now - lookbackMs;
+    const pendingTtlMs = 2 * 60_000;
+    const eventColumns =
+      `id, event_type as eventType, source, owner, timestamp, ttl_ms as ttlMs,
+       delivery_status as deliveryStatus, accepted_by as acceptedBy,
+       accepted_at as acceptedAt, delivery_route as deliveryRoute,
+       delivery_note as deliveryNote, data`;
+    const pairColumns =
+      `p.id, p.pair_name as pairName, p.correlation_key as correlationKey,
+       p.open_event_id as openEventId, p.close_event_id as closeEventId,
+       p.owner, p.status, p.opened_at as openedAt,
+       p.expected_close_at as expectedCloseAt, p.closed_at as closedAt,
+       p.note, e.event_type as openEventType, e.source as openEventSource,
+       e.data as openEventData`;
+    try {
+      const eventSchema = db.prepare("PRAGMA table_info(events)").all() as Array<{ name?: string }>;
+      const eventColumnsSet = new Set(eventSchema.map((row) => row.name).filter(Boolean));
+      const pairTable = db.prepare("SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'event_pair_runs'").get();
+      if (!eventColumnsSet.has("delivery_status") || !eventColumnsSet.has("delivery_route") || !pairTable) {
+        return json({
+          now,
+          since,
+          lookbackMs,
+          schemaReady: false,
+          note: "event delivery schema is not migrated in this state database yet",
+          ownerInboxOpenCount: 0,
+          unhandledEvents: [],
+          overduePendingEvents: [],
+          orphanPairs: [],
+          overdueOpenPairs: [],
+        });
+      }
+      const unhandledEvents = db.prepare(
+        `SELECT ${eventColumns}
+         FROM events
+         WHERE delivery_status = 'unhandled'
+           AND timestamp >= ?
+         ORDER BY timestamp DESC, id DESC
+         LIMIT ?`
+      ).all(since, limit);
+      const overduePendingEvents = db.prepare(
+        `SELECT ${eventColumns}
+         FROM events
+         WHERE delivery_status = 'pending'
+           AND timestamp >= ?
+           AND timestamp + COALESCE(ttl_ms, ?) < ?
+         ORDER BY timestamp DESC, id DESC
+         LIMIT ?`
+      ).all(since, pendingTtlMs, now, limit);
+      const orphanPairs = db.prepare(
+        `SELECT ${pairColumns}
+         FROM event_pair_runs p
+         LEFT JOIN events e ON e.id = p.open_event_id
+         WHERE p.status = 'orphan'
+           AND p.opened_at >= ?
+         ORDER BY p.expected_close_at ASC, p.id ASC
+         LIMIT ?`
+      ).all(since, limit);
+      const overdueOpenPairs = db.prepare(
+        `SELECT ${pairColumns}
+         FROM event_pair_runs p
+         LEFT JOIN events e ON e.id = p.open_event_id
+         WHERE p.status = 'open'
+           AND p.opened_at >= ?
+           AND p.expected_close_at < ?
+         ORDER BY p.expected_close_at ASC, p.id ASC
+         LIMIT ?`
+      ).all(since, now, limit);
+      const ownerInbox = db.prepare(
+        `SELECT COUNT(*) as count
+         FROM event_pair_runs
+         WHERE pair_name = 'owner_inbox'
+           AND status = 'open'`
+      ).get() as { count?: number } | null;
+
+      return json({
+        now,
+        since,
+        lookbackMs,
+        schemaReady: true,
+        ownerInboxOpenCount: Number(ownerInbox?.count ?? 0),
+        unhandledEvents,
+        overduePendingEvents,
+        orphanPairs,
+        overdueOpenPairs,
+      });
+    } catch (error) {
+      return json({
+        now,
+        since,
+        lookbackMs,
+        schemaReady: false,
+        ownerInboxOpenCount: 0,
+        unhandledEvents: [],
+        overduePendingEvents: [],
+        orphanPairs: [],
+        overdueOpenPairs: [],
+        error: error instanceof Error ? error.message : String(error),
+      });
     }
   }
 
@@ -3544,6 +3753,7 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
       if (url.pathname === "/api/projects/discussion") return handleProjectDiscussion(url);
       if (url.pathname === "/api/projects/sessions") return handleProjectSessions(url);
       if (url.pathname === "/api/projects/comment" && req.method === "POST") return handleProjectComment(req);
+      if (url.pathname === "/api/events/delivery-health") return handleEventDeliveryHealth(url);
       const eventTraceMatch = url.pathname.match(/^\/api\/events\/(\d+)\/trace$/);
       if (eventTraceMatch) {
         const traceUrl = new URL(url);

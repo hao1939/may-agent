@@ -160,4 +160,54 @@ describe("Cron event dispatch", () => {
       rmSync(root, { recursive: true, force: true });
     }
   });
+
+  it("repairs event subscriptions when reinstalling an unchanged synthetic entry", async () => {
+    const root = tempRoot();
+    const bus = new EventBus();
+    const cron = new Cron(
+      join(root, "missing-cron.json"),
+      {} as any,
+      () => "s1",
+      undefined,
+      root,
+      undefined,
+      (event) => bus.emit(event as any),
+    );
+    try {
+      let fires = 0;
+      const entry = {
+        name: "sample-planner",
+        enabled: true,
+        on: ["project.planning.requested"],
+        handler: {
+          workflow: "planner",
+          agent: "owner",
+          projectId: "sample",
+          task: "plan",
+        },
+      };
+
+      cron.registerHandler("sample-planner", async () => {
+        fires += 1;
+      });
+      cron.addSyntheticEntry(entry);
+      (cron as unknown as { eventSubscriptions: Map<string, Set<string>> }).eventSubscriptions.clear();
+      cron.addSyntheticEntry(entry);
+      cron.subscribeToBus(bus);
+      cron.start();
+
+      bus.emit({
+        type: "project.planning.requested",
+        source: "test",
+        owner: "agent:owner",
+        data: { project: "sample" },
+      } as any);
+      await tick();
+
+      expect(fires).toBe(1);
+    } finally {
+      cron.stop();
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
 });

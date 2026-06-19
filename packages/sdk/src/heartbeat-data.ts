@@ -245,11 +245,15 @@ export function loadInbox(ctx: WorkflowContext, agent: string): string {
     const rows = ((loadHeartbeatContext(ctx, agent).inbox ?? []).map(normalizeHeartbeatEvent) as any[]);
     if (!rows.length) return "";
 
-    // Mark consumed inbox events as handled so they don't reappear in future heartbeats.
+    // Record review so inbox events don't reappear in future heartbeats.
     try {
       const eventIds = rows.map((r: any) => r.id).filter((id: unknown) => typeof id === "number");
-      if (eventIds.length > 0 && typeof ctx.query.markInboxHandled === "function") {
-        ctx.query.markInboxHandled(eventIds, agent);
+      if (eventIds.length > 0) {
+        if (typeof ctx.query.reviewInboxEvents === "function") {
+          ctx.query.reviewInboxEvents(eventIds, agent);
+        } else if (typeof ctx.query.markInboxHandled === "function") {
+          ctx.query.markInboxHandled(eventIds, agent);
+        }
       }
     } catch { /* best-effort: don't break inbox loading if marking fails */ }
 

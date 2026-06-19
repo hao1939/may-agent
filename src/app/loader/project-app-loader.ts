@@ -6,7 +6,7 @@ import type { CronEntry } from "../../lib/cron-tool.js";
 import type { EventEnvelope } from "../../lib/handler-context.js";
 import { importRuntimeModule } from "../../lib/runtime-import.js";
 import { Cron } from "../cron.js";
-import type { AgentEvent, EventBus } from "../event-bus.js";
+import type { AgentEvent, DeliveryResult, EventBus } from "../event-bus.js";
 
 type EventSelector =
   | string
@@ -447,11 +447,32 @@ function attachAppEventRouter(opts: ProjectAppLoaderOptions, descriptors: Projec
   }
 
   appRouterDescriptorsByBus.set(opts.bus, descriptors);
-  opts.bus.subscribe((rawEvent) => {
+  opts.bus.subscribe((rawEvent): DeliveryResult | void => {
     const event = flattenEvent(rawEvent);
+    let accepted: DeliveryResult | undefined;
     for (const descriptor of appRouterDescriptorsByBus.get(opts.bus) ?? []) {
       if (!shouldOfferToApp(descriptor.app, event, descriptor.id, descriptor.owner)) continue;
       const ownerMetricFeedback = isOwnerMetricFeedbackForApp(event, descriptor.owner);
+      const hasAppEventHandler = typeof descriptor.app.onEvent === "function";
+      const hasWorkflowHandler = hasExplicitWorkflowHandler(descriptor.app, event.type);
+      if (hasWorkflowHandler) continue;
+      const shouldOwnerFallback =
+        !hasWorkflowHandler && (isProjectScopedForApp(event, descriptor.id) || ownerMetricFeedback);
+      if (hasAppEventHandler) {
+        accepted ??= {
+          accepted: true,
+          by: `project-app:${descriptor.id}`,
+          route: "direct",
+          note: "project app onEvent accepted",
+        };
+      } else if (shouldOwnerFallback) {
+        accepted ??= {
+          accepted: true,
+          by: `project-app:${descriptor.id}:owner-fallback`,
+          route: "direct",
+          note: "project app owner fallback session queued",
+        };
+      }
       if (ownerMetricFeedback) {
         opts.bus.emit({
           type: "metric.feedback.routed",
@@ -473,7 +494,6 @@ function attachAppEventRouter(opts: ProjectAppLoaderOptions, descriptors: Projec
           const ctx = makeContext(opts, descriptor);
           const result = descriptor.app.onEvent ? await descriptor.app.onEvent(ctx, event) : undefined;
           if (result !== undefined) return;
-          if (hasExplicitWorkflowHandler(descriptor.app, event.type)) return;
           if (!isProjectScopedForApp(event, descriptor.id) && !ownerMetricFeedback) return;
 
           const sessionId = opts.manager.runAgent(descriptor.owner, ownerFallbackTask(descriptor, event), {
@@ -509,6 +529,7 @@ function attachAppEventRouter(opts: ProjectAppLoaderOptions, descriptors: Projec
           });
         });
     }
+    return accepted;
   });
 }
 

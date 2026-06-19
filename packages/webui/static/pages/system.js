@@ -2,6 +2,7 @@
 
 async function loadEvents() {
   try {
+    loadEventDeliveryHealth();
     const owner = document.getElementById('events-owner')?.value || '';
     const type = document.getElementById('events-type')?.value || '';
     let url = '/api/events?limit=200';
@@ -59,6 +60,77 @@ async function loadEvents() {
   } catch(e) {
     document.getElementById('events-content').innerHTML = `<div style="color:var(--red)">Failed to load events: ${e.message}</div>`;
   }
+}
+
+async function loadEventDeliveryHealth() {
+  const el = document.getElementById('event-delivery-health');
+  if (!el) return;
+  try {
+    const res = await fetch('/api/events/delivery-health?lookbackMs=3600000&limit=8');
+    const health = await res.json();
+    if (!res.ok) throw new Error(health.error || 'failed');
+    el.innerHTML = renderEventDeliveryHealth(health);
+  } catch (e) {
+    el.innerHTML = `<div style="padding:10px;border:1px solid var(--border);border-radius:6px;color:var(--red)">Failed to load delivery health: ${esc(e.message)}</div>`;
+  }
+}
+
+function renderEventDeliveryHealth(health) {
+  const unhandled = health.unhandledEvents || [];
+  const overduePending = health.overduePendingEvents || [];
+  const orphanPairs = health.orphanPairs || [];
+  const overdueOpen = health.overdueOpenPairs || [];
+  const totalFailures = unhandled.length + overduePending.length + orphanPairs.length + overdueOpen.length;
+  const tone = health.schemaReady === false ? 'var(--fg2)' : totalFailures > 0 || health.error ? 'var(--red)' : 'var(--green)';
+  const chips = [
+    ['unhandled', unhandled.length],
+    ['overdue pending', overduePending.length],
+    ['orphan pairs', orphanPairs.length],
+    ['overdue pairs', overdueOpen.length],
+    ['owner inbox open', Number(health.ownerInboxOpenCount || 0)],
+  ];
+  let html = `<div style="border:1px solid var(--border);border-radius:6px;background:var(--bg2);padding:12px">`;
+  html += `<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">`;
+  html += `<b>Event Delivery Health</b>`;
+  html += `<span style="width:8px;height:8px;border-radius:50%;background:${tone};display:inline-block"></span>`;
+  html += `<span style="color:var(--fg2);font-size:12px">last hour</span>`;
+  html += `<button onclick="loadEventDeliveryHealth()" style="margin-left:auto;font-size:11px;padding:3px 8px">Refresh</button>`;
+  html += `</div>`;
+  html += `<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px">`;
+  for (const [label, count] of chips) {
+    html += `<span style="font-size:11px;background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:2px 8px">${esc(label)} ${count}</span>`;
+  }
+  html += `</div>`;
+  if (health.error) {
+    html += `<div style="font-size:12px;color:var(--red)">read-model error: ${esc(health.error)}</div>`;
+  } else if (health.note) {
+    html += `<div style="font-size:12px;color:var(--fg2)">${esc(health.note)}</div>`;
+  }
+  const samples = [
+    ...unhandled.map((row) => ({ kind: 'unhandled', row, eventId: row.id, label: row.eventType })),
+    ...overduePending.map((row) => ({ kind: 'overdue pending', row, eventId: row.id, label: row.eventType })),
+    ...orphanPairs.map((row) => ({ kind: 'orphan pair', row, eventId: row.openEventId, label: row.pairName || row.openEventType })),
+    ...overdueOpen.map((row) => ({ kind: 'overdue pair', row, eventId: row.openEventId, label: row.pairName || row.openEventType })),
+  ].slice(0, 8);
+  if (samples.length) {
+    html += `<div style="display:grid;gap:4px;margin-top:8px">`;
+    for (const sample of samples) {
+      const row = sample.row || {};
+      const owner = row.owner || '—';
+      const ts = row.timestamp || row.openedAt || row.expectedCloseAt;
+      const trace = sample.eventId ? `<button onclick="loadLoopTrace(${Number(sample.eventId)})" style="font-size:11px;padding:2px 7px">trace</button>` : '';
+      html += `<div style="display:flex;gap:8px;align-items:center;font-size:12px;color:var(--fg2);border-top:1px solid var(--border);padding-top:4px">`;
+      html += `<span style="color:var(--fg);min-width:104px">${esc(sample.kind)}</span>`;
+      html += `<span style="font-family:monospace;color:var(--accent);min-width:170px">${esc(sample.label || '—')}</span>`;
+      html += `<span>owner ${esc(owner)}</span>`;
+      html += `<span>${ts ? timeAgo(ts) : '—'}</span>`;
+      html += `<span style="margin-left:auto">${trace}</span>`;
+      html += `</div>`;
+    }
+    html += `</div>`;
+  }
+  html += `</div>`;
+  return html;
 }
 
 function loopTraceQuery(target) {
