@@ -6065,3 +6065,49 @@ plateaued. The divergence suggests arc has a different cost driver than pure KE
 library context.
 
 → Full analysis: `shared/knowledge/entries/KE-041.md`
+
+
+---
+
+## The Maintenance Metabolism — KE-042 (2026-06-19 creative heartbeat)
+
+**Created:** `shared/knowledge/entries/KE-042.md`
+
+### Core Discovery: Near-Complete Projects Generate More Planning Than Active Ones
+
+The aks-rp-e2e project grew its task tree by 34 tasks in 90 minutes despite having
+zero runnable domain work, 50 blocked tasks, and 63/82 paths already passing. Every
+new task was metadata-about-metadata: ownership repair, checkpoint triage, lineage
+normalization.
+
+### Why KE-041's Gate Filter Fails Here
+
+The planner gate (49% rejection during exploration) drops to **0% rejection** during
+the Maintenance Metabolism because every planner wake has a legitimate trigger
+(task-completed, watchdog-underfilled, problem-resolved). The gate asks "is there
+work?" — and there always is. But the work is about the work, not about the domain.
+
+### The Three External Blocker Classes
+
+All 50 blocked tasks reduce to exactly 3 unresolvable-by-planning dependencies:
+1. **Azure credentials/auth** (12 tasks) — env vars needed
+2. **Handwritten source snippets** (8 tasks) — Go code or archived equivalents
+3. **Product/environment gaps** (30 tasks) — external product fixes
+
+No amount of ownership repair can unblock any of these.
+
+### The Design Principle
+
+> **A system that can only ask "is there work?" will always find work.
+> The question that matters is "does this work advance the goal?"
+> No component in the current system asks that question.**
+
+### Connection to Prior KEs
+
+- Generalizes KE-022 (illegible idle) from system-level to project-level
+- Explains why KE-041's gate fails at boundaries: gate needs "nothing to do"
+  but Maintenance Metabolism always has *something* to do
+- Predicts that task-tree total will exceed 2,050 within 48h without intervention
+
+→ Full analysis: `shared/knowledge/entries/KE-042.md`
+
