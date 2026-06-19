@@ -1,9 +1,8 @@
 /**
  * ChatSession — persistent chat session for the human-facing agent.
  *
- * Each human message starts or wakes a chat turn. If the previous chat turn
- * has already completed, the next turn starts a fresh execution session with
- * the prior transcript loaded as context and the prior turn recorded as parent.
+ * Each human message starts or wakes a chat turn on the same long-lived
+ * session. The session remains idle between turns until the human replies.
  *
  * Session state is persisted to JSONL automatically by the manager's
  * subscribeForPersistence(). On restart, the user can resume an old
@@ -16,8 +15,6 @@ import { appendFileSync } from "node:fs";
 import { join } from "node:path";
 import type { SubagentManager } from "../lib/manager.js";
 import { isOverflowError } from "../lib/overflow.js";
-
-
 
 import type { EventBus } from "./event-bus.js";
 
@@ -178,29 +175,23 @@ export class ChatSession {
 
   /**
    * Send a message to the chat session.
-   * Creates a session on first call, wakes it while active, or starts a new
-   * traceable turn with prior transcript context once the previous turn completed.
+   * Creates a session on first call, then wakes the same session for later turns.
    */
   private sendMessage(message: string, source?: string): void {
-    let previousSessionId: string | null = null;
     if (this.sessionId && !this.manager.hasActiveSession(this.sessionId)) {
-      previousSessionId = this.sessionId;
       this.bus.emit({
         type: "info",
-        message: `[chat] Starting a new turn with transcript context from ${this.sessionId}.`,
+        message: `[chat] Previous session ${this.sessionId} is no longer active. Starting a new conversation.`,
       });
       this.sessionId = null;
     }
 
     if (!this.sessionId) {
-      // First message, or a new traceable turn after the previous chat session completed.
-      const resumeMessages = previousSessionId ? this.loadResumeMessages(previousSessionId) : undefined;
+      // First message, or fresh chat after the prior session was closed/lost.
       this.sessionId = this.manager.run(this.agentName, message, {
-        parentSessionId: previousSessionId ?? undefined,
         kind: "chat",
         autoClose: "never",
         source: source ?? "chat",
-        resumeMessages,
       });
       this.trackCompletion(this.sessionId);
       return;
@@ -209,7 +200,7 @@ export class ChatSession {
     // Subsequent messages: wake the idle session or steer the running one
     this.manager.send(this.sessionId, message);
     this.manager
-      .waitFor(this.sessionId)
+      .waitForIdle(this.sessionId)
       .then(() => {
         // Surface session errors on subsequent messages too
         const session = this.manager.status().find((s) => s.sessionId === this.sessionId);
@@ -236,17 +227,6 @@ export class ChatSession {
         this.bus.emit({ type: "info", message: `[chat] Error: ${msg}` });
         this.onDone?.();
       });
-  }
-
-  private loadResumeMessages(sessionId: string): any[] | undefined {
-    try {
-      const messages = this.manager.progress(sessionId, 200) as any[];
-      return messages.length > 0 ? messages : undefined;
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : String(err);
-      this.bus.emit({ type: "info", message: `[chat] Could not load transcript for ${sessionId}: ${msg}` });
-      return undefined;
-    }
   }
 
   /**

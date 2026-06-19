@@ -630,7 +630,7 @@ ${FINISH_HYGIENE_INSTRUCTIONS}`;
   recordDedupOutcome(agent, "heartbeat", result.status === "error" ? "error" : "success");
 
   if (result.status === "error") {
-    return ctx.escalate(`Heartbeat agent session failed for ${agent}`, {
+    return ctx.blocked(`Heartbeat agent session failed for ${agent}`, {
       sessionId: result.sessionId,
       error: result.error ?? result.lastAssistantText ?? "unknown error",
     });

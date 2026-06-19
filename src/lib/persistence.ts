@@ -25,6 +25,7 @@ export interface PersistedAgentConfig {
   model: { provider: string; id: string };
   timeoutMs?: number;
   memoryLimit?: number;
+  compaction?: boolean;
 }
 
 /** Session kind: chat (human-owned), job (fire-and-forget, auto-resumed), call (parent-owned). */
@@ -80,6 +81,7 @@ function toPersistedConfig(def: SubagentDefinition): PersistedAgentConfig {
   if (def.workspace !== undefined) config.workspace = def.workspace;
   if (def.timeoutMs !== undefined) config.timeoutMs = def.timeoutMs;
   if (def.memoryLimit !== undefined) config.memoryLimit = def.memoryLimit;
+  if (def.compaction !== undefined) config.compaction = def.compaction;
   return config;
 }
 
@@ -139,9 +141,15 @@ const TRANSCRIPT_SECRET_PATTERNS: Array<{ pattern: RegExp; replacement: string }
   // Generic bearer tokens in Authorization headers
   { pattern: /(Bearer\s+)[A-Za-z0-9_\-.~+/]{40,}/gi, replacement: "$1[REDACTED-BEARER-TOKEN]" },
   // Azure access tokens as standalone base64 blobs (accessToken: "…")
-  { pattern: /(accessToken["']?\s*[:=]\s*["']?)([A-Za-z0-9_\-.~+/]{40,})(["']?)/g, replacement: "$1[REDACTED-ACCESS-TOKEN]$3" },
+  {
+    pattern: /(accessToken["']?\s*[:=]\s*["']?)([A-Za-z0-9_\-.~+/]{40,})(["']?)/g,
+    replacement: "$1[REDACTED-ACCESS-TOKEN]$3",
+  },
   // Generic long secrets in key=value contexts (password, secret, token, key assignments)
-  { pattern: /((?:password|secret|token|api[_-]?key)\s*[=:]\s*["']?)([^\s"']{20,})(["']?)/gi, replacement: "$1[REDACTED]$3" },
+  {
+    pattern: /((?:password|secret|token|api[_-]?key)\s*[=:]\s*["']?)([^\s"']{20,})(["']?)/gi,
+    replacement: "$1[REDACTED]$3",
+  },
 ];
 
 /**

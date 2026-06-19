@@ -173,7 +173,7 @@ describe("QueryService", () => {
     );
     db.run(
       "INSERT INTO workflow_runs (runId, workflow, task, status, startedAt) VALUES (?, ?, ?, ?, ?)",
-      ["wr_triage", "metric-alert-triage", "Run metric alert triage for handler.failed-count", "done", now - 500],
+      ["wr_triage", "metric-alert-triage", `Run metric alert triage for handler.failed-count\n{"alertId": ${alert.id}}`, "done", now - 500],
     );
     db.run(
       "INSERT INTO sessions (sessionId, agent, task, status, source, startedAt) VALUES (?, ?, ?, ?, ?, ?)",
@@ -214,6 +214,57 @@ describe("QueryService", () => {
     expect(state.recentTriageJudgment).toMatchObject({ id: expect.any(Number) });
     expect(state.recentOwnerSession).toMatchObject({ sessionId: "s_owner", status: "done" });
     expect(state.recentOwnerSessionJudgment).toMatchObject({ id: expect.any(Number) });
+  });
+
+  it("scopes metric alert judgments to the current alert id", () => {
+    const { db, query } = harness();
+    const now = 90_000;
+
+    db.run(
+      "INSERT INTO metrics (id, name, owner, current, threshold, target, priority, status, updated_at, alert_op) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+      ["session.failed-triage-rate-3h", "Failed triage", "evaluator", 0, 0.8, 1, "P1", "active", now, "<"],
+    );
+    db.run(
+      "INSERT INTO metric_alerts (metric_id, alert_type, message, created_at, resolved_at) VALUES (?, ?, ?, ?, ?)",
+      ["session.failed-triage-rate-3h", "threshold", "old alert", now - 10_000, now - 5_000],
+    );
+    const oldAlert = db.prepare("SELECT id FROM metric_alerts WHERE message = ?").get("old alert") as { id: number };
+    db.run(
+      "INSERT INTO metric_alerts (metric_id, alert_type, message, created_at) VALUES (?, ?, ?, ?)",
+      ["session.failed-triage-rate-3h", "threshold", "new alert", now - 1_000],
+    );
+    const newAlert = db.prepare("SELECT id FROM metric_alerts WHERE message = ?").get("new alert") as { id: number };
+    db.run(
+      "INSERT INTO workflow_runs (runId, workflow, task, status, startedAt) VALUES (?, ?, ?, ?, ?)",
+      ["wr_old", "metric-alert-triage", `Run metric alert triage for session.failed-triage-rate-3h\n{\"alertId\": ${oldAlert.id}}`, "done", now - 4_500],
+    );
+    db.run(
+      "INSERT INTO sessions (sessionId, agent, task, status, source, startedAt) VALUES (?, ?, ?, ?, ?, ?)",
+      ["s_old", "evaluator", "old triage", "done", "metric-alert-reactor:session.failed-triage-rate-3h", now - 4_400],
+    );
+    db.run(
+      "INSERT INTO events (event_type, source, owner, data, timestamp) VALUES (?, ?, ?, ?, ?)",
+      [
+        "metric.alert_judged",
+        "evaluator",
+        "agent:evaluator",
+        JSON.stringify({ metricId: "session.failed-triage-rate-3h", alertId: oldAlert.id, operation: "waiting_with_evidence" }),
+        now - 4_000,
+      ],
+    );
+
+    const state = query.metricAlertReactorState({
+      metricId: "session.failed-triage-rate-3h",
+      alertId: newAlert.id,
+      owner: "evaluator",
+      since: now - 20_000,
+    });
+
+    expect(state.alert).toMatchObject({ id: newAlert.id, message: "new alert" });
+    expect(state.latestJudgment).toBeNull();
+    expect(state.recentTriageRun).toBeNull();
+    expect(state.recentTriageJudgment).toBeNull();
+    expect(state.recentOwnerSessionJudgment).toBeNull();
   });
 
   it("loads closed-loop steward context as bounded live evidence", () => {

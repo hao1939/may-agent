@@ -33,7 +33,7 @@ export interface WorkflowRun {
   depth: number;
   startedAt: number;
   endedAt?: number;
-  status: "running" | "done" | "escalated" | "interrupted" | "error";
+  status: "running" | "done" | "blocked" | "escalated" | "interrupted" | "error";
   steps: WorkflowStep[];
   resumedFromRunId?: string;
   result?: {
@@ -106,6 +106,72 @@ function textResult(text: string): AgentToolResult<string> {
 function truncate(text: string, maxLen: number): string {
   if (text.length <= maxLen) return text;
   return text.slice(0, maxLen) + "...";
+}
+
+function taskField(task: string, name: string): string | undefined {
+  return task.match(new RegExp(`^${name}:\\s*(.+)$`, "m"))?.[1]?.trim();
+}
+
+function triggerEventFromTask(task: string): Record<string, unknown> | null {
+  const match = task.match(/## Trigger Event[\s\S]*?```json\s*([\s\S]*?)```/);
+  if (!match?.[1]) return null;
+  try {
+    const parsed = JSON.parse(match[1]);
+    return parsed && typeof parsed === "object" && !Array.isArray(parsed)
+      ? (parsed as Record<string, unknown>)
+      : null;
+  } catch {
+    return null;
+  }
+}
+
+function eventPayload(event: Record<string, unknown> | null): Record<string, unknown> {
+  const data = event?.data;
+  return data && typeof data === "object" && !Array.isArray(data)
+    ? (data as Record<string, unknown>)
+    : {};
+}
+
+function stringValue(...values: unknown[]): string | undefined {
+  for (const value of values) {
+    if (typeof value === "string" && value.trim()) return value.trim();
+  }
+  return undefined;
+}
+
+type ProjectTaskContext = {
+  projectId?: string;
+  taskId: string;
+  attemptId?: string;
+  sourceEventType?: string;
+};
+
+function projectTaskContextFromTask(task: string, fallbackProjectId?: string): ProjectTaskContext | undefined {
+  const event = triggerEventFromTask(task);
+  const payload = eventPayload(event);
+  const eventType = stringValue(event?.type);
+  const taskId = stringValue(
+    event?.taskId,
+    event?.task_id,
+    payload.taskId,
+    payload.task_id,
+    taskField(task, "taskId"),
+    taskField(task, "task_id"),
+  );
+  if (!taskId) return undefined;
+  if (eventType && eventType !== "project.task.assigned") return undefined;
+  return {
+    projectId: stringValue(
+      event?.project,
+      event?.projectId,
+      payload.project,
+      payload.projectId,
+      fallbackProjectId,
+    ),
+    taskId,
+    attemptId: stringValue(event?.attemptId, event?.attempt_id, payload.attemptId, payload.attempt_id),
+    sourceEventType: eventType,
+  };
 }
 
 function generateRunId(): string {
@@ -510,17 +576,17 @@ export async function runWorkflowDirect(
     return { result: { type: "done", summary: parsed.summary }, runId: parsed.workflowRunId, steps: [] };
   }
   if (parsed.type === "escalated") {
-    return { result: { type: "escalate", reason: parsed.reason }, runId: parsed.workflowRunId, steps: [] };
+    return { result: { type: "blocked", reason: parsed.reason, context: parsed.context }, runId: parsed.workflowRunId, steps: [] };
   }
   if (parsed.type === "error") {
     throw new Error(`Workflow "${opts.workflowName}" error: ${parsed.error}`);
   }
   if (parsed.type === "blocked") {
-    throw new WorkflowBlocked(parsed.reason, parsed.completedSteps ?? [], parsed.workflowRunId);
+    return { result: { type: "blocked", reason: parsed.reason, context: parsed.context }, runId: parsed.workflowRunId, steps: [] };
   }
   // interrupted or unknown
   return {
-    result: { type: "escalate", reason: `Workflow result: ${parsed.type}` },
+    result: { type: "blocked", reason: `Workflow result: ${parsed.type}` },
     runId: (parsed as any).workflowRunId ?? "unknown",
     steps: [],
   };
@@ -585,7 +651,7 @@ export function createWorkflowTool(opts: WorkflowToolOptions): WorkflowTool {
   const workflowResumeNextAction = (category: string, recoverable = false): string => {
     if (category === "workflow_definition_missing" || category === "corrupt_state") return "recover";
     if (recoverable) return "resume";
-    return "escalate";
+    return "blocked";
   };
 
   const emitWorkflowResumeFailed = (data: {
@@ -640,6 +706,89 @@ export function createWorkflowTool(opts: WorkflowToolOptions): WorkflowTool {
     onEvent?.(event);
   };
 
+  const emitWorkflowBlockedOwnerWake = (data: {
+    workflowRunId: string;
+    workflow: string;
+    task: string;
+    reason: string;
+    context?: unknown;
+    projectId?: string;
+    taskContext?: ProjectTaskContext;
+    parentSessionId?: string;
+    parentWorkflowRunId?: string;
+  }): void => {
+    const workflowOwner = normalizeEventOwner(opts.agentName);
+    const taskProjectId = data.taskContext?.projectId ?? data.projectId;
+    if (data.taskContext?.taskId && taskProjectId) {
+      opts.runtimeCtx?.emit({
+        type: "project.task.completed",
+        source: "workflow-tool",
+        owner: workflowOwner,
+        project: taskProjectId,
+        data: {
+          project: taskProjectId,
+          projectId: taskProjectId,
+          taskId: data.taskContext.taskId,
+          task_id: data.taskContext.taskId,
+          attemptId: data.taskContext.attemptId,
+          attempt_id: data.taskContext.attemptId,
+          status: "blocked",
+          result: "blocked",
+          claim: "blocked",
+          summary: `Workflow ${data.workflow} blocked before task completion: ${data.reason}`,
+          reason: data.reason,
+          context: data.context,
+          workflowRunId: data.workflowRunId,
+          workflow: data.workflow,
+          workflowOwner,
+          parentSessionId: data.parentSessionId,
+          parentWorkflowRunId: data.parentWorkflowRunId,
+          sourceEventType: data.taskContext.sourceEventType,
+          workflowTask: truncate(data.task, 500),
+        },
+      } as any);
+      return;
+    }
+    const payload = {
+      workflowRunId: data.workflowRunId,
+      workflow: data.workflow,
+      workflowOwner,
+      projectId: data.projectId,
+      parentSessionId: data.parentSessionId,
+      parentWorkflowRunId: data.parentWorkflowRunId,
+      task: truncate(data.task, 500),
+      reason: data.reason,
+      context: data.context,
+    };
+    if (data.projectId) {
+      opts.runtimeCtx?.emit({
+        type: "project.owner.requested",
+        source: "workflow-tool",
+        owner: workflowOwner,
+        project: data.projectId,
+        reason: "workflow-blocked",
+        params: payload,
+      } as any);
+      return;
+    }
+    opts.runtimeCtx?.emit({
+      type: "workflow.owner.requested",
+      source: "workflow-tool",
+      owner: workflowOwner,
+      data: {
+        reason: "workflow-blocked",
+        workflowRunId: data.workflowRunId,
+        workflow: data.workflow,
+        workflowOwner,
+        parentSessionId: data.parentSessionId,
+        parentWorkflowRunId: data.parentWorkflowRunId,
+        task: truncate(data.task, 500),
+        blockerReason: data.reason,
+        context: data.context,
+      },
+    } as any);
+  };
+
   const workflowResumeError = (data: {
     workflowRunId?: string;
     workflow?: string;
@@ -692,6 +841,7 @@ export function createWorkflowTool(opts: WorkflowToolOptions): WorkflowTool {
     let stepCounter = 0;
     const callerMeta = getCallerSessionMeta(parentSessionId);
     const effectiveProjectId = previousRun?.projectId ?? opts.projectId ?? callerMeta.projectId;
+    const projectTaskContext = projectTaskContextFromTask(task, effectiveProjectId);
     // Once we detect a mismatch (workflow code changed), stop replaying
     let replayExhausted = false;
 
@@ -1093,12 +1243,12 @@ export function createWorkflowTool(opts: WorkflowToolOptions): WorkflowTool {
         }
 
         if (depth + 1 > maxDepth) {
-          return { type: "escalate", reason: `Maximum workflow nesting depth (${maxDepth}) exceeded` };
+          return { type: "blocked", reason: `Maximum workflow nesting depth (${maxDepth}) exceeded` };
         }
 
         const { workflow: subWf, error: subErr } = await findWorkflow(workflowDir, wfName, projectWorkflowDir);
         if (!subWf) {
-          return { type: "escalate", reason: subErr ?? `Workflow "${wfName}" not found` };
+          return { type: "blocked", reason: subErr ?? `Workflow "${wfName}" not found` };
         }
 
         onEvent?.({ type: "workflow.started", workflow: subWf.name, task: wfTask });
@@ -1116,13 +1266,15 @@ export function createWorkflowTool(opts: WorkflowToolOptions): WorkflowTool {
         if (sub.result.type === "done") {
           onEvent?.({ type: "workflow.completed", summary: sub.result.summary });
         } else {
-          onEvent?.({ type: "workflow.escalated", reason: sub.result.reason });
+          onEvent?.({ type: "workflow.blocked", reason: sub.result.reason });
         }
 
         return sub.result;
       },
 
       done: (summary: string) => ({ type: "done" as const, summary }),
+      blocked: (reason: string, context?: unknown) => ({ type: "blocked" as const, reason, context }),
+      // Deprecated compatibility alias: local workflow blocker, not escalation.created.
       escalate: (reason: string, context?: unknown) => ({ type: "escalate" as const, reason, context }),
 
       createSession: async (sessionOpts: SessionOptions): Promise<SessionHandle> => {
@@ -1257,7 +1409,7 @@ export function createWorkflowTool(opts: WorkflowToolOptions): WorkflowTool {
 
       // Finalize the workflow run
       run.endedAt = Date.now();
-      run.status = result.type === "done" ? "done" : "escalated";
+      run.status = result.type === "done" ? "done" : "blocked";
       run.result = result.type === "done" ? { summary: result.summary } : { reason: result.reason };
       if (persistDir)
         updateWorkflowRun(persistDir, runId, {
@@ -1266,6 +1418,19 @@ export function createWorkflowTool(opts: WorkflowToolOptions): WorkflowTool {
           result_summary: run.result.summary,
           result_reason: run.result.reason,
         });
+      if (result.type !== "done" && depth === 1) {
+        emitWorkflowBlockedOwnerWake({
+          workflowRunId: runId,
+          workflow: workflow.name,
+          task,
+          reason: result.reason,
+          context: result.context,
+          projectId: effectiveProjectId,
+          taskContext: projectTaskContext,
+          parentSessionId,
+          parentWorkflowRunId,
+        });
+      }
 
       return { result, runId, steps: localSteps };
     } catch (err) {
@@ -1273,7 +1438,7 @@ export function createWorkflowTool(opts: WorkflowToolOptions): WorkflowTool {
       if (err instanceof WorkflowInterrupted) {
         run.status = "interrupted";
       } else if (err instanceof WorkflowBlocked) {
-        run.status = "error";
+        run.status = "blocked";
         run.result = { reason: `Blocked by guard: ${err.reason}` };
       } else {
         run.status = "error";
@@ -1285,6 +1450,18 @@ export function createWorkflowTool(opts: WorkflowToolOptions): WorkflowTool {
           endedAt: run.endedAt,
           result_reason: run.result?.reason,
         });
+      if (err instanceof WorkflowBlocked && depth === 1) {
+        emitWorkflowBlockedOwnerWake({
+          workflowRunId: runId,
+          workflow: workflow.name,
+          task,
+          reason: run.result?.reason ?? err.reason,
+          projectId: effectiveProjectId,
+          taskContext: projectTaskContext,
+          parentSessionId,
+          parentWorkflowRunId,
+        });
+      }
       throw err;
     }
   }
@@ -1335,9 +1512,9 @@ export function createWorkflowTool(opts: WorkflowToolOptions): WorkflowTool {
         return textResult(JSON.stringify(toolResult, null, 2));
       }
 
-      onEvent?.({ type: "workflow.escalated", reason: result.reason });
+      onEvent?.({ type: "workflow.blocked", reason: result.reason });
       const toolResult: WorkflowToolResult = {
-        type: "escalated",
+        type: "blocked",
         workflow: workflow.name,
         workflowRunId: runId,
         reason: result.reason,
@@ -1514,7 +1691,7 @@ export function createWorkflowTool(opts: WorkflowToolOptions): WorkflowTool {
             return textResult(JSON.stringify(result, null, 2));
           }
 
-          if (prevRun.status === "escalated") {
+          if (prevRun.status === "blocked" || prevRun.status === "escalated") {
             emitWorkflowResumeSkipped({
               workflowRunId: prevRun.runId,
               workflow: prevRun.workflow,
@@ -1523,10 +1700,10 @@ export function createWorkflowTool(opts: WorkflowToolOptions): WorkflowTool {
               reason: "workflow already reached terminal status",
             });
             const result: WorkflowToolResult = {
-              type: "escalated",
+              type: "blocked",
               workflow: prevRun.workflow,
               workflowRunId: prevRun.runId,
-              reason: prevRunRecord.result_reason ?? "workflow already escalated",
+              reason: prevRunRecord.result_reason ?? "workflow already blocked",
               steps: buildStoredStepSummaries(prevRun.steps),
             };
             return textResult(JSON.stringify(result, null, 2));

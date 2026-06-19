@@ -71,7 +71,7 @@ export interface CronEntry {
   offsetMs?: number;
   /**
    * Event types that trigger this handler immediately (in addition to timer).
-   * E.g., ["project.commented", "workflow.blocked"] fires the handler when these events occur.
+   * E.g., ["project.comment.created", "project.owner.requested"] fires the handler when these events occur.
    */
   on?: string[];
   /**

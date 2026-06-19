@@ -391,6 +391,43 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
     }
   }
 
+  function latestAlertJudgment(db: SqliteDb, alert: { alertId?: number; metricId?: string; createdAt?: number }): Record<string, unknown> | null {
+    const row = db.prepare(
+      `SELECT id, owner, timestamp, data
+       FROM events
+       WHERE event_type = 'metric.alert_judged'
+         AND timestamp >= ?
+         AND (
+           json_extract(data, '$.alertId') = ?
+           OR (
+             json_extract(data, '$.alertId') IS NULL
+             AND json_extract(data, '$.metricId') = ?
+           )
+         )
+       ORDER BY timestamp DESC, id DESC
+       LIMIT 1`,
+    ).get(alert.createdAt ?? 0, alert.alertId ?? null, alert.metricId ?? null) as {
+      id?: number;
+      owner?: string | null;
+      timestamp?: number;
+      data?: string | null;
+    } | null;
+    if (!row) return null;
+    return {
+      eventId: row.id ?? null,
+      owner: row.owner ?? null,
+      timestamp: row.timestamp ?? null,
+      ...parseEventData(row.data),
+    };
+  }
+
+  function enrichOpenAlerts(db: SqliteDb, alerts: any[]): any[] {
+    return alerts.map((alert) => ({
+      ...alert,
+      latestJudgment: latestAlertJudgment(db, alert),
+    }));
+  }
+
   function parseProjectIdentity(path: string, content?: string): { owner: string; name: string; projectId: string } {
     const normalized = normalizeProjectPathForCompare(path);
     const parts = normalized.split("/");
@@ -629,7 +666,7 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
     }).sort((a, b) => (b.lastHeartbeat ?? 0) - (a.lastHeartbeat ?? 0));
 
     const activeSessions = (db.prepare("SELECT COUNT(*) as c FROM sessions WHERE status IN ('running', 'idle')").get() as any)?.c ?? 0;
-    const openAlerts = db.prepare(
+    const openAlerts = enrichOpenAlerts(db, db.prepare(
       `SELECT ma.id as alertId, ma.metric_id as metricId, ma.message, ma.created_at as createdAt,
               COALESCE(NULLIF(trim(m.owner), ''), NULLIF(trim(p.owner), ''), 'may') as owner,
               m.project, m.priority, m.current, m.threshold, m.target
@@ -640,7 +677,7 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
        WHERE ma.resolved_at IS NULL
        ORDER BY ma.created_at DESC
        LIMIT 20`
-    ).all() as any[];
+    ).all() as any[]);
 
     const metricOrder = new Map(LIVE_VITAL_METRIC_IDS.map((id, idx) => [id, idx]));
     const vitalPlaceholders = LIVE_VITAL_METRIC_IDS.map(() => "?").join(", ");
@@ -1627,7 +1664,7 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
       ORDER BY owner, m.priority, m.name
     `).all() as any[];
 
-    const openAlerts = db.prepare(`
+    const openAlerts = enrichOpenAlerts(db, db.prepare(`
       SELECT ma.id as alertId, ma.metric_id as metricId, ma.alert_type as alertType,
              ma.message, ma.created_at as createdAt,
              m.name, m.type,
@@ -1642,13 +1679,13 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
       WHERE ma.resolved_at IS NULL
         AND m.status = 'active'
       ORDER BY ma.created_at DESC
-    `).all() as any[];
+    `).all() as any[]);
 
     const openAlertByMetric = new Map(openAlerts.map((alert) => [alert.metricId, alert]));
     const metricsWithAlertState = metrics.map((metric) => {
       const alert = openAlertByMetric.get(metric.id);
       return alert
-        ? { ...metric, alertOpen: true, alertId: alert.alertId, alertMessage: alert.message, alertType: alert.alertType }
+        ? { ...metric, alertOpen: true, alertId: alert.alertId, alertMessage: alert.message, alertType: alert.alertType, latestJudgment: alert.latestJudgment }
         : { ...metric, alertOpen: false };
     });
 
@@ -3274,10 +3311,15 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
     // The daemon owns active/idle/cold routing: active/idle sessions receive
     // manager.send(); terminal-but-resumable sessions attempt resumeSession().
     const result = await sendDaemonFrame({
-      type: "session.steer.requested",
+      type: "human.input.received",
       source: "web-ui",
       owner: "agent:may",
-      data: { sessionId, message: content },
+      data: {
+        actor: "human",
+        text: content,
+        conversation: { channel: "web-ui" },
+        target: { sessionId },
+      },
     });
     if (!result.ok) return json({ error: result.error }, 503);
     return json({ ok: true, sessionId, deliveredAt: Date.now() });
@@ -3566,10 +3608,15 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
       const resolved = await resolveResp.json() as { agent: string; sessionId: string | null };
       if (resolved.sessionId) {
         const result = await sendDaemonFrame({
-          type: "session.steer.requested",
+          type: "human.input.received",
           source: "web-ui",
           owner: normalizeEventOwner(agentName),
-          data: { sessionId: resolved.sessionId, message: content },
+          data: {
+            actor: "human",
+            text: content,
+            conversation: { channel: "web-ui" },
+            target: { agent: agentName, sessionId: resolved.sessionId },
+          },
         });
         if (!result.ok) return json({ error: result.error }, 503);
         return json({ ok: true, agent: agentName, sessionId: resolved.sessionId, deliveredAt: Date.now(), spawned: false });
@@ -3578,10 +3625,16 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
 
     // No prior session — request a create-or-bind chat start from the daemon.
     const result = await sendDaemonFrame({
-      type: "chat.start.requested",
+      type: "human.input.received",
       source: "web-ui",
       owner: normalizeEventOwner(agentName),
-      data: { agent: agentName, message: content, channel: "web-ui", forceNew },
+      data: {
+        actor: "human",
+        text: content,
+        conversation: { channel: "web-ui" },
+        target: { agent: agentName },
+        context: { forceNew },
+      },
     });
     if (!result.ok) return json({ error: result.error }, 503);
     return json({ ok: true, agent: agentName, sessionId: null, deliveredAt: Date.now(), spawned: true });

@@ -5,7 +5,12 @@ import type { SubagentManager } from "../../lib/index.js";
 import type { Cron } from "../cron.js";
 import type { EventBus } from "../event-bus.js";
 import { loadAgentConfig, validateAgentConfig, type ValidationError } from "./agent-config.js";
-import { agentProjectRoot, agentRelativeDir, agentsRootForAgentDir, listRuntimeAgentDirectories } from "./agent-discovery.js";
+import {
+  agentProjectRoot,
+  agentRelativeDir,
+  agentsRootForAgentDir,
+  listRuntimeAgentDirectories,
+} from "./agent-discovery.js";
 import { buildTools } from "./toolset-loader.js";
 
 export interface AgentLoaderOptions {
@@ -37,10 +42,7 @@ export interface AgentRegistryRuntime {
  * Re-registers existing agents so config changes take effect on next session.
  * Active sessions keep their old config.
  */
-export async function loadAgents(
-  opts: AgentLoaderOptions,
-  runtime: AgentRegistryRuntime,
-): Promise<LoadResult> {
+export async function loadAgents(opts: AgentLoaderOptions, runtime: AgentRegistryRuntime): Promise<LoadResult> {
   const { agentsRoot, projectRoot, projectsRoot, models, manager } = opts;
   const added: string[] = [];
   const updated: string[] = [];
@@ -118,6 +120,7 @@ export async function loadAgents(
       projectRoot: effectiveProjectRoot,
       apiKey: model.apiKey,
       memoryLimit: config.memoryLimit,
+      compaction: config.compaction,
       contextFiles: config.context_files?.map((f) => resolve(agentDir, f)),
     });
 

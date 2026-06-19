@@ -39,10 +39,16 @@ type WorkflowEvent =
   | { type: "workflow.step_started"; step: string; sessionId?: string }
   | { type: "workflow.step_completed"; step: string; sessionId?: string; result: TaskResult }
   | { type: "workflow.completed"; summary: string }
+  | { type: "workflow.blocked"; reason: string }
+  /** @deprecated Use workflow.blocked. */
   | { type: "workflow.escalated"; reason: string };
 
-/** Workflow result — either done or escalated to slow mode. */
-type WorkflowResult = { type: "done"; summary: string } | { type: "escalate"; reason: string; context?: unknown };
+/** Workflow result — either done or locally blocked. */
+type WorkflowResult =
+  | { type: "done"; summary: string }
+  | { type: "blocked"; reason: string; context?: unknown }
+  /** @deprecated Use { type: "blocked" }. */
+  | { type: "escalate"; reason: string; context?: unknown };
 
 /** Options for customizing the handoff summary. */
 interface HandoffOptions {
@@ -167,7 +173,10 @@ interface WorkflowContext {
   /** Mark workflow as done. */
   done(summary: string): WorkflowResult;
 
-  /** Escalate — workflow can't handle this, return to agent (slow mode). */
+  /** Mark workflow as locally blocked. Does not emit escalation.created. */
+  blocked(reason: string, context?: unknown): WorkflowResult;
+
+  /** @deprecated Use blocked(). This is a local blocked result, not escalation.created. */
   escalate(reason: string, context?: unknown): WorkflowResult;
 
   /** Create a persistent agent session that stays alive across prompt() calls. */

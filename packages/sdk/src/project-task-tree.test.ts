@@ -8,6 +8,7 @@ import {
   confirmRunnableBacklogLeaves,
   createTask,
   dependenciesSatisfied,
+  listRunnableBacklogTaskIds,
   markTaskDone,
   peekTaskAssignments,
   planningPacket,
@@ -15,6 +16,7 @@ import {
   rejectTaskReview,
   repairTaskTreeRollups,
   taskTreeConfig,
+  unblockTask,
   updateTaskText,
 } from "./index.js";
 
@@ -131,6 +133,48 @@ describe("project task tree SDK", () => {
     expect(tree.tasks.leaf.status).toBe("done");
     expect(tree.tasks.project.status).toBe("done");
     expect(tree.active_task_ids).toEqual([]);
+  });
+
+  test("unblocks a blocked leaf back to backlog", async () => {
+    const appDir = await makeApp();
+    await writeTree(appDir, {
+      root_task_id: "project",
+      active_task_id: null,
+      active_task_ids: [],
+      tasks: {
+        project: {
+          id: "project",
+          state: "blocked",
+          children: ["blocked-leaf"],
+          goal: "project",
+          outputs: ["tasks/tree.json"],
+          acceptance: ["complete"],
+        },
+        "blocked-leaf": {
+          id: "blocked-leaf",
+          parent_id: "project",
+          state: "blocked",
+          children: [],
+          blocker: "waiting on previous wave",
+          goal: "rerun after previous wave settles",
+          outputs: ["artifact"],
+          acceptance: ["rerun completed"],
+        },
+      },
+    });
+
+    const task = unblockTask(config(appDir), {
+      taskId: "blocked-leaf",
+      reason: "previous wave is done",
+    });
+
+    expect(task.state).toBe("backlog");
+    expect(task.status).toBe("backlog");
+    expect(task.blocker).toBeUndefined();
+    expect(task.trace?.unblock_reason).toBe("previous wave is done");
+
+    const tree = readTaskTree(config(appDir));
+    expect(tree.tasks["blocked-leaf"].state).toBe("backlog");
   });
 
   test("rejects a review leaf back to backlog with review context", async () => {
@@ -419,15 +463,76 @@ describe("project task tree SDK", () => {
     const confirmed = confirmRunnableBacklogLeaves(config(appDir), 10);
     expect(confirmed).toEqual(["runnable-backlog-leaf"]);
 
-    expect(() => assignTask(config(appDir), { taskId: "blocked-backlog-leaf" })).toThrow(
-      /conflicts with active work/,
-    );
+    expect(() => assignTask(config(appDir), { taskId: "blocked-backlog-leaf" })).toThrow(/conflicts with active work/);
 
     const tree = readTaskTree(config(appDir));
     expect(tree.tasks["blocked-backlog-leaf"].status).toBe("backlog");
     expect(tree.tasks["blocked-backlog-leaf"].trace?.promoted_at).toBeUndefined();
     expect(tree.tasks["runnable-backlog-leaf"].status).toBe("backlog");
     expect(tree.tasks["runnable-backlog-leaf"].trace?.promoted_at).toBeDefined();
+  });
+
+  test("listRunnableBacklogTaskIds is pure and honors dependencies", async () => {
+    const appDir = await makeApp();
+    await writeTree(appDir, {
+      root_task_id: "project",
+      active_task_id: null,
+      active_task_ids: [],
+      tasks: {
+        project: {
+          id: "project",
+          state: "active",
+          children: ["wait-node", "waiting-leaf", "runnable-leaf"],
+          goal: "project",
+          outputs: ["tasks/tree.json"],
+          acceptance: ["complete"],
+        },
+        "wait-node": {
+          id: "wait-node",
+          parent_id: "project",
+          state: "blocked",
+          kind: "domain_leaf",
+          priority: "P2",
+          owner: "owner-agent",
+          children: [],
+          goal: "external wait",
+          blocker: "external input required",
+          outputs: ["evidence/archive/wait.md"],
+          acceptance: ["done"],
+        },
+        "waiting-leaf": {
+          id: "waiting-leaf",
+          parent_id: "project",
+          state: "backlog",
+          kind: "domain_leaf",
+          priority: "P2",
+          owner: "owner-agent",
+          children: [],
+          goal: "depends on external wait",
+          depends_on: ["wait-node"],
+          outputs: ["evidence/archive/waiting.md"],
+          acceptance: ["done"],
+        },
+        "runnable-leaf": {
+          id: "runnable-leaf",
+          parent_id: "project",
+          state: "backlog",
+          kind: "domain_leaf",
+          priority: "P2",
+          owner: "owner-agent",
+          children: [],
+          goal: "clear runnable work",
+          outputs: ["evidence/archive/runnable.md"],
+          acceptance: ["done"],
+        },
+      },
+    });
+
+    expect(listRunnableBacklogTaskIds(config(appDir), 10)).toEqual(["runnable-leaf"]);
+
+    const tree = readTaskTree(config(appDir));
+    expect(tree.tasks["runnable-leaf"].trace?.promoted_at).toBeUndefined();
+    expect(tree.tasks["waiting-leaf"].trace?.promoted_at).toBeUndefined();
   });
 
   test("updates existing task text fields without disturbing other metadata", async () => {

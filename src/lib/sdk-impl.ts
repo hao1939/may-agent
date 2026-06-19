@@ -166,8 +166,8 @@ export function buildAgentSDK(deps: SDKDeps): AgentSDK {
         projectId: opts?.projectId,
       });
       return {
-        status: result.type === "done" ? "done" : "escalated",
-        summary: result.type === "done" ? result.summary : (result.reason ?? "escalated"),
+        status: result.type === "done" ? "done" : "blocked",
+        summary: result.type === "done" ? result.summary : (result.reason ?? "blocked"),
         runId,
       };
     },
@@ -301,7 +301,7 @@ export function buildWorkflowSDK(deps: WorkflowSDKDeps): WorkflowSDK {
           "sdk.escalate(reason, opts?) no longer accepts sdk.escalate(target, reason); pass { owner } in opts",
         );
       }
-      deps.finish({ status: "escalated", summary: reason });
+      deps.finish({ status: "blocked", summary: reason });
     },
   };
 }

@@ -152,15 +152,18 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
 
   function emitChatStart(message: string, source = "telegram", channelMessageId?: number): void {
     bus.emit({
-      type: "chat.start.requested",
+      type: "human.input.received",
       source,
       owner: normalizeEventOwner(opts.interfaceAgent),
       data: {
-        agent: opts.interfaceAgent,
-        message,
-        channel: "telegram",
-        channelThreadId: pendingChatId ?? undefined,
-        channelMessageId,
+        actor: "human",
+        text: message,
+        conversation: {
+          channel: "telegram",
+          channelThreadId: pendingChatId ?? undefined,
+          channelMessageId,
+        },
+        target: { agent: opts.interfaceAgent },
       },
     } as any);
   }

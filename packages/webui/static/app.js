@@ -358,3 +358,18 @@ function timeAgo(ts) {
   if (diff < 86400000) return Math.floor(diff/3600000) + 'h ago';
   return Math.floor(diff/86400000) + 'd ago';
 }
+
+function renderAlertJudgment(alert) {
+  const judgment = alert?.latestJudgment;
+  if (!judgment) {
+    return '<div style="margin-top:5px;color:var(--yellow);font-size:11px">unjudged: owner still needs to react</div>';
+  }
+  const operation = judgment.operation || judgment.verdict || 'judged';
+  const evidence = String(judgment.evidence || judgment.summary || '').trim();
+  const clipped = evidence.length > 180 ? evidence.slice(0, 177) + '...' : evidence;
+  const when = judgment.timestamp ? timeAgo(Number(judgment.timestamp)) : 'recently';
+  return '<div style="margin-top:5px;color:var(--fg2);font-size:11px;line-height:1.35">'
+    + '<b>latest judgment:</b> ' + esc(operation) + ' · ' + esc(when)
+    + (clipped ? '<br><span>' + esc(clipped) + '</span>' : '')
+    + '</div>';
+}
