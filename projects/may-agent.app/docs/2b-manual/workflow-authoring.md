@@ -2,8 +2,8 @@
 
 ## Basics
 
-A workflow is a TypeScript file in `agents/<name>/workflows/`. It exports `name`,
-`description`, and an `execute` function:
+A workflow is a TypeScript file in an owning app or agent workflow directory.
+It exports `name`, `description`, and an `execute` function:
 
 Workflows are deliberately synchronous: each step returns a result before the
 next step runs, and `runWorkflow()` resolves only when the workflow is done or
@@ -64,11 +64,14 @@ Never return without calling one of these.
 the caller receives `{ type: "blocked", reason, context }`. This is local to the
 workflow call. The caller or handler may promote it to an external
 `escalation.created` event only when the blocker must route to another owner.
-For top-level project workflows, the runtime also wakes the project/workflow
-owner with `project.owner.requested` and includes workflow run id, caller
-lineage, reason, and compact context. Nested workflows return the blocked result
-to their parent workflow synchronously; the nested workflow does not wake the
-owner directly.
+For top-level workflows, the runtime routes the blocker back to the most
+specific owner of context. If the workflow was triggered by
+`project.task.assigned`, runtime emits blocked `project.task.completed`; the
+task tree is the recovery target. Project workflows without task context use
+`project.owner.requested`. Non-project workflows use `workflow.owner.requested`,
+which follows the default owner route. Nested workflows return the blocked
+result to their parent workflow synchronously; the nested workflow does not wake
+the owner directly.
 
 Because workflow execution is synchronous, a workflow can handle a blocker
 inside the workflow before returning: run a repair step, ask another agent with
@@ -90,7 +93,8 @@ Typical blocker paths:
 | A reusable recipe should handle the problem | Use `ctx.runWorkflow(...)` and continue or return based on its result |
 | A human/operator should see context but no response is required during this run | Use `ctx.notify(...)` and continue or finish with an honest summary |
 | The workflow cannot safely decide the next action | `return ctx.blocked(reason, context)` and let the caller/boundary decide |
-| A top-level project workflow blocks | Runtime persists `workflow_runs.status = "blocked"` and wakes the project/workflow owner with lineage |
+| A top-level task workflow blocks | Runtime persists `workflow_runs.status = "blocked"` and emits blocked `project.task.completed` with task/workflow lineage |
+| A top-level non-task workflow blocks | Runtime persists `workflow_runs.status = "blocked"` and wakes the project or workflow owner with lineage |
 | The blocker crosses an ownership boundary after the workflow returns | Caller/boundary may emit `escalation.created`; the workflow itself should not |
 
 Use the second argument only for compact boundary context. It may become
@@ -182,16 +186,23 @@ const result = await ctx.runWorkflow("implement-and-verify", task);
 
 ## Workflow Location
 
-Put workflows under the owning agent:
+Put workflows next to the owner that operates them:
 
 | Location | Visibility | Use case |
 |----------|------------|----------|
-| `agents/<name>/workflows/` | That agent's workflow loader | Agent-owned workflows such as heartbeat, project iteration, metric alert triage, or domain workflows |
+| `projects/<id>.app/workflows/` | That project app's workflow loader | Project-app owner, worker, problem-solver, focus-plan, and project-specific domain workflows |
+| `agents/<name>/workflows/` | That standalone agent's workflow loader | Agent-owned workflows such as heartbeat, metric alert triage, or infra-wide compatibility workflows |
 
-Shared workflow loading is not supported. If more than one agent needs the same
-pattern, keep the workflow owned by the agent that operates it and have other
-callers invoke that owner through the SDK/tool boundary, or factor reusable code
-into a normal shared helper module that an agent-owned workflow imports.
+For project-specific behavior, prefer the app-local workflow. Global May
+handlers may deliver events or provide compatibility backstops, but they should
+not own another app's planning packet, task assignment policy, or domain repair
+logic.
+
+Shared workflow loading is not supported. If more than one owner needs the same
+pattern, keep the workflow owned by the app/agent that operates it and have
+other callers invoke that owner through the SDK/tool boundary, or factor
+reusable mechanics into a normal shared helper module that an app-local or
+agent-owned workflow imports.
 
 ## Guards (Advanced)
 
@@ -228,6 +239,7 @@ custom metric plumbing unless the guard needs behavior beyond the default.
 # Run workflow via CLI
 bun src/app/may.ts --run-workflow implement-and-verify "fix the type error"
 
-# Or invoke from a handler test
+# Or invoke from a handler/workflow test
+bun test projects/<id>.app/workflows/my-workflow.test.ts
 bun test agents/<name>/workflows/__tests__/my-workflow.test.ts
 ```

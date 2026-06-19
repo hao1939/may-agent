@@ -44,11 +44,15 @@ sdk.emit("metric.breach", {
   priority: "P1",
 }, { owner: "agent:may", source: "metrics-snapshot", urgency: "high" });
 
-sdk.emit("project.task.finished", {
+sdk.emit("project.task.completed", {
+  project: "platform",
   projectId: "platform",
   taskId: "task-123",
-  result: "Tests are green.",
-}, { owner: "agent:may", source: "project-handler" });
+  attemptId: "attempt-1",
+  status: "review",
+  result: "done",
+  summary: "Tests are green.",
+}, { owner: "agent:may", source: "project-task-worker" });
 ```
 
 Do not put `owner` or `source` inside `data` for canonical events. Use the

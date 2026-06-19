@@ -277,7 +277,10 @@ finish({ status: "blocked", reason: "Requirements ambiguous, need clarification"
 - A guard blocked your workflow and you don't understand why
 - The project has been waiting >2h with no resolution path
 
-**What happens:** Escalation triggers notification to the target (human or coordinating agent), records the event in the escalation log, and stops the current work cleanly. The project handler will detect the blocked state and notify again if unresolved.
+**What happens:** Escalation triggers notification to the target owner (human or
+coordinating agent), records the event, and stops the current work cleanly.
+The owning project app or owner route is responsible for noticing unresolved
+blocked state and following up.
 
 **The principle:** It's always better to escalate too early than to proceed with uncertainty. Wasted work from a wrong guess costs more than a 5-minute human clarification.
 

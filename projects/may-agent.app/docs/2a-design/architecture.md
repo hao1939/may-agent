@@ -38,7 +38,10 @@ A **project-centered, event-based autonomous agent system** where:
   fires from app.ts schedules, not blind heartbeat timers. Heartbeats remain
   for standalone agents (dev, arc) without a project-app.
 - Agents are role/responsibility/context scopes — accountability boundaries that own a domain.
-- Everything is an event: timers, metric changes, messages, session completions.
+- Events are durable signals that something can react to: timers, metric
+  changes, messages, session completions, and project owner requests. Facts
+  that nobody reacts to should be stored as state/logs instead of invented as
+  events.
 - Workflows relieve agents from orchestration decisions.
 - `pi-coding-agent` provides the full agent runtime — we don't reinvent it.
 - **Convention over configuration**: every component has sensible defaults. Agents opt into custom behavior only when needed.
@@ -531,8 +534,8 @@ CREATE TABLE projects (id, name, owner, status, path, updated_at);
 | Lessons | `agents/<name>/LESSONS.md` | Legacy; some agents only |
 | Heartbeat instructions | `agents/<name>/heartbeat.md` | |
 | Config | `agents/<name>/agent.json` | |
-| Workflows | `agents/<name>/workflows/*.ts` | |
-| Projects | `projects/<id>/project.md` | Canonical location since V3 |
+| Workflows | `projects/<id>.app/workflows/*.ts`, `agents/<name>/workflows/*.ts` | App-local for project behavior; agent-local for standalone/infra behavior |
+| Projects | `projects/<id>.app/project.json`, `projects/<id>.app/tasks/tree.json`, legacy `projects/<id>/project.md` | V3 app files are canonical for active standing projects |
 | Work queue | `shared/work-queue.md` | |
 | Session transcripts | Pi-coding-agent SessionManager format | |
 

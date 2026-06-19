@@ -33,9 +33,15 @@ This lifecycle starts only when work crosses an ownership boundary. A synchronou
 workflow can return `ctx.blocked(...)` as a local terminal result without
 emitting `escalation.created`; the caller or runtime boundary decides whether
 that local blocked result should be promoted into the external lifecycle.
-For top-level project workflows, the runtime first routes the blocked workflow
-back to the workflow/project owner via `project.owner.requested`. That owner
-route is still not an escalation; it is normal ownership following the workflow.
+For top-level workflows, the runtime first routes the blocked workflow back to
+the most specific owner of context. If the workflow is handling a project task,
+the task is the recovery target: runtime emits a blocked
+`project.task.completed` carrying the task id, attempt id, workflow lineage,
+reason, and compact context. If there is project context but no task, runtime
+uses `project.owner.requested`. Non-project workflows use
+`workflow.owner.requested`, which follows the default owner-inbox route for
+`*.requested` events. These owner routes are still not escalations; they are
+normal ownership following the work.
 
 Escalation can chain upward. If an agent owner cannot resolve the blocker, it
 emits or links the next escalation to a human owner; when that human escalation is
@@ -244,7 +250,7 @@ Minimum task overlay:
 
 ```json
 {
-  "status": "blocked",
+  "state": "blocked",
   "blocker": "Needs owner approval.",
   "session_id": "s_task_live_run",
   "escalation_id": "esc_aks_rp_e2e_live_run",
@@ -263,8 +269,9 @@ Minimum task overlay:
 
 Resolution should wake the project owner loop, not mutate project state from the
 router directly. The project engine reads the resolution event, updates the task
-overlay, and then either moves the task back to `ready`, keeps it `blocked`,
-marks it `superseded`, or waits for a child human escalation.
+overlay, and then either moves the task back to `backlog`, keeps it `blocked`,
+marks it `done` with `resolution: "superseded"`, or waits for a child human
+escalation.
 
 ## Metrics
 
@@ -272,7 +279,7 @@ Metrics should measure lifecycle health, not replace judgment:
 
 | Metric | Meaning |
 |--------|---------|
-| `escalation.open-count` | Created escalations without terminal disposition. |
+| `escalation.pending-count` | Created escalations without terminal disposition. |
 | `escalation.resolve-time-ms` | Time from created to terminal resolved/dismissed. |
 | `escalation.resume-success-rate` | Resolutions that resumed the original source work successfully. |
 | `escalation.noisy-dedup-count` | Suppressed duplicate escalations by `dedupKey`. |
@@ -327,8 +334,8 @@ The synchronous caller then chooses one of three paths:
 |-----------------|---------|
 | Handle locally | The caller has enough context to retry, repair, mark the job failed, or return a normal error. No external event is needed. |
 | Record as workflow result | The blocker is useful trace context but not an owner-routed work item. Persist the workflow run as `blocked`; do not wake another owner. |
-| Wake workflow/project owner | A top-level project workflow is blocked. Runtime emits `project.owner.requested` with workflow lineage so the owner can repair, retry, update the task tree, or decide the next route. |
-| Promote to external escalation | The blocker crosses beyond the workflow/project owner boundary. Emit canonical `escalation.created` from the boundary layer with workflow lineage and resume context. |
+| Return to task/project owner | A top-level workflow is blocked. If it was triggered by `project.task.assigned`, runtime emits blocked `project.task.completed`. Otherwise it emits `project.owner.requested` for project workflows or `workflow.owner.requested` for non-project workflows. The owner can repair, retry, update the task tree when applicable, or decide the next route. |
+| Promote to external escalation | The blocker crosses beyond the responsible workflow owner boundary. Emit canonical `escalation.created` from the boundary layer with workflow lineage and resume context. |
 
 When a boundary promotes the local workflow blocker to `escalation.created`,
 runtime owns the canonical event defaults:

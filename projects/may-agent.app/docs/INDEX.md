@@ -42,7 +42,7 @@ System architecture and subsystem designs.
 | [cron.md](2a-design/cron.md) | Cron system: scheduling, handler execution, hot-reload |
 | [heartbeat.md](2a-design/heartbeat.md) | Heartbeat: per-agent workflows, data loaders, auto-generation |
 | [agents.md](2a-design/agents.md) | Agent cooperation: call/message, session tree, context |
-| [projects.md](2a-design/projects.md) | Project system: format, lifecycle, handler, shared location |
+| [projects.md](2a-design/projects.md) | Project system: V3 app layout, lifecycle, task tree, legacy compatibility |
 | [project-app-v3.md](2a-design/project-app-v3.md) | Final project-app model: sibling `*.app`, owner-first events, app/runtime/domain boundary |
 | [app-root-layout.md](2a-design/app-root-layout.md) | App directory structure: app.ts, tasks/, workflows/, agents/, scripts/, .state/ |
 | [task-tree-engine.md](2a-design/task-tree-engine.md) | Task tree data/tool model: owner review, worker completion, Kanban projection, human steering |

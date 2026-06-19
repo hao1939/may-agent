@@ -171,7 +171,7 @@ event
 Examples:
 
 - `timer.tick` -> heartbeat workflow builds live context -> run owner.
-- `project.comment.created` -> project handler builds project context -> run owner.
+- `project.comment.created` -> project app/owner route builds project context -> run owner.
 - `metric.breach` P0 -> alert workflow builds alert context -> run owner.
 - `metric.breach` P1/P2 -> persisted signal -> owner sees it in next heartbeat/project pass.
 

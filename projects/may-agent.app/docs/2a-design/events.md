@@ -66,11 +66,16 @@ Examples:
 - `project.owner.requested` targets the project in `data.project`,
   `data.projectId`, or `data.project_id`; only handlers for that project should
   run. `project.planning.requested` is the legacy compatibility alias.
-- A top-level project workflow that returns `ctx.blocked(...)` is persisted as
-  `workflow_runs.status = "blocked"` and wakes the project/workflow owner with
-  `project.owner.requested` carrying `workflowRunId`, workflow name, owner,
-  caller lineage, reason, and compact context. Nested workflow blockers return
-  to their parent workflow synchronously.
+- A top-level workflow that returns `ctx.blocked(...)` is persisted as
+  `workflow_runs.status = "blocked"` and routes by the most specific owner of
+  context. If it was triggered by `project.task.assigned`, runtime emits a
+  blocked `project.task.completed` with `taskId`, `attemptId`, workflow run id,
+  reason, and compact context so the project owner can repair the task tree. If
+  there is project context but no task, runtime emits
+  `project.owner.requested`. Only non-project workflows use
+  `workflow.owner.requested`, an owner-addressed `*.requested` event handled by
+  the default owner inbox. Nested workflow blockers return to their parent
+  workflow synchronously.
 - `session.steer.requested` targets `data.sessionId`; if that session is gone,
   the owner handles the failed intent.
 - `metric.breach` targets `data.metricId`; the metric/project owner is the
@@ -485,17 +490,17 @@ a separate boolean for the same decision.
 ### Project, adapter, and guard events
 ```typescript
 {
-  type: "project.task.dispatched",
+  type: "project.task.assigned",
   source: "agent:may",
-  owner: "agent:may",
-  data: { projectId: "may/task-demo", projectPath: "projects/task-demo", taskId: "score-a", assignee: "evaluator" }
+  owner: "agent:evaluator",
+  data: { project: "task-demo", projectId: "task-demo", taskId: "score-a", attemptId: "attempt-1", assignee: "evaluator" }
 }
 
 {
-  type: "project.task.finished",
-  source: "agent:may",
+  type: "project.task.completed",
+  source: "agent:evaluator",
   owner: "agent:may",
-  data: { projectId: "may/task-demo", projectPath: "projects/task-demo", taskId: "score-a", assignee: "evaluator", sessionId: "s_123", status: "done", finishStatus: "success" }
+  data: { project: "task-demo", projectId: "task-demo", taskId: "score-a", attemptId: "attempt-1", sessionId: "s_123", status: "review", result: "done", summary: "Scored batch A." }
 }
 
 {
@@ -514,7 +519,7 @@ a separate boolean for the same decision.
 ```
 
 `project.comment.created`, `project.action.requested`, `project.iteration`,
-`project.task.dispatched`, `project.task.finished`, `project.status_changed`,
+`project.task.assigned`, `project.task.completed`, `project.status_changed`,
 `telegram.reply`, and `guard.triggered` follow the same
 envelope rule. `guard.triggered` is an unreviewed detector signal. It is useful
 evidence for triage, metrics, and evaluator review, but it is not proof of agent
@@ -526,7 +531,7 @@ Some of these are currently dynamic event-store names rather than variants in
 allowing adapter-local evidence events when needed.
 
 For task-driven projects, the **live** task lifecycle events are
-`project.task.assigned` (planner assigns task to worker) and
+`project.task.assigned` (owner assigns task to worker) and
 `project.task.completed` (task engine records completion). Teach these in
 handler and SDK examples. The older `project.task.dispatched` and
 `project.task.finished` pair belongs to the legacy project handler; do not use
@@ -592,8 +597,8 @@ Project feedback uses the same path:
 ```
 
 If the project app has a direct handler, it accepts the event directly. If not,
-the owner inbox accepts it and the project owner/planner reacts from the next
-review packet by emitting a follow-up event such as
+the owner inbox accepts it and the project owner reacts from the next review
+packet by emitting a follow-up event such as
 `project.feedback.reviewed`.
 
 Agents see recent inbox-routed events in their heartbeat as context. Reading an
@@ -727,6 +732,10 @@ path: validate at the edge, persist via the bus, and let subscribers react.
   event.
 - Keep heartbeat bus events under the `heartbeat.*` namespace; workflow
   lifecycle callback names are local to the workflow tool.
+- Pair closure for `project.owner.requested` is not fully aligned: the design
+  uses `project.owner.reviewed`, while some app workflows still emit
+  `project.reviewed` or rely on workflow completion. Normalize app emissions or
+  pair detection so owner-requested events close consistently.
 - Some historical names remain in docs, tests, or old event rows. Do not teach
   agents multiple names; update active producers/consumers to canonical names
   and leave old rows as historical data.
@@ -841,7 +850,7 @@ event. DbWriter, UI tailing, logging, and passive metrics readers do not count.
 
 Examples:
 
-- `project.owner.requested` → project owner/planner reacts
+- `project.owner.requested` → project owner reacts
 - `metric.breach` → metric owner or ops review reacts
 - `session.end` → session completion tracking/evaluator/recovery reacts
 - `escalation.resolved` → escalation tracker closes the open escalation
@@ -949,7 +958,7 @@ extension point:
 - human or UI asks the runtime to do something
 - project app asks its owner to review/replan/act
 - metric detector asks the metric owner to investigate a breach
-- worker completion should wake planner/owner/problem handling
+- worker completion should wake project owner/problem handling
 - opening or closing work should update completion/orphan tracking, cleanup,
   or evaluation
 - runtime command should wake a runtime component

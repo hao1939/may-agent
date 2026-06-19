@@ -107,20 +107,20 @@ until they become necessary for keeping the loop running.
 
 ### Quality / Output
 
-| ID                                           | What it answers                                                                       | Source                                                                                              | Target | Threshold | Alert      |
-| -------------------------------------------- | ------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------- | ------ | --------- | ---------- | ----------- |
-| `session.failed-triage-rate-3h`              | Are failures being acted on?                                                          | failed/interrupted sessions with `needs_improvement` evaluation (3h)                                | 1.00   | 0.80      | below      |
-| `eval.llm-coverage-lag-h`                    | Has the LLM evaluation lane gone silent?                                              | hours since latest `evaluatedByHeuristic=0` evaluation                                              | 1      | 4         | above      |
-| `eval.llm-evals-24h`                         | Did enough sessions get deep evaluation recently?                                     | count of non-evaluator `evaluatedByHeuristic=0` evaluations (24h)                                   | 4      | 1         | below      |
-| `evaluator.low-quality-rate-24h`             | Is evaluated work frequently `needs_improvement` or low-scoring? (dashboard-only, P3) | `needs_improvement`/`low_quality` verdicts or low quality/efficiency scores / all evaluations (24h) | 0.10   | 0.80      | above      |
-| `evaluator.substantive-low-quality-rate-24h` | Of _substantive_ evaluations, are quality failures frequent?                          | substantive needs-improvement count / substantive evaluations (24h)                                 | 0.10   | 0.30      | above      |
+| ID                                           | What it answers                                                                       | Source                                                                                              | Target | Threshold | Alert      | Status |
+| -------------------------------------------- | ------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------- | ------ | --------- | ---------- | ------ |
+| `session.failed-triage-rate-3h`              | Are failures being acted on?                                                          | failed/interrupted sessions with `needs_improvement` evaluation (3h)                                | 1.00   | 0.80      | below      | active |
+| `eval.llm-coverage-lag-h`                    | Has the LLM evaluation lane gone silent?                                              | hours since latest `evaluatedByHeuristic=0` evaluation                                              | 1      | 4         | above      | active |
+| `eval.llm-evals-24h`                         | Did enough sessions get deep evaluation recently?                                     | count of non-evaluator `evaluatedByHeuristic=0` evaluations (24h)                                   | 4      | 1         | below      | active |
+| `evaluator.low-quality-rate-24h`             | Is evaluated work frequently `needs_improvement` or low-scoring? (dashboard-only, P3) | `needs_improvement`/`low_quality` verdicts or low quality/efficiency scores / all evaluations (24h) | 0.10   | 0.80      | above      | active |
+| `evaluator.substantive-low-quality-rate-24h` | Of _substantive_ evaluations, are quality failures frequent?                          | substantive needs-improvement count / substantive evaluations (24h)                                 | 0.10   | 0.30      | above      | active |
 | `system.real-output-24h`                     | Is the system producing?                                                              | `git log` substantive files changed (24h)                                                           | 100    | 30        | below      | **retired** |
-| `project.iterations-24h`                     | How much active-project work happened?                                                | active project.iteration events (24h)                                                               | 0      | 0         | watch-only |
-| `project.blocked-over-6h`                    | Is work stuck on true blockers?                                                       | `COUNT(*)` from projects where blocked >6h                                                          | 0      | 4         | above      |
-| `metric.stale-active-count`                  | Is measurement coverage stale?                                                        | active metrics without a recent snapshot                                                            | 0      | 8         | above      |
-| `metric.structurally-pinned-count`           | Are any metrics stuck at a single value?                                              | active metrics with coefficient of variation = 1 over 7d snapshots (KE-938/939/940)                 | 0      | 0         | above      |
-| `capability.status-reality-mismatch-count`   | Does runtime state match durable facts?                                               | stale projects, stale metrics, orphan terminal sessions, missing heartbeat agents                   | 0      | 3         | above      |
-| `capability.zombie-session-count`            | Are sessions stuck alive?                                                             | running/idle sessions older than stale cutoff                                                       | 0      | 2         | above      |
+| `project.iterations-24h`                     | How much active-project work happened?                                                | active project.iteration events (24h)                                                               | 0      | 0         | watch-only | active |
+| `project.blocked-over-6h`                    | Is work stuck on true blockers?                                                       | `COUNT(*)` from projects where blocked >6h                                                          | 0      | 4         | above      | active |
+| `metric.stale-active-count`                  | Is measurement coverage stale?                                                        | active metrics without a recent snapshot                                                            | 0      | 8         | above      | active |
+| `metric.structurally-pinned-count`           | Are any metrics stuck at a single value?                                              | active metrics with coefficient of variation = 1 over 7d snapshots (KE-938/939/940)                 | 0      | 0         | above      | active |
+| `capability.status-reality-mismatch-count`   | Does runtime state match durable facts?                                               | stale projects, stale metrics, orphan terminal sessions, missing heartbeat agents                   | 0      | 3         | above      | active |
+| `capability.zombie-session-count`            | Are sessions stuck alive?                                                             | running/idle sessions older than stale cutoff                                                       | 0      | 2         | above      | active |
 
 ### Additional Built-In Metrics
 
@@ -380,7 +380,8 @@ Metrics are **slow-moving signals**. Don't chase them daily.
 
 Metrics evolve — meeting a target is not done:
 
-1. **Create** — define in project.md with target
+1. **Create** — define in the metric registry or project/app metric setup with
+   owner, project context when applicable, target, threshold, and closure path
 2. **Measure** — metrics-snapshot handler records automatically
 3. **Alert** — breach triggers heartbeat attention
 4. **Raise target** — target met consistently? Raise the bar or add dimensions

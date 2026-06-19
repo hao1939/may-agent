@@ -5,8 +5,36 @@
 A handler is what runs when a timer, event subscription, or manual
 `trigger.<entry-name>` fires.
 
-For straightforward workflow work, configure a workflow-backed handler directly
-in `cron.json`:
+For project-app behavior, configure workflow-backed handlers in the app's
+`app.ts`:
+
+```typescript
+export default defineProjectApp({
+  // ...
+  workflowHandlers: [
+    {
+      name: "my-project-owner",
+      type: "job",
+      enabled: true,
+      description: "Owner loop. Reviews events, updates the task tree, and assigns work.",
+      on: ["project.owner.requested"],
+      handler: {
+        workflow: "project-planner",
+        includeEvent: true,
+        task: "app: /app/projects/my-project.app\nproject: /app/projects/my-project",
+        timeoutMs: 3_600_000
+      },
+      context: [
+        "projects/my-project.app/project.json",
+        "projects/my-project.app/tasks/tree.json"
+      ]
+    }
+  ]
+});
+```
+
+For standalone agents or legacy compatibility, configure a workflow-backed
+handler directly in `cron.json`:
 
 ```json
 {
@@ -24,9 +52,9 @@ in `cron.json`:
 ```
 
 Write a TypeScript handler only when the handler must do deterministic infra
-work before deciding what to do. A TypeScript handler lives in
-`handlers/` beside the `cron.json` that registers it and exports a `create`
-function:
+work before deciding what to do. For standalone/legacy cron entries, a
+TypeScript handler lives in `handlers/` beside the `cron.json` that registers
+it and exports a `create` function:
 
 ```typescript
 import type { CronEntry, EventEnvelope, HandlerContext, HandlerModule } from "@may-agent/sdk";
@@ -68,13 +96,19 @@ collection in the workflow.
 
 ## Registering Trigger Entries
 
-Add an entry to your agent's `cron.json`. The filename is historical; each
-entry describes triggers plus the handler to run.
+For V3 project-apps, add entries to `workflowHandlers` or `schedules` in
+`projects/<id>.app/app.ts`. The app owns the event mapping and the workflow
+files usually live in `projects/<id>.app/workflows/`.
+
+Use `cron.json` for standalone agents and legacy compatibility. The filename
+is historical; each entry describes triggers plus the handler to run.
 
 The owner is the agent that owns that `cron.json`. For global agents this is
-`agents/<agent>/cron.json`; for project-local agents this is
-`projects/<project>/agents/<agent>/cron.json`. Named handlers resolve beside
-that file, so project-local automation stays inside the project:
+`agents/<agent>/cron.json`; for legacy project-local agents this is
+`projects/<project>/agents/<agent>/cron.json`. V3 app-local agents live under
+`projects/<id>.app/agents/<agent>/` and are wired from the app manifest instead
+of a project-local `cron.json`. Named cron handlers resolve beside the
+`cron.json` file that registers them:
 
 ```text
 projects/aks-rp-e2e/
@@ -87,9 +121,10 @@ projects/aks-rp-e2e/
         managed-system-pool-watch.ts
 ```
 
-Use a project-local handler when the trigger only has meaning for that one
-project. Use a global May/platform handler for shared project reconciliation,
-metric routing, escalation routing, and other infra-wide behavior.
+Use an app-local workflow handler when the trigger only has meaning for that
+one project-app. Use a global May/platform handler for shared infra-wide
+mechanics such as metric snapshotting, escalation routing, retention, and
+compatibility backstops.
 
 Add `context` beside the handler config. Keep it to local paths that explain why
 the loop exists and where future maintenance belongs:

@@ -174,13 +174,16 @@ runtime. The caller/boundary decides whether the local blocked result should
 be handled locally, persisted as workflow trace, or promoted into an external
 owner-routed escalation event.
 
-At the top-level project workflow boundary, the runtime follows normal
-ownership: a blocked project workflow is persisted as `workflow_runs.status =
-"blocked"` and the project/workflow owner is woken with `project.owner.requested`
-containing `workflowRunId`, workflow name, owner, project id, parent session /
-workflow lineage, reason, and compact context. Nested workflow blockers are
-returned to their parent workflow synchronously and do not emit an owner wake by
-themselves.
+At the top-level workflow boundary, the runtime follows normal ownership by
+returning to the most specific context owner. A blocked workflow is persisted as
+`workflow_runs.status = "blocked"`. If the workflow was triggered by
+`project.task.assigned`, runtime emits blocked `project.task.completed` with
+`taskId`, `attemptId`, workflow lineage, reason, and compact context so the
+project owner can repair the task tree. Project workflows without task context
+use `project.owner.requested`. Non-project workflows use
+`workflow.owner.requested`, which is handled by the default owner route for
+`*.requested` events. Nested workflow blockers are returned to their parent
+workflow synchronously and do not emit an owner wake by themselves.
 
 `runAgent` and `runWorkflow` should share option semantics where possible:
 source, project/session parentage, timeout, request id, and trace metadata. The

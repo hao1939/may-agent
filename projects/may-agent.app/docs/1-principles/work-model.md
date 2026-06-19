@@ -71,7 +71,7 @@ questions:
 
 | Field | Meaning | Explicit project | Heartbeat implicit project |
 |-------|---------|------------------|----------------------------|
-| Goal | What are we trying to maintain or change? | `project.md` goal | agent identity / domain |
+| Goal | What are we trying to maintain or change? | `project.json`/task tree goal, or legacy `project.md` goal | agent identity / domain |
 | Owner | Who is accountable? | project owner | the agent |
 | Signals | What changed or needs attention? | project metrics, events, blockers | owned metrics, alerts, inbox, active projects |
 | State | What is true now? | current state / journal | context, lessons, recent sessions |

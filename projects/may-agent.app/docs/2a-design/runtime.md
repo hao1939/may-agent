@@ -116,12 +116,18 @@ facts, and most recent reasoning.
 
 ## Agent Discovery
 
-The runtime discovers agents from two normal roots:
+The runtime discovers standalone agents from the global root and app-local
+agents through project-app loading:
 
 - global agents at `AGENTS_ROOT/<agent>/agent.json`
-- project-local agents at `PROJECTS_ROOT/<project>/agents/<agent>/agent.json`
+- V3 app-local agents at `projects/<id>.app/agents/<agent>/agent.json`
+- legacy project-local agents at
+  `PROJECTS_ROOT/<project>/agents/<agent>/agent.json` for compatibility
 
-Project-local agents are not a separate runtime mode. They are registered in the same manager and must use globally unique names. Their coding tools are scoped to the containing project directory, which makes a container with only `/projects/aks-rp-e2e` mounted behave the same as a full runtime with many projects mounted.
+App-local and legacy project-local agents are not a separate runtime mode. They
+are registered in the same manager and must use globally unique names. Their
+coding tools are scoped to the owning app/domain workspace according to the app
+loader or legacy project loader.
 
 ## Implementation
 

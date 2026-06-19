@@ -240,8 +240,8 @@ It has two views:
 
 Human feedback should attach directly to task nodes. The UI can expose this as
 `tree.attachFeedback()` at the product level: the user comments on a concrete
-task, and the planner receives feedback with task id, parent chain, current
-status, and surrounding context. Project-wide discussion remains useful, but it
+task, and the project owner receives feedback with task id, parent chain,
+current state, and surrounding context. Project-wide discussion remains useful, but it
 is not the primary steering mechanism once a task tree exists.
 
 Deep links should support:
@@ -592,7 +592,11 @@ What the front page does **not** show: a metric grid, a session list, an event l
 
 ### 2. `/projects/:id` — Project detail (Steerer)
 
-A project is a goal + history + ongoing iterations. The UI shows it that way. Crucially: **the human sees what the agent sees.** When an agent works on a project at heartbeat, it reads `project.md`, `journal.md`, `discussion.md`, and the project's metrics. The UI surfaces the same things, in the same place, organized for human reading.
+A project is a goal + history + ongoing iterations. The UI shows it that way.
+Crucially: **the human sees what the agent sees.** For current `.app` projects,
+the owner reads the project manifest, task tree, journal/discussion audit when
+present, recent events, and project metrics. The UI surfaces the same material,
+organized for human reading and steering.
 
 ```
 ┌──────────────────────────────────────────────────────────────────────┐
@@ -632,10 +636,15 @@ A project is a goal + history + ongoing iterations. The UI shows it that way. Cr
 └──────────────────────────────────────────────────────────────────────┘
 ```
 
-The discussion box is **inline and conversational**, not a buried form. The latency is honest: the UI says "for the next heartbeat," the comment is delivered as a `project.comment` event, the agent picks it up next heartbeat. Watch the pulse to see when.
+The discussion box is **inline and conversational**, not a buried form. The
+latency is honest: the comment is delivered as a `project.comment.created`
+event, and the project app or owner fallback wakes the owner path. Watch the
+pulse and event trace to see whether it was accepted and acted on.
 
 **Steering verbs available here:**
-- **Comment** (inline textarea) — adds to discussion, agent sees next heartbeat.
+- **Comment** (inline textarea) — emits `project.comment.created`; the owner
+  sees it through the project event path. The app may also keep an audit copy in
+  discussion/journal state.
 - **Edit goal** — updates `project.md` `## Goal` section. Mutable by humans only.
 - **Pause / Resume** — sets project status; agent skips paused projects.
 - **Mark closed** — humans close projects, not agents.
@@ -671,7 +680,7 @@ A session is **a thought**. The UI renders it as one, in four phases (matching t
 │               Iterating now before it blocks."                        │
 │                                                                       │
 │  ACT         8 tool calls:                                           │
-│              · read project.md, journal.md, discussion.md            │
+│              · read project/task state, journal/discussion, metrics  │
 │              · edit journal.md (added iteration entry)               │
 │              · message → dev (P2, request review)                    │
 │              · finish                                                 │

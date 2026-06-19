@@ -4,9 +4,12 @@ Read this first. These principles govern every design decision in the system. In
 
 ---
 
-## 1. Everything is an event
+## 1. Reactive work is event-driven
 
-When something happens — metric breaches, project changes, session fails, agent finds something — emit an event. Events are how the system communicates. Not polling. Not direct calls. Not file watches.
+When something happens that another owner, handler, session, or human can react
+to — metric breaches, project changes, session completion, agent findings —
+emit an event. Facts that nobody reacts to belong in state, logs, metrics, or
+knowledge, not as decorative events.
 
 The EventBus is the central nervous system. Commands go in, observations come out. Components subscribe and react.
 

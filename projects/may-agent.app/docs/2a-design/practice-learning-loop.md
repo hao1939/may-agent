@@ -62,7 +62,7 @@ The summary row in `session.eval.jsonl` should include owner-routed findings der
 | `session.eval.jsonl` | Append-only critique trail beside the raw log. Stores evaluator summary, turn/line critique, and human feedback. |
 | `evaluations` table | Query/index projection for session-level status. Not the source of truth. |
 | Project folder | Durable work context and output location for improvement work. |
-| `project.md` / `discussion.md` / `journal.md` | Human intent, current state, and history for improvement projects. |
+| `project.json`, `tasks/tree.json`, journal/discussion state | Human intent, current state, and history for current `.app` projects. Legacy `project.md` projects are historical compatibility material. |
 | Metrics and events | Signals that learning may be needed or that a change worked. Raw guard metrics are unreviewed signals; `learning.feedback` is the owner-targeted notification for reviewed actionable evaluator findings. |
 | Evaluator agent | First-pass critic and learning extractor. |
 | Owner agent/human | Receives actionable findings and chooses the fix in the right project/code/context boundary. |

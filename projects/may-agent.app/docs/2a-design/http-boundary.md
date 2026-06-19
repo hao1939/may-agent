@@ -162,7 +162,7 @@ For project UIs:
 
 - Read current state from project artifacts or view endpoints.
 - For side-effecting requests, emit a canonical event through `POST /api/events`.
-- Let the project app or project handler decide whether to start an agent
+- Let the project app or owner route decide whether to start an agent
   session, run a workflow, write evidence, or ignore the request.
 
 Recommended event names:
@@ -172,7 +172,8 @@ Recommended event names:
 | `project.comment.created` | Human comment/direction for a project. |
 | `project.action.requested` | UI or operator requested a named project behavior. |
 | `project.tick` | Timer-triggered project lane. |
-| `project.task.dispatched` / `project.task.finished` | Task-driven project execution lifecycle. |
+| `project.task.assigned` / `project.task.completed` | Current V3 task execution lifecycle. |
+| `project.task.dispatched` / `project.task.finished` | Legacy project handler lifecycle; do not use for new project-apps. |
 
 ### Existing Convenience Routes
 
@@ -242,9 +243,10 @@ projects/
   may-agent.app/
     ui/                # generated/synced static copy served by HTTP
       index.html
-  <project>/
-    project.md
-    agents/            # optional project-local agents
+  <project>.app/
+    app.ts
+    project.json
+    agents/            # optional app-local project agents
       <agent>/
         agent.json
         AGENTS.md

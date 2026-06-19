@@ -21,78 +21,90 @@ or wait for a resume signal.
 
 ## Location
 
-All projects live at: `projects/<name>/project.md` under the app root
-(`/app/projects/<name>/project.md` in the container).
+Current standing projects use the V3 app layout:
 
-Shared across agents — any agent can own/advance a project. A project may also carry its own local agents under `projects/<name>/agents/<agent>/`. Project-local agents are discovered like global agents but their coding/read/write root is the project directory, so the same runtime works whether `PROJECTS_ROOT` contains one project or many.
+```text
+projects/<id>.app/
+  app.ts
+  project.json
+  tasks/tree.json
+```
+
+The `.app` folder is the May-agent control plane. Its `project.json` declares
+the app/project identity and the domain workspace it drives. The domain
+workspace may be another folder under `projects/`, a sibling repo, or another
+local checkout; it must remain useful without May-agent.
+
+Legacy projects may still exist as `projects/<name>/project.md`, but the
+global legacy project handler is disabled and no active project should be
+started in that format.
 
 ## Project Directory Layout
 
-A minimal project is a single `project.md`. Larger standing projects may split
-ancillary content into sibling files for readability:
+A minimal V3 project app is:
 
 ```text
-projects/<name>/
-  project.md          # required — identity, metadata, goal, plan, tasks, journal
-  discussion.md       # async comments between agents/humans
-  journal.md          # optional split-out of ## Journal for large histories
-  tasks.md            # optional split-out of ## Tasks for high-task-volume projects
-  outputs/            # deliverables produced by the project
-  proposals/          # design proposals awaiting review
-  workflows/          # project-specific workflow scripts
-  repos/              # links or checkouts of related code repositories
-  agents/             # project-local agents (see below)
+projects/<id>.app/
+  app.ts              # required app declaration, schedules, routes, actions
+  project.json        # required identity, owner, workspace binding, status
+  tasks/tree.json     # owner thinking map and task state
+  package.json        # optional but recommended command surface
+  workflows/          # app-local owner/worker/problem workflows
+  agents/             # optional app-local agent identities
+  scripts/            # app integrity, projections, utilities
+  ui/                 # project-specific UI assets
+  docs/               # app/project docs when docs are part of the app purpose
+  .state/             # ignored runtime scratch, discussion/journal JSONL, cache
 ```
 
-When a split-out file exists (e.g. `journal.md`), it is the canonical source
-for that section. The corresponding `## Journal` heading in `project.md` may
-remain as a pointer or recent-entries summary but must not contradict the
-split-out file.
+Domain deliverables such as features, specs, evidence, replays, model files,
+and test runners belong in the domain workspace, not in the `.app` folder. The
+app may read, edit, test, and commit the domain workspace when that is part of
+the project owner's accepted workflow.
 
-## Project File Format
+Legacy `project.md` projects used sibling files such as `discussion.md`,
+`journal.md`, and `tasks.md`. That split-out convention is historical
+compatibility material. V3 apps should use `project.json`, `tasks/tree.json`,
+domain files, infra traces, and optional `.state/*.jsonl` runtime scratch
+instead.
 
-Project metadata is machine-readable YAML frontmatter. Keep owner and status in
-frontmatter so code and agents read the same source of truth. Do not put a
-project-driver workflow in frontmatter; the project handler drives projects.
+## Project Manifest Format
 
-Project bodies should follow the same work-context convention as heartbeat:
-goal, signals, current state, plan, evidence/journal, and validation. Keep the
-sections compact; the project is memory for future sessions, not a transcript.
+For V3 apps, `project.json` is the structured source for identity, owner,
+status, workspace binding, and high-level goal context. `app.ts` declares
+runtime behavior: schedules, event subscriptions, workflow handlers, actions,
+and owner routing.
 
-```markdown
----
-id: my-project
-owner: tech-lead
-status: active
-type: milestone
-priority: P1
-iteration: 0
----
-
-# Project Name
-
-## Goal
-What this project achieves.
-
-## Signals
-- metric.id — what it means and how to interpret it
-- relevant events, blockers, or user requests
-
-## Current State
-What is true now, including known constraints and current theory.
-
-## Plan
-- [x] Step 1
-- [ ] Step 2
-- [ ] Step 3
-
-## Validation
-What signals, tests, or user feedback will show the next judgment was right.
-
-## Journal
-### 2026-04-29
-Completed step 1. Next: step 2.
+```json
+{
+  "id": "my-project",
+  "owner": "tech-lead",
+  "status": "active",
+  "type": "milestone",
+  "priority": "P1",
+  "workspace": {
+    "kind": "local",
+    "localPath": "../my-project"
+  },
+  "goal": "What this project achieves.",
+  "signals": [
+    "metric.id — what it means and how to interpret it",
+    "relevant events, blockers, or user requests"
+  ],
+  "validation": [
+    "What signals, tests, or user feedback prove the next judgment was right."
+  ]
+}
 ```
+
+The task tree records the active decomposition, milestones, done summaries, and
+review state. Runtime event/session/workflow tables record attempts and traces.
+Optional `.state/journal.jsonl` or `.state/discussion.jsonl` may keep compact
+runtime notes, but they are not required as a control path.
+
+Legacy `project.md` files used YAML frontmatter plus Markdown sections for
+goal, signals, state, plan, validation, and journal. That format remains useful
+for reading old projects but should not be used for new standing projects.
 
 ## Lifecycle
 
@@ -143,14 +155,35 @@ Three layers stay separate:
 | Layer | Question | Vocabulary |
 |-------|----------|------------|
 | Project status | Should the owner loop run? | active, waiting, blocked, pending-review, paused, done, closed |
-| Task status | Can this be dispatched? | pending, ready, running, done |
-| Task result | What accepted outcome satisfies dependents? | succeeded, failed, dropped, superseded |
+| V3 task state | What does the task tree say about this node? | backlog, active, review, done, blocked |
+| Derived readiness | Can this leaf be assigned now? | runnable, dependency-blocked, conflict-blocked, stale, needs-decomposition |
+| Worker claim/result | What did the worker report for owner review? | done, partial, blocked, failed, rejected, plus project-specific fields |
 
 A good task has a clear goal, is independently dispatchable, has observable
 completion, and should normally fit in a 5-30 minute worker session. Longer work
 should be split. Shorter work should usually be done inline by the owner.
 
-Tasks live in `project.md` under `## Tasks`:
+Current `.app` projects store the task tree in `tasks/tree.json` and mutate it
+through task-tree tools. The five-state model is defined in
+[task-tree-engine.md](task-tree-engine.md). `ready` is not a persisted state or
+lane; it is a derived readiness projection from a `backlog` leaf with satisfied
+dependencies and no active conflict.
+
+Example V3 task node:
+
+```json
+{
+  "id": "score-batch-1",
+  "parent_id": "project",
+  "state": "backlog",
+  "goal": "Score sessions 177900-177905.",
+  "depends_on": [],
+  "acceptance": ["Evidence links are recorded.", "Owner can review the claim."],
+  "children": []
+}
+```
+
+Legacy `project.md` projects stored tasks under `## Tasks`:
 
 ```markdown
 ## Tasks
@@ -165,8 +198,8 @@ Tasks live in `project.md` under `## Tasks`:
   attempts: 0
 ```
 
-`run` is optional and defaults to `agent`. Use `run: workflow:<name>` only for a
-bounded, reusable procedure that should run as a workflow.
+That embedded list is historical compatibility material. Do not use it for new
+`.app` projects.
 
 Optional project frontmatter:
 
@@ -190,29 +223,32 @@ Supported policies:
 | `maintenance` | React to incoming signals (regressions, comments, health findings) but do not proactively seek new frontiers. Keep `waiting` unless a signal makes work necessary. | Mature infrastructure or closed-scope projects that should not accumulate speculative tasks. |
 | `standard` | Create tasks for actionable work; wait when actionable signals are absent. | Default posture for ordinary projects. |
 
-Use policy to choose threshold, not mechanics. The handler still uses the same
-event queue, task parser, owner singleflight, lifecycle events, and fallback
-scan for every project.
+Use policy to choose threshold, not mechanics. V3 apps express their owner loop,
+worker loop, schedules, event subscriptions, and metrics in `app.ts`; legacy
+`project.md` projects used the disabled global project handler described later
+in this document.
 
 ### Task Dependencies
 
-Tasks can depend on other task IDs. A task with unmet dependencies is
-`pending`. When dependencies complete with `result: succeeded`, the task becomes
-`ready`.
+Tasks can depend on other task IDs. In V3, a task with unmet dependencies stays
+`backlog` and its readiness projection is `dependency-blocked`. When
+dependencies are `done`, the leaf may become `runnable` if no conflict blocks
+it.
 
 This is the only structural relationship. If two tasks have no dependency
 relationship, they may run in parallel up to `max_concurrent`.
 
 ### Task Attempts And Judgment
 
-The handler dispatches ready tasks and increments `attempts`. If a task succeeds,
-the handler marks it `done` with `result: succeeded`. If it does not succeed, it
-returns to `ready` until the task reaches `max_task_attempts`.
+V3 project owners assign runnable `backlog` leaves. The assignment tool moves a
+leaf to `active` with a current attempt id; the worker returns
+`project.task.completed`; the app event layer wakes the owner. The owner reviews
+the claim and updates the task tree: `review -> done`, `review -> backlog` for
+rework, or `review -> blocked` for a confirmed external blocker.
 
-When a task reaches the attempt limit, the handler stops direct dispatch and
-launches the owner with `source: project-owner`. The owner decides whether to
-retry differently, split the task, add a dependency, drop/supersede it, or
-escalate.
+Attempt counts and retry policy are project-app behavior, not task-tree state.
+The important invariant is that a worker failure becomes evidence for owner
+judgment; it should not loop through automatic retries forever.
 
 Blocked worker sessions are evidence, not task status. The project should stay
 `active` if the owner can still retry, split, delegate, verify, or escalate.
@@ -237,7 +273,7 @@ For an `active` project, "no open tasks" is a policy-driven planning trigger,
 not a successful terminal state. A successful owner loop must leave one of these
 machine-readable states:
 
-- Concrete next tasks exist (`ready`, `pending`, or `running`).
+- Concrete next task-tree work exists (`backlog`, `active`, or `review`).
 - Frontmatter status is changed to `waiting`, `blocked`, `pending-review`,
   `paused`, `done`, or `closed` with the reason represented in project state.
 - The owner escalated because it cannot choose the next step autonomously.
@@ -249,208 +285,37 @@ create the next bounded task when a plausible frontier remains. The handler
 emits `project.owner.incomplete` for this mismatch so the needed planning stays
 visible.
 
-## Project-Local Agents
+## Project-App Agents And Workflows
 
-A project-local agent lives inside the project it owns:
+V3 app-local agents live inside the app, not inside the domain workspace:
 
 ```text
-projects/aks-rp-e2e/
-  project.md
+projects/aks-rp-e2e.app/
+  app.ts
   agents/
     aks-explorer/
       agent.json
       AGENTS.md
-      heartbeat.md
       workspace/
+  workflows/
+    project-planner.ts
+    task-worker.ts
 ```
 
-The agent name must still be globally unique after discovery. If a project is mounted alone at `/projects/<name>` in a container, the same discovery path works: the runtime scans `PROJECTS_ROOT/*/agents/*` and registers the local agent. No separate single-project mode is required.
+The app manifest owns schedules, event subscriptions, workflow handlers,
+actions, and budget/concurrency limits. Workflow files stay app-local when they
+contain project-specific prompts, planning packets, task assignment rules, or
+domain repair logic. The runtime supplies the event bus, scheduler, session
+execution, persistence, and default owner fallback; it does not supervise the
+task tree or decide project strategy.
 
-For project-local agents:
+Legacy project-local agents under `projects/<project>/agents/<agent>/` and
+legacy embedded apps under `projects/<project>/.app/` are compatibility paths.
+Do not use them for new projects.
 
-- `agentDir`, workspace, knowledge, tools, and workflows resolve inside the project-local agent directory.
-- `cron.json` and named `handlers/` resolve inside the project-local agent directory.
-- Coding tools use the containing project directory as their root.
-- Shared infra remains available through the runtime image, but project work should stay in the mounted project.
-
-Project-local handlers are for automation that is meaningful only inside that
-project. Shared project lifecycle behavior, such as reconciling all active
-projects, remains a global May/platform handler.
-
-## Project-as-App
-
-Status: historical design context. For current implementation work, use
-`project-app-v3.md`: sibling `*.app/` directories with `project.json` and
-`app.ts` own project behavior, activation happens through canonical events,
-and there is no generic `/api/projects/action` endpoint. The `app.yaml` design
-below and legacy embedded `.app/` are not the current target.
-
-A project is both a **context container** (goal, scope, knowledge, state) and a
-**capability surface** (functions it exposes, events it consumes and produces,
-work it drives autonomously). The existing event bus, cron scheduler, and
-reconciler form the runtime — the project-app declares what it plugs into that
-runtime.
-
-### Mental Model
-
-```text
-Project  = context container (goal, scope, knowledge, state)
-App      = capability surface (cron jobs, event handlers, workflows, tools)
-Infra    = existing event bus + cron + reconciler that chains everything together
-```
-
-The project-app does not run its own event loop. The existing infrastructure IS
-the event loop. The project-app declares:
-
-1. **What events I consume** — handlers fire, I do work
-2. **What functions I expose** — other agents/projects can call my workflows
-3. **What events I produce** — downstream projects/handlers react
-4. **What I explore on schedule** — cron drives periodic deepening
-
-Outputs are inputs to something else. The system stays alive because project-apps
-chain through the shared event bus.
-
-### Relationship to Project-Local Agents
-
-Projects with a full local agent (like `aks-rp-e2e/.app/agents/aks-explorer/`) already
-have app behavior via their agent's `cron.json`, handlers, and workflows. That
-pattern remains valid and is the canonical exemplar.
-
-`app.yaml` provides the same capability surface for projects that do not need a
-full agent identity — lighter-weight project-apps that run workflows under an
-existing agent (typically `may` or the project owner agent) rather than requiring
-their own agent directory.
-
-### app.yaml
-
-A project declares its app behavior in `projects/<name>/app.yaml`:
-
-```yaml
-# projects/<name>/app.yaml
-
-# What this project-app provides and runs
-functions:
-  workflows:
-    - name: explore-frontier
-      description: "Discover new coverage gaps"
-      agent: may                         # which agent runs it (default: project owner)
-      schedule: "0 9 * * *"             # optional cron expression
-      on: [coverage.gap.detected]       # optional event triggers
-      context:                          # files loaded into session context
-        - projects/<name>/project.md
-        - projects/<name>/knowledge-map/README.md
-      timeout_ms: 1800000
-    - name: generate-report
-      description: "Produce weekly coverage report"
-      schedule: "0 8 * * 1"
-
-  tools: []  # future: project-exposed tools discoverable by other agents
-
-# Autonomous exploration configuration
-exploration:
-  push_policy: balanced   # explore-heavy | serve-heavy | balanced
-
-# Resource constraints
-budget:
-  sessions_per_day: 10
-  tokens_per_day: 500000
-  max_concurrent: 2
-
-# Safety boundaries
-guardrails:
-  scope_boundary: project.md            # cannot explore outside declared scope
-  require_review_for:
-    - shared state mutations
-    - new tool registration
-```
-
-Fields:
-
-| Field | Required | Description |
-|-------|----------|-------------|
-| `functions.workflows` | yes | Workflows this project-app runs, with schedule and/or event triggers |
-| `functions.tools` | no | Tools exposed to the system (future) |
-| `exploration.push_policy` | no | How aggressively the app explores (`explore-heavy`, `serve-heavy`, `balanced`) |
-| `budget.sessions_per_day` | no | Max autonomous sessions per calendar day |
-| `budget.tokens_per_day` | no | Max output tokens per calendar day |
-| `budget.max_concurrent` | no | Max simultaneous sessions (default: from project frontmatter or 2) |
-| `guardrails` | no | Constraints on autonomous behavior |
-
-### Reconciler as App Supervisor
-
-The project reconciler remains the single authority over project lifecycle. Its
-role evolves from pure task dispatcher to app supervisor:
-
-```text
-Before: reconciler = read project.md → dispatch tasks → wait
-After:  reconciler = read project.md + app.yaml → manage lifecycle of a running app
-```
-
-The reconciler:
-
-| Concern | Reconciler's role |
-|---------|-------------------|
-| "Should this project-app be running?" | Owns the decision — only registers app when `status: active` |
-| "What does it do when running?" | Reads `app.yaml`, registers cron entries + event subscriptions |
-| "Has it exceeded its budget?" | Tracks sessions/tokens per day, enforces caps |
-| "Does it need owner judgment?" | Same triggers as today (all tasks done, attempts exceeded, etc.) |
-| "Should it stop?" | Unregisters everything when status flips to waiting/closed/paused |
-
-Lifecycle flow:
-
-```text
-1. Reconciler pass reads projects/<name>/app.yaml
-2. Project status is "active" → register cron jobs + event subscriptions
-3. Cron fires → session dispatcher checks budget → launches session
-4. Session runs declared workflow, produces events
-5. Reconciler reacts to project.session.finished:
-   - Budget remaining? Let app keep running
-   - Budget exhausted? Flip to waiting, unregister cron
-   - Owner judgment needed? Launch owner session
-6. Status flipped to waiting/paused/closed → unregister all cron + subscriptions
-```
-
-New lifecycle events:
-
-| Event | Meaning |
-|-------|---------|
-| `project.app.registered` | App cron/subscriptions wired into the runtime |
-| `project.app.suspended` | Budget exhausted or status flipped — app stopped |
-| `project.app.budget-exhausted` | Specific budget breach (sessions or tokens) |
-
-### Budget Model
-
-Per-project budget is tracked in the DB:
-
-```sql
-CREATE TABLE project_budget (
-  project_id TEXT NOT NULL,
-  date TEXT NOT NULL,           -- YYYY-MM-DD
-  sessions_used INTEGER DEFAULT 0,
-  tokens_used INTEGER DEFAULT 0,
-  PRIMARY KEY (project_id, date)
-);
-```
-
-The session dispatcher increments counters before launching. When a counter
-would exceed the declared budget, the dispatcher refuses the session and emits
-`project.app.budget-exhausted`. The reconciler then flips the project to
-`status: waiting` with `wait_reason: "budget exhausted, resets tomorrow"`.
-
-Budget resets daily. No carryover — unused budget does not accumulate.
-
-### Migration Path
-
-Projects already using the project-local-agent pattern (full agent directory with
-`cron.json`) do not need `app.yaml`. Their existing setup is the heavyweight
-equivalent — `app.yaml` is for projects that want app behavior without the
-overhead of a dedicated agent identity.
-
-To migrate a project to project-as-app:
-
-1. Add `app.yaml` declaring workflows, schedule, and budget.
-2. Ensure workflows exist in `projects/<name>/workflows/`.
-3. Set project status to `active` — the reconciler handles registration.
+The retired `app.yaml` design was replaced by `*.app/app.ts`. If old notes refer
+to `app.yaml`, translate the intent into `defineProjectApp({ schedules,
+workflowHandlers, actions, ... })` in the sibling app.
 
 ### Project UI Requests
 
@@ -493,22 +358,24 @@ projects/aks-rp-e2e/                      # domain project (portable, no May-age
 projects/aks-rp-e2e.app/                  # May-agent control plane (sibling)
   project.json                            # app manifest (id, owner, status, policy, strategy)
   app.ts                                  # event handler / app definition
-  agents/aks-explorer/                    # project-local agent
+  agents/aks-explorer/                    # app-local project agent
     agent.json
     AGENTS.md
     heartbeat.md
     workspace/
-  workflows/                              # project-planner, task-worker, etc.
-  tasks/tree.json                         # task tree (ready/active/done leaves)
+  workflows/                              # owner workflow, task-worker, problem-solver, watchdog, etc.
+  tasks/tree.json                         # five-state task tree: backlog/active/review/done/blocked
   scripts/                                # utility scripts (metrics, integrity checks)
   ui/                                     # project-specific UI components
 ```
 
 The app drives the domain project through events: `project.owner.requested`
-wakes the project owner workflow, which updates the task tree and dispatches
-ready leaves as worker sessions. `project.planning.requested` is accepted only
-as a legacy compatibility alias. The domain project remains portable and
-runnable without May-agent.
+wakes the project owner workflow, which reviews the task tree and explicitly
+assigns runnable backlog leaves by emitting `project.task.assigned`. Workers
+return `project.task.completed`; blocked task workflows also return through
+`project.task.completed` so the owner can repair the task branch.
+`project.planning.requested` is accepted only as a legacy compatibility alias.
+The domain project remains portable and runnable without May-agent.
 
 > **Note:** The legacy paths `projects/<name>/agents/<agent>/` and embedded
 > `projects/<name>/.app/` layouts are historical. `aks-rp-e2e` migrated to
@@ -517,7 +384,7 @@ runnable without May-agent.
 > not by the project-health scanner (which only discovers `project.md` files).
 > See `project-app-v3.md` for the full design.
 
-## Project Handler
+## Legacy Project Handler
 
 > **Status (2026-06-15):** The legacy project cron handler (`project` entry in
 > `agents/may/cron.json`) was **disabled** on 2026-06-15 — all active projects
@@ -526,15 +393,16 @@ runnable without May-agent.
 > but it does not run. The project steward and project creative audit handlers
 > remain active. See also KE-2011 (orphaned metrics from this handler).
 
-`agents/may/handlers/project.ts` is an event-driven reconciler with a
-30-minute timer fallback:
+`agents/may/handlers/project.ts` was an event-driven reconciler with a
+30-minute timer fallback. The following list is retained as historical behavior
+for legacy `project.md` projects, not as the current `.app` project-app loop:
 - Treats project events (`project.nudge`, `project.task.finished`,
   `project.completed`, `project.blocked`, etc.) as the primary wake-up path.
   The timer is a backup scan for missed events, direct file edits, and process
   recovery, not the expected latency for comments or task completion.
 - Reconciles from current state (`project.md`, `discussion.md`, session/query
   state, metrics), not from the triggering event payload alone.
-- Dispatches ready `## Tasks` items for `active` projects, subject to
+- Dispatches ready `## Tasks` items for `active` legacy projects, subject to
   task-level concurrency, dependency, attempt, and active-task checks.
 - Launches the owner agent with `source: project-owner` when the project needs
   planning or judgment. Only owner loops are singleflight; parallel
@@ -597,26 +465,33 @@ activity:
   for deterministic reasons such as repeated task attempts, all tasks done, or
   no tasks.
 
-Latency should be read from event timestamps: project event to
-`project.owner.dispatched` or task dispatch should be seconds in the normal
-event-driven path. The 30-minute timer is only a fallback for missed events,
-direct file edits, and process recovery.
+For current `.app` projects, latency should be read from event timestamps:
+project event to `project.owner.requested` acceptance, `project.task.assigned`,
+or `project.task.completed` should be seconds in the normal event-driven path.
+Timer schedules are fallback or periodic review mechanisms, not the expected
+latency for comments or task completion.
 
-## E2E Behavior Contracts
+## Legacy E2E Behavior Contracts
 
-Project e2e tests should prove the reconciler model, not just individual helper
-functions. The core invariant is:
+These contracts describe the disabled legacy reconciler. Current `.app` project
+contract tests should instead prove the V3 app event contract described in
+[project-app-v3.md](project-app-v3.md): owner wake, explicit assignment,
+worker completion, problem-solver return, metric feedback, and task-tree
+integrity.
+
+Legacy project e2e tests proved the reconciler model, not just individual helper
+functions. Its core invariant was:
 
 ```text
 project event -> mark project dirty -> reconcile current project state
 ```
 
-Events are chances to reconcile. They are not commands to blindly execute the
-payload. The reconciler reads current `project.md`, `discussion.md`, session
-state, metrics, and events, then chooses dispatch, owner judgment, replan,
+Events were chances to reconcile. They were not commands to blindly execute the
+payload. The reconciler read current `project.md`, `discussion.md`, session
+state, metrics, and events, then chose dispatch, owner judgment, replan,
 unblock, escalation, or no-op.
 
-Recommended live-stack e2e cases:
+Historical live-stack e2e cases:
 
 | Case | Setup | Event | Expected assertions |
 |------|-------|-------|---------------------|
@@ -634,10 +509,10 @@ Recommended live-stack e2e cases:
 | Stale event reads current state | Event payload is duplicated, delayed, or older than `project.md`. | Duplicate `project.task.finished` or nudge. | Reconciler uses current files/session state and does not regress task status or duplicate work. |
 | Metric signal wakes project | Project is waiting on a metric/resume signal. | Metric breach/recovery event routed to project. | Project owner sees the metric context and decides replan, task creation, waiting, or no-op. |
 
-Existing coverage:
+Legacy coverage:
 
-- `e2-project-comment-roundtrip` covers comment intake and `project.nudge`
-  emission.
+- `e2-project-comment-roundtrip` covers legacy comment intake and
+  `project.nudge` emission.
 - `e3a-task-driven-project-loop` covers task dispatch, dependency unblock, task
   lifecycle events, and repeated-attempt owner routing.
 - `e3c-project-reconciler-events` covers queued generic nudges, task-finished
@@ -648,9 +523,10 @@ metric-signal wakeups, stale-event idempotency, and fallback scan behavior.
 
 ## DB Table
 
-Effective query schema for the project cache. The canonical project source is
-still `projects/<name>/project.md`; this table is a projection for UI, metrics,
-and runtime queries.
+Effective query schema for the project cache. Canonical project intent lives in
+the V3 app's `project.json` and `tasks/tree.json`, or in legacy
+`projects/<name>/project.md` for old projects. This table is only a projection
+for UI, metrics, and runtime queries.
 
 ```sql
 CREATE TABLE projects (
@@ -680,11 +556,13 @@ CREATE TABLE projects (
   `project.health.checked` periodic snapshot was removed in commit 73d989fdb,
   2026-06-10.) It does not dispatch work or edit project files.
 - **Project creative audit:** `agents/may/handlers/project-creative-audit.ts`
-  and `agents/may/workflows/project-creative-audit.ts` provide the fallback for
-  unknown issues. The handler selects one open project on a cooldown and runs a
-  May workflow. The workflow may inspect broadly, but it only appends a
-  proposal comment to `discussion.md` and emits `project.nudge`; the normal
-  project owner loop reviews any suggested change before applying it.
+  and `agents/may/workflows/project-creative-audit.ts` are a legacy semantic
+  fallback for unknown project issues. They still use the old
+  `discussion.md`/`project.nudge` proposal path and should be migrated or
+  retired behind `may-agent.app` owner review. The V3-preferred path is a
+  context-rich owner event such as `project.owner.requested` or
+  `project.feedback.created`, with the project app deciding how to apply or
+  reject the suggestion.
 - **Health lib:** `shared/lib/project-health.ts`
 - **DB schema:** `projects/may-agent/src/lib/db/schema.ts` (projects table)
 - **Project query/projection helpers:** `projects/may-agent/src/lib/query-service.ts` and project handler cache sync

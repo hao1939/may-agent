@@ -1,6 +1,6 @@
 # Proposal: Formalize Stigmergic Coordination
 
-**Status:** draft
+**Status:** historical / partially superseded by Project App V3
 **Date:** 2026-05-03 (revised 2026-05-08)
 **References:** [../architecture.md](../2a-design/architecture.md), [../work-model.md](../1-principles/work-model.md), [../2a-design/heartbeat.md](../2a-design/heartbeat.md)
 
@@ -24,7 +24,11 @@ The explicit-message channel is barely used. Coordination clearly happens — it
 
 Three stigmergic substrates already exist:
 
-1. **Shared project files** (`projects/<name>/project.md` + journal). The canonical source of truth for cross-agent work. Agents communicate progress by editing the file, not by sending a message about it.
+1. **Shared project files** (current V3: `projects/<id>.app/project.json`,
+   `tasks/tree.json`, app/domain artifacts, and optional `.state/*.jsonl`;
+   legacy: `projects/<name>/project.md` + journal). Agents communicate durable
+   progress by updating the shared project artifacts, not by sending a message
+   about every change.
 2. **Metrics** (the `metrics` table). Agents monitor shared metrics to decide when to act, instead of waiting to be paged.
 3. **Knowledge entries** (`shared/knowledge/`). Cross-agent learning without direct messaging.
 

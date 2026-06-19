@@ -21,23 +21,22 @@ agents/<name>/
   workflows/              # Workflow definitions.
   last-session.md         # Generated runtime memory, not system prompt.
 
-projects/<project>/agents/<name>/
-  agent.json              # Same shape; agent is scoped to the project.
+projects/<id>.app/agents/<name>/
+  agent.json              # Same shape; agent is scoped to the project app.
   AGENTS.md
-  cron.json               # Optional project-local trigger entries.
-  handlers/               # Optional project-local handlers.
-  workflows/              # Optional project-local workflows.
   workspace/
 
 shared/
   common-sense.md         # Shared always-loaded behavioral fundamentals.
   knowledge/              # Shared references, read on demand.
-  may-agent-docs/         # Architecture and operator docs.
+
+projects/may-agent.app/docs/
+  ...                     # May-agent architecture, design, and operator docs.
 ```
 
 ## Prompt Files
 
-Only two authored files are always loaded into the v2 system prompt:
+Only two authored files are always loaded into the normal system prompt:
 
 | File | Purpose | Loaded |
 |------|---------|--------|
@@ -132,10 +131,11 @@ Do not put prose instructions in `agent.json`.
 3. Optionally create `heartbeat.md`, `knowledge/INDEX.md`, `knowledge/*.md`, handlers, or workflows.
 4. Restart or use the runtime reload command.
 
-For a project-scoped agent, use the same shape under
-`projects/<project>/agents/<name>/`. Its cron entries and named handlers stay
-inside that project directory; use this for project-specific automation, not
-shared platform policy.
+For a project-app-scoped agent, use the same shape under
+`projects/<id>.app/agents/<name>/`. Wire project-specific automation from the
+app's `app.ts` schedules and workflow handlers, not from a separate
+project-local cron file. Use this for project-specific automation, not shared
+platform policy.
 
 ## Common Mistakes
 

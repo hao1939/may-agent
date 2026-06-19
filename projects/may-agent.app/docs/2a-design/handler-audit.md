@@ -29,8 +29,11 @@ A handler is owned by the `cron.json` entry that registers it:
 
 - `agents/<agent>/cron.json` owns global agent handlers in
   `agents/<agent>/handlers/`.
-- `projects/<project>/agents/<agent>/cron.json` owns project-local handlers in
-  `projects/<project>/agents/<agent>/handlers/`.
+- legacy `projects/<project>/agents/<agent>/cron.json` owns legacy
+  project-local handlers in `projects/<project>/agents/<agent>/handlers/`.
+- V3 project-app workflow handlers are owned by
+  `projects/<id>.app/app.ts`; app-local workflows live in
+  `projects/<id>.app/workflows/`.
 
 This keeps project-specific automation inside the project boundary while shared
 infra behavior remains owned by a global agent such as May.
@@ -44,11 +47,11 @@ infra behavior remains owned by a global agent such as May.
 | `session-aftermath-scan` | Evaluator entry in May cron | Fallback scan for unevaluated sessions | `sdk.query` + `runWorkflow` | no | Keep; it is already a bounded workflow dispatcher. |
 | `metrics-snapshot` | May/global | Deterministic metric projection | `getDb` + metrics service | yes | Keep direct; it is measurement, not judgment. |
 | `coaching-consumer` | May/global if enabled | File-based coaching queue projection | filesystem | yes | Keep direct until the coaching queue is replaced by metrics/events. |
-| `project` | May/global | Project scanner, state mutator, workflow launcher | direct FS/cache projection + `sdk.query` + `runWorkflow` + durable trace events | temporarily | Keep global because it reconciles all projects; project-specific automation should move to project-local handlers. |
+| `project` | Disabled May/global legacy handler | Legacy project scanner, state mutator, workflow launcher | direct FS/cache projection + `sdk.query` + `runWorkflow` + durable trace events | temporarily | Disabled. V3 apps own project behavior in `app.ts`; keep code only as compatibility reference. |
 | `project-steward` | May/global | Read-only project health discovery | direct FS + project health events | no | Keep global; it observes all projects and emits evidence. |
-| `project-creative-audit` | May/global | Proposal-only semantic fallback for project issues | `runWorkflow` with project context | no | Keep global; it proposes findings, owner review applies changes. |
+| `project-creative-audit` | Disabled May/global legacy fallback | Proposal-only semantic fallback for project issues | `runWorkflow` with project context | no | Disabled. Replacement direction is project-steward observations plus `may-agent.app` owner review. |
 | `metric-alert-reactor` | May/global | Alert owner resolution, dedup, triage dispatch | `sdk.query` + `runWorkflow` + durable trace events | no | Keep; preflight reads and triage workflow context are query-backed. |
-| `closed-loop-steward` | May/global | Loop audit and retriage | `sdk.query` + `runWorkflow` + durable trace events | no | Keep; live context collection is query-backed and dispatch is workflow-backed. |
+| `closed-loop-steward` | Disabled May/global legacy audit | Loop audit and retriage | `sdk.query` + `runWorkflow` + durable trace events | no | Disabled because it was too expensive and overlapped metric-alert-reactor plus `may-agent.app` owner review. |
 | `eval-llm-scan` | Evaluator entry in May cron | Deep evaluator candidate selection and artifact validation | direct DB + `runWorkflow` + durable trace events | temporarily | Candidate/artifact bookkeeping is deterministic handler work; evaluator LLM work is workflow-backed. Convert candidate reads to `sdk.query` later. |
 | `session-eval` | Retired | Retired legacy evaluator dispatch | n/a | no | Removed. Use `evaluator-aftermath` event path plus `session-aftermath-scan` fallback. |
 | `session-recovery` | May/global | Terminal error/interruption recovery bridge | digest/classifier preflight + `runWorkflow` | no | Keep as runtime-level recovery, event-first on `session.completed` recoverable outcomes. |
@@ -99,8 +102,8 @@ parts:
 | Handler | Replacement candidate | Gate before disabling | Current decision |
 |---|---|---|---|
 | `daily-alert-review` | `may-agent.app` `daily-ops-digest` schedule plus `ops-health-review` packets | Replacement signal: `project.ops_digest.tick`; owner: `may-agent.app` owner May; closure path: report, notification, `project.ops_digest.created`, and `project.owner.requested` when open/noisy/missing-owner conditions need judgment; proof: `workflows/daily-ops-digest.test.ts` seeds open/noisy alerts and verifies report, notification, and owner wake. | Disabled in `agents/may/cron.json`. The report path moved from `outputs/YYYY-MM-DD-alert-review.md` to `.state/daily-ops-digests/YYYY-MM-DD-alert-review.md` because digest output is runtime state, not committed project knowledge. |
-| `closed-loop-steward` | `ops-health-review` signals plus metric owner routing through `metric-alert-reactor`/project owner events | Replays cover stale P1 alert, unresolved escalation, failed message delivery, and recovered alert validation without losing `metric.alert_judged` closure. | Keep enabled. The observer reduces silent drift but does not replace alert-closure judgment yet. |
-| `project-creative-audit` | Project owner planning plus `project-steward` structural findings | Replay shows unknown semantic project issues become owner-visible proposals without the global fallback, including stale/misleading task-tree decomposition cases. | Keep enabled. It is proposal-only and still covers unknown unknowns. |
+| `closed-loop-steward` | `ops-health-review` signals plus metric owner routing through `metric-alert-reactor`/project owner events | Replays cover stale P1 alert, unresolved escalation, failed message delivery, and recovered alert validation without losing `metric.alert_judged` closure. | Disabled in `agents/may/cron.json` after high session cost and overlap were confirmed. Keep the replacement proof current before deleting code. |
+| `project-creative-audit` | Project owner planning plus `project-steward` structural findings | Replay shows unknown semantic project issues become owner-visible proposals without the global fallback, including stale/misleading task-tree decomposition cases. | Disabled in `agents/may/cron.json`. Re-enable only if the app owner review path misses semantic project issues in practice. |
 | `coaching-consumer` | `evaluation.app` feedback events or metrics owned by evaluator/coach | Evaluation app owns coaching queue production, coach receives durable feedback signals, and at least one replay verifies low-quality pattern feedback reaches the coach without file polling. | Keep enabled. Ownership target is evaluation/coach, but replacement is not built. |
 | `feedback-echo-sync` | Evaluation app or runtime feedback writer that updates agent feedback files from evaluation events | Event-driven feedback update is implemented and replayed; stale feedback cleanup still works; no subprocess/SQLite race reappears. | Keep enabled. It is deterministic, cheap, and fixes a prior flaky subprocess path. |
 

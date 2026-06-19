@@ -206,10 +206,11 @@ Scope:
   - `telegram.reply.received` only if raw Telegram context is needed before it
     becomes `input` or `project.comment.created`.
 - [x] Refactor Web UI project comments so the adapter emits
-  `project.comment.created`; the daemon appends `discussion.md` and emits
-  `project.nudge`.
+  `project.comment.created`; the project app or owner fallback handles the
+  owner wake. Discussion/journal entries are optional audit artifacts, not a
+  required control path.
 - [x] Refactor Telegram project replies so reply enrichment emits
-  `project.comment.created` instead of writing `discussion.md` directly.
+  `project.comment.created` instead of writing project files directly.
 - [x] Refactor Telegram session replies with stored `session_id` so they emit
   `steer` for that session instead of falling through to generic chat input.
 - [x] Refactor Web UI session cancel to emit `session.cancel.requested`.
