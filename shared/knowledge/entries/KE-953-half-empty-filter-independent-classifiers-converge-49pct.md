@@ -1,8 +1,10 @@
 <ai_context>
 summary: "Two structurally independent binary classifiers — the evaluator's JS-skip filter and the planner's emergent gate — converged to identical 49.2% rejection rates through completely different mechanisms. The planner gate emerged over 7 days following a textbook sigmoid (0% → 13% → 21% → 27% → 41% → 49% → 49%), saturating at the evaluator's pre-existing skip rate. Peak system output (28,785 work ops on Jun 17) coincided with peak gate rate (48.7%). This is maximum-entropy binary classification: both filters independently found the point where each accept/reject decision carries maximum information. The system's efficiency improved not by working harder but by learning where NOT to work — and both filters found the same answer."
 triggers: ["filter convergence", "maximum entropy", "binary classifier", "gate emergence", "sigmoid saturation", "50% attractor", "channel capacity"]
-status: "active"
-claim: "Independent binary filters in an agent system converge to ~50% rejection rate because that maximizes the information content of each decision. The evaluator JS-skip (49.2%) and planner gate (49.2%) reached identical rates through different mechanisms (coded heuristic vs emergent behavior). The 50% mark is an information-theoretic attractor, not a coincidence. Corollary: peak output coincides with maximum gate rate because cheap rejections free resources for quality accepts."
+status: "falsified"
+superseded_by: "KE-2047"
+falsification_note: "KE-2047 showed the planner's ~50% 'gate rate' is a workflow composition artifact, not emergent behavior. The project-planner fires TWO sessions per cycle (event_review at ~96% ≤3-ops, planning_update at ~0% ≤3-ops). Pooling both step types produces ~50% by construction (1:1 ratio). The Shannon maximum-entropy framing is unfounded. See KE-2047 for full evidence."
+claim: "[FALSIFIED — see KE-2047] Independent binary filters in an agent system converge to ~50% rejection rate because that maximizes the information content of each decision. The evaluator JS-skip (49.2%) and planner gate (49.2%) reached identical rates through different mechanisms (coded heuristic vs emergent behavior). The 50% mark is an information-theoretic attractor, not a coincidence. Corollary: peak output coincides with maximum gate rate because cheap rejections free resources for quality accepts."
 discovered: "2026-06-19"
 last_verified: "2026-06-19"
 evidence_refs: [
