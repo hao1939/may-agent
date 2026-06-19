@@ -11,6 +11,16 @@ const scriptPath = resolve(
   "project-metrics.ts",
 );
 
+type TreeTask = {
+  id?: string;
+  parent_id?: string;
+  state?: string;
+  goal?: string;
+  children?: string[];
+  kind?: string;
+  depends_on?: string[];
+};
+
 async function makeFixture() {
   const root = await mkdtemp(join(tmpdir(), "aks-project-metrics-"));
   const appDir = join(root, "aks-rp-e2e.app");
@@ -43,7 +53,11 @@ async function makeFixture() {
   return { root, appDir, projectDir, dbPath };
 }
 
-async function writeTree(appDir: string, activeTask: Record<string, unknown>) {
+async function writeTree(
+  appDir: string,
+  activeTask: Record<string, unknown>,
+  extraTasks: Record<string, TreeTask> = {},
+) {
   await writeFile(
     join(appDir, "tasks", "tree.json"),
     `${JSON.stringify(
@@ -58,7 +72,7 @@ async function writeTree(appDir: string, activeTask: Record<string, unknown>) {
           project: {
             id: "project",
             state: "active",
-            children: ["active-task"],
+            children: ["active-task", ...Object.keys(extraTasks)],
           },
           "active-task": {
             id: "active-task",
@@ -68,6 +82,7 @@ async function writeTree(appDir: string, activeTask: Record<string, unknown>) {
             goal: "Run a feature verification task.",
             ...activeTask,
           },
+          ...extraTasks,
         },
       },
       null,
@@ -187,6 +202,58 @@ describe("project metrics", () => {
     ).toBe("0");
     expect(
       await metricValue(fixture, "aks-rp-e2e.task.no-work-with-gaps"),
+    ).toBe("0");
+  });
+
+  test("does not count blocked-dependent live backlog as runnable work", async () => {
+    const fixture = await makeFixture();
+    await writeFile(
+      join(fixture.projectDir, "specs", "index.json"),
+      `${JSON.stringify(
+        {
+          specs: [{ id: "spec.live", status: "ready", specState: "ready" }],
+        },
+        null,
+        2,
+      )}\n`,
+    );
+    await writeFile(
+      join(fixture.projectDir, "replays", "probe-live.ts"),
+      "export {};\n",
+    );
+    await writeTree(
+      fixture.appDir,
+      { session_id: "s_running" },
+      {
+        "blocked-auth": {
+          id: "blocked-auth",
+          parent_id: "project",
+          state: "blocked",
+          children: [],
+          goal: "Wait for auth gate.",
+          kind: "domain_leaf",
+        },
+        "live-backlog": {
+          id: "live-backlog",
+          parent_id: "project",
+          state: "backlog",
+          children: [],
+          goal: "Run live staging execution once gate opens.",
+          kind: "domain_leaf",
+          depends_on: ["blocked-auth"],
+        },
+      },
+    );
+    writeSession(fixture.dbPath, {
+      sessionId: "s_running",
+      status: "running",
+      opCount: 1,
+      startedAt: Date.now() - 10_000,
+      lastActivityAt: Date.now(),
+    });
+
+    expect(
+      await metricValue(fixture, "aks-rp-e2e.run.live-idle-with-runnable-work"),
     ).toBe("0");
   });
 });

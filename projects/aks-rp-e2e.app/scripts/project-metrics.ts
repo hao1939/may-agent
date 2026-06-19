@@ -514,7 +514,8 @@ function runningActiveTaskCount(): number {
 
 function hasLiveExecutionRunnableBacklog(): boolean {
   const tree = loadTaskTree();
-  const tasks = Object.values(tree.tasks ?? {});
+  const taskMap = tree.tasks ?? {};
+  const tasks = Object.values(taskMap);
   const idSignals = [
     "staging",
     "execute",
@@ -544,6 +545,16 @@ function hasLiveExecutionRunnableBacklog(): boolean {
 
   return tasks.some((task) => {
     if (taskState(task) !== "backlog" || !isLeaf(task)) return false;
+    if (
+      (task.depends_on ?? []).some((dependencyId) => {
+        if (typeof dependencyId !== "string") return false;
+        const dependency = taskMap[dependencyId];
+        if (!dependency) return false;
+        return taskState(dependency) !== "done";
+      })
+    ) {
+      return false;
+    }
     const haystack = [task.id, task.goal, task.kind, task.parent_id]
       .filter((value): value is string => Boolean(value))
       .join(" ")
