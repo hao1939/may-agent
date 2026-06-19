@@ -80,6 +80,14 @@ export interface CronEntry {
    * route each event to an independently leased unit of work.
    */
   maxConcurrentTriggers?: number;
+  /**
+   * Maximum number of events to queue when the handler is at capacity.
+   * When the queue reaches this depth, the oldest event is dropped so the
+   * newest (most up-to-date) event is kept. Default: 3.
+   * Set to 0 to disable queueing entirely (events are silently dropped
+   * when at capacity).
+   */
+  maxQueueDepth?: number;
 }
 
 function textResult(text: string): AgentToolResult<string> {

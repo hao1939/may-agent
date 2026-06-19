@@ -577,6 +577,7 @@ export class Cron {
           !old ||
           old.intervalMs !== entry.intervalMs ||
           old.maxConcurrentTriggers !== entry.maxConcurrentTriggers ||
+          old.maxQueueDepth !== entry.maxQueueDepth ||
           old.message !== entry.message ||
           old.agent !== entry.agent ||
           JSON.stringify(old.handler ?? null) !== JSON.stringify(entry.handler ?? null) ||
@@ -709,13 +710,31 @@ export class Cron {
   }
 
   private enqueueEventTrigger(entryName: string, event: EventEnvelope): void {
+    const entry = this.entries.find((e) => e.name === entryName);
+    const maxDepth = this.maxQueueDepth(entry);
+
+    // If queueing is disabled entirely, silently drop the event.
+    if (maxDepth <= 0) {
+      this.onError?.(`Cron "${entryName}" event dropped — queueing disabled (maxQueueDepth=0)`);
+      return;
+    }
+
     let queue = this.queuedEventTriggers.get(entryName);
     if (!queue) {
       queue = [];
       this.queuedEventTriggers.set(entryName, queue);
     }
+
+    // Enforce max queue depth: keep-latest, drop-oldest policy.
+    // The newest event carries the most recent state, so it's the most
+    // valuable for owner-review-style handlers.
+    while (queue.length >= maxDepth) {
+      const dropped = queue.shift();
+      this.onError?.(`Cron "${entryName}" queue full (${maxDepth}) — dropping oldest event (type=${dropped?.type ?? "unknown"})`);
+    }
+
     queue.push(event);
-    this.onError?.(`Cron "${entryName}" event queued — at concurrency capacity (${queue.length} pending)`);
+    this.onError?.(`Cron "${entryName}" event queued — at concurrency capacity (${queue.length} pending, max ${maxDepth})`);
   }
 
   private drainQueuedEventTrigger(entryName: string): void {
@@ -768,6 +787,16 @@ export class Cron {
   private maxConcurrentTriggers(entry: CronEntry): number {
     const configured = entry.maxConcurrentTriggers;
     return typeof configured === "number" && Number.isFinite(configured) && configured > 1 ? Math.floor(configured) : 1;
+  }
+
+  private maxQueueDepth(entry: CronEntry | undefined): number {
+    const DEFAULT_MAX_QUEUE_DEPTH = 3;
+    if (!entry) return DEFAULT_MAX_QUEUE_DEPTH;
+    const configured = entry.maxQueueDepth;
+    if (typeof configured === "number" && Number.isFinite(configured)) {
+      return configured <= 0 ? 0 : Math.floor(configured);
+    }
+    return DEFAULT_MAX_QUEUE_DEPTH;
   }
 
   private hasCapacity(entry: CronEntry): boolean {

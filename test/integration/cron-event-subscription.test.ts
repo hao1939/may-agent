@@ -425,4 +425,156 @@ describe("Cron event subscriptions", () => {
 
     for (const resolve of resolvers.splice(0)) resolve();
   });
+
+  it("enforces maxQueueDepth, dropping oldest events when queue is full", async () => {
+    const dir = join(tmpdir(), `cron-queue-depth-${Date.now()}-${Math.random().toString(36).slice(2)}`);
+    tempDirs.push(dir);
+    mkdirSync(dir, { recursive: true });
+    const configPath = join(dir, "cron.json");
+    writeFileSync(configPath, JSON.stringify([
+      {
+        name: "depth-limited-handler",
+        enabled: true,
+        handler: "depth-limited-handler",
+        on: ["project.owner.requested"],
+        maxQueueDepth: 2,
+      },
+    ]));
+
+    const bus = new EventBus();
+    const started: string[] = [];
+    const resolvers: Array<() => void> = [];
+    const errors: string[] = [];
+    const cron = new Cron(configPath, {} as any, () => "session", (msg) => errors.push(msg), dir);
+    cron.load();
+    cron.registerHandler("depth-limited-handler", async (event) => {
+      started.push(String(event?.data.reason));
+      await new Promise<void>((resolve) => resolvers.push(resolve));
+    });
+    cron.subscribeToBus(bus);
+
+    // First event starts immediately (handler has capacity).
+    // Events 2-5 arrive while handler is busy — should queue max 2, dropping oldest.
+    for (const reason of ["first", "second", "third", "fourth", "fifth"]) {
+      bus.emit({
+        type: "project.owner.requested",
+        source: "test",
+        owner: "agent:may",
+        data: { reason },
+      } as any);
+    }
+
+    await new Promise((resolve) => setTimeout(resolve, 10));
+    // Only "first" should have started; 4 events queued but limited to 2.
+    expect(started).toEqual(["first"]);
+
+    // Complete "first" — should drain newest queued event ("fourth" was dropped for "fifth").
+    // Queue had: [second, third] → third dropped for fourth → [second, fourth] → second dropped for fifth → [fourth, fifth]
+    resolvers.shift()?.();
+    await new Promise((resolve) => setTimeout(resolve, 10));
+    expect(started).toEqual(["first", "fourth"]);
+
+    // Complete "fourth" — should drain "fifth".
+    resolvers.shift()?.();
+    await new Promise((resolve) => setTimeout(resolve, 10));
+    expect(started).toEqual(["first", "fourth", "fifth"]);
+
+    // Verify drop messages were logged.
+    const dropMessages = errors.filter((m) => m.includes("queue full") || m.includes("dropping oldest"));
+    expect(dropMessages.length).toBeGreaterThanOrEqual(2);
+
+    for (const resolve of resolvers.splice(0)) resolve();
+  });
+
+  it("drops all events when maxQueueDepth is 0", async () => {
+    const dir = join(tmpdir(), `cron-queue-zero-${Date.now()}-${Math.random().toString(36).slice(2)}`);
+    tempDirs.push(dir);
+    mkdirSync(dir, { recursive: true });
+    const configPath = join(dir, "cron.json");
+    writeFileSync(configPath, JSON.stringify([
+      {
+        name: "no-queue-handler",
+        enabled: true,
+        handler: "no-queue-handler",
+        on: ["project.owner.requested"],
+        maxQueueDepth: 0,
+      },
+    ]));
+
+    const bus = new EventBus();
+    const started: string[] = [];
+    const resolvers: Array<() => void> = [];
+    const errors: string[] = [];
+    const cron = new Cron(configPath, {} as any, () => "session", (msg) => errors.push(msg), dir);
+    cron.load();
+    cron.registerHandler("no-queue-handler", async (event) => {
+      started.push(String(event?.data.reason));
+      await new Promise<void>((resolve) => resolvers.push(resolve));
+    });
+    cron.subscribeToBus(bus);
+
+    // First event starts immediately.
+    bus.emit({ type: "project.owner.requested", source: "test", owner: "agent:may", data: { reason: "first" } } as any);
+    await new Promise((resolve) => setTimeout(resolve, 10));
+    expect(started).toEqual(["first"]);
+
+    // Subsequent events while handler is busy should be dropped entirely.
+    bus.emit({ type: "project.owner.requested", source: "test", owner: "agent:may", data: { reason: "second" } } as any);
+    bus.emit({ type: "project.owner.requested", source: "test", owner: "agent:may", data: { reason: "third" } } as any);
+
+    resolvers.shift()?.();
+    await new Promise((resolve) => setTimeout(resolve, 10));
+    // Only "first" should have run — no queued events drained.
+    expect(started).toEqual(["first"]);
+
+    const dropMessages = errors.filter((m) => m.includes("queueing disabled"));
+    expect(dropMessages.length).toBe(2);
+
+    for (const resolve of resolvers.splice(0)) resolve();
+  });
+
+  it("uses default maxQueueDepth of 3 when not configured", async () => {
+    const dir = join(tmpdir(), `cron-queue-default-${Date.now()}-${Math.random().toString(36).slice(2)}`);
+    tempDirs.push(dir);
+    mkdirSync(dir, { recursive: true });
+    const configPath = join(dir, "cron.json");
+    writeFileSync(configPath, JSON.stringify([
+      {
+        name: "default-queue-handler",
+        enabled: true,
+        handler: "default-queue-handler",
+        on: ["project.owner.requested"],
+        // no maxQueueDepth — should default to 3
+      },
+    ]));
+
+    const bus = new EventBus();
+    const started: string[] = [];
+    const resolvers: Array<() => void> = [];
+    const cron = new Cron(configPath, {} as any, () => "session", undefined, dir);
+    cron.load();
+    cron.registerHandler("default-queue-handler", async (event) => {
+      started.push(String(event?.data.reason));
+      await new Promise<void>((resolve) => resolvers.push(resolve));
+    });
+    cron.subscribeToBus(bus);
+
+    // Emit 1 (runs) + 6 more (5 should be queued but limited to 3).
+    for (const reason of ["a", "b", "c", "d", "e", "f", "g"]) {
+      bus.emit({ type: "project.owner.requested", source: "test", owner: "agent:may", data: { reason } } as any);
+    }
+
+    await new Promise((resolve) => setTimeout(resolve, 10));
+    expect(started).toEqual(["a"]);
+
+    // Drain all: a runs, then e, f, g (newest 3 kept from 6 queued).
+    for (let i = 0; i < 4; i++) {
+      resolvers.shift()?.();
+      await new Promise((resolve) => setTimeout(resolve, 10));
+    }
+    // "a" started first, then queue kept latest 3: "e", "f", "g"
+    expect(started).toEqual(["a", "e", "f", "g"]);
+
+    for (const resolve of resolvers.splice(0)) resolve();
+  });
 });
