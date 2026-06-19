@@ -90,6 +90,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 WORKDIR /app
 
+# Create user for uid 1000 before copying runtime files that it should own.
+RUN useradd -u 1000 -d /app/.state -s /bin/bash mayagent 2>/dev/null || true
+
 # Runtime Node/npm comes from the pinned builder image. This avoids the extra
 # NodeSource apt repository while keeping agent shell commands on Node 22.
 COPY --from=builder /usr/local/bin/node /usr/local/bin/node
@@ -100,14 +103,14 @@ RUN ln -sf ../lib/node_modules/npm/bin/npm-cli.js /usr/local/bin/npm && \
 # Install CLI agent tools (claude-code, codex) used as worker agents. They
 # route through litellm proxy for model access; keep versions pinned so image
 # rebuilds do not silently change agent behavior.
-ARG CLAUDE_CODE_VERSION=2.1.169
-ARG CODEX_VERSION=0.138.0
+ARG CLAUDE_CODE_VERSION=2.1.183
+ARG CODEX_VERSION=0.141.0
 RUN npm install -g @anthropic-ai/claude-code@${CLAUDE_CODE_VERSION} @openai/codex@${CODEX_VERSION} \
     && npm cache clean --force
 
 # Copy compiled runtime tools from builder. The service runs from the standalone
 # may-agent binary, but agent/operator commands and docs assume `bun` exists.
-COPY --from=builder /build/may-agent /usr/local/bin/may-agent
+COPY --from=builder --chown=mayagent:mayagent /build/may-agent /usr/local/bin/may-agent
 COPY --from=builder /usr/local/bin/bun /usr/local/bin/bun
 COPY --from=builder /build/node_modules/node-pty /app/node_modules/node-pty
 COPY packages/terminal/bin/terminal-bridge.cjs /app/packages/terminal/bin/terminal-bridge.cjs
@@ -129,10 +132,7 @@ COPY container/supervisord.conf /etc/supervisord.conf
 # Copy entrypoints and helpers
 COPY container/entrypoint.sh container/start-chrome.sh container/setup-codex-config.sh /usr/local/bin/
 COPY packages/terminal/bin/may-console.cjs /usr/local/bin/may-console
-RUN chmod +x /usr/local/bin/entrypoint.sh /usr/local/bin/start-chrome.sh /usr/local/bin/setup-codex-config.sh /usr/local/bin/may-console
-
-# Create user for uid 1000 (SSH requires a passwd entry)
-RUN useradd -u 1000 -d /app/.state -s /bin/bash mayagent 2>/dev/null || true
+RUN chmod 755 /usr/local/bin/may-agent /usr/local/bin/entrypoint.sh /usr/local/bin/start-chrome.sh /usr/local/bin/setup-codex-config.sh /usr/local/bin/may-console
 
 # Virtual display
 ENV DISPLAY=:99
