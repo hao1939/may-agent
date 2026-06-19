@@ -126,7 +126,13 @@ channels to compromise software supply chains:
   Defense requirements: provenance verification for all agent-installed
   dependencies, sandboxed installation environments, search-result freshness
   skepticism (recency ≠ legitimacy).
-  *(HN, Jun 2026; see [2026-06-20-hn-scan-33.md](./findings/2026-06-20-hn-scan-33.md))*
+  **Update (Scan #36, Jun 19):** Story now 792pts. guhcampos's "targeted to
+  agents, not humans" thesis has become the *framing anchor* for the thread —
+  upgraded from speculative signal to community consensus. Additional victim
+  reports (Jimmc414, davidcrowe) confirm the attack is active for 4+ months
+  with GitHub taking no action to remove reported repos.
+  *(HN, Jun 2026; see [2026-06-20-hn-scan-33.md](./findings/2026-06-20-hn-scan-33.md),
+  [2026-06-19-hn-scan-36.md](./findings/2026-06-19-hn-scan-36.md))*
 
 ### 1.5 Data Agent Attack Surfaces (Interpretation → Execution → Policy)
 

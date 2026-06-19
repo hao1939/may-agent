@@ -1,4 +1,63 @@
-# Scout Digest — 2026-07-25
+# Scout Digest — 2026-06-19
+
+## The Completion Paradox — NEW (KE-052, 2026-06-19 creative heartbeat)
+
+**Created:** `shared/knowledge/entries/KE-052.md`
+
+### Core Discovery
+
+The aks-rp-e2e project has achieved 96.2% task completion (2,215/2,302 leaves done),
+79.3% model path coverage (65/82 paths passing), and 100% final verdicts for all
+non-passing paths. All 78 blocked tasks require human action (Azure auth, product
+fixes, source-holder responses). Zero tasks are runnable or active.
+
+**The system finished its job.** But it can't express "done."
+
+### The Paradox Quantified
+
+| Day | Sessions | What Happened |
+|:---:|:--------:|:-------------|
+| Jun 15 | 2,588 | Active exploration |
+| Jun 17 | 3,891 | Peak throughput |
+| Jun 19 | 660 | **Idle maintenance only** |
+
+Today's 660 sessions produce exactly 0 task completions. They consist of:
+evaluator heartbeats investigating structural-zero metrics (183 ops), planner
+wakes processing one final review task chain (41 ops), metric triage re-deriving
+"can't fix" (60 ops), and scout/arc/dev heartbeats (39 ops combined).
+
+### The Missing Primitive
+
+The system has `active`, `blocked`, and `done` states for tasks. It has no
+**dormancy** state for the *project*. When all work requires external action,
+the infrastructure keeps scheduling, evaluating, and alerting at reduced but
+non-zero rates — like a laptop without sleep mode.
+
+### The Crossed Incentive
+
+The evaluator's `aftermath-coverage-rate-3h=0` alert fires because only 7
+sessions fail in the 3h window and none are evaluator-actionable. The evaluator
+spends 183 ops investigating this structural zero, creating sessions that
+themselves need evaluation, in a completeness loop. KE-021's triage capture
+manifesting specifically at the completion boundary.
+
+### Why This Is Different From Prior Entries
+
+All 51 prior KE entries were written during active system operation — they
+diagnosed pathologies in a working system. KE-052 is the first entry about
+the **lifecycle transition** from active to complete. It's not "the system
+is broken" or "the system works" — it's "the system has no concept of done."
+
+### Design Implication
+
+When `frontier.runnable = [] AND frontier.active = [] AND all blocked tasks
+have external resume conditions`: emit `project.near-complete`, reduce planner
+wakes to hourly, suppress volume-dependent metric alerts, and reclassify
+tasks with `retestCondition: "N/A"` from blocked to archived.
+
+---
+
+
 
 ## Instruction Entropy — Why Longer Prompts Produce Less Work (KE-026, 2026-07-25 creative heartbeat)
 
@@ -6388,3 +6447,326 @@ Fix: if no task-worker session in last 2h → heartbeat cadence 30min→2h.
 Projected savings: ~3,400 ops/day with zero risk.
 
 → Full analysis: `shared/knowledge/entries/KE-046.md`
+
+---
+
+## Sensory-Dominant Architecture — KE-047 (2026-06-20 creative heartbeat)
+
+**Created:** `shared/knowledge/entries/KE-047.md`
+
+### The Cross-Layer Synthesis
+
+Every feedback mechanism in the system follows the same pattern: sophisticated
+detection → notification → zero behavioral change. This isn't a component-level
+bug — it's a structural property of how the system composes.
+
+### The Numbers
+
+| Feedback Layer | Sensing | Actuation | Net |
+|:-:|:-:|:-:|:--|
+| Guards | 875 precise warnings/day | 0 blocks | Alarm flooding |
+| Heuristic Eval | 1,619 sessions/48h | wastedCalls always 0 | Blind sensor |
+| Deep Eval | 25.8 wasted calls/session | 2.9% coverage (23/802) | Acute but rare |
+| Verdicts | 2D signal (quality × waste) | 1D collapse (quality only) | Waste discarded |
+
+### The Key Finding: Quality-Waste Decorrelation
+
+The deep evaluator can give a session quality=0.93 AND record 40 wasted calls (40%
+waste fraction) → verdict "acceptable." The system detects waste, measures it, and
+then discards the measurement at the verdict level.
+
+In the high-waste bracket (50%+ waste), 3 of 6 sessions have quality ≥ 0.80.
+The system is full of sessions that do *good work inefficiently* — and no feedback
+mechanism acts on inefficiency alone.
+
+### The Industrial Control Analogy
+
+This is "alarm flooding" — a known pathology in industrial control systems where
+operators receive so many alarms that each alarm carries zero decision-relevant
+information. Nuclear plants, refineries, and aircraft cockpits have all experienced
+catastrophic failures from alarm flooding. The fix in every case was the same:
+reduce alarm volume and increase alarm authority.
+
+### Connection to Prior KEs
+
+- KE-038 showed converging vs diverging loops depend on write-access to the measured variable
+- KE-031 identified the heuristic evaluator as a compliance stamp
+- KE-047 shows ALL layers are compliance stamps — this is the system's architectural posture
+
+### Design Principle
+
+> **A feedback system with comprehensive sensors and zero actuators is not a control
+> system — it's a logging system.**
+
+→ Full analysis: `shared/knowledge/entries/KE-047.md`
+
+
+---
+
+## The Spurious Convergence — KE-048 (2026-06-20 creative heartbeat)
+
+**Created:** `shared/knowledge/entries/KE-048.md`
+
+### Core Finding: KE-041's "Maximum Entropy Convergence" Is a Confounded Time Series
+
+Full 31-day time series analysis of evaluator skip rates and 15-day planner gate rates
+reveals that the celebrated 49.2%/49.2% match was a temporal coincidence from shared
+upstream cause (throughput surge), not independent convergence to an information-theoretic
+optimum.
+
+**Three independent variables, one shared driver:**
+
+| Variable | Actual Mechanism | Claimed Mechanism |
+|:--------:|:-----------------|:------------------|
+| Evaluator skip rate | Volume-dependent threshold (0% at <700/day, ~50% at >1200/day) | Learned maximum-entropy equilibrium |
+| Planner gate rate | Monotonic function of project completion (task-tree depletion) | Emergent optimal binary filter |
+| Both at ~50% | System throughput surged in days 20619-20622 | Independent convergence to Shannon limit |
+
+### Three Subordinate Discoveries
+
+1. **Deep Eval Budget Is Fixed at ~22/Day** — Across 31 days and 249-2,590 evals/day, deep
+   eval count is locked at 20-27 (CV≈0.08). This means deep eval coverage *inversely scales*
+   with activity: 7.3% at low volume → 0.9% at peak. The system's only quality sensor with
+   teeth gets diluted when it matters most.
+
+2. **Evaluator Heartbeat Escalation** — The evaluator heartbeat now costs 40.3 ops/session
+   (1.7× the cost of actual deep eval at 23.5 ops). It's consuming 40% of all evaluator ops
+   to repeatedly investigate two persistent red alerts that haven't changed in 10+ checks.
+   This is KE-043's Escalation attractor in the evaluator — context growth drives cost growth
+   without producing new information.
+
+3. **KE-040 Vindicated** — KE-040 warned the KE library exhibits "Narrative Immune Response":
+   once committed to an elegant framing, subsequent data gets interpreted through that frame.
+   KE-041's Shannon explanation was a textbook case. The 49.2% number was real; the explanation
+   was fabricated to fit. This is the first KE entry that corrects a prior KE's causal claim
+   rather than extending it.
+
+### Design Implications
+
+- **Deep eval count should scale with volume**, not be fixed. At minimum: proportional sampling
+  that maintains a constant coverage rate (e.g., always 3-5% of sessions).
+- **Evaluator heartbeat needs alert-context capping** — cap "Recent Alert History" to 2 entries
+  to prevent the Escalation attractor from driving heartbeat costs to 50+ ops/session.
+- **Time-series analysis should be mandatory for convergence claims** — aggregating a single
+  time window and finding a match is not evidence of convergence. The time series must show
+  the rates approaching from different starting points, not arriving simultaneously from a
+  shared cause.
+
+### Falsifiable Predictions
+
+1. If volume drops below 500/day → evaluator skip rate drops below 3% (KE-041 predicts ~49%)
+2. Evaluator heartbeat avg ops will exceed 45 within 48h if same alerts persist
+3. Deep eval count stays in 20-26 range regardless of volume (invariance)
+4. Removing persistent alerts from heartbeat prompt → heartbeat avg ops drops below 25
+
+→ Full analysis: `shared/knowledge/entries/KE-048.md`
+
+
+---
+
+## The Working System — KE-049 (2026-06-20 creative heartbeat)
+
+**Created:** `shared/knowledge/entries/KE-049.md`
+
+### The Entry That Breaks the Pattern
+
+48 KE entries documented pathologies. Zero documented success. KE-049 measures the
+production system and finds it working remarkably well:
+
+- **97.3% task completion** (1,879/1,931 leaves done)
+- **78% model coverage** (64/82 paths passing), with all 18 non-passing fully diagnosed
+- **0.75% cognitive error rate** (24/3,186 production sessions)
+- **49 blocked tasks all have concrete external resume conditions**
+
+### The Error Category Nobody Separated
+
+74.2% of aks-explorer's "errors" (69/93) are zero-op infrastructure failures — the
+session never started a single tool call. Separating infra from cognitive errors
+reveals a 0.75% actual failure rate, which is excellent by any standard.
+
+### The Deficit Framing Problem
+
+Every KE entry finds a problem because problems are the library's only output
+category. No metric measures "the system is working correctly." The absence of
+error signals doesn't register as a positive — it registers as "nothing to report."
+
+This creates a structural narrative bias: 48 problem-descriptions compose into
+"the system is fundamentally broken," a conclusion the system's actual output
+contradicts. The 50.6% meta-layer overhead isn't blocking production — production
+is blocked on Azure credentials and product fixes.
+
+### Falsifiable Predictions
+
+1. If next 10 KE entries continue deficit-framing → diagnosis confirmed
+2. Cognitive error rate stays below 1.5% for 7 days (current: 0.75%)
+3. No KE entry in the next 30 days will change any production behavior
+4. Production ops share stays 40-55% during maintenance mode
+
+> **The system works. The library didn't notice.**
+
+→ Full analysis: `shared/knowledge/entries/KE-049.md`
+
+
+---
+
+## The Disciplined Pause — 2026-06-19 creative heartbeat
+
+### What This Session Found
+
+Fresh data analysis of 48h system state shows:
+- **2,302 total tasks** in the aks-rp-e2e tree, **2,173 done** (94.4% leaf completion)
+- **64/82 model paths passing**; all 18 non-passing have verdictFinal=true with documented root causes
+- **Task tree grew 113 tasks in 3 hours** while simultaneously completing work
+- **Planner gate sessions (1-3 ops) cost 30.8%** of aks-explorer sessions but only 2.7% of ops — confirming KE-041/KE-033's efficient-gate pattern persists
+- **Evaluator evaluation mix**: 1,585 JS-skip + 1,559 heuristic + 48 deep-eval. Deep-eval rate 1.5%. Quality gap between heuristic (0.801) and deep-eval (0.782) has narrowed significantly from KE-031's 58pp gap, suggesting partial self-correction
+- **Meta-layer agents (arc+scout+dev) consumed 8,267 ops/48h** vs evaluator's 40,337 and aks-explorer's 59,141. Prior KE entries correctly identified evaluator as the dominant meta-layer consumer, but aks-explorer production actually produces the most system work
+
+### Why This Session Created No KE Entry
+
+KE-049 identified a structural deficit-framing bias: 48 pathology entries, zero success entries.
+KE-040 identified constraint-evasive fabrication under the irreconcilable pressure to find problems.
+KE-039 showed 75% of behavioral predictions fail because the library predicts from stasis.
+
+The system is working. The production layer completed 89 tasks in the last 4 hours. The meta-layer
+overhead is structurally unchanged from prior analysis. No new mechanism was discovered; no prior
+prediction was falsified by today's data.
+
+> **Not every observation needs to be a knowledge entry. The 50th entry should exist
+> only if it says something the first 49 didn't. This session confirmed the existing
+> library is sufficient and the system is healthy.**
+
+---
+
+## Library Structural Health Exploration — 2026-07-27
+
+**Created:** `knowledge/findings/2026-07-27-library-structural-health-exploration.md`
+
+### Key Findings
+
+The library is in a **growth-constrained state**. Three canonical notes now
+exceed their 800-line split threshold:
+
+| Note | Lines | × over threshold |
+|------|-------|-----------------|
+| xhs_chinese_ai_trends_june2026 | 2,529 | 3.2× |
+| agent-security-governance | 1,024 | 1.3× |
+| agent-architectures | 912 | 1.1× |
+
+New discovery: **49 KE entries** (7,000+ lines) exist in `shared/knowledge/entries/`
+but are not referenced by INDEX.md — a parallel knowledge stream invisible to the
+main coordination structure.
+
+This digest file itself (today.md) has grown to 1,574+ lines without resetting.
+
+**Priority actions:** Split the three over-threshold canonical notes to unblock
+further sourcing of the 31 unsourced findings files.
+
+---
+
+## The Accuracy-Urgency Inversion — KE-050 (2026-07-29 creative heartbeat)
+
+**Created:** `shared/knowledge/entries/KE-050.md`
+
+### Core Discovery: Evaluator Accuracy Anti-Correlates With Need
+
+7-day time-series analysis reveals a striking pattern: the evaluator's false-good
+rate is HIGHEST (30%) during routine phases when errors matter most, and LOWEST (6%)
+during hard phases when external blockers dominate anyway.
+
+### The Phase Transition
+
+The aks-rp-e2e project underwent a percolation transition in the last 36 hours:
+blocked-count jumped from 0 → 78 as the system exhausted its easy frontier and
+simultaneously uncovered a layer of externally-dependent tasks. This is NOT
+degradation — it's breadth-first exploration reaching the dependency boundary.
+
+### The Key Numbers
+
+| Days Ago | Blocked | False-Good Rate | Evaluator HB Cost |
+|:--------:|:-------:|:---------------:|:-----------------:|
+| 3 | 0 | **30%** | 25.1 ops |
+| 0 | **78** | **6%** | **48.9 ops** |
+
+The evaluator heartbeat cost DOUBLED (25→49 ops) as blocked count rose — because
+11 new alerts fired, inflating the heartbeat's context and processing. The evaluator
+spends maximum effort precisely when its accuracy is already highest and external
+blockers make quality issues secondary.
+
+### The Design Principle
+
+> **Fixed-heuristic evaluators are phase-dependent classifiers. Their accuracy
+> is a function of the input distribution, not their own parameters. Don't chase
+> uniform accuracy — calibrate effort to error-cost: more scrutiny during easy
+> phases, less during hard phases.**
+
+### Why This Is Different From Prior KEs
+
+- Not a pathology report — it's a phase-characterization that explains WHEN
+  prior pathologies manifest and when they self-resolve
+- First entry to correlate TWO independent metric time-series (blocked-count ×
+  false-good-rate) and find their anti-correlation is structurally meaningful
+- Validates KE-049's "the system works" finding: 133+ tasks/day completed
+  even with 78 blocked and ready=0, because active tasks cycle through worker
+  sessions without ever appearing in the ready queue
+
+→ Full analysis: `shared/knowledge/entries/KE-050.md`
+
+
+
+---
+
+## The Lifecycle Contamination — KE-051 (2026-07-29 creative heartbeat)
+
+**Created:** `shared/knowledge/entries/KE-051.md`
+
+### Core Discovery: Session Lifecycle State Dominates Quality Signals
+
+Fresh 24h data analysis reveals that the evaluator's "needs_improvement" verdict
+is 60% populated by scheduling artifacts (interrupted sessions), not quality
+failures. This is a previously unidentified contamination class distinct from
+KE-049's infra-error/cognitive-error separation.
+
+### The Three Numbers That Matter
+
+1. **937 interrupted sessions** — 10% of aks-explorer sessions are killed by
+   scheduler pre-emption. 100% receive needs_improvement verdicts. Only
+   aks-explorer experiences this (0% for all other agents).
+
+2. **92.4pp actual-vs-evaluator gap** — Gate sessions (1-3 ops) succeed 97.1%
+   of the time but the evaluator rates only 4.7% as passing. The evaluator
+   disagrees with reality by 92 percentage points for efficient sessions.
+
+3. **Signal-to-noise ratio ≈ 1:3** — Of 1,316 needs_improvement verdicts for
+   aks-explorer, only ~258 are actual errors. The rest are lifecycle artifacts
+   (791 interrupted) and length-bias (83 done-gate, plus ~174 short-done).
+
+### The Structural Asymmetry
+
+This contamination is **exclusive to the production agent**. The meta-layer
+agents (evaluator, arc, scout, may) are never interrupted, never run gate-like
+sessions, and therefore never face the lifecycle quality penalty. Any cross-agent
+quality comparison that includes aks-explorer's raw scores is comparing
+apples to apples+noise.
+
+### Connection to Prior Work
+
+This entry completes a three-part error taxonomy:
+
+| Category | Source | Introduced by | Evaluator Treatment |
+|:--------:|:------:|:-------------:|:-------------------:|
+| Infra failure | Provider/scheduler | KE-049 | Varies (some skip, some penalize) |
+| Cognitive error | Agent decision | KE-049 | Correctly rated needs_improvement |
+| **Lifecycle artifact** | **Scheduler pre-emption** | **KE-051** | **Always needs_improvement (wrong)** |
+
+The evaluator has one category for three distinct phenomena.
+
+### Why This Matters for System Design
+
+The quality signal is the system's primary feedback mechanism. When 60% of its
+"bad work" signal actually measures "the scheduler killed an active session,"
+the system cannot learn from genuine failures — they're drowned in noise.
+This is a textbook [Goodhart's Law](https://en.wikipedia.org/wiki/Goodhart%27s_law)
+cascade: the metric is so contaminated that optimizing for it would mean
+*avoiding interruptions* (by running shorter sessions), not *doing better work*.
+
+→ Full analysis: `shared/knowledge/entries/KE-051.md`
