@@ -81,27 +81,57 @@ describe("command router", () => {
   });
 
   it("resumes cold sessions for steer events", () => {
-    const resumed: Array<{ sessionId: string; message: string; source?: string }> = [];
+    const resumed: Array<{
+      sessionId: string;
+      message: string;
+      source?: string;
+      suppressBenignRaceEvent?: boolean;
+    }> = [];
     const h = createHarness({
       status: () => [],
-      resumeSession: (sessionId: string, message: string, opts?: { source?: string }) => {
-        resumed.push({ sessionId, message, source: opts?.source });
+      resumeSession: (
+        sessionId: string,
+        message: string,
+        opts?: { source?: string; suppressBenignRaceEvent?: boolean },
+      ) => {
+        resumed.push({
+          sessionId,
+          message,
+          source: opts?.source,
+          suppressBenignRaceEvent: opts?.suppressBenignRaceEvent,
+        });
         return sessionId;
       },
     } as Partial<SubagentManager>);
 
     h.bus.emit({ type: "steer", sessionId: "s_cold", message: "follow up", source: "telegram" });
 
-    expect(resumed).toEqual([{ sessionId: "s_cold", message: "follow up", source: "telegram" }]);
+    expect(resumed).toEqual([
+      { sessionId: "s_cold", message: "follow up", source: "telegram", suppressBenignRaceEvent: true },
+    ]);
     h.router.close();
   });
 
   it("resumes cold sessions for canonical session.steer.requested events", () => {
-    const resumed: Array<{ sessionId: string; message: string; source?: string }> = [];
+    const resumed: Array<{
+      sessionId: string;
+      message: string;
+      source?: string;
+      suppressBenignRaceEvent?: boolean;
+    }> = [];
     const h = createHarness({
       status: () => [],
-      resumeSession: (sessionId: string, message: string, opts?: { source?: string }) => {
-        resumed.push({ sessionId, message, source: opts?.source });
+      resumeSession: (
+        sessionId: string,
+        message: string,
+        opts?: { source?: string; suppressBenignRaceEvent?: boolean },
+      ) => {
+        resumed.push({
+          sessionId,
+          message,
+          source: opts?.source,
+          suppressBenignRaceEvent: opts?.suppressBenignRaceEvent,
+        });
         return sessionId;
       },
     } as Partial<SubagentManager>);
@@ -113,7 +143,9 @@ describe("command router", () => {
       data: { sessionId: "s_cold", message: "follow up" },
     });
 
-    expect(resumed).toEqual([{ sessionId: "s_cold", message: "follow up", source: "web-ui" }]);
+    expect(resumed).toEqual([
+      { sessionId: "s_cold", message: "follow up", source: "web-ui", suppressBenignRaceEvent: true },
+    ]);
     h.router.close();
   });
 
