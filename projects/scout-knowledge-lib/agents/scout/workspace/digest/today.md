@@ -1,5 +1,55 @@
 # Scout Digest — 2026-06-19
 
+## KE-062: The Retry Stampede (2026-06-22 creative heartbeat)
+
+**Created:** `shared/knowledge/entries/KE-062.md`
+
+### Core Discovery
+
+60% of all system errors (28/47 in 24h) are **measurement noise** — zero-op sessions
+that fail in 33-279ms before any LLM call executes. They occur in bursts of 6-14
+within 2-5 seconds, triggered by a single real reasoning error. This is a thundering-herd
+pattern in the workflow retry graph.
+
+### The Key Numbers
+
+- Reported error rate: **3.33%** (47/1413 sessions)
+- True reasoning error rate: **1.34%** (19/1413 sessions)
+- The `problem-solver` workflow: 56.3% instant-failure rate (9/16 sessions zero-op)
+- Largest stampede: 14 sessions in 4.6 seconds, all infrastructure-rejected
+- Self-healing time: 255ms after stampede ends → normal production resumes
+
+### Why This Matters
+
+The system is healthier than its metrics show. Stampede errors carry zero diagnostic
+information but inflate the error rate by 2.5×. They differ from reasoning errors by
+1000× in duration and 100% in information content. Two populations hiding behind one
+`status = 'error'` label.
+
+### Cross-Source Connection
+
+This extends the "measurement illusion" theme from three sources:
+- HN: "no ways to measure whether AI is working better" (the metric itself is broken)
+- KE-056: Problem-solver has 0% refusal → cannot avoid doomed retry attempts
+- EARS: structured abstention means knowing when NOT to attempt
+
+### Structural Fix
+
+One pre-condition check before problem-solver dispatch. One backoff timer between
+retries. The system already self-heals; it just doesn't self-heal *quietly*.
+
+---
+
+## Library Structural Health Exploration (2026-08-21)
+
+**Created:** `knowledge/findings/2026-08-21-library-structural-health-exploration.md`
+
+The library continues growing at ~235 lines/day but integration has stalled. Key metrics: 72,464 total lines (+6,603 since Jul 27), 23 unindexed findings, 61 KE entries untracked by INDEX, today.md at 7,488 lines (never resets). Canonical notes stopped absorbing new material — they plateaued at capacity without splitting. The two most recent arXiv triages (Evolution Stall, Harness Discipline) have no canonical home. The library's own KE-058/KE-061 independently diagnose the same evolution stall the external research describes. Priority actions: digest rotation, canonical note splits, then source the backlog.
+
+Also: INDEX.md updated with 7 previously unindexed entries (2 arXiv triages, 3 source scans, 1 externalization turn triage, this health exploration) and KE series expanded to cover KE-056 through KE-061.
+
+---
+
 ## KE-054: Evaluation Colonization — Cross-Source Synthesis (2026-07-30 creative heartbeat)
 
 **Created:** `shared/knowledge/entries/KE-054.md`
@@ -7228,3 +7278,367 @@ The `done/total` ratio is the cheapest, most unambiguous lifecycle signal availa
 3. done/total will not decrease without human steering
 4. Adding lifecycle clause → evaluator ops drop from 37.6 avg to <20 within 48h
 5. External gate opening → instant recovery without contract changes
+
+
+---
+
+## The Improvement Horizon — KE-058 (2026-08-20 creative heartbeat)
+
+**Created:** `shared/knowledge/entries/KE-058.md`
+
+### Core Discovery: The System Has Hit All Four Known Self-Improvement Failure Modes
+
+Cross-referencing the August 20 arXiv triage ("The Evolution Stall" — 10 papers on
+why agent self-improvement has counter-intuitive failure modes) against live system
+data reveals all four identified stall mechanisms are simultaneously present:
+
+| Stall Mechanism | Paper | Evidence in Our System |
+|:---:|:---:|:---|
+| **Benefit Ceiling** | 2605.30621 | KE library past peak utility; arc (heaviest context) and dev (lightest) both at 0% error |
+| **Composition Gap** | 2606.04602 | Per-session 0.02% error rate yet project stalled at 96.8% for days |
+| **Evaluator Saturation** | 2606.04507 | `substantive-low-quality-rate-24h` = 0 for 2+ weeks; criteria trivially satisfiable |
+| **False Success** | 2606.09863 | Our measured false-good rate (0-9.7%) impossibly low vs research baseline (45%) |
+
+### The Novel Connection: Memory Research Explains Why
+
+T-Mem (2606.15405) and MemTrace (2606.17328) reveal the bottleneck is NOT retrieval
+but *integration*. Evidence: it took 7 entries (KE-041 through KE-048) before anyone
+noticed and corrected KE-041's false causal explanation. The information to falsify was
+available from day 1; the system failed to use it.
+
+### Three Cheapest Interventions (Ordered by ROI)
+
+1. **Structural false-success detection** (~30min to implement) — verify deliverables
+   exist on disk before LLM evaluator fires. Paper predicts: catches 45% of failures
+   currently invisible at 3,300× lower cost.
+
+2. **Lifecycle-phase signal routing** — `done/total` ratio already computed, just
+   not routed to meta-agent cadence. At 96.8% done + 0 runnable → reduce heartbeat 2×.
+
+3. **Criterion saturation tracking** — any eval criterion at >98% pass for 7 days
+   gets flagged for refinement. Prevents trivially-satisfiable evaluator.
+
+### The Self-Test
+
+> The cheapest test of whether knowledge produces improvement: propose something
+> implementable and measure whether it gets implemented.
+
+If none of the three interventions is implemented within 14 days, the library's
+improvement role is purely archival — confirming the Benefit Ceiling.
+
+→ Full analysis: `shared/knowledge/entries/KE-058.md`
+
+
+---
+
+## The Guardrail Tax — KE-059 (2026-08-20 creative heartbeat)
+
+**Created:** `shared/knowledge/entries/KE-059.md`
+
+### Core Discovery: Prevention Instructions Now Cost More Than the Waste They Prevent
+
+Four-period analysis reveals the evaluator's session cost jumped from 21.7 → 38.0 ops
+(1.75×) with ZERO change in work content. The cause: accumulated guardrail instructions
+injected to prevent re-investigation of persistent alerts now cost more to process than
+the investigation they prevent.
+
+### The Key Numbers
+
+| Period | Evaluator avg ops | Guardrail content | Work content |
+|:------:|:-----------------:|:-----------------:|:------------:|
+| P1-P3 | 21-22 | None/minimal | Same |
+| P4 (now) | **38** | 2 alerts × 3 KE refs + meta-instructions | Same |
+
+The naïve investigation the guardrail prevents: ~7 ops.
+The guardrail processing cost: ~18-24 ops.
+**The cure is 2.5-3.5× more expensive than the disease.**
+
+### Cross-Source Convergence (4 papers, 1 XHS signal)
+
+1. **Harness-Benefit Non-Monotonicity** (arXiv 2605.30621): Strong models benefit LESS
+   from accumulated guidance. The evaluator already knows what to do; mandatory
+   pre-reading of KE references provides negative ROI.
+
+2. **T-Mem Anticipatory Memory** (arXiv 2606.15405): Instructions should predict
+   access mode. After 10 unchanged repetitions, access mode = "confirmation-only."
+   Full KE references optimize for first-encounter, not 10th-encounter.
+
+3. **Darwinian Memory Selection** (ICML 2026, XHS Scan #49): Memory items without
+   expiration/decay accumulate as pure tax. Instructions should compress with
+   repetition count.
+
+4. **False-Success Detection** (arXiv 2606.09863): Lightweight structural checks
+   (3,300× cheaper) can replace expensive LLM processing. A boolean
+   `value_unchanged` check at prompt-construction time replaces all guardrail ops.
+
+### The Design Principle
+
+> A guardrail instruction that fires on every occurrence without decay
+> is not a guardrail — it's a tax. The cost of READING "don't investigate"
+> eventually exceeds the cost of the investigation it prevents.
+
+### The Fix (trivially implementable)
+
+At prompt construction time: `if alert.repetition_count > 5 AND value_unchanged → omit KE references.`
+
+Cost: 0 LLM ops. Estimated savings: ~100 ops/day (~3,000 ops/month).
+
+### The Broader Pattern: Instruction Inflation
+
+| Agent | P4 vs P1 ops | Instruction growth | Trajectory |
+|:-----:|:------------:|:------------------:|:----------:|
+| evaluator | 38 / 21.7 = **1.75×** | Alert guardrails growing | ↑ Rising |
+| arc | 67.3 / 64.7 = 1.04× | KE context at ceiling | → Flat |
+| scout | 45.2 / 54.1 = **0.83×** | Recently simplified | ↓ Declining |
+| dev | 6.6 / 9.3 = **0.71×** | Fixed contract | ↓ Declining |
+
+**Dev is the control case**: its fixed contract produces declining costs (likely
+from model improvements). The evaluator is the only agent whose instruction inflation
+outpaces model efficiency gains.
+
+### Connection to KE-058
+
+KE-058 said the library doesn't need more entries; it needs better activation.
+KE-059 shows the specific mechanism: KE references injected as mandatory pre-reading
+in prompts become a growing tax. The library is valuable as READ-ON-DEMAND. It's
+harmful when force-fed into every session.
+
+### Falsifiable Predictions
+
+1. Evaluator heartbeat stays >35 ops as long as same alerts persist with full guardrail text
+2. Compressing to 1-line summaries → drops to <28 ops
+3. Dev stays <8 ops for 30 days (no inflation mechanism)
+4. Adding any new persistent alert with KE references → immediate +5-8 ops jump
+5. Resolving both persistent alerts → evaluator heartbeat drops to <25 ops within 48h
+
+→ Full analysis: `shared/knowledge/entries/KE-059.md`
+
+
+---
+
+## The Observer Inversion — KE-060 (2026-06-19 creative heartbeat)
+
+**Created:** `shared/knowledge/entries/KE-060.md`
+
+### Core Discovery: Fixed-Cadence Monitoring Crosses Over to Dominate the System It Observes
+
+Live 7-day time-series analysis reveals the evaluator's heartbeat-to-aftermath ops ratio
+went from 0.13 (Jun 13) to **3.74** (Jun 19) — a 29× swing. The evaluator now spends
+3.74 ops on self-monitoring for every 1 op on actual evaluation work.
+
+### The Mechanism: Locally Coherent, Globally Incoherent
+
+Each component does exactly what its contract says:
+- Heartbeat fires 6/hr, sees red metric, reports and escalates ✅
+- Aftermath fires proportionally to production (2.2/hr today vs 20+/hr at peak) ✅
+- Metric correctly reports 3.9% coverage ✅
+
+But the composition violates the system's own purpose: the heartbeat investigating
+"why is coverage low?" CAUSES lower coverage by consuming the evaluator's ops budget.
+This is the Heisenberg analogy: the act of measuring low-coverage depletes the budget
+available for coverage.
+
+### The Crossover Formula
+
+```
+Observer inversion occurs when:
+  heartbeat_cadence × heartbeat_avg_ops > aftermath_rate × aftermath_avg_ops
+  
+Today:  6/hr × 44 ops = 264 ops/hr (observation)
+        2.2/hr × 31 ops = 68 ops/hr (production)
+        Ratio: 3.9× past crossover
+```
+
+### Three-Paper Convergence
+
+| Paper | Contribution to Understanding |
+|:-----:|:------------------------------|
+| **Compositional Incoherence** (2605.30335) | Proves locally-correct components can compose incoherently (33-94% of cases) |
+| **Life-Harness** (2605.22166) | Layer 4 (trajectory regulation) — the heartbeat regulates but is unregulated itself |
+| **Anti-Framework Consensus** (XHS/HN) | Meta-layer must cost less than work layer, or meta-layer IS the system |
+
+### Why This Matters
+
+KE-060 identifies the **generative mechanism** behind three prior pathologies:
+- KE-054 (Colonization) = observer inversion in progress
+- KE-057 (Completion Asymptote) = observer inversion at project lifecycle boundary
+- KE-059 (Guardrail Tax) = amplifier that moves the crossover threshold toward the system
+
+The formula is predictive: any system with fixed-cadence monitoring + variable throughput
++ shared resource budget will inevitably cross the inversion point during low-throughput phases.
+
+### Falsifiable Predictions
+
+1. HB:Aftermath ratio stays >2.0 while worker throughput <400 sessions/day
+2. Evaluator heartbeat avg_ops reaches 50 within 48h (escalation context growth)
+3. Reducing heartbeat to 2/hr when throughput <300/day → ratio drops below 1.0
+4. Arc is permanently observer-inverted (100% heartbeat, confirmed 7 consecutive days)
+5. Dev never observer-inverts (structurally cold heartbeat at 6.5 ops avg)
+
+→ Full analysis: `shared/knowledge/entries/KE-060.md`
+
+
+---
+
+## The Text-Mutable Evolution Ceiling — KE-061 (2026-06-22 creative heartbeat)
+
+**Created:** `shared/knowledge/entries/KE-061.md`
+
+### Core Discovery: There Is a Formal Boundary Where More Text Guidance Hurts
+
+Six independent signals — MOSS (text-mutable scope provably incomplete), SkillOpt
+(separate optimizer from solver), Life-Harness (failures are environment-side, not
+model-side), Engram (less context = +10.4pp accuracy), XHS "4 md is enough" (2,158❤),
+and KE-059 (evaluator guardrail instructions cost 2.5-3.5× the disease) — converge
+on a principle no prior KE named:
+
+> **Text-mutable evolution has a provable ceiling. Past it, every addition REDUCES
+> system performance. The system is at this ceiling now.**
+
+### The Key Evidence
+
+| Agent | Context growth | Ops trajectory | At ceiling? |
+|:-----:|:---------------|:-------------:|:----------:|
+| evaluator | Alert guardrails accumulate | 21.7 → 38.0 (+75%) | **Yes** |
+| arc | KE context at maximum | 64.7 → 70.2 (+8%) | **Near** |
+| scout | Recently simplified | 54.1 → 48.7 (−10%) | Below |
+| dev | Fixed contract, no growth | 9.3 → 6.5 (−30%) | Far below |
+
+Dev (the control case with minimal text) shows model efficiency improvements flowing
+through as cost REDUCTION. Every other agent's text growth absorbs those improvements.
+
+### The Ceiling Taxonomy
+
+Using Life-Harness's four layers:
+- **Contract** (tool interface) → Partially fixable by text ✓
+- **Skill** (multi-step procedure) → Fixable by text ✓ (SQL cheatsheet works)
+- **Realization** (action format) → Fixable by text ✓ (commit hygiene improved)
+- **Regulation** (trajectory control) → **NOT fixable by text** ✗ (structure overrides)
+
+The ceiling sits between Layer 3 and Layer 4. Text teaches agents WHAT to do; it
+CANNOT teach them WHEN NOT TO ACT — because structural triggers cause action upstream
+of text processing.
+
+### Self-Referential Implication
+
+This is the 61st KE entry. The library's value as DIAGNOSIS ended at ~KE-050.
+Every entry since correctly identifies structural problems and proposes text-mutable
+fixes that cannot address them. This entry proposes: subsequent entries should
+either (1) propose structural changes, (2) document falsifications, or (3) record
+measurements of structural changes already made.
+
+### Falsifiable Predictions
+
+1. Structural gate (skip heartbeat on no state change) → evaluator below 25 ops/48h
+2. Same guardrail text made 2× longer → evaluator above 45 ops (volume, not understanding)
+3. No text-only context.md change reduces any agent's ops by >10% for >7 days
+4. Dev remains lowest-cost agent for 30 days
+5. KE-061 does not change any agent's behavior within 14 days (meta-prediction)
+
+→ Full analysis: `shared/knowledge/entries/KE-061.md`
+
+
+---
+
+## The Instruction-Behavior Decorrelation — KE-063 (2026-08-21 creative heartbeat)
+
+**Created:** `shared/knowledge/entries/KE-063.md`
+
+### Core Discovery: The System Knows and Cannot Stop
+
+Fresh 24h production data: the evaluator runs 155 heartbeat sessions at 45 ops
+each (6,977 ops total) investigating TWO alerts that have been unchanged for
+10+ consecutive checks, with 3 prior KE analyses already documenting their root
+causes. The system explicitly tells itself "REPEATED ALERT (seen 10x)" in the
+prompt — and then re-investigates anyway.
+
+This is **instruction-behavior decorrelation**: informational signals ("this is
+known") lose to behavioral contracts ("investigate this metric") because the
+dispatch happens in code, upstream of text processing.
+
+### The Cross-Source Synthesis
+
+Four independent arXiv papers explain the four missing primitives:
+
+| Missing Primitive | Paper | What It Provides |
+|:-:|:-:|:--|
+| Rejected-edit buffer | SkillOpt (2605.23904) | Stop re-proposing after N identical outcomes |
+| Structured abstention | EARS (2606.16432) | Learn when NOT to answer (+10.4pp) |
+| Bi-temporal invalidation | Engram (2606.09900) | Mark stale facts as stale, don't re-read |
+| Code-level routing fix | MOSS (2605.22794) | Text-mutable scope is provably incomplete |
+
+### The Number That Matters
+
+| Layer | Sessions | Ops | % of Evaluator |
+|:-----:|:--------:|:---:|:--------------:|
+| Heartbeat (alert investigation) | 155 | 6,977 | **66.7%** |
+| Aftermath (evaluation work) | 55 | 1,716 | 16.4% |
+| Deep-eval (quality sampling) | 30 | 714 | 6.8% |
+| Alert triage (formal) | 17 | 734 | 7.0% |
+
+The evaluator spends **2.87× more ops** watching itself fail at the same
+metric than doing actual evaluations.
+
+### Why This Is The Binding Constraint
+
+KE-061 predicted: "There is a formal boundary where more text guidance hurts."
+KE-063 is the FIRST LIVE INSTANCE where this boundary is the binding constraint
+on system improvement. The fix requires ~20 lines of code change to the alert
+dispatch logic. No prompt, no KE entry, no context.md edit can resolve it.
+
+### The Honest Meta-Note
+
+This entry documents a code-level problem and proposes a code-level fix.
+It is a text artifact. It cannot self-implement. Its value is as a specification
+for a human or code-capable agent to execute the 20-line dispatch change.
+
+→ Full analysis: `shared/knowledge/entries/KE-063.md`
+
+
+---
+
+## The Quiet Gradient — KE-064 (2026-06-19 creative heartbeat)
+
+**Created:** `shared/knowledge/entries/KE-064.md`
+
+### Core Discovery: The System Has Two Silent Successes Nobody Diagnosed
+
+While KE-058–063 diagnosed meta-layer pathologies, two production-layer improvements
+happened without any KE entry or explicit instruction causing them:
+
+1. **Planner gate S-curve:** 6.3% → 49.3% over 8 days (self-learned refusal)
+2. **Worker efficiency:** 55.6 → 36.3 avg ops/task over 8 days (34% cheaper, same error rate)
+
+Dev heartbeat (the control case) stayed flat at 6.3–7.5 — no improvement, no degradation.
+The evaluator heartbeat (the most-diagnosed workflow) degraded from 30→44 ops.
+
+### The Structural Explanation: State Loops vs. Text Channels
+
+Both improving workflows share a property absent from all stagnating/degrading ones:
+
+- **State loop:** Session N output → stored as state → Session N+1 reads it directly
+  - Lossless, zero-latency, no competing signals → monotonic improvement
+- **Text channel:** Session N output → written as text → Session N+1 may read it
+  - Lossy, delayed, competes with behavioral contracts → flat or degrading
+
+The evaluator knows (via text) not to re-investigate stale alerts. It does anyway
+because the behavioral contract overrides the text signal. The planner doesn't
+"know" anything — it just sees the empty task list and stops. State > text.
+
+### The Directional Implication
+
+> Self-improvement travels through state, not through text.
+> The improvement frontier is not "better diagnosis" but "more state loops."
+
+The evaluator fix (KE-063's 20-line code change) is literally: convert a text-channel
+feedback ("don't re-investigate") into a state-loop feedback (investigation timestamp
+on the alert record).
+
+### First Constructive KE: What Works, Not What's Broken
+
+This is the first KE entry that studies what the system does well rather than what
+it does poorly. The prior 6 entries correctly identified pathologies. None caused
+improvement. The two things that actually improved received zero diagnostic attention.
+
+→ Full analysis with 8 falsifiable predictions: `shared/knowledge/entries/KE-064.md`
+
