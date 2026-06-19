@@ -306,6 +306,15 @@ agent path remains only a migration bridge.
 which events wake which workflows; infra owns delivery, scheduling, sessions,
 dedup, and workflow-run audit.
 
+A `workflowHandlers` route must run the named workflow module through the
+workflow runtime. It is not a raw owner-agent session with a
+`source=workflow:<name>` label. The runtime adapter may append the trigger event
+to the workflow task packet, but it still must create a workflow run, load
+`workflows/<name>.ts`, apply guards, persist the result, and let the workflow
+emit follow-up events. A handler that only starts an agent session with a
+workflow-looking label bypasses app-local policy and makes capacity/session
+metrics misleading.
+
 ## Event Graph Manifest
 
 `app.ts` should read primarily as an event graph:

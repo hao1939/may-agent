@@ -329,14 +329,13 @@ CLI tasks are tracked like any other work:
   - Claude Code: `session_id` from stream-json events
 - Resume metadata recorded beside the result so May or a human can continue
   the exact CLI conversation later when that is useful.
-- Effective execution policy recorded. In this container, Codex CLI delegation
-  defaults to `danger-full-access` because Codex sandboxed shell reads can fail
-  inside the worker and still return a successful CLI exit. This is a conscious
-  operational policy, not a silent fallback: the requested and effective
-  sandbox are written to `task.json`, events, and callbacks. If a caller
-  explicitly requests Codex `read-only` for testing, the runner may retry
-  `investigate`/`review` tasks once with a clearly recorded compatibility
-  fallback when the sandbox fails to start.
+- Effective execution policy recorded. `investigate` and `review` default to
+  `read-only`; `patch` defaults to `workspace-write`. The runner must not
+  silently retry a read-only Codex task with `danger-full-access`. If a
+  sandboxed review cannot start in this container, the CLI task should fail
+  loudly with its native session/resume metadata when available. Retrying with
+  broader permissions is a separate owner or human decision, not an automatic
+  compatibility fallback.
 - Worker-spawned Codex sessions use the runner skill home. The runner exports
   `CODEX_HOME` from the May persist directory by default, so reusable skills
   installed under `.state/.codex/skills` are available to May's delegated Codex
@@ -359,7 +358,7 @@ or orphaned.
 | Need | Default |
 |------|---------|
 | Quick question or explanation | May answers directly |
-| Bounded investigation or review | Use configured CLI worker; Codex defaults to `danger-full-access` in this container |
+| Bounded investigation or review | Use configured CLI worker with read-only execution |
 | Patch/fix proposal | Use configured CLI worker; prefer isolated workspace/worktree for mutation-heavy work |
 | Project-owned work | Prefer project owner/task agent; CLI only if explicitly useful |
 
@@ -402,7 +401,7 @@ continues the conversation. The CLI runner consumes the request, emits
 For Codex, the command shape should be based on non-interactive execution:
 
 ```bash
-codex exec --json --skip-git-repo-check --sandbox danger-full-access -o "$RESULT_PATH" "$PROMPT" \
+codex exec --json --skip-git-repo-check --sandbox read-only -o "$RESULT_PATH" "$PROMPT" \
   > "$EVENTS_JSONL"
 ```
 
