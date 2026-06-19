@@ -1,18 +1,18 @@
 {
   "version": 1,
-  "generated_at": "2026-06-19T11:24:48.279Z",
-  "tree_updated_at": "2026-06-19T11:24:48.181Z",
+  "generated_at": "2026-06-19T11:26:51.965Z",
+  "tree_updated_at": "2026-06-19T11:26:51.870Z",
   "kanban": {
-    "total_cards": 2310,
-    "tree_total": 2353,
+    "total_cards": 2311,
+    "tree_total": 2354,
     "tree_status_counts": {
       "active": 3,
       "blocked": 85,
-      "done": 2257,
+      "done": 2258,
       "backlog": 8
     },
     "status_counts": {
-      "done": 2223,
+      "done": 2224,
       "backlog": 8,
       "blocked": 78,
       "active": 1
@@ -22,7 +22,7 @@
       "in-progress": 1,
       "review": 5,
       "blocked": 73,
-      "done": 2223
+      "done": 2224
     },
     "card_ids_by_column": {
       "backlog": [
@@ -36,7 +36,7 @@
         "jwt-authenticator-upgrade-survival-arm-auth-env-blocker-20260617"
       ],
       "in-progress": [
-        "cloud-provider-multiple-slb-promoted-ref-clean-worktree-land-20260619"
+        "cloud-provider-multiple-slb-clean-landing-handoff-packet-20260619"
       ],
       "review": [
         "network-swift-v2-scale-validation-smallshape-live-rerun-gated-20260617",
@@ -762,6 +762,7 @@
         "cloud-provider-multiple-slb-eastus2-model-blocker-alignment-20260618",
         "cloud-provider-multiple-slb-preview-flag-source-and-contract-inventory-20260617",
         "cloud-provider-multiple-slb-preview-flag-unblock-20260617",
+        "cloud-provider-multiple-slb-promoted-ref-clean-worktree-land-20260619",
         "cloud-provider-multiple-slb-runlocal-consumer-tracked-mirror-20260619",
         "cloud-provider-multiple-slb-selective-staging-approval-await-20260619",
         "cloud-provider-multiple-slb-source-spec-frontier-20260615",
