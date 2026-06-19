@@ -30,6 +30,7 @@ import {
   readArchivedSessionMessages,
   readCompactedMessages,
   saveCompactedMessages,
+  rewriteSessionMessages,
   loadActiveSessionMetas,
   unarchiveSession,
   RegistryStore,
@@ -104,6 +105,7 @@ interface ActiveSession {
   task: string;
   startedAt: number;
   status: "running" | "paused" | "idle" | "interrupted";
+  lastError?: string;
   kind: SessionKind;
   autoClose: "immediate" | "never";
   parentSessionId?: string;
@@ -138,6 +140,24 @@ const CHAT_TOOL_DENYLIST = new Set([
   "workflow",
   "write",
 ]);
+
+function isRetryableEmptyAssistantFailure(reason: string | undefined): boolean {
+  return (
+    reason === "Agent ended on an empty tool-use assistant turn" ||
+    reason === "Agent ended with an empty assistant turn"
+  );
+}
+
+function trimTerminalEmptyAssistantTurn(messages: AgentMessage[]): boolean {
+  const last = messages[messages.length - 1] as any;
+  if (last?.role !== "assistant") return false;
+  const blocks = Array.isArray(last.content) ? last.content : [];
+  const hasText = blocks.some((block: any) => block?.type === "text" && String(block.text ?? "").trim());
+  const hasToolCall = blocks.some((block: any) => block?.type === "toolCall");
+  if (hasText || hasToolCall) return false;
+  messages.pop();
+  return true;
+}
 
 function isHeartbeatSession(meta: { source?: string; task?: string }): boolean {
   const source = meta.source ?? "";
@@ -666,6 +686,7 @@ export class SubagentManager {
         kind: s.kind,
         autoClose: s.autoClose,
         turnCount: s.turnCount,
+        error: s.lastError,
       }));
   }
 
@@ -1754,6 +1775,7 @@ export class SubagentManager {
       });
     }
     session.status = "running";
+    session.lastError = undefined;
     try {
       writeFileSync(join(sessionDir(this._persistDir, sessionId), "[STARTED]"), new Date().toISOString(), "utf-8");
     } catch {
@@ -1780,6 +1802,8 @@ export class SubagentManager {
     const { agent, sessionId, agentName, task } = session;
     const turnStartedAt = Date.now();
     let errorText: string | undefined;
+    let retryReason: string | undefined;
+    let retriedEmptyTurn = false;
 
     try {
       await start();
@@ -1789,21 +1813,40 @@ export class SubagentManager {
       log("error", `[runtime] ${sessionId} chat turn failed: ${err}`);
     }
 
-    const messages = agent.state.messages as AgentMessage[];
-    const finishParams = extractFinishParams(messages as any[]);
-    const assistantText = extractLastAssistantText(messages);
-    const terminalAssistantFailure = !finishParams ? classifyTerminalAssistantFailure(messages) : undefined;
+    let messages = agent.state.messages as AgentMessage[];
+    let finishParams = extractFinishParams(messages as any[]);
+    let assistantText = extractLastAssistantText(messages);
+    let terminalAssistantFailure = !finishParams ? classifyTerminalAssistantFailure(messages) : undefined;
+
+    if (!errorText && isRetryableEmptyAssistantFailure(terminalAssistantFailure)) {
+      retryReason = terminalAssistantFailure ?? "Agent ended with an empty assistant turn";
+      const retry = await this.retryChatTurnAfterEmptyAssistant(session, retryReason);
+      retriedEmptyTurn = retry.attempted;
+      if (retry.error) {
+        errorText = retry.error;
+      }
+      messages = agent.state.messages as AgentMessage[];
+      finishParams = extractFinishParams(messages as any[]);
+      assistantText = extractLastAssistantText(messages);
+      terminalAssistantFailure = !finishParams ? classifyTerminalAssistantFailure(messages) : undefined;
+    }
+
     if (!errorText && terminalAssistantFailure) {
       errorText = terminalAssistantFailure;
     }
     if (!errorText && !finishParams && !assistantText) {
       errorText = "Agent ended without producing a response";
     }
+    if (errorText && retriedEmptyTurn && isRetryableEmptyAssistantFailure(errorText)) {
+      this.trimAndPersistTerminalEmptyAssistant(session);
+    }
 
     const lastText = finishParams?.summary ?? assistantText ?? "";
     const durationMs = Date.now() - turnStartedAt;
 
-    if (session.status === "interrupted" || errorText) {
+    const retryableChatFailure = !!errorText && retriedEmptyTurn && isRetryableEmptyAssistantFailure(errorText);
+
+    if (session.status === "interrupted" || (errorText && !retryableChatFailure)) {
       const status: "error" | "interrupted" = session.status === "interrupted" ? "interrupted" : "error";
       if (session.timeoutTimer) clearTimeout(session.timeoutTimer);
       try {
@@ -1862,10 +1905,11 @@ export class SubagentManager {
     }
 
     session.status = "idle";
+    session.lastError = retryableChatFailure ? errorText : undefined;
     this._registry.updateSessionStatus(sessionId, "idle");
     updateSessionDb(this._persistDir, sessionId, {
       status: "idle",
-      error: undefined,
+      error: session.lastError,
       outcome: lastText,
       opCount: session.toolCalls,
       lastActivityAt: Date.now(),
@@ -1885,10 +1929,12 @@ export class SubagentManager {
         summary: lastText,
         durationMs,
         status: "idle",
+        error: session.lastError,
         task,
         finishParams: finishParams as any,
         opCount: session.toolCalls,
         turnCount: session.turnCount,
+        retry: retriedEmptyTurn ? { reason: retryReason, attempts: 1, recovered: !retryableChatFailure } : undefined,
         parentSessionId: session.parentSessionId,
         workflowRunId: session.workflowRunId,
         projectId: session.projectId,
@@ -1897,6 +1943,43 @@ export class SubagentManager {
         stepLabel: session.stepLabel,
       },
     } as any);
+  }
+
+  private async retryChatTurnAfterEmptyAssistant(
+    session: ActiveSession,
+    reason: string,
+  ): Promise<{ attempted: boolean; error?: string }> {
+    if (!this.trimAndPersistTerminalEmptyAssistant(session)) return { attempted: false };
+    log(
+      "warn",
+      `[runtime] ${session.sessionId} chat turn produced empty assistant output; retrying user request once: ${reason}`,
+    );
+    try {
+      await session.agent.continue();
+      await session.agent.waitForIdle();
+      return { attempted: true };
+    } catch (err) {
+      const error = err instanceof Error ? err.message : String(err);
+      log("error", `[runtime] ${session.sessionId} chat empty-output retry failed: ${error}`);
+      return { attempted: true, error };
+    }
+  }
+
+  private trimAndPersistTerminalEmptyAssistant(session: ActiveSession): boolean {
+    const messages = session.agent.state.messages as AgentMessage[];
+    const trimmed = trimTerminalEmptyAssistantTurn(messages);
+    if (!trimmed) return false;
+    session.agent.state.messages = messages as any;
+    try {
+      rewriteSessionMessages(this._persistDir, session.sessionId, messages);
+      saveCompactedMessages(this._persistDir, session.sessionId, messages);
+    } catch (err) {
+      log(
+        "warn",
+        `[runtime] Failed to persist trimmed chat transcript for ${session.sessionId}: ${err instanceof Error ? err.message : String(err)}`,
+      );
+    }
+    return true;
   }
 
   private bridgeEvents(session: ActiveSession): void {
