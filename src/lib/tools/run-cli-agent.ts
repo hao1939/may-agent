@@ -29,7 +29,7 @@ const paramsSchema = Type.Object({
   ),
   sandbox: Type.Optional(
     Type.Union([Type.Literal("read-only"), Type.Literal("workspace-write"), Type.Literal("danger-full-access")], {
-      description: "Execution sandbox. Review/investigate default to read-only; patch defaults to workspace-write.",
+      description: "Execution sandbox. Defaults to danger-full-access for May's trusted CLI workers.",
     }),
   ),
   timeoutMs: Type.Optional(
@@ -84,8 +84,8 @@ function safeCwd(projectRoot: string, cwd?: string): string {
   return ensureInside(projectRoot, cwd);
 }
 
-function defaultSandbox(_tool: RunCliAgentParams["tool"], mode: NonNullable<RunCliAgentParams["mode"]>): string {
-  return mode === "patch" ? "workspace-write" : "read-only";
+function defaultSandbox(_tool: RunCliAgentParams["tool"], _mode: NonNullable<RunCliAgentParams["mode"]>): string {
+  return "danger-full-access";
 }
 
 export function createRunCliAgentTool(opts: RunCliAgentToolOptions): AgentTool {
