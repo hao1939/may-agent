@@ -373,6 +373,45 @@ export class Cron {
     return true;
   }
 
+  /**
+   * Rebuild event subscriptions from the current entries list.
+   * Public so that cron-startup.ts can call it after subscribeToBus to
+   * ensure the subscription map matches the final entry list.
+   *
+   * Root-cause context (evaluation-aftermath-session-dispatch-fix):
+   * Intermittent startup-ordering bug — if installProjectApps adds synthetic
+   * entries (which call buildEventSubscriptions) but a concurrent reload()
+   * or load() resets the map before subscribeToBus runs, the bus subscriber
+   * finds no subscribers for the event type. Calling this once after
+   * subscribeToBus + start is a defensive idempotent fix.
+   */
+  rebuildEventSubscriptions(): void {
+    this.buildEventSubscriptions();
+  }
+
+  /**
+   * Verify that every enabled entry with `on` events has its events in the
+   * subscription map. Returns an array of { entryName, missingEvents } for
+   * any entries whose events are not subscribed. Empty array = healthy.
+   */
+  verifyEventSubscriptions(): Array<{ entryName: string; missingEvents: string[] }> {
+    const gaps: Array<{ entryName: string; missingEvents: string[] }> = [];
+    for (const entry of this.entries) {
+      if (entry.enabled === false || !entry.on?.length) continue;
+      const missing: string[] = [];
+      for (const eventType of entry.on) {
+        const subscribers = this.eventSubscriptions.get(eventType);
+        if (!subscribers || !subscribers.has(entry.name)) {
+          missing.push(eventType);
+        }
+      }
+      if (missing.length > 0) {
+        gaps.push({ entryName: entry.name, missingEvents: missing });
+      }
+    }
+    return gaps;
+  }
+
   /** Build event-to-handler mapping from `on` fields in cron entries. */
   private buildEventSubscriptions(): void {
     this.eventSubscriptions.clear();
