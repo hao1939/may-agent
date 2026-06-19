@@ -1,18 +1,18 @@
 {
   "version": 1,
-  "generated_at": "2026-06-19T11:26:51.965Z",
-  "tree_updated_at": "2026-06-19T11:26:51.870Z",
+  "generated_at": "2026-06-19T11:29:27.542Z",
+  "tree_updated_at": "2026-06-19T11:29:27.455Z",
   "kanban": {
-    "total_cards": 2311,
-    "tree_total": 2354,
+    "total_cards": 2312,
+    "tree_total": 2355,
     "tree_status_counts": {
       "active": 3,
       "blocked": 85,
-      "done": 2258,
+      "done": 2259,
       "backlog": 8
     },
     "status_counts": {
-      "done": 2224,
+      "done": 2225,
       "backlog": 8,
       "blocked": 78,
       "active": 1
@@ -22,7 +22,7 @@
       "in-progress": 1,
       "review": 5,
       "blocked": 73,
-      "done": 2224
+      "done": 2225
     },
     "card_ids_by_column": {
       "backlog": [
@@ -36,7 +36,7 @@
         "jwt-authenticator-upgrade-survival-arm-auth-env-blocker-20260617"
       ],
       "in-progress": [
-        "cloud-provider-multiple-slb-clean-landing-handoff-packet-20260619"
+        "dirty-worktree-checkpoint-frontier-after-multiple-slb-handoff-20260619"
       ],
       "review": [
         "network-swift-v2-scale-validation-smallshape-live-rerun-gated-20260617",
@@ -750,6 +750,7 @@
         "cloud-provider-credential-provider-staging-frontier-20260615",
         "cloud-provider-multiple-slb-blocked-resume-packet-20260617",
         "cloud-provider-multiple-slb-blocker-wording-reconciliation-20260617",
+        "cloud-provider-multiple-slb-clean-landing-handoff-packet-20260619",
         "cloud-provider-multiple-slb-clean-worktree-blocker-repair-rerun-20260619",
         "cloud-provider-multiple-slb-clean-worktree-restage-plan-20260619",
         "cloud-provider-multiple-slb-clean-worktree-restage-replay-validate-20260619",

@@ -1,10 +1,10 @@
 {
   "version": 2,
   "project": "aks-rp-e2e",
-  "updated_at": "2026-06-19T11:26:51.870Z",
+  "updated_at": "2026-06-19T11:29:27.455Z",
   "project_lifecycle": "active",
   "root_task_id": "project",
-  "active_task_id": "cloud-provider-multiple-slb-clean-landing-handoff-packet-20260619",
+  "active_task_id": "dirty-worktree-checkpoint-frontier-after-multiple-slb-handoff-20260619",
   "tasks": {
     "project": {
       "id": "project",
@@ -24285,7 +24285,8 @@
         "cloud-provider-multiple-slb-duplicate-cleanup-checkpoint-promote-20260619",
         "cloud-provider-multiple-slb-duplicate-cleanup-promoted-ref-overlap-map-20260619",
         "cloud-provider-multiple-slb-promoted-ref-clean-worktree-land-20260619",
-        "cloud-provider-multiple-slb-clean-landing-handoff-packet-20260619"
+        "cloud-provider-multiple-slb-clean-landing-handoff-packet-20260619",
+        "dirty-worktree-checkpoint-frontier-after-multiple-slb-handoff-20260619"
       ],
       "goal": "Keep the project’s human-review and owner-handoff surfaces useful for inspecting feature intent, send-ready source-holder/external-gate packets, returned proof routing, and response-await coordination without reopening broad rediscovery or cloud execution from the review lane.",
       "inputs": [],
@@ -129377,7 +129378,7 @@
     "cloud-provider-multiple-slb-clean-landing-handoff-packet-20260619": {
       "id": "cloud-provider-multiple-slb-clean-landing-handoff-packet-20260619",
       "parent_id": "user-review-workspace",
-      "state": "active",
+      "state": "done",
       "kind": "domain_leaf",
       "priority": "P2",
       "owner": "aks-explorer",
@@ -129404,16 +129405,69 @@
         "assigned_at": "2026-06-19T11:26:51.863Z",
         "assigned_by": "planner",
         "assigned_worker": "aks-explorer",
-        "last_session": "s_task_cloud-provider-multiple-slb-clean-landing-handoff-packet-20260619"
+        "last_session": "s_task_cloud-provider-multiple-slb-clean-landing-handoff-packet-20260619",
+        "worker_started_attempt_id": "a_cloud-provider-multiple-slb-clean-landing-handoff-packet-20260619_20260619112651",
+        "worker_started_at": "2026-06-19T11:27:09.084Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Wrote the durable handoff packet at evidence/archive/cloud-provider-multiple-slb-clean-landing-handoff-packet-20260619.md, consolidating the accepted clean-worktree landing note, promoted source ref, landed branch/commit/worktree, dirty-main-checkout explanation, and exact repo-local recovery/consumption commands.",
+        "last_worker_completed_at": "2026-06-19T11:28:07.007Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-19T11:29:27.051Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted after bounded review: the packet names the accepted clean landing note, promoted ref, landed branch/commit/worktree, explains why the main checkout stays dirty without invalidating the clean landing, and gives exact repo-local recovery/consumption commands without making cloud claims."
       },
       "session_id": "s_task_cloud-provider-multiple-slb-clean-landing-handoff-packet-20260619",
       "session_history": [
         "s_task_cloud-provider-multiple-slb-clean-landing-handoff-packet-20260619"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-19T11:29:27.051Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted after bounded review: the packet names the accepted clean landing note, promoted ref, landed branch/commit/worktree, explains why the main checkout stays dirty without invalidating the clean landing, and gives exact repo-local recovery/consumption commands without making cloud claims."
+      }
+    },
+    "dirty-worktree-checkpoint-frontier-after-multiple-slb-handoff-20260619": {
+      "id": "dirty-worktree-checkpoint-frontier-after-multiple-slb-handoff-20260619",
+      "parent_id": "user-review-workspace",
+      "state": "active",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Write one bounded dirty-worktree frontier packet that classifies the current /app/projects/aks-rp-e2e mixed diff after the accepted multiple-SLB clean landing, so the owner can choose the next coherent checkpointable slice without reopening the accepted landing or treating the entire repo diff as one blob.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/dirty-worktree-checkpoint-frontier-after-multiple-slb-handoff-20260619.md"
+      ],
+      "acceptance": [
+        "Packet cites current git status/diffstat plus the accepted multiple-SLB clean-landing handoff packet, and explains which dirty files are already covered by the accepted landed slice versus which families remain unrelated local churn in the main checkout.",
+        "Packet groups the remaining dirty workspace into a small bounded frontier (for example one to three candidate slices or exact blocker families), with exact representative paths and a concrete recommendation for whether each group is checkpoint-ready, needs review-only routing, or must stay uncommitted.",
+        "Packet stays repo-local and administrative only: it does not perform a checkpoint, does not restage files, and does not claim cloud/product behavior; it leaves one exact next owner/worker action for the highest-value runnable slice."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "artifact:dirty-worktree-checkpoint-frontier"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-19T11:29:27.251Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_dirty-worktree-checkpoint-frontier-after-multiple-slb-handoff-20260619_20260619112927",
+        "assigned_at": "2026-06-19T11:29:27.448Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_dirty-worktree-checkpoint-frontier-after-multiple-slb-handoff-20260619"
+      },
+      "session_id": "s_task_dirty-worktree-checkpoint-frontier-after-multiple-slb-handoff-20260619",
+      "session_history": [
+        "s_task_dirty-worktree-checkpoint-frontier-after-multiple-slb-handoff-20260619"
       ]
     }
   },
   "active_task_ids": [
-    "cloud-provider-multiple-slb-clean-landing-handoff-packet-20260619"
+    "dirty-worktree-checkpoint-frontier-after-multiple-slb-handoff-20260619"
   ],
   "archive": {
     "kms-v2-managed-hsm-staging-20260611": {
