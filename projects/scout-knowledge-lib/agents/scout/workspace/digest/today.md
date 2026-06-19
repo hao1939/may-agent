@@ -5769,3 +5769,173 @@ Current: 5,283 ops / 15.2h = 347 ops/hr → projected 8,322 ops/24h
 ✅ **Prediction confirmed** (center of range).
 
 → Full analysis: `shared/knowledge/entries/KE-036.md`
+
+
+---
+
+## The Sawtooth — KE-037 (2026-07-26 creative heartbeat)
+
+**Created:** `shared/knowledge/entries/KE-037.md`
+
+### Core Discovery: The System's First Homeostatic Mechanism
+
+The DB size metric reveals a precise sawtooth waveform hidden in the noise.
+Ten complete cycles in 10 hours, each with:
+- ~55 min growth (+1.1 MB from event/session ingestion)
+- ~5 min cleanup (-3.3 MB from truncation + VACUUM)
+- Net: -2.2 MB/hr, declining from 2002 → 1625 MB
+
+This is the system's first **autonomous catabolism** — and it emerged not from
+any KE recommendation, but from breaching the 2000 MB hard storage limit.
+
+### The Design Principle Nobody Stated
+
+36 KE entries documented soft constraints (context cost, evaluation overhead,
+triage repetition, library bloat). Zero soft constraints produced catabolism.
+One hard constraint (DB > 2000 MB) produced sustained catabolism within hours.
+
+> **Soft constraints generate diagnostic entries.**
+> **Hard constraints generate immune responses.**
+
+This principle is general: if you want an agent system to clean up after itself,
+don't document why it should — make accumulation physically impossible beyond a
+threshold.
+
+### Why This Matters for the KE Library
+
+The library itself has no hard constraint and therefore no sawtooth. KE-032
+proposed compression, but the proposal is advisory — the library can always
+accept one more entry. To get actual compression, impose a hard limit like
+"max 20KB of KE preamble per session." The system will compress because it
+has to, not because it should.
+
+### Connection to KE-036 (Amnesiac Architecture)
+
+The sawtooth is age-based catabolism (remove old data). KE-036 proposed
+idempotency-based catabolism (don't repeat work). The system solved the
+physical problem (storage) but not the computational problem (wasted ops),
+because storage has a hard limit and computation does not.
+
+### Falsifiable Predictions
+
+1. Sawtooth period will lengthen as cleanup finds less old data to remove
+2. Equilibrium at ~1400-1600 MB (data too recent to truncate)
+3. New project activation will overwhelm the sawtooth temporarily
+4. KE library will NOT develop a sawtooth without a hard constraint
+
+→ Full analysis: `shared/knowledge/entries/KE-037.md`
+
+
+---
+
+## The Control Asymmetry — KE-038 (2026-07-26 creative heartbeat)
+
+**Created:** `shared/knowledge/entries/KE-038.md`
+
+### Core Discovery: Convergent vs. Divergent Feedback in the Same System
+
+The ghost phase (no production work) produced a natural experiment: two metric-
+response loops running simultaneously with opposite dynamics.
+
+**Loop A — DB Sawtooth (converges):** 15 cleanup cycles in 14.3 hours, DB
+declining from 2002→1623 MB. The cleanup routine has write access to the
+variable it monitors (deletes old DB rows). Zero LLM ops consumed.
+
+**Loop B — Orphan Ratchet (diverges):** pair-orphan-count climbed 7→26 in
+12 hours. Triaged 8 times (424 ops). Each triage session produces a judgment
+that evaporates. The metric is unchanged by the response.
+
+### The Key Insight
+
+Whether a monitoring loop converges or diverges depends on one structural
+property: **does the corrective actor have write access to the measured variable?**
+
+- Sawtooth: cleanup routine directly deletes rows → DB shrinks → convergence
+- Triage: judgment has no write-path to orphan lifecycle → count climbs → divergence
+
+The system's most effective control loop costs **zero ops** (infrastructure-level).
+The system's least effective control loop costs **23% of all ops** (LLM-mediated).
+
+### The Design Principle
+
+> **A sensor without an actuator produces observation without correction.
+> The cost of observation grows linearly with time. The effect stays at zero.**
+
+Before creating a metric alert: "What automated action can reduce this metric?"
+If the answer is "nothing," use a one-shot escalation, not a repeating triage cadence.
+
+### Why This Matters Beyond Prior KEs
+
+- **Refines KE-037:** Hard constraints work not because they're hard, but because the
+  constraint-response has write access. A hard constraint on a read-only channel diverges too.
+- **Quantifies KE-007 (Cassandra):** The monitoring system has observers but not actuators.
+  Every KE entry about waste is a Cassandra observation. The sawtooth is the one place
+  where the system bypassed Cassandra by building the actuator into infrastructure.
+- **Extends KE-036 (Amnesiac):** Memory alone is insufficient — even with perfect recall
+  of prior triage judgments, orphan count still climbs. Memory prevents re-observation;
+  actuation prevents the condition.
+
+### Falsifiable Predictions
+
+1. Pair-orphan-count reaches 30+ within 6 hours (current rate extrapolation)
+2. DB size stabilizes 1580-1630 MB (KE-037 predicted 1400-1600; actual slightly higher)
+3. Triage-to-corrective-action ratio remains >10:1 until actuator-capable alerts exist
+4. Orphan triage cooldown would save 300+ ops/day during ghost phase
+
+→ Full analysis: `shared/knowledge/entries/KE-038.md`
+
+
+---
+
+## The Prediction Audit — KE-039 (2026-07-27 creative heartbeat)
+
+**Created:** `shared/knowledge/entries/KE-039.md`
+
+### What This Session Did Differently
+
+Instead of creating another forward-looking analysis, this session looked
+**backward** — systematically scoring every testable prediction from KE-023
+through KE-038 against current production data. This is the first retrospective
+entry in the library's history.
+
+### The Scorecard (23 predictions tested)
+
+| Category | Count | Confirmed | Rate |
+|:--------:|:-----:|:---------:|:----:|
+| Infrastructure (DB, gates) | 7 | 6 | **86%** |
+| Agent behavior (ops, phases) | 8 | 2 | **25%** |
+| System dynamics (recovery) | 5 | 1 | **20%** |
+| Library meta (compression) | 3 | 2 | **67%** |
+| **Total** | **23** | **11** | **48%** |
+
+### The Biggest Falsification
+
+KE-035 declared the system in a "ghost phase" with zero production. But
+aks-explorer resumed with **263 task-worker sessions** in the last 18 hours.
+The task tree still had 3 ready + 2 active tasks. The planner was quiet,
+not dead. The ghost phase was a snapshot, not a state.
+
+### The Deepest Insight
+
+**The library is too pessimistic because it predicts from stasis.** It
+observes a frozen moment, assumes the freeze is structural, and predicts
+persistence. But the system has self-correcting dynamics that operate on
+timescales longer than the observation window.
+
+- Infrastructure predictions succeed (86%) because they describe deterministic code
+- Agent behavior predictions fail (25%) because they extrapolate from snapshots
+- The library is excellent at describing architecture and terrible at predicting agents
+
+### The Meta-Lesson
+
+Every KE entry that predicted "this condition will persist because no
+mechanism for change is visible" was wrong. The system changes through
+channels the diagnostic layer can't see — task unblocking, planner
+re-activation, behavioral adaptation under changing context.
+
+> **The KE library consistently underestimates the system's resilience.**
+> This is the diagnostic version of base-rate neglect: rare dramatic
+> observations (crashes, halts, loops) are over-weighted relative to the
+> steady quiet recovery that happens between observations.
+
+→ Full analysis: `shared/knowledge/entries/KE-039.md`
