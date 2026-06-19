@@ -1111,12 +1111,12 @@ export const create: HandlerModule["create"] = (
 
     // ── Helpers ──────────────────────────────────────────────────────
 
-    function record(id: string, value: number, sampleSize?: number) {
+    function record(id: string, value: number, sampleSize?: number, note?: string) {
       metricService.record(
         id,
         value,
-        sampleSize != null
-          ? { sampleSize, measuredAt: now }
+        sampleSize != null || note != null
+          ? { sampleSize, measuredAt: now, note }
           : { measuredAt: now },
       );
     }
@@ -1687,35 +1687,30 @@ export const create: HandlerModule["create"] = (
     }
 
     try {
-      const failed = count(
-        `SELECT COUNT(*) as c
+      const failedRows = db
+        .prepare(
+          `SELECT s.sessionId,
+                  MAX(CASE WHEN e.sessionId IS NOT NULL THEN 1 ELSE 0 END) as triaged
          FROM sessions s
+         LEFT JOIN evaluations e ON e.sessionId = s.sessionId
          WHERE s.agent NOT IN ('evaluator', 'judge')
            AND COALESCE(s.endedAt, s.startedAt) > ?
            AND COALESCE(s.endedAt, s.startedAt) <= ?
            AND COALESCE(s.error, '') != 'Clean start (fresh)'
            AND (s.status IN ('error', 'interrupted') OR s.error IS NOT NULL)
-           AND NOT (s.status = 'interrupted' AND s.error IS NULL)`,
-        threeH,
-        sevenMinutesAgo,
-      );
+           AND NOT (s.status = 'interrupted' AND s.error IS NULL)
+         GROUP BY s.sessionId`,
+        )
+        .all(threeH, sevenMinutesAgo) as Array<{
+        sessionId: string;
+        triaged: number;
+      }>;
+      const failed = failedRows.length;
       // Any evaluation row — regardless of verdict — means the failure was
-      // triaged.  The old filter `IN ('needs_improvement', 'skipped')` excluded
+      // triaged. The old filter `IN ('needs_improvement', 'skipped')` excluded
       // sessions whose verdict was 'acceptable' or 'good', deflating the rate
-      // even though the evaluator *did* look at them.
-      const triaged = count(
-        `SELECT COUNT(DISTINCT s.sessionId) as c
-         FROM sessions s
-         JOIN evaluations e ON e.sessionId = s.sessionId
-         WHERE s.agent NOT IN ('evaluator', 'judge')
-           AND COALESCE(s.endedAt, s.startedAt) > ?
-           AND COALESCE(s.endedAt, s.startedAt) <= ?
-           AND COALESCE(s.error, '') != 'Clean start (fresh)'
-           AND (s.status IN ('error', 'interrupted') OR s.error IS NOT NULL)
-           AND NOT (s.status = 'interrupted' AND s.error IS NULL)`,
-        threeH,
-        sevenMinutesAgo,
-      );
+      // even though the evaluator did look at them.
+      const triaged = failedRows.filter((row) => Number(row.triaged) > 0).length;
       // Small failure counts cause this metric to flap around a single recently-ended
       // session before evaluator aftermath catches up. Keep the signal meaningful by
       // treating windows with fewer than 5 failed sessions as neutral while still
@@ -1724,6 +1719,11 @@ export const create: HandlerModule["create"] = (
         "session.failed-triage-rate-3h",
         failed >= 5 ? parseFloat((triaged / failed).toFixed(4)) : 1,
         failed,
+        JSON.stringify({
+          failed,
+          triaged,
+          failedIds: failedRows.slice(0, 20).map((row) => row.sessionId),
+        }),
       );
     } catch (e) {
       ctx.sdk.log(

@@ -1237,21 +1237,21 @@ WHERE e.createdAt >= (unixepoch('now') * 1000 - 86400000)
       current: 2,
       owner: "may",
       target: 0,
-      threshold: 12,
+      threshold: 25,
       priority: "P2",
     });
     expect(metric("guard.triggered-count-24h")).toMatchObject({
       current: 3,
       owner: "may",
       target: 0,
-      threshold: 4500,
+      threshold: 5500,
       priority: "P3",
     });
     expect(metric("guard.warned-count-24h")).toMatchObject({
       current: 1,
       owner: "may",
       target: 0,
-      threshold: 4500,
+      threshold: 5500,
       priority: "P3",
     });
     expect(metric("guard.blocked-count-15m")).toMatchObject({

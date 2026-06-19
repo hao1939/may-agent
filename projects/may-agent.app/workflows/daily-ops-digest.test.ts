@@ -64,6 +64,7 @@ describe("daily-ops-digest", () => {
       }),
       summarize: (result) => String(result.result ?? result.status),
       done: (summary) => ({ type: "done", summary }),
+      blocked: (reason, context) => ({ type: "blocked", reason, context }),
       escalate: (reason, context) => ({ type: "escalate", reason, context }),
       createSession: async () => ({
         prompt: async () => {},

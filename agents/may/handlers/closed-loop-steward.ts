@@ -299,7 +299,7 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, entry: Cron
     if (remainingActionableAlerts.length === 0 && failures.length === 0) {
       emitSkip(
         ctx,
-        `Skip: no remaining steward action after routing ${routedTriageCandidates.length} alert(s); ${alertContexts.length - routedTriageCandidates.length} remaining alert(s) are monitor-only P3/no-op cases and there are no delivery failures.`,
+        `Skip: no remaining steward action after routing ${routedTriageCandidates.length} alert(s); ${alertContexts.length - routedTriageCandidates.length} remaining alert(s) are lower-priority or already delegated to the metric alert reactor grace path, and there are no delivery failures.`,
         {
           routedTriageCount: routedTriageCandidates.length,
           routedAlertIds: [...routedAlertIds],

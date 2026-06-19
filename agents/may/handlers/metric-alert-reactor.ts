@@ -2,16 +2,17 @@
  * metric-alert-reactor — Handler that reacts to metric.breach and metric.stalled events.
  *
  * Listens on: metric.breach, metric.stalled
- * Action: Forks the owning agent for P0 breaches. P1/P2 breaches get explicit
- * owner triage after they remain open long enough to need a durable judgment.
- * P3 alerts stay visible through metric alert context and the steward cron.
+ * Action: Forks the owning agent for P0 breaches. Lower-priority breaches get
+ * explicit owner triage after a grace period long enough for heartbeat/project
+ * context to react first. Priority controls urgency, not whether an alert is
+ * allowed to remain unjudged forever.
  *
  * Stall events (metric.stalled) are routed through the same dedup and triage
  * pipeline as breaches, with a distinct task header so stall and breach events
  * for the same metric use separate dedup keys.
  *
  * This keeps important issues auditable while preserving metric-context-based
- * handling for low-priority metric drift.
+ * handling for low-priority metric drift before fallback triage runs.
  *
  * Dedup: skips if the owner already has a metric-alert session for this
  * metric within the last 24h.
@@ -31,9 +32,33 @@ import { tryAutoHandle } from "./metric-auto-handlers.ts";
 
 const DEDUP_WINDOW_MS = 4 * 60 * 60 * 1000; // 4h — shorter window so repeated alerts get reacted to faster
 const DIRECT_TRIAGE_AFTER_MS = 10 * 60 * 1000;
+const P3_DIRECT_TRIAGE_AFTER_MS = 30 * 60 * 1000;
 const P1_RETRIAGE_COOLDOWN_MS = 15 * 60 * 1000;
 const P1_WAITING_RETRIAGE_COOLDOWN_MS = 2 * 60 * 60 * 1000; // 2h — when owner judged waiting_with_evidence, external factors control resolution; avoid re-triage churn
+const P3_RETRIAGE_COOLDOWN_MS = 4 * 60 * 60 * 1000;
+const P3_WAITING_RETRIAGE_COOLDOWN_MS = 12 * 60 * 60 * 1000;
 const ERROR_SESSION_COOLDOWN_MS = 15 * 60 * 1000; // 15min cooldown after error sessions to prevent amplification loops
+
+type AlertPriority = "P0" | "P1" | "P2" | "P3";
+
+function normalizePriority(value: unknown): AlertPriority {
+  return value === "P0" || value === "P1" || value === "P2" || value === "P3"
+    ? value
+    : "P2";
+}
+
+function directTriageAfterMs(priority: AlertPriority): number {
+  return priority === "P3" ? P3_DIRECT_TRIAGE_AFTER_MS : DIRECT_TRIAGE_AFTER_MS;
+}
+
+function retriageCooldownMs(priority: AlertPriority, judgmentOp: string | null): number {
+  if (judgmentOp === "waiting_with_evidence") {
+    return priority === "P3"
+      ? P3_WAITING_RETRIAGE_COOLDOWN_MS
+      : P1_WAITING_RETRIAGE_COOLDOWN_MS;
+  }
+  return priority === "P3" ? P3_RETRIAGE_COOLDOWN_MS : P1_RETRIAGE_COOLDOWN_MS;
+}
 
 function parseJsonObject(
   raw: string | null | undefined,
@@ -178,7 +203,7 @@ export const create: HandlerModule["create"] = (
               threshold: numberOrNull(metric.threshold),
               target: numberOrNull(metric.target),
               message: String(row.message ?? ""),
-              priority: String(metric.priority ?? "P2"),
+              priority: normalizePriority(metric.priority),
             },
           };
           return processAlertEvent(ctx, syntheticEvent, configuredAgents);
@@ -204,6 +229,7 @@ async function processAlertEvent(
   const {
     metricId,
     metricName,
+    alertId,
     current,
     threshold,
     target,
@@ -213,6 +239,7 @@ async function processAlertEvent(
     owner?: string;
     metricId: string;
     metricName: string;
+    alertId?: number | null;
     current: number;
     threshold: number;
     target: number;
@@ -227,12 +254,12 @@ async function processAlertEvent(
   }
 
   let owner = resolveMetricOwner(metricId, configuredAgents, eventOwner);
-  let priority = eventPriority ?? "P2";
+  let priority = normalizePriority(eventPriority);
   let forceRetriageAfterJudgment = false;
 
-  // P0 alerts get an immediate explicit owner session so handling is auditable.
-  // P1/P2 alerts get explicit triage after a short grace period. P3 remains
-  // visible in metric context only.
+  // P0 alerts get immediate explicit owner triage. P1/P2/P3 alerts get a
+  // grace period so heartbeat/project context can react first, then fallback
+  // triage records a durable owner judgment if the alert remains open.
   try {
     const since = Date.now() - DEDUP_WINDOW_MS;
     let state = ctx.sdk.query.metricAlertReactorState({
@@ -258,7 +285,7 @@ async function processAlertEvent(
       );
       return;
     }
-    priority = metricRow?.priority ?? priority;
+    priority = normalizePriority(metricRow?.priority ?? priority);
     if (metricRow) {
       const resolvedOwner = resolveMetricOwner(
         metricId,
@@ -278,16 +305,6 @@ async function processAlertEvent(
         owner = resolvedOwner;
       }
     }
-    if (priority !== "P0" && priority !== "P1" && priority !== "P2") {
-      emitSkip(
-        ctx,
-        metricId,
-        `Deferring ${metricId} (${priority}) to metric context.`,
-        { priority },
-      );
-      return;
-    }
-
     const latestJudgment = state.latestJudgment as {
       id: number;
       data: string | null;
@@ -301,7 +318,8 @@ async function processAlertEvent(
     const routedAt = numberOrNull(routed?.timestamp);
     if (!latestJudgment && routedAt != null) {
       const routedAge = Date.now() - routedAt;
-      if (routedAge < DIRECT_TRIAGE_AFTER_MS) {
+      const routeGraceMs = directTriageAfterMs(priority);
+      if (routedAge < routeGraceMs) {
         emitSkip(
           ctx,
           metricId,
@@ -316,20 +334,21 @@ async function processAlertEvent(
       }
     }
 
-    // P1/P2 alerts: allow a short grace period for heartbeat context, then
+    // Non-P0 alerts: allow a grace period for heartbeat/project context, then
     // require an explicit durable judgment so the loop does not stall.
-    if (priority === "P1" || priority === "P2") {
+    if (priority !== "P0") {
       const alertRow = state.alert as {
         id?: number;
         created_at?: number;
       } | null;
       const alertCreatedAt = numberOrNull(alertRow?.created_at);
       const alertAge = alertCreatedAt != null ? Date.now() - alertCreatedAt : 0;
-      if (alertAge < DIRECT_TRIAGE_AFTER_MS) {
+      const graceMs = directTriageAfterMs(priority);
+      if (alertAge < graceMs) {
         emitSkip(
           ctx,
           metricId,
-          `${priority} ${metricId} alert age ${Math.round(alertAge / 60000)}m < ${Math.round(DIRECT_TRIAGE_AFTER_MS / 60000)}m, deferring.`,
+          `${priority} ${metricId} alert age ${Math.round(alertAge / 60000)}m < ${Math.round(graceMs / 60000)}m, deferring.`,
           { priority, alertAgeMs: alertAge },
         );
         return;
@@ -367,9 +386,7 @@ async function processAlertEvent(
           return;
         }
         const judgmentOp = stringOrNull(judgmentData.operation);
-        const effectiveCooldown = judgmentOp === "waiting_with_evidence"
-          ? P1_WAITING_RETRIAGE_COOLDOWN_MS
-          : P1_RETRIAGE_COOLDOWN_MS;
+        const effectiveCooldown = retriageCooldownMs(priority, judgmentOp);
         const judgmentAge = Date.now() - judgedEvent.timestamp;
         if (judgmentAge < effectiveCooldown) {
           emitSkip(
@@ -507,7 +524,7 @@ async function processAlertEvent(
       emitSkip(
         ctx,
         metricId,
-        `Deferring ${metricId} (${priority}) to metric context.`,
+        `Deferring ${metricId} (${priority}) because alert state is unavailable.`,
         { priority, reasonType: "db_unavailable" },
       );
       return;
@@ -554,6 +571,7 @@ async function processAlertEvent(
         data: {
           metricId,
           metricName,
+          alertId,
           current,
           threshold,
           target,

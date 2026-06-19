@@ -328,6 +328,7 @@ export default defineProjectApp({
     { type: "project.owner.requested", project: projectId },
     { type: "project.planning.requested", project: projectId },
     { type: "project.tasks.ready", project: projectId },
+    { type: "project.reviewed", project: projectId },
     { type: "metric.alerted" },
     { type: "metric.breach" },
     { type: "metric.stalled" },

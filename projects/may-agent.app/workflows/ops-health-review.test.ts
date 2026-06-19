@@ -63,6 +63,7 @@ describe("ops-health-review", () => {
       }),
       summarize: (result) => String(result.result ?? result.status),
       done: (summary) => ({ type: "done", summary }),
+      blocked: (reason, context) => ({ type: "blocked", reason, context }),
       escalate: (reason, context) => ({ type: "escalate", reason, context }),
       createSession: async () => ({
         prompt: async () => {},
@@ -145,6 +146,58 @@ describe("ops-health-review", () => {
     });
     expect(packetLines(appDir)[0].signals[0]).toMatchObject({
       kind: "stale-escalation",
+    });
+  });
+
+  it("wakes the owner for stale local blocked workflow groups", async () => {
+    const { appDir, db, emitted, ctx, close } = setup();
+    const twoHoursAgo = Date.now() - 2 * 60 * 60_000;
+    db.run(
+      `INSERT INTO workflow_runs
+       (runId, workflow, task, parentSessionId, projectId, depth, status, startedAt, endedAt, result_reason)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [
+        "wr_blocked",
+        "ops-health-review",
+        "Review platform health",
+        "s_parent",
+        "may-agent",
+        0,
+        "blocked",
+        twoHoursAgo - 1_000,
+        twoHoursAgo,
+        "evaluator-aftermath requires a sessionId",
+      ],
+    );
+
+    const result = await execute(ctx);
+    close();
+
+    expect(result.type).toBe("done");
+    expect(emitted.map((event) => event.type)).toEqual([
+      "project.ops_health.observed",
+      "project.owner.requested",
+    ]);
+    expect(emitted[1]).toMatchObject({
+      project: "may-agent",
+      reason: "ops-health-signal",
+      params: {
+        signals: [
+          expect.objectContaining({
+            kind: "workflow-local-blocked",
+            severity: "P1",
+          }),
+        ],
+      },
+    });
+    expect(packetLines(appDir)[0].observations).toMatchObject({
+      stale_blocked_workflow_runs: [
+        expect.objectContaining({
+          workflow: "ops-health-review",
+          status: "blocked",
+          count: 1,
+        }),
+      ],
     });
   });
 

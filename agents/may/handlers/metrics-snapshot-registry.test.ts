@@ -69,7 +69,7 @@ describe("metrics-snapshot registry and queries", () => {
     const source = metricsSnapshotSource();
     const failedTriageBlock = sourceBlock(
       source,
-      "const failed = count(",
+      "const failedRows = db",
       "[metrics-snapshot] Error measuring session.failed-triage-rate-3h",
     );
 
@@ -77,23 +77,23 @@ describe("metrics-snapshot registry and queries", () => {
       failedTriageBlock.match(
         /COALESCE\(s\.error, ''\) != 'Clean start \(fresh\)'/g,
       ),
-    ).toHaveLength(2);
-    expect(failedTriageBlock).toContain("COUNT(*) as c");
-    expect(failedTriageBlock).toContain("COUNT(DISTINCT s.sessionId) as c");
+    ).toHaveLength(1);
+    expect(failedTriageBlock).toContain("GROUP BY s.sessionId");
+    expect(failedTriageBlock).toContain("const failed = failedRows.length");
   });
 
   it("counts any evaluated session as triaged for session.failed-triage-rate-3h (no verdict filter)", () => {
     const source = metricsSnapshotSource();
     const triageBlock = sourceBlock(
       source,
-      "const failed = count(",
+      "const failedRows = db",
       "[metrics-snapshot] Error measuring session.failed-triage-rate-3h",
     );
-    // The numerator JOIN guarantees an evaluation row exists — that alone means triaged.
+    // Any evaluation row in the grouped candidate set means triaged.
     // There must be NO verdict filter that would exclude acceptable/good sessions.
     expect(triageBlock).not.toContain("e.verdict IN");
     expect(triageBlock).toContain(
-      "JOIN evaluations e ON e.sessionId = s.sessionId",
+      "LEFT JOIN evaluations e ON e.sessionId = s.sessionId",
     );
   });
 
@@ -101,7 +101,7 @@ describe("metrics-snapshot registry and queries", () => {
     const source = metricsSnapshotSource();
     const failedTriageBlock = sourceBlock(
       source,
-      "const failed = count(",
+      "const failedRows = db",
       "[metrics-snapshot] Error measuring session.failed-triage-rate-3h",
     );
 

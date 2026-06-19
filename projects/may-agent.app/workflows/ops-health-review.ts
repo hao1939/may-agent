@@ -255,6 +255,43 @@ function buildPacket(ctx: WorkflowContext): { packet: Row; signals: Signal[] } {
     ),
   );
 
+  const staleBlockedWorkflowRuns = queryRows(ctx, () =>
+    ctx.query.sql(
+      `SELECT workflow,
+              status,
+              COALESCE(result_reason, result_summary, '') AS reason,
+              COUNT(*) AS count,
+              MIN(COALESCE(endedAt, startedAt)) AS oldestAt,
+              MAX(COALESCE(endedAt, startedAt)) AS newestAt
+         FROM workflow_runs
+        WHERE status IN ('blocked', 'escalated')
+          AND COALESCE(endedAt, startedAt) < ?
+          AND COALESCE(endedAt, startedAt) >= ?
+        GROUP BY workflow, status, COALESCE(result_reason, result_summary, '')
+        ORDER BY count DESC, newestAt DESC`,
+      [staleEscalationCutoff, chronicallyStaleFloor],
+      { limit: 20 },
+    ),
+  );
+
+  const chronicBlockedWorkflowRuns = queryRows(ctx, () =>
+    ctx.query.sql(
+      `SELECT workflow,
+              status,
+              COALESCE(result_reason, result_summary, '') AS reason,
+              COUNT(*) AS count,
+              MIN(COALESCE(endedAt, startedAt)) AS oldestAt,
+              MAX(COALESCE(endedAt, startedAt)) AS newestAt
+         FROM workflow_runs
+        WHERE status IN ('blocked', 'escalated')
+          AND COALESCE(endedAt, startedAt) < ?
+        GROUP BY workflow, status, COALESCE(result_reason, result_summary, '')
+        ORDER BY count DESC, newestAt DESC`,
+      [chronicallyStaleFloor],
+      { limit: 20 },
+    ),
+  );
+
   const deliveryHealth = queryDeliveryHealth(ctx, now);
   const unhandledEvents = rowArray(deliveryHealth.unhandledEvents);
   const overduePendingEvents = rowArray(deliveryHealth.overduePendingEvents);
@@ -295,6 +332,14 @@ function buildPacket(ctx: WorkflowContext): { packet: Row; signals: Signal[] } {
       severity: "P1",
       reason: `${staleEscalations.length} platform-sourced escalation(s) (1h–6h old) without resolution/dismissal.`,
       evidence: compactRows(staleEscalations, 5),
+    });
+  }
+  if (staleBlockedWorkflowRuns.length > 0) {
+    signals.push({
+      kind: "workflow-local-blocked",
+      severity: "P1",
+      reason: `${staleBlockedWorkflowRuns.length} blocked workflow group(s) (including legacy workflow status 'escalated') need owner judgment.`,
+      evidence: compactRows(staleBlockedWorkflowRuns, 8),
     });
   }
   if (repeatedSymptoms.length > 0) {
@@ -342,6 +387,11 @@ function buildPacket(ctx: WorkflowContext): { packet: Row; signals: Signal[] } {
       unknown_project_events: compactRows(unknownProjectEvents, 10),
       pending_may_messages: pendingMayMessages,
       stale_escalations: compactRows(staleEscalations, 10),
+      stale_blocked_workflow_runs: compactRows(staleBlockedWorkflowRuns, 10),
+      chronic_blocked_workflow_runs: compactRows(
+        chronicBlockedWorkflowRuns,
+        10,
+      ),
       event_delivery_health: {
         owner_inbox_open_count: numberValue(deliveryHealth.ownerInboxOpenCount),
         unhandled_events: compactRows(unhandledEvents, 10),

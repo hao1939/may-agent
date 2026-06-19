@@ -96,7 +96,7 @@ describe("metric-alert-reactor", () => {
     return (db.prepare("SELECT id FROM metric_alerts WHERE metric_id = ?").get("arc.quality") as { id: number }).id;
   }
 
-  it("defers P1 alerts to heartbeat context", async () => {
+  it("defers non-P0 alerts when alert state is unavailable", async () => {
     const { handler, runs, logs } = setup();
 
     await handler({
@@ -114,7 +114,7 @@ describe("metric-alert-reactor", () => {
     } as any);
 
     expect(runs).toEqual([]);
-    expect(logs.some((msg) => msg.includes("Deferring arc.quality (P1) to metric context"))).toBe(true);
+    expect(logs.some((msg) => msg.includes("Deferring arc.quality (P1) because alert state is unavailable"))).toBe(true);
   });
 
   it("forks the owner for P0 alerts", async () => {
@@ -176,13 +176,14 @@ describe("metric-alert-reactor", () => {
       "INSERT INTO metric_alerts (metric_id, alert_type, message, created_at) VALUES (?, ?, ?, ?)",
       ["arc.down", "threshold", "critical failure", now - 60_000],
     );
+    const alert = db.prepare("SELECT id FROM metric_alerts WHERE metric_id = ?").get("arc.down") as { id: number };
     db.run(
       "INSERT INTO workflow_runs (runId, workflow, task, status, startedAt, endedAt) VALUES (?, ?, ?, ?, ?, ?)",
-      ["wr_recent", "metric-alert-triage", "Run metric alert triage for arc.down", "done", now - 5 * 60_000, now - 4 * 60_000],
+      ["wr_recent", "metric-alert-triage", `Run metric alert triage for arc.down\n{"alertId": ${alert.id}}`, "done", now - 5 * 60_000, now - 4 * 60_000],
     );
     db.run(
       "INSERT INTO events (event_type, data, timestamp) VALUES (?, ?, ?)",
-      ["metric.alert_judged", JSON.stringify({ metricId: "arc.down", operation: "upgrade_or_escalate" }), now - 4 * 60_000],
+      ["metric.alert_judged", JSON.stringify({ metricId: "arc.down", alertId: alert.id, operation: "upgrade_or_escalate" }), now - 4 * 60_000],
     );
 
     await handler();
@@ -256,6 +257,43 @@ describe("metric-alert-reactor", () => {
 
     expect(workflows).toEqual([]);
     expect(logs.some((msg) => msg.includes("P2 arc.coverage alert age"))).toBe(true);
+  });
+
+  it("triages an old P3 alert that has no judgment", async () => {
+    const { db, handler, workflows } = setupWithDb();
+    const now = Date.now();
+    db.run(
+      "INSERT INTO metrics (id, name, owner, current, threshold, target, priority, alert_op, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+      ["arc.watch", "Arc watch", "arc", 0.4, 0.8, 0.95, "P3", "<", now],
+    );
+    db.run(
+      "INSERT INTO metric_alerts (metric_id, alert_type, message, created_at) VALUES (?, ?, ?, ?)",
+      ["arc.watch", "threshold", "watch below threshold", now - 45 * 60_000],
+    );
+
+    await handler();
+
+    expect(workflows).toHaveLength(1);
+    expect(workflows[0]).toMatchObject({ name: "metric-alert-triage", source: "may" });
+    expect(workflows[0].task).toContain('"metricId": "arc.watch"');
+  });
+
+  it("keeps fresh P3 alerts in metric context", async () => {
+    const { db, handler, workflows, logs } = setupWithDb();
+    const now = Date.now();
+    db.run(
+      "INSERT INTO metrics (id, name, owner, current, threshold, target, priority, alert_op, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+      ["arc.watch", "Arc watch", "arc", 0.4, 0.8, 0.95, "P3", "<", now],
+    );
+    db.run(
+      "INSERT INTO metric_alerts (metric_id, alert_type, message, created_at) VALUES (?, ?, ?, ?)",
+      ["arc.watch", "threshold", "watch below threshold", now - 5 * 60_000],
+    );
+
+    await handler();
+
+    expect(workflows).toEqual([]);
+    expect(logs.some((msg) => msg.includes("P3 arc.watch alert age"))).toBe(true);
   });
 
   it("retriages a judged P1 alert when a newer snapshot still breaches", async () => {
