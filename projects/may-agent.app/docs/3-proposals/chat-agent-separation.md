@@ -329,13 +329,14 @@ CLI tasks are tracked like any other work:
   - Claude Code: `session_id` from stream-json events
 - Resume metadata recorded beside the result so May or a human can continue
   the exact CLI conversation later when that is useful.
-- Effective execution policy recorded. Codex must first run with the requested
-  sandbox. In container environments where Codex's `read-only` sandbox cannot
-  start because unprivileged user namespaces are disabled, the runner may retry
+- Effective execution policy recorded. In this container, Codex CLI delegation
+  defaults to `danger-full-access` because Codex sandboxed shell reads can fail
+  inside the worker and still return a successful CLI exit. This is a conscious
+  operational policy, not a silent fallback: the requested and effective
+  sandbox are written to `task.json`, events, and callbacks. If a caller
+  explicitly requests Codex `read-only` for testing, the runner may retry
   `investigate`/`review` tasks once with a clearly recorded compatibility
-  fallback. The requested sandbox remains in the task record, and the effective
-  sandbox plus fallback reason are written to `task.json` and terminal events.
-  This fallback must not be silent.
+  fallback when the sandbox fails to start.
 - Visible in a CLI task read model and linked from sessions/tasks/UI
 - Duration, terminal state, stdout/stderr tail, and structured result recorded
 - Pair tracker detects orphans (started but never completed)
@@ -353,14 +354,17 @@ or orphaned.
 | Need | Default |
 |------|---------|
 | Quick question or explanation | May answers directly |
-| Bounded investigation or review | Use configured read-only CLI worker |
-| Patch/fix proposal | Use configured workspace-write CLI worker in isolated workspace/worktree |
+| Bounded investigation or review | Use configured CLI worker; Codex defaults to `danger-full-access` in this container |
+| Patch/fix proposal | Use configured CLI worker; prefer isolated workspace/worktree for mutation-heavy work |
 | Project-owned work | Prefer project owner/task agent; CLI only if explicitly useful |
 
 May chooses the CLI from policy and current availability, not hard-coded vendor
 preference. Codex should use `codex exec` for non-interactive automation, with
 JSONL or schema output when the result is consumed by code. Claude Code should
-use its non-interactive/scriptable mode with the same runner contract.
+use its non-interactive/scriptable mode with the same runner contract. For
+Claude patch-mode worker jobs in this trusted container, the runner uses
+`bypassPermissions`/`--dangerously-skip-permissions`; otherwise Claude can stop
+on write approval and leave the async job stuck.
 
 ### Tool shape
 
@@ -375,7 +379,7 @@ use its non-interactive/scriptable mode with the same runner contract.
     prompt: string,          // what to investigate or implement
     cwd: string,             // working directory
     files?: string[],        // relevant files to focus on
-    sandbox?: "read-only" | "workspace-write",
+    sandbox?: "read-only" | "workspace-write" | "danger-full-access",
     timeoutMs?: number,
     outputSchema?: string,   // JSON schema path/name for structured result
     worktree?: string,       // required or auto-created for patch mode
@@ -393,15 +397,15 @@ continues the conversation. The CLI runner consumes the request, emits
 For Codex, the command shape should be based on non-interactive execution:
 
 ```bash
-codex exec --json --skip-git-repo-check --sandbox read-only -o "$RESULT_PATH" "$PROMPT" \
+codex exec --json --skip-git-repo-check --sandbox danger-full-access -o "$RESULT_PATH" "$PROMPT" \
   > "$EVENTS_JSONL"
 ```
 
 `$RESULT_PATH` stores the final response. `$EVENTS_JSONL` stores the streamed
 Codex event log for progress, tool calls, and diagnostics.
 
-For patch mode, use `--sandbox workspace-write` only in an isolated workspace
-or worktree. The result should include the diff summary, changed files,
+For patch mode, prefer an isolated workspace or worktree when the task may
+mutate files. The result should include the diff summary, changed files,
 verification commands, and any remaining risk. Raw stdout/stderr is supporting
 evidence, not the primary result format.
 
