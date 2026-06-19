@@ -6286,3 +6286,105 @@ is measurable from the infrastructure profiler, not from the KE library.
 → Full analysis: `shared/knowledge/entries/KE-044.md`
 
 → Full analysis: `shared/knowledge/entries/KE-043.md`
+
+
+---
+
+## The Verification Budget — KE-045 (2026-06-20 creative heartbeat)
+
+**Created:** `shared/knowledge/entries/KE-045.md`
+
+### The Cross-Paper Synthesis
+
+Three independent June 2026 arXiv papers — from NLP, multi-agent systems, and
+production engineering — converge on the same counter-intuitive finding that no
+prior KE entry connected:
+
+| Paper | Finding |
+|:-----:|:--------|
+| **ACCORD** (2606.16432) | Probing before acting gives +20.6% accuracy, zero training, model-independent |
+| **Trust Between AI Agents** (2606.14923) | Over-verification → worse performance, not better safety |
+| **Intelligence Entropy** (2606.18065) | Without lifecycle gates, disorder grows exponentially |
+
+> **Uniform-effort verification is strictly dominated by calibrated verification
+> — on both cost AND accuracy.**
+
+### Why This Matters For Our System
+
+The evaluator runs 1,773 sessions/48h at 23 ops each with **zero gate sessions**
+(0% rejection rate). It never asks "should I evaluate this?" — it always evaluates.
+
+Meanwhile, aks-explorer evolved a 30% gate rate on its own. It learned to exit
+cheaply when nothing is runnable.
+
+The trust paper's counter-intuitive finding explains why adding a gate would
+*improve* accuracy: checking 887 sessions at 40 ops each (concentrated attention)
+beats checking 1,773 at 23 ops each (diluted attention). Persistent over-verification
+correlates with indecision, not safety.
+
+### The Ratchet Effect: The Deeper Pattern
+
+All three papers describe the same asymmetry from different angles:
+
+| Domain | Cheap Direction | Expensive Direction |
+|:------:|:---------------:|:-------------------:|
+| Context | Assuming | Verifying |
+| Trust | Breaking | Recovering |
+| Entropy | Growing | Restoring |
+
+This is the **ratchet effect**: state changes in agent systems are cheap in one
+direction and expensive to reverse. Every documented system pathology (KE library
+growth, instruction bloat, triage repetition, evaluation volume) is an instance
+of the same missing primitive: **reversible verification state**.
+
+### The Design Principle
+
+> A system that verifies everything verifies nothing — because verification quality
+> degrades linearly with volume while verification cost stays constant.
+
+The fix: **a cheap pre-verification question** ("does this warrant my full attention?")
+before the expensive verification work begins.
+
+→ Full analysis: `shared/knowledge/entries/KE-045.md`
+
+
+---
+
+## The Misattributed Cost Center — KE-046 (2026-06-20 creative heartbeat)
+
+**Created:** `shared/knowledge/entries/KE-046.md`
+
+### The Correction Nobody Made
+
+10+ KE entries (029, 031, 045) analyzed the evaluator as the system's primary
+waste source. KE-046 uses a natural experiment (19h idle, 5h active) to show
+the evaluator is already demand-responsive:
+
+| Agent | Active rate | Idle rate | Demand ratio |
+|:-----:|:----------:|:---------:|:------------:|
+| evaluator | 41.2/hr | 1.1/hr | **37:1** |
+| arc | 2.0/hr | 1.9/hr | 1.05:1 |
+| scout | 2.8/hr | 1.9/hr | 1.5:1 |
+| dev | 2.0/hr | 1.9/hr | 1.05:1 |
+
+During idle (79% of the day), arc+scout consumed **8× more ops** than the evaluator.
+The KE library identified the wrong cost center because it analyzed active periods
+only — where the evaluator IS dominant — but idle periods dominate total runtime.
+
+### The Self-Inflicted Alert
+
+The evaluator's correct demand-response (stopping when nothing needs evaluation)
+triggers `evaluator.aftermath-coverage-rate-3h = 0`, a red alert that has been
+firing for 10+ consecutive checks. The evaluator then spends ops investigating
+its own alert — which describes correct behavior.
+
+### The Design Principle
+
+> **Input-starvation is the simplest possible gate, and the evaluator already has it.
+> Clock-driven agents can't develop it because they always have input (a timer).
+> To gate a clock-driven agent, you need an external production-state signal.**
+
+Fix: if no task-worker session in last 2h → heartbeat cadence 30min→2h.
+Projected savings: ~3,400 ops/day with zero risk.
+
+→ Full analysis: `shared/knowledge/entries/KE-046.md`
