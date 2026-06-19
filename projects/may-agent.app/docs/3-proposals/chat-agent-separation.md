@@ -155,13 +155,16 @@ the chat REPL.
 
 ## Chat Session Design
 
-`ChatSession` owns the live `Agent` execution directly — no job-style
-`manager.run()` / `executeSession()` terminal cycle for each turn.
+`ChatSession` owns the human input loop. The runtime creates one persistent
+chat session through the manager, but the manager routes `kind: "chat"` /
+`autoClose: "never"` through a chat-turn path instead of the job-style
+`executeSession()` terminal cycle.
 
 It still registers and updates a normal session record. The distinction is:
 
 - the session registry owns identity, persistence, events, and observability
-- `ChatSession` owns the long-lived in-memory `Agent` and turn delivery
+- the manager owns the long-lived in-memory `Agent` and turn delivery for chat
+  sessions
 - the job manager still owns bounded job/call sessions
 
 ```typescript
@@ -238,6 +241,76 @@ directly. Human intent should still enter the system as canonical events:
 Chat tools may provide ergonomic wrappers around these events, but the durable
 record should be the event, not an untracked in-memory method call.
 
+## CLI Agent Delegation
+
+May can delegate hard problems to external CLI agents (Claude Code, Codex)
+without the human leaving the conversation. The result comes back through
+May, not a separate terminal tab.
+
+### Pattern
+
+```
+Human asks hard question
+  → May spawns CLI async with focused prompt
+  → May tells human "investigating..."
+  → Chat stays responsive for other messages
+  → CLI finishes → cli.task.completed event
+  → May reads result, summarizes, presents in chat
+```
+
+### Events
+
+CLI tasks use the same event model as all other work:
+
+```
+cli.task.started    { taskId, tool: "claude"|"codex", prompt, cwd }
+cli.task.completed  { taskId, resultPath, exitCode, summary }
+cli.task.failed     { taskId, error, exitCode }
+```
+
+May's chat session sees `cli.task.completed` and presents the result.
+No polling, no terminal switching, no special integration.
+
+### Tracking
+
+CLI tasks are tracked like any other work:
+- Visible in session/task list
+- Duration and terminal state recorded
+- Pair tracker detects orphans (started but never completed)
+- Ops health metrics cover them
+
+### When to use which CLI
+
+| Need | CLI | Why |
+|------|-----|-----|
+| Deep investigation, code review, analysis | Claude Code | Strong reasoning, multi-step exploration |
+| Implementation, fixes, bulk changes | Codex | Fast execution, code generation |
+| Quick question, explanation | Neither — May answers directly | No delegation needed |
+
+May decides based on the human's question. Simple questions she answers
+herself. Hard investigations or implementation work she delegates.
+
+### Tool shape
+
+```typescript
+// May's chat tools include:
+{
+  name: "run-cli-agent",
+  description: "Delegate a task to Claude Code or Codex CLI",
+  parameters: {
+    tool: "claude" | "codex",
+    prompt: string,        // what to investigate or implement
+    cwd: string,           // working directory
+    files?: string[],      // relevant files to focus on
+  }
+}
+```
+
+The tool spawns the CLI in the background, emits `cli.task.started`,
+and returns immediately. May continues the conversation. When the CLI
+finishes, the event carries the result path. May reads it on the next
+turn or proactively presents it.
+
 ## What This Is Not
 
 - Not building a new chat framework — reusing pi-agent-core Agent as-is
@@ -247,6 +320,8 @@ record should be the event, not an untracked in-memory method call.
 - Not changing the agent model — still LLM + tools + context
 - Not removing may-agent.app — it still exists as the platform project,
   just with its own owner agent instead of May
+- Not making CLI agents a new agent type — they're tools May invokes,
+  tracked via events like any other work
 
 ## Implementation Order
 
@@ -258,16 +333,19 @@ record should be the event, not an untracked in-memory method call.
 3. Build chat-specific system prompt: identity, user preferences, fresh system
    state, and conversation summary; no task-tree packet unless requested.
 4. Build chat-specific tool preset: status, steering, delegation, event emit,
-   project/task reads; no `finish()` and no broad mutation tools by default.
+   project/task reads, CLI delegation; no `finish()` and no broad mutation
+   tools by default.
 5. Add compaction support through pi-agent-core `transformContext`.
 6. Verify restart recovery: persisted transcript reloads, fresh system summary
    injects, and failed recovery produces an explicit event/notification.
-7. Create `platform-owner` agent in may-agent.app and transfer may-agent.app
+7. Add CLI delegation tool: spawn Claude Code / Codex in background, emit
+   cli.task events, present results in chat.
+8. Create `platform-owner` agent in may-agent.app and transfer may-agent.app
    ownership away from May.
-8. Route Deputy-May system judgments through infra handlers, but route concrete
+9. Route Deputy-May system judgments through infra handlers, but route concrete
    may-agent platform repair into may-agent.app/platform-owner.
-9. Migrate dev/arc to may-agent.app or assess for retirement; disable their
-   standalone heartbeats only after replacement coverage exists.
-10. Assess remaining `agents/` (amy, bob, coach, judge, master, optimizer, qa,
+10. Migrate dev/arc to may-agent.app or assess for retirement; disable their
+    standalone heartbeats only after replacement coverage exists.
+11. Assess remaining `agents/` (amy, bob, coach, judge, master, optimizer, qa,
     tech-lead) for migration, retirement, or explicit temporary global status.
-11. Shrink `agents/` toward only `may/` once migration evidence is clean.
+12. Shrink `agents/` toward only `may/` once migration evidence is clean.
