@@ -222,6 +222,21 @@ export function appendSessionMessage(persistDir: string, sessionId: string, mess
   appendFileSync(sessionJsonlPath(persistDir, sessionId), line, "utf-8");
 }
 
+/**
+ * Rewrite a session transcript after runtime recovery removes an invalid turn.
+ * Normal transcript writes are append-only; this helper is only for repairing
+ * messages that should not become durable conversation context, such as an
+ * empty terminal assistant message that is immediately retried.
+ */
+export function rewriteSessionMessages(persistDir: string, sessionId: string, messages: AgentMessage[]): void {
+  ensureSessionDir(persistDir, sessionId);
+  const filePath = sessionJsonlPath(persistDir, sessionId);
+  const tmpPath = filePath + ".tmp";
+  const lines = messages.map((message) => JSON.stringify(sanitizeMessageForTranscript(message))).join("\n");
+  writeFileSync(tmpPath, lines ? `${lines}\n` : "", "utf-8");
+  renameSync(tmpPath, filePath);
+}
+
 /** Read all messages from a session's JSONL file. Returns [] if the file doesn't exist or is empty.
  *  Corrupted lines are skipped with a warning. */
 export function readSessionMessages(persistDir: string, sessionId: string): AgentMessage[] {

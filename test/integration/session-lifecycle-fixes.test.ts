@@ -12,9 +12,15 @@ import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { SubagentManager } from "../../src/lib/manager.js";
 import { classifyTerminalAssistantFailure } from "../../src/lib/manager-utils.js";
-import { readSessionMeta, writeSessionMeta, ensureSessionDir, appendSessionMessage } from "../../src/lib/persistence.js";
+import {
+  readSessionMeta,
+  writeSessionMeta,
+  ensureSessionDir,
+  appendSessionMessage,
+} from "../../src/lib/persistence.js";
 import { EventBus, type AgentEvent } from "../../src/app/event-bus.js";
 import type { Model } from "@earendil-works/pi-ai";
+import type { AgentMessage } from "@earendil-works/pi-agent-core";
 
 function fakeModel(): Model<any> {
   return {
@@ -125,6 +131,131 @@ describe("Bug 3: handleCompletion error recovery", () => {
   });
 });
 
+describe("persistent chat empty response recovery", () => {
+  let persistDir: string;
+  let manager: SubagentManager;
+  let bus: EventBus;
+  let events: AgentEvent[];
+
+  beforeEach(() => {
+    persistDir = mkdtempSync(join(tmpdir(), "may-chat-empty-"));
+    bus = new EventBus();
+    events = [];
+    bus.subscribe((event) => events.push(event));
+    manager = new SubagentManager({ persistDir, bus });
+  });
+
+  afterEach(() => {
+    if (existsSync(persistDir)) {
+      rmSync(persistDir, { recursive: true, force: true });
+    }
+  });
+
+  function makeChatSession(messages: AgentMessage[], continueFn: () => Promise<void>) {
+    const sessionId = "s_chat_empty";
+    ensureSessionDir(persistDir, sessionId);
+    writeSessionMeta(persistDir, sessionId, {
+      agent: "may",
+      task: "hello",
+      status: "running",
+      startedAt: Date.now(),
+      kind: "chat",
+      autoClose: "never",
+    });
+    for (const message of messages) appendSessionMessage(persistDir, sessionId, message);
+
+    const fakeAgent = {
+      state: { messages },
+      waitForIdle: async () => {},
+      continue: continueFn,
+    };
+    const session = {
+      sessionId,
+      agent: fakeAgent,
+      agentName: "may",
+      task: "hello",
+      startedAt: Date.now(),
+      status: "running",
+      kind: "chat",
+      autoClose: "never",
+      toolCalls: 0,
+      turnCount: 1,
+    } as any;
+    manager.activeSessions.set(sessionId, session);
+    return { sessionId, session };
+  }
+
+  it("trims an empty assistant turn and retries the same chat request once", async () => {
+    const messages: AgentMessage[] = [
+      { role: "user", content: [{ type: "text", text: "hello" }] } as any,
+      { role: "assistant", stopReason: "toolUse", content: [{ type: "text", text: "" }] } as any,
+    ];
+    const { sessionId, session } = makeChatSession(messages, async () => {
+      messages.push({ role: "assistant", stopReason: "stop", content: [{ type: "text", text: "Hello back." }] } as any);
+    });
+
+    await (manager as any).executeChatTurn(session, async () => {});
+
+    expect(manager.hasActiveSession(sessionId)).toBe(true);
+    expect(session.status).toBe("idle");
+    expect(messages).toHaveLength(2);
+    expect((messages[0].content as any[])[0].text).toBe("hello");
+    expect((messages[1].content as any[])[0].text).toBe("Hello back.");
+
+    const idle = events.find((event) => event.type === "session.idle" && (event as any).data?.sessionId === sessionId);
+    expect(idle).toMatchObject({
+      type: "session.idle",
+      data: {
+        sessionId,
+        status: "idle",
+        summary: "Hello back.",
+        retry: {
+          reason: "Agent ended on an empty tool-use assistant turn",
+          attempts: 1,
+          recovered: true,
+        },
+      },
+    });
+    expect(events.some((event) => event.type === "session.end" && (event as any).data?.sessionId === sessionId)).toBe(
+      false,
+    );
+  });
+
+  it("keeps chat idle and visible when the retry is also empty", async () => {
+    const messages: AgentMessage[] = [
+      { role: "user", content: [{ type: "text", text: "hello" }] } as any,
+      { role: "assistant", stopReason: "toolUse", content: [] } as any,
+    ];
+    const { sessionId, session } = makeChatSession(messages, async () => {
+      messages.push({ role: "assistant", stopReason: "toolUse", content: [] } as any);
+    });
+
+    await (manager as any).executeChatTurn(session, async () => {});
+
+    expect(manager.hasActiveSession(sessionId)).toBe(true);
+    expect(session.status).toBe("idle");
+    expect(session.lastError).toBe("Agent ended on an empty tool-use assistant turn");
+    expect(messages).toEqual([{ role: "user", content: [{ type: "text", text: "hello" }] } as any]);
+
+    const idle = events.find((event) => event.type === "session.idle" && (event as any).data?.sessionId === sessionId);
+    expect(idle).toMatchObject({
+      type: "session.idle",
+      data: {
+        sessionId,
+        status: "idle",
+        error: "Agent ended on an empty tool-use assistant turn",
+        retry: {
+          attempts: 1,
+          recovered: false,
+        },
+      },
+    });
+    expect(events.some((event) => event.type === "session.end" && (event as any).data?.sessionId === sessionId)).toBe(
+      false,
+    );
+  });
+});
+
 describe("session.start metadata", () => {
   let persistDir: string;
 
@@ -158,7 +289,9 @@ describe("session.start metadata", () => {
       // Fake model may fail; this test only needs the start event.
     }
 
-    const start = events.find((event) => event.type === "session.start" && (event as any).data?.sessionId === sessionId);
+    const start = events.find(
+      (event) => event.type === "session.start" && (event as any).data?.sessionId === sessionId,
+    );
     expect(start).toMatchObject({
       type: "session.start",
       source: "metric-alert-reactor:test.metric",

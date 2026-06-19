@@ -188,6 +188,7 @@ export class DbWriter {
           const payload = eventPayload(ev);
           updateSessionDb(this.persistDir, payload.sessionId as string, {
             status: "idle",
+            error: payload.error as string | undefined,
             outcome: payload.summary as string | undefined,
             opCount: payload.opCount as number | undefined,
             lastActivityAt: Date.now(),
