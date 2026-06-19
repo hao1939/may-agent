@@ -1,10 +1,11 @@
 {
   "version": 2,
   "project": "evaluation",
-  "updated_at": "2026-06-14T19:32:11Z",
+  "updated_at": "2026-06-18T10:35:00Z",
   "root_task_id": "evaluation-system",
   "active_task_ids": [
-    "aftermath-trigger-leak-audit"
+    "aftermath-trigger-leak-audit",
+    "aftermath-reviewed-delivery-gap"
   ],
   "max_concurrent": 2,
   "tasks": {
@@ -20,8 +21,8 @@
         "strategy-learning"
       ],
       "created_at": "2026-06-14T00:00:00Z",
-      "updated_at": "2026-06-14T19:32:11Z",
-      "summary": "Project-app evaluation system with five lanes. Current owner focus is now narrowed to the aftermath trigger-leak audit: live 72h workflow_runs show 2625 done vs 1301 missing-sessionId escalations and 50 interrupted runs, while the previously observed review-failed lane is currently at zero. Keep pipeline-health active around routing leakage first, then resume secondary lanes once the leak source is isolated.",
+      "updated_at": "2026-06-18T10:35:00Z",
+      "summary": "Project-app evaluation system with five lanes. Current owner focus is split between the older aftermath trigger-leak audit and a fresh aftermath liveness gap: the live 3h metric alert is now at 0, and the current window shows no evaluation.routed / evaluation.reviewed / evaluation.skipped activity despite ongoing session completions. Keep pipeline-health active on trigger/dispatch liveness first, then resume secondary lanes once the zero-activity window is explained or repaired.",
       "state": "active"
     },
     "pipeline-health": {
@@ -30,11 +31,12 @@
       "parent_id": "evaluation-system",
       "children": [
         "aftermath-trigger-leak-audit",
-        "aftermath-reviewer-runtime-failures"
+        "aftermath-reviewer-runtime-failures",
+        "aftermath-reviewed-delivery-gap"
       ],
       "created_at": "2026-06-14T00:00:00Z",
-      "updated_at": "2026-06-14T19:32:11Z",
-      "summary": "Live evidence still shows the lane is active and leaky, but the shape is narrower than the prior check. Last 72h workflow_runs for evaluator-aftermath: 2625 done, 1301 escalated with result_reason=\"evaluator-aftermath requires a sessionId\", 0 evaluator review-failed escalations, and 50 interrupted runs. Last 24h shows 85 missing-sessionId escalations, 0 review-failed escalations, and 44 interrupted runs. Among current missing-sessionId escalations, 84/85 still carry an embedded ## Trigger Event while 1/85 uses the generic periodic aftermath task text with no parent linkage, so routing/extraction leakage remains the dominant actionable problem.",
+      "updated_at": "2026-06-18T10:35:00Z",
+      "summary": "Pipeline-health now has two active signals. Historical evidence still points at missing-sessionId routing leakage, but the current live breach has shifted again: metric evaluator.aftermath-coverage-rate-3h is now 0, and the measured 3h window shows zero evaluation.routed / evaluation.reviewed / evaluation.skipped events even though 29 sessions completed in that same window. That means the immediate issue is broader aftermath trigger/dispatch liveness, not just post-review delivery matching.",
       "state": "active"
     },
     "aftermath-trigger-leak-audit": {
@@ -198,6 +200,51 @@
       "context": {
         "migrated_from_invalid_leaf_state": "decomposed"
       }
+    },
+    "aftermath-reviewed-delivery-gap": {
+      "id": "aftermath-reviewed-delivery-gap",
+      "parent_id": "pipeline-health",
+      "children": [],
+      "kind": "review",
+      "priority": "P0",
+      "owner": "evaluator",
+      "goal": "Identify why evaluator-aftermath is producing no routed/reviewed/skipped activity in the live alert window despite ongoing session completions, and package the smallest repair or escalation.",
+      "inputs": [
+        "projects/evaluation.app/workflows/evaluator-aftermath.ts",
+        "events table",
+        "evaluations table",
+        "projects/evaluation.app/agents/evaluator/workspace/aftermath/"
+      ],
+      "outputs": [
+        "projects/evaluation.app/tasks/tree.json",
+        "projects/evaluation.app/discussion.md"
+      ],
+      "acceptance": [
+        "Verifies the current 3h breach against the measured window and confirms whether aftermath events are absent or merely unmatched.",
+        "Explains whether the zero-coverage gap is upstream trigger loss, handler dispatch failure, or evaluator workflow inactivity.",
+        "Leaves either a local repair task or a concrete escalation with named timestamps/session samples and evidence."
+      ],
+      "conflict_scope": [
+        "evaluation-reviewed-delivery"
+      ],
+      "state": "active",
+      "context": {
+        "latest_evidence": {
+          "observed_at": "2026-06-18T10:35:00Z",
+          "metric_id": "evaluator.aftermath-coverage-rate-3h",
+          "metric_current": 0,
+          "metric_threshold": 0.2,
+          "measured_at_ms": 1781793212119,
+          "window_ms": 10800000,
+          "session_completed_events_last_3h": 25,
+          "sessions_ended_last_3h": 29,
+          "evaluation_routed_last_3h": 0,
+          "evaluation_reviewed_last_3h": 0,
+          "evaluation_skipped_last_3h": 0,
+          "signal": "The live breach has worsened from a per-session reviewed-delivery mismatch to a full aftermath-activity outage in the measured window. There were 25 session.completed events and 29 ended sessions in the same 3h window, but zero evaluation.routed, evaluation.reviewed, or evaluation.skipped events. That points first to trigger/dispatch liveness rather than to artifact parsing or reviewed-event matching."
+        }
+      },
+      "updated_at": "2026-06-18T10:35:00Z"
     }
   }
 }
