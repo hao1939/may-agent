@@ -34,6 +34,15 @@ Run multi-step agent sequences. **Blocking.**
 ## `cron`
 Manage scheduled jobs: `list`, `enable(name)`, `disable(name)`, `trigger(name)`.
 
+## Runtime Restart
+Do not run inline `supervisorctl restart may-agent ...` from an agent shell.
+Use `runtime.restart.requested`, or run `supervisorctl start
+may-agent-restarter` when a shell command is explicitly required. The
+supervisor-owned one-shot restarter performs the actual restart after the
+caller exits. Once supervisor accepts the start request, it survives
+`may-agent` stopping or crashing; if `may-agent` crashes before sending the
+request, normal supervisor `autorestart` owns recovery.
+
 ## `run_cli_agent`
 Delegate focused work to Claude Code or Codex through the durable async CLI
 task runner. Use when Hao asks for Claude/Codex, a second opinion, comparison,

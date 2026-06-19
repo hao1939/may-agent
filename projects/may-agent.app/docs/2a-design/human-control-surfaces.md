@@ -172,6 +172,20 @@ event-shaped rather than ad hoc command frames:
 }
 ```
 
+`runtime.restart.requested` must not run inline `supervisorctl restart
+may-agent ...` from the `may-agent` process. The runtime hands restart ownership
+to supervisord by starting the one-shot `may-agent-restarter` program:
+
+```bash
+supervisorctl start may-agent-restarter
+```
+
+After supervisor accepts that start request, the restarter continues even if
+the `may-agent` process exits or crashes. If `may-agent` crashes before handing
+the request to supervisor, normal supervisor `autorestart` owns process
+recovery. If supervisord or the container dies, the container runtime owns
+recovery.
+
 ```json
 {
   "type": "runtime.shutdown.requested",

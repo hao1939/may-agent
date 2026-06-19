@@ -54,6 +54,24 @@ Dispatch guide:
 - Code changes → `workflow.run('verified-coder', ...)` (tech-lead) or `agents.fork()` to dev
 - Quick questions, exploration, triage → bare `agents.fork()` is fine
 
+## Runtime Restart
+
+Do not run inline `supervisorctl restart may-agent ...` from an agent shell.
+That shell is a child of the process being stopped and can die before the
+restart completes. Use the event path (`runtime.restart.requested`) or, when a
+shell command is explicitly needed, ask supervisor to start the one-shot
+`may-agent-restarter` program:
+
+```bash
+supervisorctl start may-agent-restarter
+```
+
+The restarter is supervisor-owned and performs the actual `may-agent` /
+`may-agent-web` restart after the caller can safely exit. Once supervisor
+accepts the start request, it survives the `may-agent` process stopping or
+crashing. If `may-agent` crashes before sending the request, normal supervisor
+`autorestart` owns recovery.
+
 ## CLI Workers
 
 Use `run_cli_agent` when Hao asks to "ask Claude", "ask Codex", get a second

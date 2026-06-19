@@ -184,6 +184,20 @@ Distinguish local blockers from ownership-boundary escalations.
 - Human, CLI, Telegram, web, and socket actions should enter through canonical
   intent events rather than untracked side channels.
 
+## Runtime Restart
+
+- Do not run inline `supervisorctl restart may-agent ...` from an agent shell.
+  The shell is a child of the runtime being stopped and can die before the
+  restart finishes.
+- Prefer the event path: emit `runtime.restart.requested` and let the runtime
+  ask supervisor to start `may-agent-restarter`.
+- If a shell command is explicitly needed, use
+  `supervisorctl start may-agent-restarter`. That one-shot program is owned by
+  supervisord and performs the actual `may-agent` / `may-agent-web` restart.
+- Once supervisor accepts the start request, the restarter survives
+  `may-agent` stopping or crashing. If `may-agent` crashes before sending the
+  request, normal supervisor `autorestart` owns recovery.
+
 ## Key Principles
 
 - Reactive work is event-driven and must close the loop.
