@@ -691,10 +691,10 @@ CREATE TABLE projects (
 
 ## Current Gaps To Close
 
-- **Orphaned project.reconcile.* metrics (KE-2011):** The 3 metrics owned by
-  the disabled project handler are still `status='active'`, inflating
-  `capability.status-reality-mismatch-count` by 3. Fix: set them to `inactive`.
-  Proposal at `agents/arc/workspace/proposals/2026-06-15-deactivate-orphaned-project-reconcile-metrics.md`.
+- ~~**Orphaned project.reconcile.* metrics (KE-2011):**~~ **Resolved.** The 3
+  metrics (`project.reconcile.trigger-count`, `.launched-count`,
+  `.event-latency-ms`) have been set to `status='retired'` and
+  `capability.status-reality-mismatch-count` is now 0. (Verified 2026-06-18.)
 - Project cache schema should stay generated or checked against `schema.ts` so
   docs do not drift into non-existent columns.
 - Project docs are the context map. Runtime projections should not become a

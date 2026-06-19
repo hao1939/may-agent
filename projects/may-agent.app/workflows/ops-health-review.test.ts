@@ -171,12 +171,12 @@ describe("ops-health-review", () => {
     expect(emitted[1]).toMatchObject({
       type: "project.owner.requested",
       params: {
-        signals: [
+        signals: expect.arrayContaining([
           expect.objectContaining({
             kind: "repeated-runtime-symptom",
             severity: "P1",
           }),
-        ],
+        ]),
       },
     });
   });

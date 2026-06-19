@@ -21,7 +21,7 @@
   "taskIndex": ["tasks/tree.json"],
   "currentFocus": {
     "taskId": null,
-    "summary": "No active tasks. 57 done, 5 backlog. Fixed 2 tree inconsistencies (parent tasks with state=backlog but resolution=completed). All 4 open alerts classified: #1937-#1939 are health-observation oscillation metrics (correctly deferred in DEFERRED_METRICS, not platform defects). #1922 is aks-explorer-owned (blocked-count=20). Alert #1940 resolved (DB=1617MB). Runtime healthy: handler.success-rate=99.94%, zero platform failures in 4h. 1 pending evaluator message (P2 calibration status-update, informational). Remaining backlog: 4 P2 design/documentation/convention tasks."
+    "summary": "No active tasks. 57 done, 8 backlog (65 total). All 5 open alerts non-platform: #1955-#1957 caused by evaluator-planner-aftermath-calibration (active project with no tasks, owner=evaluator — message sent requesting task slice or closure). #1954 evaluator.aftermath-coverage-rate-3h=0: aftermath scanner fires but produces zero evaluations since 2026-06-18T10:20Z despite 46 eligible sessions in 3h — evaluator-owned dispatch/liveness gap (message sent with diagnosis). #1952 aks-rp-e2e.run.live-started-24h=0: aks-explorer-owned. Platform runtime healthy: handler.success-rate=100%, handler.failed-count=0, zero session.resume_failed/agent.config_invalid/message.delivery_failed in 4h. 670 handler completions. Remaining backlog: 6 P2 design/documentation/convention/ops tasks."
   },
-  "updatedAt": "2026-06-18T10:05:00.000Z"
+  "updatedAt": "2026-06-19T06:50:00.000Z"
 }

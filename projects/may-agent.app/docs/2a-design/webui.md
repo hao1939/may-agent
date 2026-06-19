@@ -127,7 +127,7 @@ event, task, or session.
 
 | Route | Purpose |
 |---|---|
-| `/` | Live overview. Show liveness, heartbeat/activity timeline, core vitals, recent decisions, open alerts, recent messages, and active projects. |
+| `/` | Live overview. Show liveness, heartbeat/activity timeline, core vitals, recent decisions, open alerts, recent messages, and project metric health. |
 | `/events` | Event stream. Show filters, event type/owner distribution, recent events, and trace entry points. |
 | `/events/:eventId` | Event trace. Show the concrete chain from input event to handler, session/workflow, emitted events, and resulting state. |
 | `/projects` | Project list. Show durable work contexts and their status. |
@@ -557,12 +557,13 @@ Answers "is the system alive?" in one screen, no clicks. Built around **movement
 │                                                                       │
 ├──────────────────────────────────────────────────────────────────────┤
 │                                                                       │
-│  PROJECTS  (sorted by recent activity)                               │
+│  PROJECT METRIC HEALTH  (alerting first, then recent activity)        │
 │                                                                       │
-│  ● context-injection-review     may       4d ago   metrics: 2 ✓     │
-│  ● handler-health               dev       2h ago   metrics: 3, 1⚠   │
-│  ● agent-system-literacy        arc       1h ago   metrics: 2 ✓     │
-│  ◐ skill-workflow-audit         scout     3d ago   metrics: 1 ✓     │
+│  ● aks-rp-e2e.app            aks-explorer active  2 alerts           │
+│     task.blocked-count 20  live-started-24h 0  stale-active 0       │
+│  ● evaluation.app            evaluator    active  metrics ok         │
+│     aftermath-coverage 0.82  active-task-count 3                    │
+│  ◐ scout-knowledge-lib.app   scout        active  no project metrics │
 │  …                                                                    │
 │                                                                       │
 ├──────────────────────────────────────────────────────────────────────┤
@@ -581,7 +582,7 @@ Five panels. Each is **alive** — it updates over `/ws` as events flow. The pag
 
 - **Recent heartbeat outcomes (live ticker).** Phase 1 renders the existing heartbeat session task/outcome summaries, newest first. If this is too weak after using it, add `agent.decision` later as a sharper signal. The first useful view should not depend on a new event.
 
-- **Projects (sorted by recent activity).** Each project tile shows: pulse indicator (green = active in last hour, yellow = 24h, gray = dormant), name, owner, last-touched, metric summary. Click → screen 2.
+- **Project metric health.** Each project tile shows: pulse indicator (green = active in last hour, yellow = 24h, gray = dormant), name, owner, status, last-touched, and project-owned metric chips. Alerting metrics sort first, then priority, then recent activity. Click the project row → screen 2. Click a metric chip → metric history.
 
 - **Conversation strip.** Recent `message.created` events between agents (and human comments). Shown as a flow: from → to, priority, intent. Live. Click a message → opens its source session.
 

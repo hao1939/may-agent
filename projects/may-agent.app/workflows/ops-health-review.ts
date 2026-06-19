@@ -15,6 +15,15 @@ type Signal = {
   evidence?: unknown;
 };
 
+type DeliveryHealth = {
+  error?: unknown;
+  ownerInboxOpenCount?: unknown;
+  unhandledEvents?: unknown;
+  overduePendingEvents?: unknown;
+  orphanPairs?: unknown;
+  overdueOpenPairs?: unknown;
+};
+
 function field(task: string, name: string): string | undefined {
   const pattern = new RegExp(`^${name}:\\s*(.+)$`, "m");
   return task.match(pattern)?.[1]?.trim();
@@ -82,13 +91,16 @@ function queryCount(
   return numberValue(rows[0]?.count ?? rows[0]?.c);
 }
 
-function queryDeliveryHealth(ctx: WorkflowContext, now: number): Row {
+function queryDeliveryHealth(
+  ctx: WorkflowContext,
+  now: number,
+): DeliveryHealth {
   try {
     return ctx.query.eventDeliveryHealth({
       now,
       lookbackMs: 60 * 60_000,
       limit: 20,
-    }) as Row;
+    });
   } catch (error) {
     return {
       error: error instanceof Error ? error.message : String(error),
@@ -102,7 +114,9 @@ function queryDeliveryHealth(ctx: WorkflowContext, now: number): Row {
 }
 
 function rowArray(value: unknown): Row[] {
-  return Array.isArray(value) ? (value.filter((row) => row && typeof row === "object") as Row[]) : [];
+  return Array.isArray(value)
+    ? (value.filter((row) => row && typeof row === "object") as Row[])
+    : [];
 }
 
 function groupEventSymptoms(rows: Row[]): Row[] {

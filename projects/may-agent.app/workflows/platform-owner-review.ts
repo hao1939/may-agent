@@ -117,6 +117,21 @@ function compactRows(
   });
 }
 
+function reviewInboxEvents(
+  ctx: WorkflowContext,
+  eventIds: number[],
+  reviewedBy: string,
+): number {
+  if (eventIds.length === 0) return 0;
+  if (typeof ctx.query.reviewInboxEvents === "function") {
+    return ctx.query.reviewInboxEvents(eventIds, reviewedBy);
+  }
+  if (typeof ctx.query.markInboxHandled === "function") {
+    return ctx.query.markInboxHandled(eventIds, reviewedBy);
+  }
+  return 0;
+}
+
 function recentEvents(
   ctx: WorkflowContext,
   types: string[],
@@ -129,7 +144,7 @@ function recentEvents(
       const rows = ctx.query.events({ type, since, limit: 8 }).rows as Array<
         Record<string, unknown>
       >;
-      // Track message.created event IDs so the caller can mark them handled.
+      // Track message.created event IDs so the caller can record owner review.
       // CRITICAL: only collect IDs where owner is agent:may — otherwise we
       // steal messages belonging to other agents (aks-explorer, scout, etc.).
       if (type === "message.created") {
@@ -458,30 +473,22 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
   } = buildReviewPacket(ctx, appDir);
   const packetJson = JSON.stringify(packet, null, 2);
 
-  // Mark consumed message.created events as handled so they don't reappear.
-  // This closes the lifecycle gap where the owner workflow reads messages
-  // but never transitions them from pending → handled.
+  // Record reviewed message.created events so they don't reappear.
+  // The query layer emits follow-up events and closes owner-inbox pairs; it also
+  // updates legacy pending rows during migration.
   try {
-    if (
-      consumedMessageIds.length > 0 &&
-      typeof ctx.query.markInboxHandled === "function"
-    ) {
-      ctx.query.markInboxHandled(consumedMessageIds, "may");
-    }
+    reviewInboxEvents(ctx, consumedMessageIds, "may");
   } catch {
     /* best-effort: don't block review if marking fails */
   }
 
-  // Mark consumed escalation.created events as handled.
+  // Record reviewed escalation.created events.
   // These are project-agent escalations (aks-explorer, evaluator) that the
   // owner review consumes by seeing them in the review packet. Without this,
   // the escalation.pending-count metric grows unbounded and triggers alerts.
   try {
-    if (
-      consumedEscalationIds.length > 0 &&
-      typeof ctx.query.markInboxHandled === "function"
-    ) {
-      ctx.query.markInboxHandled(consumedEscalationIds, "may");
+    if (consumedEscalationIds.length > 0) {
+      reviewInboxEvents(ctx, consumedEscalationIds, "may");
       if (consumedEscalationIds.length > 0) {
         ctx.emit({
           type: "escalation.lifecycle",
@@ -495,16 +502,13 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     /* best-effort: don't block review if escalation marking fails */
   }
 
-  // Mark consumed metric.breach/recovered/stalled events as handled.
+  // Record reviewed metric.breach/recovered/stalled events.
   // These are signal events the owner review includes in the packet for
   // context. Without draining them, pending counts grow between measurement
   // cycles and trigger cascading metric alerts.
   try {
-    if (
-      consumedSignalEventIds.length > 0 &&
-      typeof ctx.query.markInboxHandled === "function"
-    ) {
-      ctx.query.markInboxHandled(consumedSignalEventIds, "may");
+    if (consumedSignalEventIds.length > 0) {
+      reviewInboxEvents(ctx, consumedSignalEventIds, "may");
       ctx.emit({
         type: "signal.lifecycle",
         action: "drain_pending_signals",

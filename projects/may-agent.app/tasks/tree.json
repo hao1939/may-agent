@@ -1,12 +1,12 @@
 {
   "version": 2,
   "project": "may-agent",
-  "updated_at": "2026-06-18T10:05:00.000Z",
+  "updated_at": "2026-06-19T06:50:00.000Z",
   "project_lifecycle": "active",
   "root_task_id": "project",
   "active_task_id": null,
   "active_task_ids": [],
-  "note": "57 tasks done, 5 backlog, 0 active (62 total). Fixed 2 parent-task state inconsistencies (platform-web-ui-observability, platform-project-app-v2-adoption had state=backlog but resolution=completed/verdict=accepted — now state=done). Alerts #1937-1939 are health-observation oscillation metrics correctly deferred in app.ts DEFERRED_METRICS. Alert #1922 is aks-explorer-owned (blocked-count=20). Runtime healthy: handler.success-rate=99.94%, zero handler.failed/session.resume_failed/agent.config_invalid/message.delivery_failed in 4h platform window. DB=1617MB (under 2000MB threshold, alert #1940 resolved). 1 handler.failed in 4h is scout-explore timeout (scout-knowledge-lib-owned, not platform). Remaining backlog: 4 P2 design/documentation/convention tasks + 1 P2 workstream parent.",
+  "note": "57 tasks done, 8 backlog, 0 active (65 total). All 5 open alerts non-platform-owned: #1955-#1957 from evaluator-planner-aftermath-calibration (active, no tasks — evaluator notified to create task slice or close). #1954 evaluator.aftermath-coverage-rate-3h=0: scanner fires but zero evaluations produced in ~20h (evaluator-owned dispatch/liveness gap — evaluator notified with diagnosis). #1952 aks-rp-e2e.run.live-started-24h=0: aks-explorer-owned. Platform runtime healthy: handler.success-rate=100%, handler.failed-count=0, 670 completions, zero failures in 4h. Remaining backlog: 6 P2 design/documentation/convention/ops tasks + 2 P2 workstream parents.",
   "max_concurrent": 3,
   "tasks": {
     "project": {
