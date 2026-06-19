@@ -216,19 +216,21 @@ type CliAttemptResult = {
 async function runCliAttempt(opts: {
   bus: EventBus;
   spawnCommand: typeof spawn;
+  persistDir: string;
   record: CliTaskRecord;
   recordPath: string;
   prompt: string;
   now: () => number;
   attempt: number;
 }): Promise<CliAttemptResult> {
-  const { bus, spawnCommand, record, recordPath, prompt, now, attempt } = opts;
+  const { bus, spawnCommand, persistDir, record, recordPath, prompt, now, attempt } = opts;
   const { command, args } = commandFor(record, prompt);
   const child = spawnCommand(command, args, {
     cwd: record.cwd,
     env: {
       ...process.env,
       HOME: process.env.HOME || "/app/.state",
+      CODEX_HOME: process.env.CODEX_HOME || join(persistDir, ".codex"),
       LITELLM_API_KEY: process.env.LITELLM_API_KEY || "sk-local",
       ANTHROPIC_API_KEY: process.env.ANTHROPIC_API_KEY || process.env.LITELLM_API_KEY || "sk-local",
       ANTHROPIC_BASE_URL: process.env.ANTHROPIC_BASE_URL || process.env.MODEL_BASE_URL || "http://localhost:4000",
@@ -407,7 +409,7 @@ export function attachCliTaskRunner(opts: CliTaskRunnerOptions): () => void {
 
     queueMicrotask(() => {
       running.add(taskId);
-      void runCliTask({ bus: opts.bus, spawnCommand, record, recordPath, now }).finally(() => {
+      void runCliTask({ bus: opts.bus, spawnCommand, persistDir: opts.persistDir, record, recordPath, now }).finally(() => {
         running.delete(taskId);
       });
     });
@@ -424,11 +426,12 @@ export function attachCliTaskRunner(opts: CliTaskRunnerOptions): () => void {
 async function runCliTask(opts: {
   bus: EventBus;
   spawnCommand: typeof spawn;
+  persistDir: string;
   record: CliTaskRecord;
   recordPath: string;
   now: () => number;
 }): Promise<void> {
-  const { bus, spawnCommand, record, recordPath, now } = opts;
+  const { bus, spawnCommand, persistDir, record, recordPath, now } = opts;
   try {
     const prompt = readFileSync(record.promptPath, "utf8");
     record.effectiveSandbox = record.sandbox;
@@ -436,7 +439,7 @@ async function runCliTask(opts: {
     record.startedAt = iso(now);
     writeRecord(recordPath, record);
 
-    let attempt = await runCliAttempt({ bus, spawnCommand, record, recordPath, prompt, now, attempt: 1 });
+    let attempt = await runCliAttempt({ bus, spawnCommand, persistDir, record, recordPath, prompt, now, attempt: 1 });
     if (shouldRetryCodexWithSandboxFallback(record, `${attempt.stdout}\n${attempt.stderr}`, attempt.exitCode)) {
       record.effectiveSandbox = "danger-full-access";
       record.sandboxFallbackReason =
@@ -452,7 +455,7 @@ async function runCliTask(opts: {
           reason: record.sandboxFallbackReason,
         })}\n`,
       );
-      attempt = await runCliAttempt({ bus, spawnCommand, record, recordPath, prompt, now, attempt: 2 });
+      attempt = await runCliAttempt({ bus, spawnCommand, persistDir, record, recordPath, prompt, now, attempt: 2 });
     }
 
     record.exitCode = attempt.exitCode;
