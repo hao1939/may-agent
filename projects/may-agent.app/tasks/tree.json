@@ -1,12 +1,12 @@
 {
   "version": 2,
   "project": "may-agent",
-  "updated_at": "2026-06-19T06:50:00.000Z",
+  "updated_at": "2026-06-19T10:15:00.000Z",
   "project_lifecycle": "active",
   "root_task_id": "project",
   "active_task_id": null,
   "active_task_ids": [],
-  "note": "57 tasks done, 8 backlog, 0 active (65 total). All 5 open alerts non-platform-owned: #1955-#1957 from evaluator-planner-aftermath-calibration (active, no tasks — evaluator notified to create task slice or close). #1954 evaluator.aftermath-coverage-rate-3h=0: scanner fires but zero evaluations produced in ~20h (evaluator-owned dispatch/liveness gap — evaluator notified with diagnosis). #1952 aks-rp-e2e.run.live-started-24h=0: aks-explorer-owned. Platform runtime healthy: handler.success-rate=100%, handler.failed-count=0, 670 completions, zero failures in 4h. Remaining backlog: 6 P2 design/documentation/convention/ops tasks + 2 P2 workstream parents.",
+  "note": "57 tasks done, 8 backlog, 0 active (65 total). 4 open alerts — none platform-owned: 3 aks-rp-e2e-owned (blocked-count=78, planner timeout/slow — aks-explorer domain); 1 evaluator-owned (aftermath-coverage=1% recovering). session.failed-triage-rate-3h recovered (alert #1976 resolved). Zero may-owned metric breaches. Platform runtime healthy: 1 handler.failed/6h, 1841 completions/6h, 273 fires/hour. bun run check passes (integrity + format + 10 tests). Remaining backlog: 6 P2 design/documentation/convention/ops tasks + 2 P2 workstream parents.",
   "max_concurrent": 3,
   "tasks": {
     "project": {
