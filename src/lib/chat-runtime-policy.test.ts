@@ -38,9 +38,22 @@ function registerMay(manager: SubagentManager): void {
     systemPrompt: "You are May.",
     model: fakeModel(),
     apiKey: "fake-key",
-    tools: ["query_db", "system_status", "agents", "message", "read", "bash", "edit", "write", "cron", "finish"].map(
-      tool,
-    ),
+    tools: [
+      "query_db",
+      "system_status",
+      "agents",
+      "message",
+      "read",
+      "run_cli_agent",
+      "cc_worker",
+      "codex_worker",
+      "dual_review",
+      "bash",
+      "edit",
+      "write",
+      "cron",
+      "finish",
+    ].map(tool),
   });
 }
 
@@ -64,7 +77,7 @@ describe("chat runtime policy", () => {
       expect(prompt).toContain("Persistent Human Chat");
       expect(prompt).toContain("Fresh System State");
       expect(prompt).toContain("Current human message: what needs attention?");
-      expect(toolNames).toEqual(["query_db", "system_status", "agents", "message", "read"]);
+      expect(toolNames).toEqual(["query_db", "system_status", "agents", "message", "read", "run_cli_agent"]);
     } finally {
       manager.cancel(sessionId);
       rmSync(persistDir, { recursive: true, force: true });
@@ -87,6 +100,7 @@ describe("chat runtime policy", () => {
       expect(toolNames).toContain("bash");
       expect(toolNames).toContain("write");
       expect(toolNames).toContain("finish");
+      expect(toolNames).toContain("cc_worker");
     } finally {
       manager.cancel(sessionId);
       rmSync(persistDir, { recursive: true, force: true });

@@ -73,6 +73,7 @@ function correlationKey(eventType: string, payload: Record<string, unknown>): st
   if (eventType.startsWith("handler."))
     return keyPart(payload.handlerRunId) ?? keyPart(payload.workflowRunId) ?? keyPart(payload.handler);
   if (eventType.startsWith("escalation.")) return keyPart(payload.escalationId);
+  if (eventType.startsWith("cli.task.")) return keyPart(payload.taskId);
   if (eventType.startsWith("project.task.")) {
     const taskId = keyPart(payload.taskId);
     if (!taskId) return undefined;

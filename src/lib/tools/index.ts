@@ -7,6 +7,7 @@ export * from "./may-utils.js";
 export * from "./path-utils.js";
 
 export * from "./read.js";
+export * from "./run-cli-agent.js";
 export * from "./truncate.js";
 export * from "./write.js";
 export * from "./system-status.js";
