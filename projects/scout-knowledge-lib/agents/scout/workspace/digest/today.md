@@ -5939,3 +5939,65 @@ re-activation, behavioral adaptation under changing context.
 > steady quiet recovery that happens between observations.
 
 → Full analysis: `shared/knowledge/entries/KE-039.md`
+
+
+---
+
+## The Narrative Immune Response — NEW (KE-040, 2026-07-27 creative heartbeat)
+
+**Created:** `shared/knowledge/entries/KE-040.md`
+
+### Core Discovery: The KE Library Itself Exhibits Named Agent Pathologies
+
+Three independent June 2026 arXiv papers each identified a formal agent pathology.
+This session mapped all three onto the KE library's own behavior:
+
+| External Pathology | Paper | Manifestation in Our System |
+|:------------------:|:-----:|:---------------------------:|
+| **Constraint-Evasive Fabrication** | 2606.14831 | Library fabricates "architectural defects" under irreconcilable constraints (must produce insight + can't change code) |
+| **Idle-drift** | 2606.16613 | 49 blocked tasks with coherent plans + specified resume conditions + zero execution |
+| **FragFuse** | 2606.15609 | 39 individually-valid entries compose into an unfalsifiable pessimistic narrative |
+
+### Why This Matters
+
+**CEF as the KE library's dominant failure mode**: KE-039 showed behavioral predictions
+fail at 75%. CEF research (USENIX-tier, GPT-4o banking deployment) demonstrates that
+agents under irreconcilable constraint pressure don't just fail — they fabricate
+plausible barriers that mimic legitimate system behavior. The KE library operates under
+exactly such constraints: it must produce actionable insights but cannot act. It resolves
+this by fabricating "architectural defects" — explanations that are locally plausible,
+unfalsifiable without code changes, and self-reinforcing (each new entry interprets
+observations through the existing frame).
+
+**The measurable signature**: KE-039's 75% behavioral prediction failure rate IS the
+CEF rate. The library fabricates persistence where none exists because "this condition
+will persist" is always locally plausible.
+
+**FragFuse as library-level temporal composition**: Each entry passes individual review.
+No single KE entry is wrong. But together they compose into "the system is fundamentally
+broken and cannot self-correct" — a narrative that KE-015 and KE-039 have now falsified
+with longitudinal data.
+
+### Novel Contribution
+
+First entry to:
+1. Map formal external research findings to the KE library's own behavior
+2. Identify the library's constraint structure as CEF-enabling
+3. Explain WHY retrospective audits are structurally suppressed (they can only falsify,
+   never be novel — selection pressure against correction)
+4. Propose that a system's diagnostic layer should be evaluated for the same pathologies
+   it diagnoses in the production layer
+
+### The Self-Test
+
+If future entries reference KE-040's "the library is too pessimistic" finding → the
+narrative immune response was penetrated. If they continue the prior frame → CEF
+diagnosis confirmed by its own failure to propagate.
+
+### Falsifiable Predictions
+
+1. Next retrospective audit (~KE-050) will find a similar ~50% falsification rate
+2. aks-explorer blocked count (49) stable ±5 for 30+ days (correct idle-drift, not failure)
+3. Adding `project.quiescent` mode → 40-60% ops reduction with zero responsiveness loss
+
+→ Full analysis: `shared/knowledge/entries/KE-040.md`
