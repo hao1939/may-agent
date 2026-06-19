@@ -4,6 +4,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import {
   assignTask,
+  compactDoneLeaves,
   completeTask,
   confirmRunnableBacklogLeaves,
   createTask,
@@ -15,6 +16,7 @@ import {
   readTaskTree,
   rejectTaskReview,
   repairTaskTreeRollups,
+  rollupParent,
   taskTreeConfig,
   unblockTask,
   updateTaskText,
@@ -592,5 +594,343 @@ describe("project task tree SDK", () => {
     const journal = await readFile(join(appDir, ".state", "journal.jsonl"), "utf8");
     expect(journal).toContain('"kind":"task_text_updated"');
     expect(journal).toContain('"task_id":"blocked-leaf"');
+  });
+
+  test("rolls up parent summary and archives selected done child leaves", async () => {
+    const appDir = await makeApp();
+    await writeTree(appDir, {
+      root_task_id: "project",
+      active_task_id: null,
+      active_task_ids: [],
+      tasks: {
+        project: {
+          id: "project",
+          state: "done",
+          children: ["lane"],
+          goal: "project",
+          outputs: ["tasks/tree.json"],
+          acceptance: ["complete"],
+        },
+        lane: {
+          id: "lane",
+          parent_id: "project",
+          state: "done",
+          children: ["archive-me", "keep-me"],
+          goal: "lane",
+          outputs: ["model"],
+          acceptance: ["complete"],
+        },
+        "archive-me": {
+          id: "archive-me",
+          parent_id: "lane",
+          state: "done",
+          children: [],
+          goal: "mechanical child",
+          outputs: ["evidence/archive/archive-me.md"],
+          acceptance: ["done"],
+        },
+        "keep-me": {
+          id: "keep-me",
+          parent_id: "lane",
+          state: "done",
+          children: [],
+          goal: "milestone child",
+          outputs: ["evidence/archive/keep-me.md"],
+          acceptance: ["done"],
+        },
+      },
+    });
+
+    const result = rollupParent(config(appDir), {
+      parentId: "lane",
+      summary: "Lane proved the useful result; archive only the mechanical child.",
+      taskIds: ["archive-me"],
+      reason: "test branch rollup",
+    });
+
+    expect(result.archived).toBe(1);
+    expect(result.parentId).toBe("lane");
+    expect(result.archivedTaskIds).toEqual(["archive-me"]);
+    expect(result.archivePath).toMatch(/^tasks\/archive\/done-leaves-/);
+
+    const tree = JSON.parse(await readFile(join(appDir, "tasks", "tree.json"), "utf8"));
+    expect(tree.tasks["archive-me"]).toBeUndefined();
+    expect(tree.tasks["keep-me"]).toBeDefined();
+    expect(tree.tasks.lane.children).toEqual(["keep-me"]);
+    expect(tree.tasks.lane.context.rollup_summary).toBe(
+      "Lane proved the useful result; archive only the mechanical child.",
+    );
+    expect(tree.tasks.lane.context.archived_done_leaf_count).toBe(1);
+    expect(tree.tasks.lane.context.rollup_archives[0].task_ids).toEqual(["archive-me"]);
+
+    const archive = JSON.parse(await readFile(join(appDir, result.archivePath!), "utf8"));
+    expect(archive.parent_id).toBe("lane");
+    expect(archive.summary).toBe("Lane proved the useful result; archive only the mechanical child.");
+    expect(archive.tasks.map((task: { id: string }) => task.id)).toEqual(["archive-me"]);
+  });
+
+  test("rollup parent writes unique archives for fast consecutive rollups", async () => {
+    const appDir = await makeApp();
+    await writeTree(appDir, {
+      root_task_id: "project",
+      active_task_id: null,
+      active_task_ids: [],
+      tasks: {
+        project: {
+          id: "project",
+          state: "done",
+          children: ["lane-a", "lane-b"],
+          goal: "project",
+          outputs: ["tasks/tree.json"],
+          acceptance: ["complete"],
+        },
+        "lane-a": {
+          id: "lane-a",
+          parent_id: "project",
+          state: "done",
+          children: ["archive-a"],
+          goal: "lane a",
+          outputs: ["a"],
+          acceptance: ["done"],
+        },
+        "archive-a": {
+          id: "archive-a",
+          parent_id: "lane-a",
+          state: "done",
+          children: [],
+          goal: "archive a",
+          outputs: ["a"],
+          acceptance: ["done"],
+        },
+        "lane-b": {
+          id: "lane-b",
+          parent_id: "project",
+          state: "done",
+          children: ["archive-b"],
+          goal: "lane b",
+          outputs: ["b"],
+          acceptance: ["done"],
+        },
+        "archive-b": {
+          id: "archive-b",
+          parent_id: "lane-b",
+          state: "done",
+          children: [],
+          goal: "archive b",
+          outputs: ["b"],
+          acceptance: ["done"],
+        },
+      },
+    });
+
+    const first = rollupParent(config(appDir), {
+      parentId: "lane-a",
+      summary: "Lane A result is preserved on the parent.",
+      taskIds: ["archive-a"],
+      reason: "first fast rollup",
+    });
+    const second = rollupParent(config(appDir), {
+      parentId: "lane-b",
+      summary: "Lane B result is preserved on the parent.",
+      taskIds: ["archive-b"],
+      reason: "second fast rollup",
+    });
+
+    expect(first.archivePath).toBeDefined();
+    expect(second.archivePath).toBeDefined();
+    expect(first.archivePath).not.toBe(second.archivePath);
+
+    const firstArchive = JSON.parse(await readFile(join(appDir, first.archivePath!), "utf8"));
+    const secondArchive = JSON.parse(await readFile(join(appDir, second.archivePath!), "utf8"));
+    expect(firstArchive.tasks.map((task: { id: string }) => task.id)).toEqual(["archive-a"]);
+    expect(secondArchive.tasks.map((task: { id: string }) => task.id)).toEqual(["archive-b"]);
+  });
+
+  test("batch compaction works bottom-up from deepest leaves", async () => {
+    const appDir = await makeApp();
+    await writeTree(appDir, {
+      root_task_id: "project",
+      active_task_id: null,
+      active_task_ids: [],
+      tasks: {
+        project: {
+          id: "project",
+          state: "done",
+          children: ["lane"],
+          goal: "project",
+          outputs: ["tasks/tree.json"],
+          acceptance: ["complete"],
+        },
+        lane: {
+          id: "lane",
+          parent_id: "project",
+          state: "done",
+          children: ["branch"],
+          goal: "lane",
+          outputs: ["lane"],
+          acceptance: ["done"],
+        },
+        branch: {
+          id: "branch",
+          parent_id: "lane",
+          state: "done",
+          children: ["deep-leaf"],
+          goal: "branch",
+          outputs: ["branch"],
+          acceptance: ["done"],
+        },
+        "deep-leaf": {
+          id: "deep-leaf",
+          parent_id: "branch",
+          state: "done",
+          children: [],
+          goal: "deep completed detail",
+          outputs: ["evidence/archive/deep.md"],
+          acceptance: ["done"],
+        },
+      },
+    });
+
+    const result = compactDoneLeaves(config(appDir), {
+      limit: 3,
+      reason: "bottom-up recovery test",
+    });
+
+    expect(result.archivedTaskIds).toEqual(["deep-leaf", "branch", "lane"]);
+    expect(result.archivePaths).toHaveLength(3);
+    expect(new Set(result.archivePaths).size).toBe(3);
+
+    const firstArchive = JSON.parse(await readFile(join(appDir, result.archivePaths![0]), "utf8"));
+    const secondArchive = JSON.parse(await readFile(join(appDir, result.archivePaths![1]), "utf8"));
+    const thirdArchive = JSON.parse(await readFile(join(appDir, result.archivePaths![2]), "utf8"));
+    expect(firstArchive.parent_id).toBe("branch");
+    expect(secondArchive.parent_id).toBe("lane");
+    expect(thirdArchive.parent_id).toBe("project");
+    expect(firstArchive.tasks.map((task: { id: string }) => task.id)).toEqual(["deep-leaf"]);
+    expect(secondArchive.tasks.map((task: { id: string }) => task.id)).toEqual(["branch"]);
+    expect(thirdArchive.tasks.map((task: { id: string }) => task.id)).toEqual(["lane"]);
+
+    const tree = JSON.parse(await readFile(join(appDir, "tasks", "tree.json"), "utf8"));
+    expect(tree.tasks["deep-leaf"]).toBeUndefined();
+    expect(tree.tasks.branch).toBeUndefined();
+    expect(tree.tasks.lane).toBeUndefined();
+    expect(tree.tasks.project.children).toEqual([]);
+    expect(tree.tasks.project.context.archived_done_leaf_count).toBe(1);
+  });
+
+  test("batch compaction follows one branch upward before jumping sideways", async () => {
+    const appDir = await makeApp();
+    await writeTree(appDir, {
+      root_task_id: "project",
+      active_task_id: null,
+      active_task_ids: [],
+      tasks: {
+        project: {
+          id: "project",
+          state: "done",
+          children: ["lane-a", "lane-b"],
+          goal: "project",
+          outputs: ["tasks/tree.json"],
+          acceptance: ["complete"],
+        },
+        "lane-a": {
+          id: "lane-a",
+          parent_id: "project",
+          state: "done",
+          children: ["leaf-a"],
+          goal: "lane a",
+          outputs: ["a"],
+          acceptance: ["done"],
+        },
+        "leaf-a": {
+          id: "leaf-a",
+          parent_id: "lane-a",
+          state: "done",
+          children: [],
+          goal: "leaf a",
+          outputs: ["a"],
+          acceptance: ["done"],
+        },
+        "lane-b": {
+          id: "lane-b",
+          parent_id: "project",
+          state: "done",
+          children: ["leaf-b"],
+          goal: "lane b",
+          outputs: ["b"],
+          acceptance: ["done"],
+        },
+        "leaf-b": {
+          id: "leaf-b",
+          parent_id: "lane-b",
+          state: "done",
+          children: [],
+          goal: "leaf b",
+          outputs: ["b"],
+          acceptance: ["done"],
+        },
+      },
+    });
+
+    const result = compactDoneLeaves(config(appDir), {
+      limit: 2,
+      reason: "branch-first recovery test",
+    });
+
+    expect(result.archivedTaskIds).toEqual(["leaf-a", "lane-a"]);
+    const tree = JSON.parse(await readFile(join(appDir, "tasks", "tree.json"), "utf8"));
+    expect(tree.tasks["leaf-a"]).toBeUndefined();
+    expect(tree.tasks["lane-a"]).toBeUndefined();
+    expect(tree.tasks["leaf-b"]).toBeDefined();
+    expect(tree.tasks["lane-b"]).toBeDefined();
+  });
+
+  test("rollup parent refuses to archive unfinished child leaves", async () => {
+    const appDir = await makeApp();
+    await writeTree(appDir, {
+      root_task_id: "project",
+      active_task_id: null,
+      active_task_ids: [],
+      tasks: {
+        project: {
+          id: "project",
+          state: "active",
+          children: ["lane"],
+          goal: "project",
+          outputs: ["tasks/tree.json"],
+          acceptance: ["complete"],
+        },
+        lane: {
+          id: "lane",
+          parent_id: "project",
+          state: "active",
+          children: ["active-child"],
+          goal: "lane",
+          outputs: ["model"],
+          acceptance: ["complete"],
+        },
+        "active-child": {
+          id: "active-child",
+          parent_id: "lane",
+          state: "active",
+          children: [],
+          goal: "still running",
+          outputs: ["evidence/archive/active.md"],
+          acceptance: ["done"],
+        },
+      },
+    });
+
+    expect(() =>
+      rollupParent(config(appDir), {
+        parentId: "lane",
+        summary: "This should not archive active work.",
+        taskIds: ["active-child"],
+      }),
+    ).toThrow("not done");
+
+    const tree = JSON.parse(await readFile(join(appDir, "tasks", "tree.json"), "utf8"));
+    expect(tree.tasks["active-child"]).toBeDefined();
+    expect(tree.tasks.lane.children).toEqual(["active-child"]);
   });
 });
