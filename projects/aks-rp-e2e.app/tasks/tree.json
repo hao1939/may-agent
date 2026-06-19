@@ -1,10 +1,10 @@
 {
   "version": 2,
   "project": "aks-rp-e2e",
-  "updated_at": "2026-06-19T11:29:27.455Z",
+  "updated_at": "2026-06-19T13:48:21Z",
   "project_lifecycle": "active",
   "root_task_id": "project",
-  "active_task_id": "dirty-worktree-checkpoint-frontier-after-multiple-slb-handoff-20260619",
+  "active_task_id": "jwt-authenticator-upgrade-survival-westus2-local-execute-20260619",
   "tasks": {
     "project": {
       "id": "project",
@@ -214,7 +214,7 @@
         "reopened_by": "human-steering",
         "reopen_reason": "Prior project-ceiling judgment was stale. Cover all Go e2ev3 scenarios, not only modeled paths or the VM REST positive slice."
       },
-      "state": "active"
+      "state": "review"
     },
     "spec-runner-and-replays": {
       "id": "spec-runner-and-replays",
@@ -1094,7 +1094,40 @@
         "repo-check-gate-readonly-hygiene-unblock-scope-20260619",
         "network-datapath-service-connectivity-typecheck-repair-20260619",
         "rp-nodepool-lifecycle-rollback-typecheck-repair-20260619",
-        "jwt-authenticator-upgrade-survival-ready-spec-execution-link-20260619"
+        "jwt-authenticator-upgrade-survival-ready-spec-execution-link-20260619",
+        "draft-spec-readiness-vm-prerelease-source-blocked-wave-20260619",
+        "aad-rbac-managed-v2-reset-stable-empty-westus2-local-execute-20260619",
+        "jwt-authenticator-upgrade-survival-westus2-local-execute-20260619",
+        "ccp-agent-lifecycle-deployment-westus2-local-execute-20260619",
+        "ccp-connected-cluster-proxy-auth-westus2-local-execute-20260619",
+        "managedsystem-day2-count-type-westus2-local-execute-20260619",
+        "localdns-autodefault-upgrade-pool-level-westus2-local-execute-20260619",
+        "aad-rbac-nonaad-reset-stable-empty-westus2-local-execute-20260619",
+        "private-cluster-vnet-integration-update-westus2-local-execute-20260619",
+        "network-cni-swiftv1-static-block-westus2-local-execute-20260619",
+        "network-cni-host-routing-westus2-local-execute-20260619",
+        "network-swift-v2-overlay-smallshape-westus2-local-execute-20260619",
+        "network-swift-v2-scale-validation-smallshape-westus2-local-execute-20260619",
+        "network-swift-v2-multi-pool-subnet-smallshape-westus2-local-execute-20260619",
+        "network-acns-observability-base-proof-westus2-local-execute-20260619",
+        "network-datapath-kube-proxy-iptables-westus2-local-execute-20260619",
+        "network-cni-swift-v2-pod-subnet-westus2-local-execute-20260619",
+        "network-cni-azure-overlay-westus2-local-execute-20260619",
+        "ccp-coredns-metrics-endpoint-westus2-local-execute-20260619",
+        "network-cni-service-connectivity-westus2-local-execute-20260619",
+        "cloud-provider-multiple-slb-westus2-local-execute-20260619",
+        "row82-restfirst-bounded-westus2-local-execute-20260619",
+        "app-routing-vm-prerelease-default-internal-westus2-local-execute-20260619",
+        "machines-agentpool-api-crud-westus2-local-execute-20260619",
+        "kms-v2-managed-hsm-westus2-local-execute-20260619",
+        "planned-maintenance-security-patch-prod-mtc-open-now-westus2-local-execute-20260619",
+        "trusted-access-dataplane-token-gateway-westus2-local-execute-20260619",
+        "kms-v2plus-managed-hsm-westus2-local-execute-20260619",
+        "ccp-security-patch-azurelinux-westus2-local-execute-20260619",
+        "ccp-vpa-os-arch-variant-matrix-westus2-local-execute-20260619",
+        "net-integration-cross-subscription-vnet-westus2-local-execute-20260619",
+        "localdns-cluster-topology-westus2-local-execute-20260619",
+        "aad-rbac-managed-v2-reset-preview-bodyful-westus2-local-execute-20260619"
       ],
       "context": {
         "throughput_rule": "Keep smart execution-frontier selection active: one task chooses high-ROI existing specs/suites and creates/activates runner leaves; runner leaves execute through native spec-runner/suite machinery with precise conflict scopes.",
@@ -1127,7 +1160,7 @@
       "archive_summary": "Replay pipeline. 203 subtasks completed over project lifetime.",
       "archived": true,
       "summary": "Replay pipeline established. 133 replay scripts created. Active execution moved to execution-and-verification.",
-      "state": "blocked",
+      "state": "review",
       "resolution": "completed",
       "trace": {
         "accepted_at": "2026-06-16T19:57:01.388921+00:00",
@@ -24058,7 +24091,7 @@
     "user-review-workspace": {
       "id": "user-review-workspace",
       "parent_id": "project",
-      "state": "active",
+      "state": "blocked",
       "kind": "durable_lane",
       "priority": "P1",
       "children": [
@@ -24286,7 +24319,8 @@
         "cloud-provider-multiple-slb-duplicate-cleanup-promoted-ref-overlap-map-20260619",
         "cloud-provider-multiple-slb-promoted-ref-clean-worktree-land-20260619",
         "cloud-provider-multiple-slb-clean-landing-handoff-packet-20260619",
-        "dirty-worktree-checkpoint-frontier-after-multiple-slb-handoff-20260619"
+        "dirty-worktree-checkpoint-frontier-after-multiple-slb-handoff-20260619",
+        "vm-prerelease-sidecar-evidence-checkpoint-slice-land-20260619"
       ],
       "goal": "Keep the project’s human-review and owner-handoff surfaces useful for inspecting feature intent, send-ready source-holder/external-gate packets, returned proof routing, and response-await coordination without reopening broad rediscovery or cloud execution from the review lane.",
       "inputs": [],
@@ -68780,7 +68814,7 @@
     "ccp-agent-lifecycle-deployment-live-execute-gated-20260617": {
       "id": "ccp-agent-lifecycle-deployment-live-execute-gated-20260617",
       "parent_id": "spec-runner-and-replays",
-      "state": "blocked",
+      "state": "done",
       "kind": "domain_leaf",
       "priority": "P2",
       "owner": "aks-explorer",
@@ -68798,10 +68832,18 @@
         "feature:ccp-agent"
       ],
       "depends_on": [],
-      "blocker": "External unblock required: execute this replay only when Azure auth and explicit cloud-mutation approval are available (AKS_RP_E2E_ALLOW_CLOUD_MUTATION=ccp-agent-lifecycle-deployment plus --execute), because current evidence is implementation-only and not a live product verdict.",
       "trace": {
         "created_at": "2026-06-17T11:22:57.991Z",
-        "created_by": "task-tree-tool"
+        "created_by": "task-tree-tool",
+        "reviewed_at": "2026-06-19T11:54:20.500Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Replaced by ccp-agent-lifecycle-deployment-westus2-local-execute-20260619 after Azure auth and westus2 local staging execution were explicitly opened."
+      },
+      "resolution": "replaced",
+      "done_at": "2026-06-19T11:54:20.500Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Replaced by ccp-agent-lifecycle-deployment-westus2-local-execute-20260619 after Azure auth and westus2 local staging execution were explicitly opened."
       }
     },
     "model-status-two-paths-without-evidence-reconcile-20260617": {
@@ -69156,7 +69198,7 @@
     "ccp-connected-cluster-proxy-auth-live-execute-gated-20260617": {
       "id": "ccp-connected-cluster-proxy-auth-live-execute-gated-20260617",
       "parent_id": "spec-runner-and-replays",
-      "state": "blocked",
+      "state": "done",
       "kind": "domain_leaf",
       "priority": "P2",
       "owner": "aks-explorer",
@@ -69174,10 +69216,18 @@
         "feature:ccp-agent"
       ],
       "depends_on": [],
-      "blocker": "External unblock required: run the already-implemented AKS surrogate replay only when Azure auth and explicit cloud-mutation approval are available (AKS_RP_E2E_ALLOW_CLOUD_MUTATION=ccp-connected-cluster-proxy-auth plus --execute). A live result will advance only the AKS RunCommand surrogate execution verdict and will not by itself clear final connected-cluster/Arc semantic closure.",
       "trace": {
         "created_at": "2026-06-17T11:37:06.065Z",
-        "created_by": "task-tree-tool"
+        "created_by": "task-tree-tool",
+        "reviewed_at": "2026-06-19T11:54:20.697Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Replaced by ccp-connected-cluster-proxy-auth-westus2-local-execute-20260619 after Azure auth and westus2 local staging execution were explicitly opened."
+      },
+      "resolution": "replaced",
+      "done_at": "2026-06-19T11:54:20.697Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Replaced by ccp-connected-cluster-proxy-auth-westus2-local-execute-20260619 after Azure auth and westus2 local staging execution were explicitly opened."
       }
     },
     "dirty-workspace-checkpoint-ready-slice-refresh-20260617": {
@@ -70657,7 +70707,7 @@
     "aad-rbac-managed-v2-reset-stable-empty-rerun-await-aad-env-20260617": {
       "id": "aad-rbac-managed-v2-reset-stable-empty-rerun-await-aad-env-20260617",
       "parent_id": "spec-runner-and-replays",
-      "state": "backlog",
+      "state": "done",
       "kind": "domain_leaf",
       "priority": "P2",
       "owner": "aks-explorer",
@@ -70682,9 +70732,17 @@
         "created_by": "task-tree-tool",
         "last_reconciled_at": "2026-06-19T06:45:47.034Z",
         "last_reconciled_by": "aks-explorer metric-alert-triage",
-        "last_reconciled_note": "Converted duplicate blocked leaf to backlog dependency on auth-env-live-gate-holder-response-await-20260618 so the shared external wait is counted once in the blocked frontier."
+        "last_reconciled_note": "Converted duplicate blocked leaf to backlog dependency on auth-env-live-gate-holder-response-await-20260618 so the shared external wait is counted once in the blocked frontier.",
+        "reviewed_at": "2026-06-19T11:54:20.113Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Replaced by aad-rbac-managed-v2-reset-stable-empty-westus2-local-execute-20260619 after 2026-06-19 human steering cleared the auth/env wait."
       },
-      "blocker": "Blocked on the shared auth/env owner response tracked by auth-env-live-gate-holder-response-await-20260618. Resume only after AKS_RP_E2E_AAD_ADMIN_GROUP_OID and AKS_RP_E2E_AAD_TENANT_ID plus any required probe-specific mutation approval are returned in accepted form, then route those facts into the exact stable-empty ResetAAD rerun branch instead of reopening a separate env chase."
+      "resolution": "replaced",
+      "done_at": "2026-06-19T11:54:20.113Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Replaced by aad-rbac-managed-v2-reset-stable-empty-westus2-local-execute-20260619 after 2026-06-19 human steering cleared the auth/env wait."
+      }
     },
     "go-e2ev3-private-cluster-source-coverage-map-20260617": {
       "id": "go-e2ev3-private-cluster-source-coverage-map-20260617",
@@ -71305,7 +71363,7 @@
     "managedsystem-day2-count-type-live-execute-gated-20260617": {
       "id": "managedsystem-day2-count-type-live-execute-gated-20260617",
       "parent_id": "spec-runner-and-replays",
-      "state": "blocked",
+      "state": "done",
       "kind": "domain_leaf",
       "priority": "P2",
       "owner": "aks-explorer",
@@ -71323,10 +71381,18 @@
         "feature:managedsystem-pool-day2"
       ],
       "depends_on": [],
-      "blocker": "External unblock required: this is an existing-pool ManagedSystem negative-mutation replay, not a retest of path.managedsystem.create-time-initial-pool. Resume only when Azure auth and explicit cloud-mutation approval are available (AKS_RP_E2E_COMBINED_SUITE_MODE=arm-suite, AKS_RP_E2E_ALLOW_CLOUD_MUTATION=managedsystem-add-immutability-delete-combined, AKS_RP_E2E_MANAGEDSYSTEM_GATE_NOTE, and --execute), following evidence/archive/managedsystem-day2-count-type-execute-readiness-packet-20260618.md for the canonical command family and expected count/type rejection plus GET-preservation observations, because current evidence is still implementation-only/local-check-only and not a live product verdict for the count/type negative PUT branches.",
       "trace": {
         "created_at": "2026-06-17T12:35:38.875Z",
-        "created_by": "task-tree-tool"
+        "created_by": "task-tree-tool",
+        "reviewed_at": "2026-06-19T11:54:20.910Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Replaced by managedsystem-day2-count-type-westus2-local-execute-20260619 after Azure auth and westus2 local staging execution were explicitly opened."
+      },
+      "resolution": "replaced",
+      "done_at": "2026-06-19T11:54:20.910Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Replaced by managedsystem-day2-count-type-westus2-local-execute-20260619 after Azure auth and westus2 local staging execution were explicitly opened."
       }
     },
     "managedsystem-fresh-provisioning-success-signal-unblock-20260617": {
@@ -74008,7 +74074,7 @@
     "localdns-autodefault-upgrade-pool-level-live-execute-gated-20260617": {
       "id": "localdns-autodefault-upgrade-pool-level-live-execute-gated-20260617",
       "parent_id": "spec-runner-and-replays",
-      "state": "blocked",
+      "state": "done",
       "kind": "domain_leaf",
       "priority": "P2",
       "owner": "aks-explorer",
@@ -74028,10 +74094,18 @@
         "artifact:localdns-auto-default"
       ],
       "depends_on": [],
-      "blocker": "External unblock required: execute this replay only when Azure auth and explicit cloud-mutation approval are available (AKS_RP_E2E_ALLOW_CLOUD_MUTATION=localdns-auto-default plus --execute with AKS_RP_E2E_LOCATION=westus2, AKS_RP_E2E_KUBERNETES_VERSION_PRE=1.35.5, AKS_RP_E2E_KUBERNETES_VERSION_POST=1.36.1, and AKS_RP_E2E_NODE_VM_SIZE=Standard_D4ds_v5), because the repo-local clarification fixed the contract to pool-level persistence and the next live evidence must test that authoritative surface directly.",
       "trace": {
         "created_at": "2026-06-17T13:56:59.854Z",
-        "created_by": "task-tree-tool"
+        "created_by": "task-tree-tool",
+        "reviewed_at": "2026-06-19T11:54:21.322Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Replaced by localdns-autodefault-upgrade-pool-level-westus2-local-execute-20260619 after Azure auth and westus2 local staging execution were explicitly opened."
+      },
+      "resolution": "replaced",
+      "done_at": "2026-06-19T11:54:21.322Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Replaced by localdns-autodefault-upgrade-pool-level-westus2-local-execute-20260619 after Azure auth and westus2 local staging execution were explicitly opened."
       }
     },
     "private-cluster-apiserver-vnet-integration-create-automatic-sku-source-contract-pin-20260617": {
@@ -76452,7 +76526,7 @@
     "aad-rbac-nonaad-reset-stable-empty-rerun-gated-20260617": {
       "id": "aad-rbac-nonaad-reset-stable-empty-rerun-gated-20260617",
       "parent_id": "spec-runner-and-replays",
-      "state": "blocked",
+      "state": "done",
       "kind": "domain_leaf",
       "priority": "P2",
       "owner": "aks-explorer",
@@ -76472,10 +76546,18 @@
         "artifact:aad-rbac-nonaad-reset-stable-rerun"
       ],
       "depends_on": [],
-      "blocker": "External unblock required: run this rerun only when Azure auth and explicit cloud-mutation approval are available for the non-AAD ResetAAD replay on api-version 2024-09-01 with preserved empty body {} so the project can observe the stable-contract ARM result instead of relying only on repo-local clarification.",
       "trace": {
         "created_at": "2026-06-17T15:10:51.015Z",
-        "created_by": "task-tree-tool"
+        "created_by": "task-tree-tool",
+        "reviewed_at": "2026-06-19T11:54:21.527Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Replaced by aad-rbac-nonaad-reset-stable-empty-westus2-local-execute-20260619 after Azure auth and westus2 local staging execution were explicitly opened."
+      },
+      "resolution": "replaced",
+      "done_at": "2026-06-19T11:54:21.527Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Replaced by aad-rbac-nonaad-reset-stable-empty-westus2-local-execute-20260619 after Azure auth and westus2 local staging execution were explicitly opened."
       }
     },
     "private-cluster-vnet-integration-update-staging-frontier-20260617-9": {
@@ -77708,7 +77790,7 @@
     "private-cluster-vnet-integration-update-westus2-live-execute-gated-20260617": {
       "id": "private-cluster-vnet-integration-update-westus2-live-execute-gated-20260617",
       "parent_id": "spec-runner-and-replays",
-      "state": "blocked",
+      "state": "done",
       "kind": "domain_leaf",
       "priority": "P2",
       "owner": "aks-explorer",
@@ -77728,10 +77810,18 @@
         "artifact:private-cluster-vnet-integration-update-westus2"
       ],
       "depends_on": [],
-      "blocker": "External unblock required: execute this westus2 rerun only when Azure auth and explicit cloud-mutation approval are available for the canonical private-cluster VNet integration update replay in the approved alternate region, using the accepted westus2 create-ready baseline rather than retrying the same eastus2 capacity-blocked setup.",
       "trace": {
         "created_at": "2026-06-17T15:37:50.404Z",
-        "created_by": "task-tree-tool"
+        "created_by": "task-tree-tool",
+        "reviewed_at": "2026-06-19T11:54:21.736Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Replaced by private-cluster-vnet-integration-update-westus2-local-execute-20260619 after Azure auth and westus2 local staging execution were explicitly opened."
+      },
+      "resolution": "replaced",
+      "done_at": "2026-06-19T11:54:21.736Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Replaced by private-cluster-vnet-integration-update-westus2-local-execute-20260619 after Azure auth and westus2 local staging execution were explicitly opened."
       }
     },
     "trusted-access-dataplane-token-gateway-status-reconcile-20260617": {
@@ -80275,7 +80365,7 @@
     "network-cni-swiftv1-static-block-runtime-proof-live-execute-gated-20260617": {
       "id": "network-cni-swiftv1-static-block-runtime-proof-live-execute-gated-20260617",
       "parent_id": "spec-runner-and-replays",
-      "state": "blocked",
+      "state": "done",
       "kind": "domain_leaf",
       "priority": "P2",
       "owner": "aks-explorer",
@@ -80291,10 +80381,18 @@
       "forbidden": [],
       "conflict_scope": [],
       "depends_on": [],
-      "blocker": "External unblock required: execute this replay only when Azure auth and explicit cloud-mutation approval are available (AKS_RP_E2E_ALLOW_CLOUD_MUTATION=network-swift-v1-static-block-mode plus --execute), because current evidence is implementation-only and a live run may still remain blocked if no trusted runtime ownership source is exposed.",
       "trace": {
         "created_at": "2026-06-17T16:49:18.311Z",
-        "created_by": "task-tree-tool"
+        "created_by": "task-tree-tool",
+        "reviewed_at": "2026-06-19T11:54:21.963Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Replaced by network-cni-swiftv1-static-block-westus2-local-execute-20260619 after Azure auth and westus2 local staging execution were explicitly opened."
+      },
+      "resolution": "replaced",
+      "done_at": "2026-06-19T11:54:21.963Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Replaced by network-cni-swiftv1-static-block-westus2-local-execute-20260619 after Azure auth and westus2 local staging execution were explicitly opened."
       }
     },
     "private-cluster-vnet-update-runner-surface-consistency-reconcile-20260617": {
@@ -80498,7 +80596,7 @@
     "network-cni-host-routing-runtime-proof-live-execute-gated-20260617": {
       "id": "network-cni-host-routing-runtime-proof-live-execute-gated-20260617",
       "parent_id": "spec-runner-and-replays",
-      "state": "blocked",
+      "state": "done",
       "kind": "domain_leaf",
       "priority": "P2",
       "owner": "aks-explorer",
@@ -80516,10 +80614,18 @@
         "feature:network-cni"
       ],
       "depends_on": [],
-      "blocker": "External unblock required: execute this replay only when Azure auth and explicit cloud-mutation approval are available (AKS_RP_E2E_ALLOW_CLOUD_MUTATION=network-datapath-host-routing plus --execute), because current evidence is implementation-only and not yet a live product verdict for the repaired two-node host-routing runtime-proof contract.",
       "trace": {
         "created_at": "2026-06-17T16:56:28.273Z",
-        "created_by": "task-tree-tool"
+        "created_by": "task-tree-tool",
+        "reviewed_at": "2026-06-19T11:54:22.163Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Replaced by network-cni-host-routing-westus2-local-execute-20260619 after Azure auth and westus2 local staging execution were explicitly opened."
+      },
+      "resolution": "replaced",
+      "done_at": "2026-06-19T11:54:22.163Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Replaced by network-cni-host-routing-westus2-local-execute-20260619 after Azure auth and westus2 local staging execution were explicitly opened."
       }
     },
     "paf-throttling-dedicated-oom-branch-alignment-20260617": {
@@ -81075,7 +81181,7 @@
     "network-swift-v2-overlay-smallshape-live-rerun-gated-20260617": {
       "id": "network-swift-v2-overlay-smallshape-live-rerun-gated-20260617",
       "parent_id": "spec-runner-and-replays",
-      "state": "blocked",
+      "state": "done",
       "kind": "domain_leaf",
       "priority": "P2",
       "owner": "aks-explorer",
@@ -81093,16 +81199,24 @@
         "feature:network-swift-v2"
       ],
       "depends_on": [],
-      "blocker": "External unblock required: run this rerun only when Azure auth and explicit cloud-mutation approval are available for the Swift-v2 overlay node-pool-add-remove replay using AKS_RP_E2E_LOCATION=westus3 and AKS_RP_E2E_NODE_VM_SIZE=Standard_D2ds_v5 (fallback Standard_D2s_v4), so the project can capture one observed quota-light overlay verdict instead of remaining at plan-only contract state.",
       "trace": {
         "created_at": "2026-06-17T17:05:27.841Z",
-        "created_by": "task-tree-tool"
+        "created_by": "task-tree-tool",
+        "reviewed_at": "2026-06-19T11:54:22.351Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Replaced by network-swift-v2-overlay-smallshape-westus2-local-execute-20260619 under the westus2-for-all-staging steering decision."
+      },
+      "resolution": "replaced",
+      "done_at": "2026-06-19T11:54:22.351Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Replaced by network-swift-v2-overlay-smallshape-westus2-local-execute-20260619 under the westus2-for-all-staging steering decision."
       }
     },
     "network-swift-v2-scale-validation-smallshape-live-rerun-gated-20260617": {
       "id": "network-swift-v2-scale-validation-smallshape-live-rerun-gated-20260617",
       "parent_id": "spec-runner-and-replays",
-      "state": "blocked",
+      "state": "done",
       "kind": "domain_leaf",
       "priority": "P2",
       "owner": "aks-explorer",
@@ -81120,16 +81234,24 @@
         "feature:network-swift-v2"
       ],
       "depends_on": [],
-      "blocker": "External unblock required: run this rerun only when Azure auth and explicit cloud-mutation approval are available for the Swift-v2 scale-validation replay using AKS_RP_E2E_LOCATION=eastus2 and AKS_RP_E2E_NODE_VM_SIZE=Standard_D2ds_v5 (fallback Standard_D2s_v4), while preserving the 1->3 dedicated pod-subnet semantics so the project can capture one observed quota-light scale verdict instead of remaining at plan-only contract state.",
       "trace": {
         "created_at": "2026-06-17T17:05:27.976Z",
-        "created_by": "task-tree-tool"
+        "created_by": "task-tree-tool",
+        "reviewed_at": "2026-06-19T11:54:22.558Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Replaced by network-swift-v2-scale-validation-smallshape-westus2-local-execute-20260619 under the westus2-for-all-staging steering decision."
+      },
+      "resolution": "replaced",
+      "done_at": "2026-06-19T11:54:22.558Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Replaced by network-swift-v2-scale-validation-smallshape-westus2-local-execute-20260619 under the westus2-for-all-staging steering decision."
       }
     },
     "network-swift-v2-multi-pool-subnet-smallshape-live-rerun-gated-20260617": {
       "id": "network-swift-v2-multi-pool-subnet-smallshape-live-rerun-gated-20260617",
       "parent_id": "spec-runner-and-replays",
-      "state": "blocked",
+      "state": "done",
       "kind": "domain_leaf",
       "priority": "P2",
       "owner": "aks-explorer",
@@ -81147,16 +81269,24 @@
         "feature:network-swift-v2"
       ],
       "depends_on": [],
-      "blocker": "External unblock required: run this rerun only when Azure auth and explicit cloud-mutation approval are available for the Swift-v2 multi-pool-subnet replay using AKS_RP_E2E_LOCATION=eastus2 and AKS_RP_E2E_NODE_VM_SIZE=Standard_D2ds_v5 (fallback Standard_D2s_v4), while preserving both pools and both podSubnetID assignments so the project can capture one observed quota-light dedicated pod-subnet verdict instead of remaining at plan-only contract state.",
       "trace": {
         "created_at": "2026-06-17T17:05:28.132Z",
-        "created_by": "task-tree-tool"
+        "created_by": "task-tree-tool",
+        "reviewed_at": "2026-06-19T11:54:22.779Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Replaced by network-swift-v2-multi-pool-subnet-smallshape-westus2-local-execute-20260619 under the westus2-for-all-staging steering decision."
+      },
+      "resolution": "replaced",
+      "done_at": "2026-06-19T11:54:22.779Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Replaced by network-swift-v2-multi-pool-subnet-smallshape-westus2-local-execute-20260619 under the westus2-for-all-staging steering decision."
       }
     },
     "network-acns-observability-base-proof-live-execute-gated-20260617": {
       "id": "network-acns-observability-base-proof-live-execute-gated-20260617",
       "parent_id": "spec-runner-and-replays",
-      "state": "blocked",
+      "state": "done",
       "kind": "domain_leaf",
       "priority": "P2",
       "owner": "aks-explorer",
@@ -81174,10 +81304,18 @@
         "feature:network-acns"
       ],
       "depends_on": [],
-      "blocker": "External unblock required: run this rerun only when Azure auth and explicit cloud-mutation approval are available (AKS_RP_E2E_ALLOW_CLOUD_MUTATION=network-cni-acns-observability plus --execute), using the accepted westus3 + Standard_D4ds_v5 + 2-node + 2025-04-02-preview contract so the project can mint the missing live base-proof artifact instead of relying on check-only/stub-era evidence.",
       "trace": {
         "created_at": "2026-06-17T17:06:54.183Z",
-        "created_by": "task-tree-tool"
+        "created_by": "task-tree-tool",
+        "reviewed_at": "2026-06-19T11:54:22.965Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Replaced by network-acns-observability-base-proof-westus2-local-execute-20260619 after Azure auth and westus2 local staging execution were explicitly opened."
+      },
+      "resolution": "replaced",
+      "done_at": "2026-06-19T11:54:22.965Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Replaced by network-acns-observability-base-proof-westus2-local-execute-20260619 after Azure auth and westus2 local staging execution were explicitly opened."
       }
     },
     "network-cni-azure-overlay-staging-frontier-20260617": {
@@ -81488,7 +81626,7 @@
     "network-datapath-kube-proxy-iptables-runtime-proof-live-execute-gated-20260617": {
       "id": "network-datapath-kube-proxy-iptables-runtime-proof-live-execute-gated-20260617",
       "parent_id": "spec-runner-and-replays",
-      "state": "blocked",
+      "state": "done",
       "kind": "domain_leaf",
       "priority": "P2",
       "owner": "aks-explorer",
@@ -81506,16 +81644,24 @@
         "feature:network-datapath"
       ],
       "depends_on": [],
-      "blocker": "External unblock required: execute this replay only when Azure auth and explicit cloud-mutation approval are available (AKS_RP_E2E_ALLOW_CLOUD_MUTATION=network-datapath-kube-proxy-iptables plus --execute), because current evidence is implementation-only and not yet a live runtime datapath verdict.",
       "trace": {
         "created_at": "2026-06-17T17:14:24.035Z",
-        "created_by": "task-tree-tool"
+        "created_by": "task-tree-tool",
+        "reviewed_at": "2026-06-19T11:54:23.188Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Replaced by network-datapath-kube-proxy-iptables-westus2-local-execute-20260619 after Azure auth and westus2 local staging execution were explicitly opened."
+      },
+      "resolution": "replaced",
+      "done_at": "2026-06-19T11:54:23.188Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Replaced by network-datapath-kube-proxy-iptables-westus2-local-execute-20260619 after Azure auth and westus2 local staging execution were explicitly opened."
       }
     },
     "network-cni-swift-v2-pod-subnet-live-rerun-capacity-gated-20260617": {
       "id": "network-cni-swift-v2-pod-subnet-live-rerun-capacity-gated-20260617",
       "parent_id": "spec-runner-and-replays",
-      "state": "blocked",
+      "state": "done",
       "kind": "domain_leaf",
       "priority": "P2",
       "owner": "aks-explorer",
@@ -81533,16 +81679,24 @@
         "feature:network-cni-swift-v2-pod-subnet"
       ],
       "depends_on": [],
-      "blocker": "External unblock required: rerun only when eastus2 AKS capacity is available again or the owner explicitly authorizes an alternate staging-supported region for the same Swift V2 pod-subnet replay intent, because the accepted staging evidence currently stops at ARM code AKSCapacityHeavyUsage before product semantics are exercised.",
       "trace": {
         "created_at": "2026-06-17T17:15:19.963Z",
-        "created_by": "task-tree-tool"
+        "created_by": "task-tree-tool",
+        "reviewed_at": "2026-06-19T11:54:23.387Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Replaced by network-cni-swift-v2-pod-subnet-westus2-local-execute-20260619 because westus2 is now the operator-directed staging region."
+      },
+      "resolution": "replaced",
+      "done_at": "2026-06-19T11:54:23.387Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Replaced by network-cni-swift-v2-pod-subnet-westus2-local-execute-20260619 because westus2 is now the operator-directed staging region."
       }
     },
     "network-cni-azure-overlay-live-rerun-env-gated-20260617": {
       "id": "network-cni-azure-overlay-live-rerun-env-gated-20260617",
       "parent_id": "spec-runner-and-replays",
-      "state": "blocked",
+      "state": "done",
       "kind": "domain_leaf",
       "priority": "P2",
       "owner": "aks-explorer",
@@ -81560,10 +81714,18 @@
         "feature:network-cni-azure-overlay"
       ],
       "depends_on": [],
-      "blocker": "External unblock required: rerun only when the transient VNet/Network RP HTTP 503 condition has cleared and the prior cni-overlay-20260617 resource-group cleanup is confirmed, because the accepted staging evidence currently stops before any managedClusters overlay assertions are exercised.",
       "trace": {
         "created_at": "2026-06-17T17:15:31.010Z",
-        "created_by": "task-tree-tool"
+        "created_by": "task-tree-tool",
+        "reviewed_at": "2026-06-19T11:54:23.591Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Replaced by network-cni-azure-overlay-westus2-local-execute-20260619 because westus2 is now the operator-directed staging region."
+      },
+      "resolution": "replaced",
+      "done_at": "2026-06-19T11:54:23.591Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Replaced by network-cni-azure-overlay-westus2-local-execute-20260619 because westus2 is now the operator-directed staging region."
       }
     },
     "go-e2ev3-speculor-remainder-source-coverage-frontier-20260617": {
@@ -83386,7 +83548,7 @@
     "jwt-authenticator-upgrade-survival-arm-auth-env-blocker-20260617": {
       "id": "jwt-authenticator-upgrade-survival-arm-auth-env-blocker-20260617",
       "parent_id": "spec-runner-and-replays",
-      "state": "backlog",
+      "state": "done",
       "kind": "domain_leaf",
       "priority": "P2",
       "owner": "aks-explorer",
@@ -83413,9 +83575,17 @@
         "created_by": "task-tree-tool",
         "last_reconciled_at": "2026-06-19T06:45:47.034Z",
         "last_reconciled_by": "aks-explorer metric-alert-triage",
-        "last_reconciled_note": "Converted duplicate blocked leaf to backlog dependency on auth-env-live-gate-holder-response-await-20260618 so the shared external wait is counted once in the blocked frontier."
+        "last_reconciled_note": "Converted duplicate blocked leaf to backlog dependency on auth-env-live-gate-holder-response-await-20260618 so the shared external wait is counted once in the blocked frontier.",
+        "reviewed_at": "2026-06-19T11:54:20.311Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Replaced by jwt-authenticator-upgrade-survival-westus2-local-execute-20260619 after 2026-06-19 human steering cleared the ARM auth/subscription wait."
       },
-      "blocker": "Blocked on the shared auth/env owner response tracked by auth-env-live-gate-holder-response-await-20260618. Resume only after accepted ARM auth/subscription readiness and any needed probe-specific mutation approval are returned for the JWT upgrade-survival replay, then route the returned facts into this branch instead of creating a duplicate auth follow-up."
+      "resolution": "replaced",
+      "done_at": "2026-06-19T11:54:20.311Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Replaced by jwt-authenticator-upgrade-survival-westus2-local-execute-20260619 after 2026-06-19 human steering cleared the ARM auth/subscription wait."
+      }
     },
     "ccp-connected-cluster-proxy-auth-source-equivalent-search-20260617": {
       "id": "ccp-connected-cluster-proxy-auth-source-equivalent-search-20260617",
@@ -83764,7 +83934,7 @@
     "ccp-coredns-metrics-endpoint-live-execute-gated-20260617": {
       "id": "ccp-coredns-metrics-endpoint-live-execute-gated-20260617",
       "parent_id": "spec-runner-and-replays",
-      "state": "blocked",
+      "state": "done",
       "kind": "domain_leaf",
       "priority": "P2",
       "owner": "aks-explorer",
@@ -83784,10 +83954,18 @@
         "artifact:ccp-coredns-metrics-endpoint"
       ],
       "depends_on": [],
-      "blocker": "External unblock required: execute this replay only when Azure auth and explicit cloud-mutation approval are available (AKS_RP_E2E_ALLOW_CLOUD_MUTATION=ccp-coredns-metrics-endpoint plus --execute), because current evidence is implementation-only and not yet a live product verdict for the CoreDNS :9153 metrics endpoint.",
       "trace": {
         "created_at": "2026-06-17T18:11:55.841Z",
-        "created_by": "task-tree-tool"
+        "created_by": "task-tree-tool",
+        "reviewed_at": "2026-06-19T11:54:23.794Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Replaced by ccp-coredns-metrics-endpoint-westus2-local-execute-20260619 after Azure auth and westus2 local staging execution were explicitly opened."
+      },
+      "resolution": "replaced",
+      "done_at": "2026-06-19T11:54:23.794Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Replaced by ccp-coredns-metrics-endpoint-westus2-local-execute-20260619 after Azure auth and westus2 local staging execution were explicitly opened."
       }
     },
     "managedsystem-create-time-initial-pool-checkpoint-slice-20260617": {
@@ -87995,7 +88173,7 @@
     "network-cni-service-connectivity-runtime-proof-live-execute-gated-20260617": {
       "id": "network-cni-service-connectivity-runtime-proof-live-execute-gated-20260617",
       "parent_id": "spec-runner-and-replays",
-      "state": "blocked",
+      "state": "done",
       "kind": "domain_leaf",
       "priority": "P2",
       "owner": "aks-explorer",
@@ -88015,10 +88193,18 @@
         "artifact:network-cni-service-connectivity-live-proof"
       ],
       "depends_on": [],
-      "blocker": "External unblock required: execute this replay only when Azure auth and explicit cloud-mutation approval are available (AKS_RP_E2E_ALLOW_CLOUD_MUTATION=network-cni-service-connectivity-runtime-proof plus --execute), because the accepted 2026-06-17 contract defines required ClusterIP/NodePort/LoadBalancer runtime probes but current evidence is still surrogate-only until a live run emits those captures.",
       "trace": {
         "created_at": "2026-06-17T19:50:59.765Z",
-        "created_by": "task-tree-tool"
+        "created_by": "task-tree-tool",
+        "reviewed_at": "2026-06-19T11:54:23.993Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Replaced by network-cni-service-connectivity-westus2-local-execute-20260619 after Azure auth and westus2 local staging execution were explicitly opened."
+      },
+      "resolution": "replaced",
+      "done_at": "2026-06-19T11:54:23.993Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Replaced by network-cni-service-connectivity-westus2-local-execute-20260619 after Azure auth and westus2 local staging execution were explicitly opened."
       }
     },
     "vm-prerelease-managedsystem-selector-repair-20260617": {
@@ -98488,7 +98674,7 @@
     "cloud-provider-multiple-slb-eastus2-deserializer-propagation-unblock-20260617": {
       "id": "cloud-provider-multiple-slb-eastus2-deserializer-propagation-unblock-20260617",
       "parent_id": "spec-runner-and-replays",
-      "state": "blocked",
+      "state": "done",
       "kind": "domain_leaf",
       "priority": "P2",
       "owner": "aks-explorer",
@@ -98508,10 +98694,18 @@
         "artifact:cloud-provider-multiple-slb"
       ],
       "depends_on": [],
-      "blocker": "External unblock required: even with preview flags observed registered, the target subscription/region must effectively accept and deserialize properties.networkProfile.multipleStandardLoadBalancerConfigurations[] in eastus2 before rerunning the existing multiple-SLB replay.",
       "trace": {
         "created_at": "2026-06-17T23:40:15.488Z",
-        "created_by": "task-tree-tool"
+        "created_by": "task-tree-tool",
+        "reviewed_at": "2026-06-19T11:54:24.193Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Replaced by cloud-provider-multiple-slb-westus2-local-execute-20260619 under the westus2-for-all-staging steering decision."
+      },
+      "resolution": "replaced",
+      "done_at": "2026-06-19T11:54:24.193Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Replaced by cloud-provider-multiple-slb-westus2-local-execute-20260619 under the westus2-for-all-staging steering decision."
       }
     },
     "policy-addon-large-scale-audit-checkpoint-slice-triage-20260617": {
@@ -100837,7 +101031,7 @@
     "vm-prerelease-live-execution-env-gate-20260618": {
       "id": "vm-prerelease-live-execution-env-gate-20260618",
       "parent_id": "spec-runner-and-replays",
-      "state": "blocked",
+      "state": "done",
       "kind": "domain_leaf",
       "priority": "P2",
       "owner": "aks-explorer",
@@ -100857,10 +101051,18 @@
         "feature:vm-prerelease"
       ],
       "depends_on": [],
-      "blocker": "External execution-environment unblock required: provide a usable Azure subscription/token context and install/verify az on this host before retrying any VM prerelease execute-mode plan or replay slice, because the accepted live-smoke attempt stopped at preflight with missing auth material and no az binary.",
       "trace": {
         "created_at": "2026-06-18T00:56:55.689Z",
-        "created_by": "task-tree-tool"
+        "created_by": "task-tree-tool",
+        "reviewed_at": "2026-06-19T11:54:19.928Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Replaced by bounded westus2 local execution backlog after 2026-06-19 human steering confirmed Azure auth via az CLI and westus2 staging execution."
+      },
+      "resolution": "replaced",
+      "done_at": "2026-06-19T11:54:19.928Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Replaced by bounded westus2 local execution backlog after 2026-06-19 human steering confirmed Azure auth via az CLI and westus2 staging execution."
       }
     },
     "vm-prerelease-full-plan-live-execute-gated-20260618": {
@@ -100887,7 +101089,7 @@
         "artifact:vm-prerelease-full-plan-live-execute"
       ],
       "depends_on": [],
-      "blocker": "External execute-environment unblock required: retry the canonical 304-spec VM prerelease bun run execute only after this environment has Azure subscription/token context and an available az surface (or equivalent documented execution path) sufficient for execute-mode preflight to start, using the archived resume commands from evidence/archive/vm-prerelease-plan-runner-live-smoke-20260618-blocker.md rather than rediscovering the same host/auth failure.",
+      "blocker": "Sequencing blocker: Azure auth via az CLI is now available, but do not reopen the broad 304-spec full-plan execute yet. Resume this branch only after the new bounded westus2 local execution slices land enough evidence to justify a wider VM prerelease live run without rediscovering host/auth issues.",
       "trace": {
         "created_at": "2026-06-18T00:58:13.708Z",
         "created_by": "task-tree-tool"
@@ -102914,7 +103116,7 @@
     "row82-restfirst-bounded-live-execute-gated-20260618": {
       "id": "row82-restfirst-bounded-live-execute-gated-20260618",
       "parent_id": "spec-runner-and-replays",
-      "state": "blocked",
+      "state": "done",
       "kind": "domain_leaf",
       "priority": "P2",
       "owner": "aks-explorer",
@@ -102936,10 +103138,18 @@
         "artifact:row82-restfirst-bounded-live-execute"
       ],
       "depends_on": [],
-      "blocker": "External execute gate required: run this bounded replay only when Azure ARM auth, disposable resource-group lifecycle permission, VM SKU visibility in the target region, and explicit cloud-mutation approval are available for the current row-82 REST-first replay. Even after execution, keep the separate handwritten-verdict blocker as the owner of public-address and HTTP-200 closure.",
       "trace": {
         "created_at": "2026-06-18T02:06:34.170Z",
-        "created_by": "task-tree-tool"
+        "created_by": "task-tree-tool",
+        "reviewed_at": "2026-06-19T11:54:24.388Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Replaced by row82-restfirst-bounded-westus2-local-execute-20260619 after Azure auth and westus2 local staging execution were explicitly opened."
+      },
+      "resolution": "replaced",
+      "done_at": "2026-06-19T11:54:24.388Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Replaced by row82-restfirst-bounded-westus2-local-execute-20260619 after Azure auth and westus2 local staging execution were explicitly opened."
       }
     },
     "managedsystem-disable-migration-staging-frontier-20260618": {
@@ -103232,7 +103442,7 @@
     "vm-prerelease-default-internal-bounded-live-execute-gated-20260618": {
       "id": "vm-prerelease-default-internal-bounded-live-execute-gated-20260618",
       "parent_id": "spec-runner-and-replays",
-      "state": "blocked",
+      "state": "done",
       "kind": "domain_leaf",
       "priority": "P2",
       "owner": "aks-explorer",
@@ -103254,10 +103464,18 @@
         "artifact:vm-prerelease-default-internal-bounded-live-execute"
       ],
       "depends_on": [],
-      "blocker": "External unblock required: open one explicit cloud-mutation window for AKS_RP_E2E_ALLOW_CLOUD_MUTATION=app-routing-vm-prerelease-default-internal-nginx-internal-private on a host with working Azure auth/subscription context, then run the canonical bounded row-80 --execute replay and archive the result.",
       "trace": {
         "created_at": "2026-06-18T02:12:29.639Z",
-        "created_by": "task-tree-tool"
+        "created_by": "task-tree-tool",
+        "reviewed_at": "2026-06-19T11:54:24.594Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Replaced by app-routing-vm-prerelease-default-internal-westus2-local-execute-20260619 after Azure auth and westus2 local staging execution were explicitly opened."
+      },
+      "resolution": "replaced",
+      "done_at": "2026-06-19T11:54:24.594Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Replaced by app-routing-vm-prerelease-default-internal-westus2-local-execute-20260619 after Azure auth and westus2 local staging execution were explicitly opened."
       }
     },
     "vm-prerelease-safe-slice-checkpoint-20260618": {
@@ -104634,7 +104852,7 @@
     "app-routing-vm-prerelease-default-internal-nginx-internal-private-live-execute-gated-20260618": {
       "id": "app-routing-vm-prerelease-default-internal-nginx-internal-private-live-execute-gated-20260618",
       "parent_id": "spec-runner-and-replays",
-      "state": "blocked",
+      "state": "done",
       "kind": "domain_leaf",
       "priority": "P2",
       "owner": "aks-explorer",
@@ -104656,10 +104874,18 @@
         "artifact:app-routing-vm-prerelease-default-internal-nginx-internal-private-live-execute-gated"
       ],
       "depends_on": [],
-      "blocker": "External unblock required: run the row-80 bounded live execute only when Azure auth/preflight is clean and explicit probe-specific cloud-mutation approval is granted for the canonical --execute command captured in vm-prerelease-default-internal-bounded-live-run-plan-20260618 so the project can observe create/readback/cleanup behavior instead of stopping at the run plan.",
       "trace": {
         "created_at": "2026-06-18T02:44:11.851Z",
-        "created_by": "task-tree-tool"
+        "created_by": "task-tree-tool",
+        "reviewed_at": "2026-06-19T11:54:24.843Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Replaced by app-routing-vm-prerelease-default-internal-westus2-local-execute-20260619 to collapse duplicate row-80 westus2 local execute work into one backlog leaf."
+      },
+      "resolution": "replaced",
+      "done_at": "2026-06-19T11:54:24.843Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Replaced by app-routing-vm-prerelease-default-internal-westus2-local-execute-20260619 to collapse duplicate row-80 westus2 local execute work into one backlog leaf."
       }
     },
     "aad-rbac-nonaad-reset-status-surface-reconcile-20260618": {
@@ -110690,7 +110916,7 @@
     "auth-env-live-gate-holder-response-await-20260618": {
       "id": "auth-env-live-gate-holder-response-await-20260618",
       "parent_id": "user-review-workspace",
-      "state": "blocked",
+      "state": "done",
       "kind": "domain_leaf",
       "priority": "P2",
       "owner": "aks-explorer",
@@ -110710,10 +110936,18 @@
         "review:auth-env-live-gate-holder-response"
       ],
       "depends_on": [],
-      "blocker": "External owner response required: send the consolidated handoff packet in evidence/archive/auth-env-live-gate-holder-handoff-packet-20260618.md and wait for JWT ARM-auth/subscription readiness and/or AKS_RP_E2E_AAD_ADMIN_GROUP_OID plus AKS_RP_E2E_AAD_TENANT_ID with any required probe-specific mutation approval; when returned, route each fact into the matching existing blocked replay leaf instead of creating duplicate asks.",
       "trace": {
         "created_at": "2026-06-18T05:47:41.875Z",
-        "created_by": "task-tree-tool"
+        "created_by": "task-tree-tool",
+        "reviewed_at": "2026-06-19T11:54:19.714Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Replaced by westus2 local execution backlog after 2026-06-19 human steering confirmed Azure auth via az CLI, westus2 staging execution, and resume of auth-gated live work."
+      },
+      "resolution": "replaced",
+      "done_at": "2026-06-19T11:54:19.714Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Replaced by westus2 local execution backlog after 2026-06-19 human steering confirmed Azure auth via az CLI, westus2 staging execution, and resume of auth-gated live work."
       }
     },
     "task-tree-blocked-wait-output-path-correction-tooling-20260618": {
@@ -112765,7 +112999,7 @@
     "managedsystem-existing-pool-negative-count-type-live-execute-gated-20260618": {
       "id": "managedsystem-existing-pool-negative-count-type-live-execute-gated-20260618",
       "parent_id": "spec-runner-and-replays",
-      "state": "blocked",
+      "state": "done",
       "kind": "domain_leaf",
       "priority": "P2",
       "owner": "aks-explorer",
@@ -112787,10 +113021,18 @@
         "artifact:managedsystem-existing-pool-negative-count-type-live-execute-gated"
       ],
       "depends_on": [],
-      "blocker": "External execute gate required: run the canonical ManagedSystem existing-pool negative PUT replay only when Azure auth/preflight is clean and explicit probe-specific cloud-mutation approval is granted, so the project can observe rejection plus GET-state preservation for both remaining frontier paths—path.managedsystem.count-mutation-negative and path.managedsystem.type-mutation-negative—without reopening already-closed local analysis.",
       "trace": {
         "created_at": "2026-06-18T06:23:48.615Z",
-        "created_by": "task-tree-tool"
+        "created_by": "task-tree-tool",
+        "reviewed_at": "2026-06-19T11:54:21.122Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Replaced by managedsystem-day2-count-type-westus2-local-execute-20260619 to collapse duplicate day-2 ManagedSystem execute gates into one westus2 local backlog leaf."
+      },
+      "resolution": "replaced",
+      "done_at": "2026-06-19T11:54:21.122Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Replaced by managedsystem-day2-count-type-westus2-local-execute-20260619 to collapse duplicate day-2 ManagedSystem execute gates into one westus2 local backlog leaf."
       }
     },
     "rp-lifecycle-update-tags-checkpoint-readiness-20260618": {
@@ -129431,7 +129673,7 @@
     "dirty-worktree-checkpoint-frontier-after-multiple-slb-handoff-20260619": {
       "id": "dirty-worktree-checkpoint-frontier-after-multiple-slb-handoff-20260619",
       "parent_id": "user-review-workspace",
-      "state": "active",
+      "state": "done",
       "kind": "domain_leaf",
       "priority": "P2",
       "owner": "aks-explorer",
@@ -129458,17 +129700,1567 @@
         "assigned_at": "2026-06-19T11:29:27.448Z",
         "assigned_by": "planner",
         "assigned_worker": "aks-explorer",
-        "last_session": "s_task_dirty-worktree-checkpoint-frontier-after-multiple-slb-handoff-20260619"
+        "last_session": "s_task_dirty-worktree-checkpoint-frontier-after-multiple-slb-handoff-20260619",
+        "worker_started_attempt_id": "a_dirty-worktree-checkpoint-frontier-after-multiple-slb-handoff-20260619_20260619112927",
+        "worker_started_at": "2026-06-19T11:29:44.505Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Authored the requested dirty-worktree frontier packet at evidence/archive/dirty-worktree-checkpoint-frontier-after-multiple-slb-handoff-20260619.md, classifying current dirty paths into already-landed multiple-SLB overlap, a checkpoint-ready VM sidecar slice, and broader mixed churn that must stay uncommitted.",
+        "last_worker_completed_at": "2026-06-19T11:31:00.512Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-19T11:31:50.191Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted evidence/archive/dirty-worktree-checkpoint-frontier-after-multiple-slb-handoff-20260619.md as sufficient repo-local classification evidence: it cites current git status/diffstat plus the accepted clean multiple-SLB landing, separates already-landed overlap from the remaining dirty checkout, and leaves one exact next action by promoting the bounded 13-file VM prerelease sidecar evidence slice without reopening the accepted multiple-SLB branch."
       },
       "session_id": "s_task_dirty-worktree-checkpoint-frontier-after-multiple-slb-handoff-20260619",
       "session_history": [
         "s_task_dirty-worktree-checkpoint-frontier-after-multiple-slb-handoff-20260619"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-19T11:31:50.191Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted evidence/archive/dirty-worktree-checkpoint-frontier-after-multiple-slb-handoff-20260619.md as sufficient repo-local classification evidence: it cites current git status/diffstat plus the accepted clean multiple-SLB landing, separates already-landed overlap from the remaining dirty checkout, and leaves one exact next action by promoting the bounded 13-file VM prerelease sidecar evidence slice without reopening the accepted multiple-SLB branch."
+      }
+    },
+    "vm-prerelease-sidecar-evidence-checkpoint-slice-land-20260619": {
+      "id": "vm-prerelease-sidecar-evidence-checkpoint-slice-land-20260619",
+      "parent_id": "user-review-workspace",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Land one bounded domain checkpoint for the exact 13-file VM prerelease sidecar evidence slice identified by the accepted dirty-worktree frontier packet, so the main checkout captures that small evidence-only slice without reopening the accepted multiple-SLB landing or mixing in the broader VM/CCP/model/replay churn.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vm-prerelease-sidecar-evidence-checkpoint-land-20260619.md"
+      ],
+      "acceptance": [
+        "The note cites evidence/archive/dirty-worktree-checkpoint-frontier-after-multiple-slb-handoff-20260619.md plus the earlier sidecar-routing authorities and restates the exact 13-file slice boundary, including that multiple-SLB overlap files and broad mixed churn are explicitly out of scope.",
+        "The work verifies that only the intended 13-file VM prerelease sidecar evidence family is included in the checkpoint candidate, records the exact commit/checkpoint hash or exact failure point from the checkpoint helper, and quotes the repo-local validation/check commands used for that slice.",
+        "The resulting note makes the checkpoint verdict durable: if the slice lands, it records the commit hash and clean boundary; if it cannot land cleanly, it records the concrete conflicting paths or helper failure so planning can decompose further without rediscovering the frontier."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "review:dirty-worktree-checkpoint",
+        "artifact:vm-prerelease-sidecar-evidence-checkpoint"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-19T11:31:50.377Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_vm-prerelease-sidecar-evidence-checkpoint-slice-land-20260619_20260619113150",
+        "assigned_at": "2026-06-19T11:31:50.566Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vm-prerelease-sidecar-evidence-checkpoint-slice-land-20260619",
+        "worker_started_attempt_id": "a_vm-prerelease-sidecar-evidence-checkpoint-slice-land-20260619_20260619113150",
+        "worker_started_at": "2026-06-19T11:32:05.581Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Accepted the already-landed VM prerelease sidecar checkpoint: commit 9e70d247b31d020fbfbc856ca9b514d8ce6961a9 preserves the exact 13-file evidence-only slice with bounded diff-check hygiene and keeps multiple-SLB plus broader mixed churn out of scope.",
+        "last_worker_completed_at": "2026-06-19T11:46:15.162Z",
+        "last_worker_evidence": [
+          "../aks-rp-e2e/evidence/archive/vm-prerelease-sidecar-evidence-checkpoint-land-20260619.md"
+        ],
+        "reviewed_at": "2026-06-19T11:46:21.255Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Review accepted: durable evidence confirms commit 9e70d247b31d020fbfbc856ca9b514d8ce6961a9 landed the exact 13-file VM prerelease sidecar checkpoint slice and kept multiple-SLB plus broader mixed churn out of scope."
+      },
+      "session_id": "s_task_vm-prerelease-sidecar-evidence-checkpoint-slice-land-20260619",
+      "session_history": [
+        "s_task_vm-prerelease-sidecar-evidence-checkpoint-slice-land-20260619"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-19T11:46:21.255Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Review accepted: durable evidence confirms commit 9e70d247b31d020fbfbc856ca9b514d8ce6961a9 landed the exact 13-file VM prerelease sidecar checkpoint slice and kept multiple-SLB plus broader mixed churn out of scope."
+      }
+    },
+    "draft-spec-readiness-vm-prerelease-source-blocked-wave-20260619": {
+      "id": "draft-spec-readiness-vm-prerelease-source-blocked-wave-20260619",
+      "parent_id": "spec-runner-and-replays",
+      "state": "blocked",
+      "kind": "domain_leaf",
+      "priority": "P0",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Keep explicit draft-spec-readiness work open for the remaining VM prerelease source-blocked unverified specs so Fleet, TLSBootstrapToken upgrade, RawUbuntu egress-lockdown, credential-provider upgrade, KMS v1/v2, Windows Gen2, and related row families stay counted as real readiness closure work while they wait on authoritative source-holder proof rather than disappearing behind review-lane waits only.",
+      "inputs": [
+        "../aks-rp-e2e/specs/index.json",
+        "../aks-rp-e2e/evidence/archive/metric-alert-aks-rp-e2e-spec-unverified-without-work-repair-20260619.md",
+        "../aks-rp-e2e/evidence/archive/vm-prerelease-fleet-handwritten-source-recovery-20260619.md",
+        "../aks-rp-e2e/evidence/archive/vm-prerelease-tlsbootstraptoken-upgrade-source-holder-packet-20260619.md",
+        "../aks-rp-e2e/evidence/archive/vm-prerelease-rawubuntu-egress-lockdown-source-holder-packet-20260619.md",
+        "../aks-rp-e2e/evidence/archive/vm-prerelease-credential-provider-upgrade-source-holder-packet-20260619.md",
+        "../aks-rp-e2e/evidence/archive/vm-prerelease-kms-v1v2-source-holder-packet-20260619.md",
+        "../aks-rp-e2e/evidence/archive/vm-prerelease-windows-gen2-source-holder-packet-20260619.md"
+      ],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/metric-alert-aks-rp-e2e-spec-unverified-without-work-repair-20260619.md"
+      ],
+      "acceptance": [
+        "The spec-runner lane has one explicit blocked draft-spec-readiness leaf for the remaining VM prerelease source-blocked unverified specs, so the task tree truthfully shows readiness work is still open even though many row-family waits live under user-review-workspace.",
+        "The leaf cites the exact existing response-await/source-packet artifacts for Fleet, TLSBootstrapToken upgrade, RawUbuntu egress-lockdown, credential-provider upgrade, KMS v1/v2, Windows Gen2, and the consolidated VM prerelease missing-spec waits, and does not claim any row is newly covered or execution-ready.",
+        "Resume condition is precise: authoritative handwritten/source-equivalent proof returns for one or more named row families, after which planning creates or resumes bounded family authoring/readiness successors instead of reopening broad rediscovery."
+      ],
+      "blocker": "Blocked on external source-holder responses already tracked by the VM prerelease family wait leaves in user-review-workspace. Resume only when authoritative handwritten, archived-exact, or accepted source-equivalent proof returns for one or more named families so bounded draft-to-ready/spec-authoring follow-up can proceed.",
+      "trace": {
+        "created_at": "2026-06-19T11:32:35.287Z",
+        "created_by": "aks-explorer"
+      }
+    },
+    "aad-rbac-managed-v2-reset-stable-empty-westus2-local-execute-20260619": {
+      "id": "aad-rbac-managed-v2-reset-stable-empty-westus2-local-execute-20260619",
+      "parent_id": "spec-runner-and-replays",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Execute the exact staging replay surface preserved by aad-rbac-managed-v2-reset-stable-empty-rerun-await-aad-env-20260617 using Azure auth via az CLI, AKS_RP_E2E_LOCATION=westus2, and --host=local now that the auth/environment gate has been cleared by 2026-06-19 human steering. Record real westus2 runner evidence or the exact remaining non-auth blocker.",
+      "inputs": [],
+      "outputs": [
+        "runs/executions/",
+        "evidence/archive/aad-rbac-managed-v2-reset-stable-empty-westus2-local-execute-20260619.md"
+      ],
+      "acceptance": [
+        "Archive note cites predecessor aad-rbac-managed-v2-reset-stable-empty-rerun-await-aad-env-20260617, the exact westus2 local command family (AKS_RP_E2E_LOCATION=westus2, --execute, --host=local, plus the same probe-specific mutation-allow contract already documented on the predecessor leaf), and the resulting runner artifact path or exact remaining blocker.",
+        "If execution reaches product assertions, record verdict-driving observations and cleanup state under runs/executions/ plus the archive note; otherwise capture the exact preflight/runtime failure and the next precise resume condition without reopening the cleared auth/environment gate."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "cloud:staging"
+      ],
+      "depends_on": [],
+      "context": {
+        "live_run_policy": "repeatable-approved",
+        "execution": {
+          "host": "local",
+          "location": "westus2"
+        },
+        "resumeFromTasks": [
+          "aad-rbac-managed-v2-reset-stable-empty-rerun-await-aad-env-20260617"
+        ],
+        "trigger": "project.owner.requested 2026-06-19 auth working + westus2",
+        "latestEvidence": "evidence/archive/aad-rbac-managed-v2-reset-stable-empty-westus2-local-execute-20260619.md",
+        "latestRunnerArtifact": "evidence/archive/aad-rbac-managed-v2-reset-stable-empty-westus2-local-execute-20260619-aad-rbac-managed-v2-lifecycle.json",
+        "resumeCondition": "Decide whether to close this exact stable-empty execute leaf as a reviewed product-gap or promote the already-modeled bodyful ResetAAD branch (preview bodyful first, then stable bodyful only if still needed).",
+        "observedOutcome": "Stable 2024-09-01 + empty body {} still returns HTTP 400 after create/stop/start/admin-group update all succeed.",
+        "acceptance_note": "Owner review accepted the stable-empty westus2/local execute as a reviewed product-gap result and promoted preview-bodyful as the next safe managed-v2 ResetAAD rerun."
+      },
+      "trace": {
+        "created_at": "2026-06-19T11:54:15.279Z",
+        "created_by": "task-tree-tool",
+        "promoted_at": "2026-06-19T12:29:26.376Z",
+        "promoted_by": "task-tree-tool",
+        "current_attempt_id": "a_aad-rbac-managed-v2-reset-stable-empty-westus2-local-execute-20260619_20260619123128",
+        "assigned_at": "2026-06-19T12:31:28.854Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_aad-rbac-managed-v2-reset-stable-empty-westus2-local-execute-20260619",
+        "last_worker_result": "partial",
+        "last_worker_claim": "partial",
+        "last_worker_summary": "Real westus2/local stable-empty execute reached product assertions and reproduced ResetAADProfile HTTP 400 on 2024-09-01 with body {}; create, stop/start, admin-group update, and disable-managed negative checks all passed. The remaining owner decision is whether to promote the already-modeled bodyful branch.",
+        "last_worker_completed_at": "2026-06-19T13:11:44Z",
+        "last_worker_evidence": [
+          "evidence/archive/aad-rbac-managed-v2-reset-stable-empty-westus2-local-execute-20260619.md",
+          "evidence/archive/aad-rbac-managed-v2-reset-stable-empty-westus2-local-execute-20260619-aad-rbac-managed-v2-lifecycle.json"
+        ],
+        "review_summary": "Owner review accepted the stable-empty westus2/local execute as a reviewed product-gap result and promoted preview-bodyful as the next safe managed-v2 ResetAAD rerun.",
+        "reviewed_at": "2026-06-19T13:39:12.323Z",
+        "reviewed_by": "task-tree-tool"
+      },
+      "session_id": "s_task_aad-rbac-managed-v2-reset-stable-empty-westus2-local-execute-20260619",
+      "session_history": [
+        "s_task_aad-rbac-managed-v2-reset-stable-empty-westus2-local-execute-20260619"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-19T13:39:12.323Z",
+      "done_by": "task-tree-tool"
+    },
+    "jwt-authenticator-upgrade-survival-westus2-local-execute-20260619": {
+      "id": "jwt-authenticator-upgrade-survival-westus2-local-execute-20260619",
+      "parent_id": "spec-runner-and-replays",
+      "state": "active",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Execute the exact staging replay surface preserved by jwt-authenticator-upgrade-survival-arm-auth-env-blocker-20260617 using Azure auth via az CLI, AKS_RP_E2E_LOCATION=westus2, and --host=local now that the auth/environment gate has been cleared by 2026-06-19 human steering. Record real westus2 runner evidence or the exact remaining non-auth blocker.",
+      "inputs": [],
+      "outputs": [
+        "runs/executions/",
+        "evidence/archive/jwt-authenticator-upgrade-survival-westus2-local-execute-20260619.md"
+      ],
+      "acceptance": [
+        "Archive note cites predecessor jwt-authenticator-upgrade-survival-arm-auth-env-blocker-20260617, the exact westus2 local command family (AKS_RP_E2E_LOCATION=westus2, --execute, --host=local, plus the same probe-specific mutation-allow contract already documented on the predecessor leaf), and the resulting runner artifact path or exact remaining blocker.",
+        "If execution reaches product assertions, record verdict-driving observations and cleanup state under runs/executions/ plus the archive note; otherwise capture the exact preflight/runtime failure and the next precise resume condition without reopening the cleared auth/environment gate."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "cloud:staging:jwt-authenticator-upgrade-survival-westus2-local-execute-20260619"
+      ],
+      "depends_on": [],
+      "context": {
+        "live_run_policy": "repeatable-approved",
+        "execution": {
+          "host": "local",
+          "location": "westus2"
+        },
+        "resumeFromTasks": [
+          "jwt-authenticator-upgrade-survival-arm-auth-env-blocker-20260617"
+        ],
+        "trigger": "project.owner.requested 2026-06-19 auth working + westus2"
+      },
+      "trace": {
+        "created_at": "2026-06-19T11:54:15.486Z",
+        "created_by": "task-tree-tool",
+        "last_worker_result": "blocked",
+        "last_worker_claim": "blocked",
+        "last_worker_summary": "Westus2/local live execute cleared the old ARM auth/subscription gate and created the storage account plus AKS cluster, but the May worker restarted before replay-owned final evidence was flushed. Blocking this leaf on runner/runtime stability so the same westus2/local command family can be rerun under a stable execution window.",
+        "last_worker_completed_at": "2026-06-19T13:43:37.710Z",
+        "last_worker_evidence": [
+          "evidence/archive/jwt-authenticator-upgrade-survival-westus2-local-execute-20260619.md"
+        ]
+      }
+    },
+    "ccp-agent-lifecycle-deployment-westus2-local-execute-20260619": {
+      "id": "ccp-agent-lifecycle-deployment-westus2-local-execute-20260619",
+      "parent_id": "spec-runner-and-replays",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Execute the exact staging replay surface preserved by ccp-agent-lifecycle-deployment-live-execute-gated-20260617 using Azure auth via az CLI, AKS_RP_E2E_LOCATION=westus2, and --host=local now that the auth/environment gate has been cleared by 2026-06-19 human steering. Record real westus2 runner evidence or the exact remaining non-auth blocker.",
+      "inputs": [],
+      "outputs": [
+        "runs/executions/",
+        "evidence/archive/ccp-agent-lifecycle-deployment-westus2-local-execute-20260619.md"
+      ],
+      "acceptance": [
+        "Archive note cites predecessor ccp-agent-lifecycle-deployment-live-execute-gated-20260617, the exact westus2 local command family (AKS_RP_E2E_LOCATION=westus2, --execute, --host=local, plus the same probe-specific mutation-allow contract already documented on the predecessor leaf), and the resulting runner artifact path or exact remaining blocker.",
+        "If execution reaches product assertions, record verdict-driving observations and cleanup state under runs/executions/ plus the archive note; otherwise capture the exact preflight/runtime failure and the next precise resume condition without reopening the cleared auth/environment gate."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "cloud:staging:ccp-agent-lifecycle-deployment-westus2-local-execute-20260619"
+      ],
+      "depends_on": [],
+      "context": {
+        "live_run_policy": "repeatable-approved",
+        "execution": {
+          "host": "local",
+          "location": "westus2"
+        },
+        "resumeFromTasks": [
+          "ccp-agent-lifecycle-deployment-live-execute-gated-20260617"
+        ],
+        "trigger": "project.owner.requested 2026-06-19 auth working + westus2",
+        "acceptance_note": "Accepted review: the westus2/local execute created a real cluster, discovered Deployment/konnectivity-agent as the relevant CCP agent controller, and verified all three claims (deployed, ready, and controller-kind-specific node coverage) with cleanup initiated. This leaf is closed as a real product pass."
+      },
+      "trace": {
+        "created_at": "2026-06-19T11:54:15.703Z",
+        "created_by": "task-tree-tool",
+        "promoted_at": "2026-06-19T12:29:26.376Z",
+        "promoted_by": "task-tree-tool",
+        "current_attempt_id": "a_ccp-agent-lifecycle-deployment-westus2-local-execute-20260619_20260619123958",
+        "assigned_at": "2026-06-19T12:39:58.097Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_ccp-agent-lifecycle-deployment-westus2-local-execute-20260619",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Real westus2/local execute produced a product pass for path.ccp-agent.lifecycle-deployment: cluster create succeeded, Deployment/konnectivity-agent was discovered, all three claims passed, and cleanup was accepted.",
+        "last_worker_completed_at": "2026-06-19T13:11:44Z",
+        "last_worker_evidence": [
+          "evidence/archive/ccp-agent-lifecycle-deployment-westus2-local-execute-20260619.md",
+          "evidence/archive/ccp-agent-lifecycle-deployment-westus2-local-execute-20260619-ccp-agent-lifecycle-deployment.json"
+        ],
+        "reviewed_at": "2026-06-19T13:11:44Z",
+        "reviewed_by": "aks-explorer",
+        "review_summary": "Accepted review: the westus2/local execute created a real cluster, discovered Deployment/konnectivity-agent as the relevant CCP agent controller, and verified all three claims (deployed, ready, and controller-kind-specific node coverage) with cleanup initiated. This leaf is closed as a real product pass."
+      },
+      "session_id": "s_task_ccp-agent-lifecycle-deployment-westus2-local-execute-20260619",
+      "session_history": [
+        "s_task_ccp-agent-lifecycle-deployment-westus2-local-execute-20260619"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-19T13:11:44Z",
+      "done_by": "aks-explorer"
+    },
+    "ccp-connected-cluster-proxy-auth-westus2-local-execute-20260619": {
+      "id": "ccp-connected-cluster-proxy-auth-westus2-local-execute-20260619",
+      "parent_id": "spec-runner-and-replays",
+      "state": "blocked",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Execute the exact staging replay surface preserved by ccp-connected-cluster-proxy-auth-live-execute-gated-20260617 using Azure auth via az CLI, AKS_RP_E2E_LOCATION=westus2, and --host=local now that the auth/environment gate has been cleared by 2026-06-19 human steering. Record real westus2 runner evidence or the exact remaining non-auth blocker.",
+      "inputs": [],
+      "outputs": [
+        "runs/executions/",
+        "evidence/archive/ccp-connected-cluster-proxy-auth-westus2-local-execute-20260619.md"
+      ],
+      "acceptance": [
+        "Archive note cites predecessor ccp-connected-cluster-proxy-auth-live-execute-gated-20260617, the exact westus2 local command family (AKS_RP_E2E_LOCATION=westus2, --execute, --host=local, plus the same probe-specific mutation-allow contract already documented on the predecessor leaf), and the resulting runner artifact path or exact remaining blocker.",
+        "If execution reaches product assertions, record verdict-driving observations and cleanup state under runs/executions/ plus the archive note; otherwise capture the exact preflight/runtime failure and the next precise resume condition without reopening the cleared auth/environment gate."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "cloud:staging:ccp-connected-cluster-proxy-auth-westus2-local-execute-20260619"
+      ],
+      "depends_on": [],
+      "context": {
+        "live_run_policy": "repeatable-approved",
+        "execution": {
+          "host": "local",
+          "location": "westus2"
+        },
+        "resumeFromTasks": [
+          "ccp-connected-cluster-proxy-auth-live-execute-gated-20260617"
+        ],
+        "trigger": "project.owner.requested 2026-06-19 auth working + westus2",
+        "latestEvidence": "evidence/archive/ccp-connected-cluster-proxy-auth-westus2-local-execute-20260619.md",
+        "latestRunnerArtifact": "evidence/archive/ccp-connected-cluster-proxy-auth-westus2-local-execute-20260619-live-ccp-connected-cluster-proxy-auth.json",
+        "resumeCondition": "Retry only after targeted clarification or repair of the positive surrogate token contract, such as confirming whether explicit cluster-admin-group authorization is required for the executing identity or whether the pinned clusterToken acquisition/resource contract is stale for current RunCommand.",
+        "observedBlockerPhase": "runtime.runcommand-positive-surrogate-token",
+        "semanticBlockerNote": "The separate Arc/connected-cluster source-semantic ambiguity remains open and is not resolved by this surrogate execution."
+      },
+      "trace": {
+        "created_at": "2026-06-19T11:54:15.901Z",
+        "created_by": "task-tree-tool",
+        "promoted_at": "2026-06-19T12:29:26.376Z",
+        "promoted_by": "task-tree-tool",
+        "current_attempt_id": "a_ccp-connected-cluster-proxy-auth-westus2-local-execute-20260619_20260619123958",
+        "assigned_at": "2026-06-19T12:39:58.097Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_ccp-connected-cluster-proxy-auth-westus2-local-execute-20260619",
+        "last_worker_result": "partial",
+        "last_worker_claim": "partial",
+        "last_worker_summary": "Worker session completed, but the owner has not yet reviewed the westus2/local execute outcome into final done/blocked state; move this leaf out of active so the frontier reflects only live worker-owned tasks.",
+        "last_worker_completed_at": "2026-06-19T12:51:57.371Z",
+        "last_worker_evidence": [],
+        "blocked_at": "2026-06-19T13:11:44Z",
+        "blocked_by": "aks-explorer",
+        "review_summary": "Leaf absorbed into blocked state after the westus2/local execute proved Azure auth, AKS server-app token minting, and cluster creation, but the verdict-driving positive RunCommand surrogate still failed with HTTP 401 InvalidAADClusterToken; the remaining blocker is the token-contract mismatch, not generic auth."
+      },
+      "session_id": "s_task_ccp-connected-cluster-proxy-auth-westus2-local-execute-20260619",
+      "session_history": [
+        "s_task_ccp-connected-cluster-proxy-auth-westus2-local-execute-20260619"
+      ],
+      "blocker": "Blocked on the surrogate positive-token contract: westus2/local execution proved Azure auth, AKS server-app token minting, and AAD-managed RunCommand cluster creation all work, but the verdict-driving positive runCommand call still returns HTTP 401 InvalidAADClusterToken. Resume only with a targeted fix or clarification for why the acquired clusterToken is not accepted for this surrogate path in this environment."
+    },
+    "managedsystem-day2-count-type-westus2-local-execute-20260619": {
+      "id": "managedsystem-day2-count-type-westus2-local-execute-20260619",
+      "parent_id": "spec-runner-and-replays",
+      "state": "blocked",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Execute the exact staging replay surface preserved by managedsystem-day2-count-type-live-execute-gated-20260617 + managedsystem-existing-pool-negative-count-type-live-execute-gated-20260618 using Azure auth via az CLI, AKS_RP_E2E_LOCATION=westus2, and --host=local now that the auth/environment gate has been cleared by 2026-06-19 human steering. Record real westus2 runner evidence or the exact remaining non-auth blocker.",
+      "inputs": [],
+      "outputs": [
+        "runs/executions/",
+        "evidence/archive/managedsystem-day2-count-type-westus2-local-execute-20260619.md"
+      ],
+      "acceptance": [
+        "Archive note cites predecessor managedsystem-day2-count-type-live-execute-gated-20260617, managedsystem-existing-pool-negative-count-type-live-execute-gated-20260618, the exact westus2 local command family (AKS_RP_E2E_LOCATION=westus2, --execute, --host=local, plus the same probe-specific mutation-allow contract already documented on the predecessor leaf), and the resulting runner artifact path or exact remaining blocker.",
+        "If execution reaches product assertions, record verdict-driving observations and cleanup state under runs/executions/ plus the archive note; otherwise capture the exact preflight/runtime failure and the next precise resume condition without reopening the cleared auth/environment gate."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "cloud:staging"
+      ],
+      "depends_on": [],
+      "blocker": "Blocked on the local Azure CLI + aks-preview create path: with PATH=/app/.state/.local/bin:/app/.state/.local/lib/azure-cli/bin:$PATH and westus2 auth confirmed, `az aks create` still crashes before product assertions with `ValueError: too many values to unpack (expected 3)` in the aks-preview/network-profile stack. Resume only on a host/CLI combination where cluster create no longer hits that crash, then rerun the same canonical westus2 local execute contract.",
+      "context": {
+        "live_run_policy": "repeatable-approved",
+        "execution": {
+          "host": "local",
+          "location": "westus2"
+        },
+        "resumeFromTasks": [
+          "managedsystem-day2-count-type-live-execute-gated-20260617",
+          "managedsystem-existing-pool-negative-count-type-live-execute-gated-20260618"
+        ],
+        "trigger": "project.owner.requested 2026-06-19 auth working + westus2",
+        "latestEvidence": "evidence/archive/managedsystem-day2-count-type-westus2-local-execute-20260619.md",
+        "latestRunnerArtifact": "evidence/archive/iteration183-20260619T115942Z-managedsystem-add-immutability-delete-combined.md",
+        "resumeCondition": "Retry only after selecting or repairing a host/CLI path where `az aks create` no longer crashes in the local aks-preview decorator stack; keep the same westus2 + arm-suite + mutation gate contract.",
+        "observedBlockerPhase": "setup.cluster-create-normal-system-pool"
+      },
+      "trace": {
+        "created_at": "2026-06-19T11:54:16.108Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_managedsystem-day2-count-type-westus2-local-execute-20260619_20260619115502",
+        "assigned_at": "2026-06-19T11:55:02.892Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_managedsystem-day2-count-type-westus2-local-execute-20260619",
+        "blocked_at": "2026-06-19T12:16:30.000Z",
+        "blocked_by": "aks-explorer",
+        "review_summary": "Leaf absorbed into blocked state after a real westus2/local execute proved auth and mutation gate were good but `az aks create` still crashed in the local aks-preview/network-profile stack before ManagedSystem count/type assertions."
+      },
+      "session_id": "s_task_managedsystem-day2-count-type-westus2-local-execute-20260619",
+      "session_history": [
+        "s_task_managedsystem-day2-count-type-westus2-local-execute-20260619"
       ]
+    },
+    "localdns-autodefault-upgrade-pool-level-westus2-local-execute-20260619": {
+      "id": "localdns-autodefault-upgrade-pool-level-westus2-local-execute-20260619",
+      "parent_id": "spec-runner-and-replays",
+      "state": "blocked",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Execute the exact staging replay surface preserved by localdns-autodefault-upgrade-pool-level-live-execute-gated-20260617 using Azure auth via az CLI, AKS_RP_E2E_LOCATION=westus2, and --host=local now that the auth/environment gate has been cleared by 2026-06-19 human steering. Record real westus2 runner evidence or the exact remaining non-auth blocker.",
+      "inputs": [],
+      "outputs": [
+        "runs/executions/",
+        "evidence/archive/localdns-autodefault-upgrade-pool-level-westus2-local-execute-20260619.md"
+      ],
+      "acceptance": [
+        "Archive note cites predecessor localdns-autodefault-upgrade-pool-level-live-execute-gated-20260617, the exact westus2 local command family (AKS_RP_E2E_LOCATION=westus2, --execute, --host=local, plus the same probe-specific mutation-allow contract already documented on the predecessor leaf), and the resulting runner artifact path or exact remaining blocker.",
+        "If execution reaches product assertions, record verdict-driving observations and cleanup state under runs/executions/ plus the archive note; otherwise capture the exact preflight/runtime failure and the next precise resume condition without reopening the cleared auth/environment gate."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "cloud:staging:localdns-autodefault-upgrade-pool-level-westus2-local-execute-20260619"
+      ],
+      "depends_on": [],
+      "context": {
+        "live_run_policy": "repeatable-approved",
+        "execution": {
+          "host": "local",
+          "location": "westus2"
+        },
+        "resumeFromTasks": [
+          "localdns-autodefault-upgrade-pool-level-live-execute-gated-20260617"
+        ],
+        "trigger": "project.owner.requested 2026-06-19 auth working + westus2",
+        "latestEvidence": "evidence/archive/localdns-autodefault-upgrade-pool-level-westus2-local-execute-20260619.md",
+        "latestRunnerArtifact": "evidence/archive/ldnsad-ws2-20260619a-localdns-auto-default.json",
+        "resumeCondition": "Retry only after the version envelope is reviewed so the create step really pins a pre-1.36 version before upgrading to 1.36.1, and after multi-path sequencing avoids overlapping managed-cluster operations.",
+        "observedBlockerPhase": "setup.upgrade-envelope-and-managedcluster-sequencing"
+      },
+      "trace": {
+        "created_at": "2026-06-19T11:54:16.308Z",
+        "created_by": "task-tree-tool",
+        "last_worker_result": "blocked",
+        "last_worker_claim": "blocked",
+        "last_worker_summary": "Real westus2/local execute cleared auth/gate but the pinned upgrade envelope collapsed to 1.36.1 with no upgrade available and later 409 in-progress operations; see evidence/archive/localdns-autodefault-upgrade-pool-level-westus2-local-execute-20260619.md and evidence/archive/ldnsad-ws2-20260619a-localdns-auto-default.json.",
+        "last_worker_completed_at": "2026-06-19T12:43:13.741Z",
+        "last_worker_evidence": [
+          "evidence/archive/localdns-autodefault-upgrade-pool-level-westus2-local-execute-20260619.md",
+          "evidence/archive/ldnsad-ws2-20260619a-localdns-auto-default.json"
+        ],
+        "blocked_at": "2026-06-19T13:11:44Z",
+        "blocked_by": "aks-explorer",
+        "review_summary": "Leaf absorbed into blocked state after the westus2/local execute cleared auth and mutation gating but proved the current replay envelope collapses onto 1.36.1 with no upgrade available, followed by HTTP 409 in-progress-operation collisions on later sibling creates."
+      },
+      "blocker": "Blocked on the replay's pinned upgrade envelope and sequencing: the intended pre-1.36 create path collapsed to 1.36.1 so no upgrade was available, and later sibling cluster creates hit HTTP 409 in-progress-operation collisions. Resume only after the replay forces a valid <1.36 -> 1.36.1 transition and avoids overlapping managed-cluster operations."
+    },
+    "aad-rbac-nonaad-reset-stable-empty-westus2-local-execute-20260619": {
+      "id": "aad-rbac-nonaad-reset-stable-empty-westus2-local-execute-20260619",
+      "parent_id": "spec-runner-and-replays",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Execute the exact staging replay surface preserved by aad-rbac-nonaad-reset-stable-empty-rerun-gated-20260617 using Azure auth via az CLI, AKS_RP_E2E_LOCATION=westus2, and --host=local now that the auth/environment gate has been cleared by 2026-06-19 human steering. Record real westus2 runner evidence or the exact remaining non-auth blocker.",
+      "inputs": [],
+      "outputs": [
+        "runs/executions/",
+        "evidence/archive/aad-rbac-nonaad-reset-stable-empty-westus2-local-execute-20260619.md"
+      ],
+      "acceptance": [
+        "Archive note cites predecessor aad-rbac-nonaad-reset-stable-empty-rerun-gated-20260617, the exact westus2 local command family (AKS_RP_E2E_LOCATION=westus2, --execute, --host=local, plus the same probe-specific mutation-allow contract already documented on the predecessor leaf), and the resulting runner artifact path or exact remaining blocker.",
+        "If execution reaches product assertions, record verdict-driving observations and cleanup state under runs/executions/ plus the archive note; otherwise capture the exact preflight/runtime failure and the next precise resume condition without reopening the cleared auth/environment gate."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "cloud:staging:aad-rbac-nonaad-reset-stable-empty-westus2-local-execute-20260619"
+      ],
+      "depends_on": [],
+      "context": {
+        "live_run_policy": "repeatable-approved",
+        "execution": {
+          "host": "local",
+          "location": "westus2"
+        },
+        "resumeFromTasks": [
+          "aad-rbac-nonaad-reset-stable-empty-rerun-gated-20260617"
+        ],
+        "trigger": "project.owner.requested 2026-06-19 auth working + westus2",
+        "acceptance_note": "Accepted review: the westus2/local stable-empty rerun reached product assertions, proved the non-AAD baseline create still succeeds, and showed ResetAADProfile still returns HTTP 400 on stable 2024-09-01 with empty body {}. The exact stable-empty comparison is now closed; any further work should be a separate bodyful or product-contract clarification branch."
+      },
+      "trace": {
+        "created_at": "2026-06-19T11:54:16.507Z",
+        "created_by": "task-tree-tool",
+        "promoted_at": "2026-06-19T12:29:26.376Z",
+        "promoted_by": "task-tree-tool",
+        "current_attempt_id": "a_aad-rbac-nonaad-reset-stable-empty-westus2-local-execute-20260619_20260619123958",
+        "assigned_at": "2026-06-19T12:39:58.095Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_aad-rbac-nonaad-reset-stable-empty-westus2-local-execute-20260619",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Real westus2/local execute closed the stable-empty comparison for the non-AAD ResetAAD branch: cluster create succeeded, stable 2024-09-01 + empty body {} still returned HTTP 400, and cleanup was accepted.",
+        "last_worker_completed_at": "2026-06-19T13:11:44Z",
+        "last_worker_evidence": [
+          "evidence/archive/aad-rbac-nonaad-reset-stable-empty-westus2-local-execute-20260619.md",
+          "evidence/archive/aad-rbac-nonaad-reset-stable-empty-westus2-local-execute-20260619-aad-rbac-nonaad-reset.json"
+        ],
+        "reviewed_at": "2026-06-19T13:11:44Z",
+        "reviewed_by": "aks-explorer",
+        "review_summary": "Accepted review: the westus2/local stable-empty rerun reached product assertions, proved the non-AAD baseline create still succeeds, and showed ResetAADProfile still returns HTTP 400 on stable 2024-09-01 with empty body {}. The exact stable-empty comparison is now closed; any further work should be a separate bodyful or product-contract clarification branch."
+      },
+      "session_id": "s_task_aad-rbac-nonaad-reset-stable-empty-westus2-local-execute-20260619",
+      "session_history": [
+        "s_task_aad-rbac-nonaad-reset-stable-empty-westus2-local-execute-20260619"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-19T13:11:44Z",
+      "done_by": "aks-explorer"
+    },
+    "private-cluster-vnet-integration-update-westus2-local-execute-20260619": {
+      "id": "private-cluster-vnet-integration-update-westus2-local-execute-20260619",
+      "parent_id": "spec-runner-and-replays",
+      "state": "blocked",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Execute the exact staging replay surface preserved by private-cluster-vnet-integration-update-westus2-live-execute-gated-20260617 using Azure auth via az CLI, AKS_RP_E2E_LOCATION=westus2, and --host=local now that the auth/environment gate has been cleared by 2026-06-19 human steering. Record real westus2 runner evidence or the exact remaining non-auth blocker.",
+      "inputs": [],
+      "outputs": [
+        "runs/executions/",
+        "evidence/archive/private-cluster-vnet-integration-update-westus2-local-execute-20260619.md"
+      ],
+      "acceptance": [
+        "Archive note cites predecessor private-cluster-vnet-integration-update-westus2-live-execute-gated-20260617, the exact westus2 local command family (AKS_RP_E2E_LOCATION=westus2, --execute, --host=local, plus the same probe-specific mutation-allow contract already documented on the predecessor leaf), and the resulting runner artifact path or exact remaining blocker.",
+        "If execution reaches product assertions, record verdict-driving observations and cleanup state under runs/executions/ plus the archive note; otherwise capture the exact preflight/runtime failure and the next precise resume condition without reopening the cleared auth/environment gate."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "cloud:staging:private-cluster-vnet-integration-update-westus2-local-execute-20260619"
+      ],
+      "depends_on": [],
+      "context": {
+        "live_run_policy": "repeatable-approved",
+        "execution": {
+          "host": "local",
+          "location": "westus2"
+        },
+        "resumeFromTasks": [
+          "private-cluster-vnet-integration-update-westus2-live-execute-gated-20260617"
+        ],
+        "trigger": "project.owner.requested 2026-06-19 auth working + westus2",
+        "latestEvidence": "evidence/archive/private-cluster-vnet-integration-update-westus2-local-execute-20260619.md",
+        "latestRunnerArtifact": "evidence/archive/pcvnetupd-ws2-20260619a-private-cluster-vnet-integration-update.json",
+        "resumeCondition": "Retry when a reviewed next step exists for the baseline cluster-create cancellation path while preserving the same westus2 local execute contract.",
+        "observedBlockerPhase": "setup.baseline-cluster-create-arm-lro-canceled"
+      },
+      "trace": {
+        "created_at": "2026-06-19T11:54:16.705Z",
+        "created_by": "task-tree-tool",
+        "last_worker_result": "blocked",
+        "last_worker_claim": "blocked",
+        "last_worker_summary": "Real westus2/local execute cleared auth and environment setup, then baseline cluster create ended Canceled in ARM LRO; see evidence/archive/private-cluster-vnet-integration-update-westus2-local-execute-20260619.md and evidence/archive/pcvnetupd-ws2-20260619a-private-cluster-vnet-integration-update.json.",
+        "last_worker_completed_at": "2026-06-19T12:43:13.547Z",
+        "last_worker_evidence": [
+          "evidence/archive/private-cluster-vnet-integration-update-westus2-local-execute-20260619.md",
+          "evidence/archive/pcvnetupd-ws2-20260619a-private-cluster-vnet-integration-update.json"
+        ],
+        "blocked_at": "2026-06-19T13:11:44Z",
+        "blocked_by": "aks-explorer",
+        "review_summary": "Leaf absorbed into blocked state after the westus2/local execute proved auth and environment setup, then failed later at baseline cluster creation with ARM LRO status Canceled rather than an auth or earlier setup blocker."
+      },
+      "blocker": "Blocked on baseline cluster-create runtime instability: westus2/local execution cleared Azure auth and environment setup, but the later baseline public-cluster create failed with an ARM long-running operation result of Canceled. Resume only after choosing a reviewed next step for whether this is transient capacity/runtime cancellation or a deterministic request/runtime issue."
+    },
+    "network-cni-swiftv1-static-block-westus2-local-execute-20260619": {
+      "id": "network-cni-swiftv1-static-block-westus2-local-execute-20260619",
+      "parent_id": "spec-runner-and-replays",
+      "state": "backlog",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Execute the exact staging replay surface preserved by network-cni-swiftv1-static-block-runtime-proof-live-execute-gated-20260617 using Azure auth via az CLI, AKS_RP_E2E_LOCATION=westus2, and --host=local now that the auth/environment gate has been cleared by 2026-06-19 human steering. Record real westus2 runner evidence or the exact remaining non-auth blocker.",
+      "inputs": [],
+      "outputs": [
+        "runs/executions/",
+        "evidence/archive/network-cni-swiftv1-static-block-westus2-local-execute-20260619.md"
+      ],
+      "acceptance": [
+        "Archive note cites predecessor network-cni-swiftv1-static-block-runtime-proof-live-execute-gated-20260617, the exact westus2 local command family (AKS_RP_E2E_LOCATION=westus2, --execute, --host=local, plus the same probe-specific mutation-allow contract already documented on the predecessor leaf), and the resulting runner artifact path or exact remaining blocker.",
+        "If execution reaches product assertions, record verdict-driving observations and cleanup state under runs/executions/ plus the archive note; otherwise capture the exact preflight/runtime failure and the next precise resume condition without reopening the cleared auth/environment gate."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "cloud:staging:network-cni-swiftv1-static-block-westus2-local-execute-20260619"
+      ],
+      "depends_on": [],
+      "context": {
+        "live_run_policy": "repeatable-approved",
+        "execution": {
+          "host": "local",
+          "location": "westus2"
+        },
+        "resumeFromTasks": [
+          "network-cni-swiftv1-static-block-runtime-proof-live-execute-gated-20260617"
+        ],
+        "trigger": "project.owner.requested 2026-06-19 auth working + westus2"
+      },
+      "trace": {
+        "created_at": "2026-06-19T11:54:16.906Z",
+        "created_by": "task-tree-tool"
+      }
+    },
+    "network-cni-host-routing-westus2-local-execute-20260619": {
+      "id": "network-cni-host-routing-westus2-local-execute-20260619",
+      "parent_id": "spec-runner-and-replays",
+      "state": "backlog",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Execute the exact staging replay surface preserved by network-cni-host-routing-runtime-proof-live-execute-gated-20260617 using Azure auth via az CLI, AKS_RP_E2E_LOCATION=westus2, and --host=local now that the auth/environment gate has been cleared by 2026-06-19 human steering. Record real westus2 runner evidence or the exact remaining non-auth blocker.",
+      "inputs": [],
+      "outputs": [
+        "runs/executions/",
+        "evidence/archive/network-cni-host-routing-westus2-local-execute-20260619.md"
+      ],
+      "acceptance": [
+        "Archive note cites predecessor network-cni-host-routing-runtime-proof-live-execute-gated-20260617, the exact westus2 local command family (AKS_RP_E2E_LOCATION=westus2, --execute, --host=local, plus the same probe-specific mutation-allow contract already documented on the predecessor leaf), and the resulting runner artifact path or exact remaining blocker.",
+        "If execution reaches product assertions, record verdict-driving observations and cleanup state under runs/executions/ plus the archive note; otherwise capture the exact preflight/runtime failure and the next precise resume condition without reopening the cleared auth/environment gate."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "cloud:staging:network-cni-host-routing-westus2-local-execute-20260619"
+      ],
+      "depends_on": [],
+      "context": {
+        "live_run_policy": "repeatable-approved",
+        "execution": {
+          "host": "local",
+          "location": "westus2"
+        },
+        "resumeFromTasks": [
+          "network-cni-host-routing-runtime-proof-live-execute-gated-20260617"
+        ],
+        "trigger": "project.owner.requested 2026-06-19 auth working + westus2"
+      },
+      "trace": {
+        "created_at": "2026-06-19T11:54:17.115Z",
+        "created_by": "task-tree-tool"
+      }
+    },
+    "network-swift-v2-overlay-smallshape-westus2-local-execute-20260619": {
+      "id": "network-swift-v2-overlay-smallshape-westus2-local-execute-20260619",
+      "parent_id": "spec-runner-and-replays",
+      "state": "backlog",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Execute the exact staging replay surface preserved by network-swift-v2-overlay-smallshape-live-rerun-gated-20260617 using Azure auth via az CLI, AKS_RP_E2E_LOCATION=westus2, and --host=local now that the auth/environment gate has been cleared by 2026-06-19 human steering. Record real westus2 runner evidence or the exact remaining non-auth blocker.",
+      "inputs": [],
+      "outputs": [
+        "runs/executions/",
+        "evidence/archive/network-swift-v2-overlay-smallshape-westus2-local-execute-20260619.md"
+      ],
+      "acceptance": [
+        "Archive note cites predecessor network-swift-v2-overlay-smallshape-live-rerun-gated-20260617, the exact westus2 local command family (AKS_RP_E2E_LOCATION=westus2, --execute, --host=local, plus the same probe-specific mutation-allow contract already documented on the predecessor leaf), and the resulting runner artifact path or exact remaining blocker.",
+        "If execution reaches product assertions, record verdict-driving observations and cleanup state under runs/executions/ plus the archive note; otherwise capture the exact preflight/runtime failure and the next precise resume condition without reopening the cleared auth/environment gate."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "cloud:staging:network-swift-v2-overlay-smallshape-westus2-local-execute-20260619"
+      ],
+      "depends_on": [],
+      "context": {
+        "live_run_policy": "repeatable-approved",
+        "execution": {
+          "host": "local",
+          "location": "westus2"
+        },
+        "resumeFromTasks": [
+          "network-swift-v2-overlay-smallshape-live-rerun-gated-20260617"
+        ],
+        "trigger": "project.owner.requested 2026-06-19 auth working + westus2"
+      },
+      "trace": {
+        "created_at": "2026-06-19T11:54:17.316Z",
+        "created_by": "task-tree-tool"
+      }
+    },
+    "network-swift-v2-scale-validation-smallshape-westus2-local-execute-20260619": {
+      "id": "network-swift-v2-scale-validation-smallshape-westus2-local-execute-20260619",
+      "parent_id": "spec-runner-and-replays",
+      "state": "backlog",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Execute the exact staging replay surface preserved by network-swift-v2-scale-validation-smallshape-live-rerun-gated-20260617 using Azure auth via az CLI, AKS_RP_E2E_LOCATION=westus2, and --host=local now that the auth/environment gate has been cleared by 2026-06-19 human steering. Record real westus2 runner evidence or the exact remaining non-auth blocker.",
+      "inputs": [],
+      "outputs": [
+        "runs/executions/",
+        "evidence/archive/network-swift-v2-scale-validation-smallshape-westus2-local-execute-20260619.md"
+      ],
+      "acceptance": [
+        "Archive note cites predecessor network-swift-v2-scale-validation-smallshape-live-rerun-gated-20260617, the exact westus2 local command family (AKS_RP_E2E_LOCATION=westus2, --execute, --host=local, plus the same probe-specific mutation-allow contract already documented on the predecessor leaf), and the resulting runner artifact path or exact remaining blocker.",
+        "If execution reaches product assertions, record verdict-driving observations and cleanup state under runs/executions/ plus the archive note; otherwise capture the exact preflight/runtime failure and the next precise resume condition without reopening the cleared auth/environment gate."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "cloud:staging:network-swift-v2-scale-validation-smallshape-westus2-local-execute-20260619"
+      ],
+      "depends_on": [],
+      "context": {
+        "live_run_policy": "repeatable-approved",
+        "execution": {
+          "host": "local",
+          "location": "westus2"
+        },
+        "resumeFromTasks": [
+          "network-swift-v2-scale-validation-smallshape-live-rerun-gated-20260617"
+        ],
+        "trigger": "project.owner.requested 2026-06-19 auth working + westus2"
+      },
+      "trace": {
+        "created_at": "2026-06-19T11:54:17.544Z",
+        "created_by": "task-tree-tool"
+      }
+    },
+    "network-swift-v2-multi-pool-subnet-smallshape-westus2-local-execute-20260619": {
+      "id": "network-swift-v2-multi-pool-subnet-smallshape-westus2-local-execute-20260619",
+      "parent_id": "spec-runner-and-replays",
+      "state": "backlog",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Execute the exact staging replay surface preserved by network-swift-v2-multi-pool-subnet-smallshape-live-rerun-gated-20260617 using Azure auth via az CLI, AKS_RP_E2E_LOCATION=westus2, and --host=local now that the auth/environment gate has been cleared by 2026-06-19 human steering. Record real westus2 runner evidence or the exact remaining non-auth blocker.",
+      "inputs": [],
+      "outputs": [
+        "runs/executions/",
+        "evidence/archive/network-swift-v2-multi-pool-subnet-smallshape-westus2-local-execute-20260619.md"
+      ],
+      "acceptance": [
+        "Archive note cites predecessor network-swift-v2-multi-pool-subnet-smallshape-live-rerun-gated-20260617, the exact westus2 local command family (AKS_RP_E2E_LOCATION=westus2, --execute, --host=local, plus the same probe-specific mutation-allow contract already documented on the predecessor leaf), and the resulting runner artifact path or exact remaining blocker.",
+        "If execution reaches product assertions, record verdict-driving observations and cleanup state under runs/executions/ plus the archive note; otherwise capture the exact preflight/runtime failure and the next precise resume condition without reopening the cleared auth/environment gate."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "cloud:staging:network-swift-v2-multi-pool-subnet-smallshape-westus2-local-execute-20260619"
+      ],
+      "depends_on": [],
+      "context": {
+        "live_run_policy": "repeatable-approved",
+        "execution": {
+          "host": "local",
+          "location": "westus2"
+        },
+        "resumeFromTasks": [
+          "network-swift-v2-multi-pool-subnet-smallshape-live-rerun-gated-20260617"
+        ],
+        "trigger": "project.owner.requested 2026-06-19 auth working + westus2"
+      },
+      "trace": {
+        "created_at": "2026-06-19T11:54:17.756Z",
+        "created_by": "task-tree-tool"
+      }
+    },
+    "network-acns-observability-base-proof-westus2-local-execute-20260619": {
+      "id": "network-acns-observability-base-proof-westus2-local-execute-20260619",
+      "parent_id": "spec-runner-and-replays",
+      "state": "backlog",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Execute the exact staging replay surface preserved by network-acns-observability-base-proof-live-execute-gated-20260617 using Azure auth via az CLI, AKS_RP_E2E_LOCATION=westus2, and --host=local now that the auth/environment gate has been cleared by 2026-06-19 human steering. Record real westus2 runner evidence or the exact remaining non-auth blocker.",
+      "inputs": [],
+      "outputs": [
+        "runs/executions/",
+        "evidence/archive/network-acns-observability-base-proof-westus2-local-execute-20260619.md"
+      ],
+      "acceptance": [
+        "Archive note cites predecessor network-acns-observability-base-proof-live-execute-gated-20260617, the exact westus2 local command family (AKS_RP_E2E_LOCATION=westus2, --execute, --host=local, plus the same probe-specific mutation-allow contract already documented on the predecessor leaf), and the resulting runner artifact path or exact remaining blocker.",
+        "If execution reaches product assertions, record verdict-driving observations and cleanup state under runs/executions/ plus the archive note; otherwise capture the exact preflight/runtime failure and the next precise resume condition without reopening the cleared auth/environment gate."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "cloud:staging:network-acns-observability-base-proof-westus2-local-execute-20260619"
+      ],
+      "depends_on": [],
+      "context": {
+        "live_run_policy": "repeatable-approved",
+        "execution": {
+          "host": "local",
+          "location": "westus2"
+        },
+        "resumeFromTasks": [
+          "network-acns-observability-base-proof-live-execute-gated-20260617"
+        ],
+        "trigger": "project.owner.requested 2026-06-19 auth working + westus2"
+      },
+      "trace": {
+        "created_at": "2026-06-19T11:54:17.960Z",
+        "created_by": "task-tree-tool"
+      }
+    },
+    "network-datapath-kube-proxy-iptables-westus2-local-execute-20260619": {
+      "id": "network-datapath-kube-proxy-iptables-westus2-local-execute-20260619",
+      "parent_id": "spec-runner-and-replays",
+      "state": "backlog",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Execute the exact staging replay surface preserved by network-datapath-kube-proxy-iptables-runtime-proof-live-execute-gated-20260617 using Azure auth via az CLI, AKS_RP_E2E_LOCATION=westus2, and --host=local now that the auth/environment gate has been cleared by 2026-06-19 human steering. Record real westus2 runner evidence or the exact remaining non-auth blocker.",
+      "inputs": [],
+      "outputs": [
+        "runs/executions/",
+        "evidence/archive/network-datapath-kube-proxy-iptables-westus2-local-execute-20260619.md"
+      ],
+      "acceptance": [
+        "Archive note cites predecessor network-datapath-kube-proxy-iptables-runtime-proof-live-execute-gated-20260617, the exact westus2 local command family (AKS_RP_E2E_LOCATION=westus2, --execute, --host=local, plus the same probe-specific mutation-allow contract already documented on the predecessor leaf), and the resulting runner artifact path or exact remaining blocker.",
+        "If execution reaches product assertions, record verdict-driving observations and cleanup state under runs/executions/ plus the archive note; otherwise capture the exact preflight/runtime failure and the next precise resume condition without reopening the cleared auth/environment gate."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "cloud:staging:network-datapath-kube-proxy-iptables-westus2-local-execute-20260619"
+      ],
+      "depends_on": [],
+      "context": {
+        "live_run_policy": "repeatable-approved",
+        "execution": {
+          "host": "local",
+          "location": "westus2"
+        },
+        "resumeFromTasks": [
+          "network-datapath-kube-proxy-iptables-runtime-proof-live-execute-gated-20260617"
+        ],
+        "trigger": "project.owner.requested 2026-06-19 auth working + westus2"
+      },
+      "trace": {
+        "created_at": "2026-06-19T11:54:18.150Z",
+        "created_by": "task-tree-tool"
+      }
+    },
+    "network-cni-swift-v2-pod-subnet-westus2-local-execute-20260619": {
+      "id": "network-cni-swift-v2-pod-subnet-westus2-local-execute-20260619",
+      "parent_id": "spec-runner-and-replays",
+      "state": "backlog",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Execute the exact staging replay surface preserved by network-cni-swift-v2-pod-subnet-live-rerun-capacity-gated-20260617 using Azure auth via az CLI, AKS_RP_E2E_LOCATION=westus2, and --host=local now that the auth/environment gate has been cleared by 2026-06-19 human steering. Record real westus2 runner evidence or the exact remaining non-auth blocker.",
+      "inputs": [],
+      "outputs": [
+        "runs/executions/",
+        "evidence/archive/network-cni-swift-v2-pod-subnet-westus2-local-execute-20260619.md"
+      ],
+      "acceptance": [
+        "Archive note cites predecessor network-cni-swift-v2-pod-subnet-live-rerun-capacity-gated-20260617, the exact westus2 local command family (AKS_RP_E2E_LOCATION=westus2, --execute, --host=local, plus the same probe-specific mutation-allow contract already documented on the predecessor leaf), and the resulting runner artifact path or exact remaining blocker.",
+        "If execution reaches product assertions, record verdict-driving observations and cleanup state under runs/executions/ plus the archive note; otherwise capture the exact preflight/runtime failure and the next precise resume condition without reopening the cleared auth/environment gate."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "cloud:staging:network-cni-swift-v2-pod-subnet-westus2-local-execute-20260619"
+      ],
+      "depends_on": [],
+      "context": {
+        "live_run_policy": "repeatable-approved",
+        "execution": {
+          "host": "local",
+          "location": "westus2"
+        },
+        "resumeFromTasks": [
+          "network-cni-swift-v2-pod-subnet-live-rerun-capacity-gated-20260617"
+        ],
+        "trigger": "project.owner.requested 2026-06-19 auth working + westus2"
+      },
+      "trace": {
+        "created_at": "2026-06-19T11:54:18.342Z",
+        "created_by": "task-tree-tool"
+      }
+    },
+    "network-cni-azure-overlay-westus2-local-execute-20260619": {
+      "id": "network-cni-azure-overlay-westus2-local-execute-20260619",
+      "parent_id": "spec-runner-and-replays",
+      "state": "backlog",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Execute the exact staging replay surface preserved by network-cni-azure-overlay-live-rerun-env-gated-20260617 using Azure auth via az CLI, AKS_RP_E2E_LOCATION=westus2, and --host=local now that the auth/environment gate has been cleared by 2026-06-19 human steering. Record real westus2 runner evidence or the exact remaining non-auth blocker.",
+      "inputs": [],
+      "outputs": [
+        "runs/executions/",
+        "evidence/archive/network-cni-azure-overlay-westus2-local-execute-20260619.md"
+      ],
+      "acceptance": [
+        "Archive note cites predecessor network-cni-azure-overlay-live-rerun-env-gated-20260617, the exact westus2 local command family (AKS_RP_E2E_LOCATION=westus2, --execute, --host=local, plus the same probe-specific mutation-allow contract already documented on the predecessor leaf), and the resulting runner artifact path or exact remaining blocker.",
+        "If execution reaches product assertions, record verdict-driving observations and cleanup state under runs/executions/ plus the archive note; otherwise capture the exact preflight/runtime failure and the next precise resume condition without reopening the cleared auth/environment gate."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "cloud:staging:network-cni-azure-overlay-westus2-local-execute-20260619"
+      ],
+      "depends_on": [],
+      "context": {
+        "live_run_policy": "repeatable-approved",
+        "execution": {
+          "host": "local",
+          "location": "westus2"
+        },
+        "resumeFromTasks": [
+          "network-cni-azure-overlay-live-rerun-env-gated-20260617"
+        ],
+        "trigger": "project.owner.requested 2026-06-19 auth working + westus2"
+      },
+      "trace": {
+        "created_at": "2026-06-19T11:54:18.540Z",
+        "created_by": "task-tree-tool"
+      }
+    },
+    "ccp-coredns-metrics-endpoint-westus2-local-execute-20260619": {
+      "id": "ccp-coredns-metrics-endpoint-westus2-local-execute-20260619",
+      "parent_id": "spec-runner-and-replays",
+      "state": "backlog",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Execute the exact staging replay surface preserved by ccp-coredns-metrics-endpoint-live-execute-gated-20260617 using Azure auth via az CLI, AKS_RP_E2E_LOCATION=westus2, and --host=local now that the auth/environment gate has been cleared by 2026-06-19 human steering. Record real westus2 runner evidence or the exact remaining non-auth blocker.",
+      "inputs": [],
+      "outputs": [
+        "runs/executions/",
+        "evidence/archive/ccp-coredns-metrics-endpoint-westus2-local-execute-20260619.md"
+      ],
+      "acceptance": [
+        "Archive note cites predecessor ccp-coredns-metrics-endpoint-live-execute-gated-20260617, the exact westus2 local command family (AKS_RP_E2E_LOCATION=westus2, --execute, --host=local, plus the same probe-specific mutation-allow contract already documented on the predecessor leaf), and the resulting runner artifact path or exact remaining blocker.",
+        "If execution reaches product assertions, record verdict-driving observations and cleanup state under runs/executions/ plus the archive note; otherwise capture the exact preflight/runtime failure and the next precise resume condition without reopening the cleared auth/environment gate."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "cloud:staging:ccp-coredns-metrics-endpoint-westus2-local-execute-20260619"
+      ],
+      "depends_on": [],
+      "context": {
+        "live_run_policy": "repeatable-approved",
+        "execution": {
+          "host": "local",
+          "location": "westus2"
+        },
+        "resumeFromTasks": [
+          "ccp-coredns-metrics-endpoint-live-execute-gated-20260617"
+        ],
+        "trigger": "project.owner.requested 2026-06-19 auth working + westus2"
+      },
+      "trace": {
+        "created_at": "2026-06-19T11:54:18.746Z",
+        "created_by": "task-tree-tool"
+      }
+    },
+    "network-cni-service-connectivity-westus2-local-execute-20260619": {
+      "id": "network-cni-service-connectivity-westus2-local-execute-20260619",
+      "parent_id": "spec-runner-and-replays",
+      "state": "backlog",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Execute the exact staging replay surface preserved by network-cni-service-connectivity-runtime-proof-live-execute-gated-20260617 using Azure auth via az CLI, AKS_RP_E2E_LOCATION=westus2, and --host=local now that the auth/environment gate has been cleared by 2026-06-19 human steering. Record real westus2 runner evidence or the exact remaining non-auth blocker.",
+      "inputs": [],
+      "outputs": [
+        "runs/executions/",
+        "evidence/archive/network-cni-service-connectivity-westus2-local-execute-20260619.md"
+      ],
+      "acceptance": [
+        "Archive note cites predecessor network-cni-service-connectivity-runtime-proof-live-execute-gated-20260617, the exact westus2 local command family (AKS_RP_E2E_LOCATION=westus2, --execute, --host=local, plus the same probe-specific mutation-allow contract already documented on the predecessor leaf), and the resulting runner artifact path or exact remaining blocker.",
+        "If execution reaches product assertions, record verdict-driving observations and cleanup state under runs/executions/ plus the archive note; otherwise capture the exact preflight/runtime failure and the next precise resume condition without reopening the cleared auth/environment gate."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "cloud:staging:network-cni-service-connectivity-westus2-local-execute-20260619"
+      ],
+      "depends_on": [],
+      "context": {
+        "live_run_policy": "repeatable-approved",
+        "execution": {
+          "host": "local",
+          "location": "westus2"
+        },
+        "resumeFromTasks": [
+          "network-cni-service-connectivity-runtime-proof-live-execute-gated-20260617"
+        ],
+        "trigger": "project.owner.requested 2026-06-19 auth working + westus2"
+      },
+      "trace": {
+        "created_at": "2026-06-19T11:54:18.935Z",
+        "created_by": "task-tree-tool"
+      }
+    },
+    "cloud-provider-multiple-slb-westus2-local-execute-20260619": {
+      "id": "cloud-provider-multiple-slb-westus2-local-execute-20260619",
+      "parent_id": "spec-runner-and-replays",
+      "state": "blocked",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Execute the exact staging replay surface preserved by cloud-provider-multiple-slb-eastus2-deserializer-propagation-unblock-20260617 using Azure auth via az CLI, AKS_RP_E2E_LOCATION=westus2, and --host=local now that the auth/environment gate has been cleared by 2026-06-19 human steering. Record real westus2 runner evidence or the exact remaining non-auth blocker.",
+      "inputs": [],
+      "outputs": [
+        "runs/executions/",
+        "evidence/archive/cloud-provider-multiple-slb-westus2-local-execute-20260619.md"
+      ],
+      "acceptance": [
+        "Archive note cites predecessor cloud-provider-multiple-slb-eastus2-deserializer-propagation-unblock-20260617, the exact westus2 local command family (AKS_RP_E2E_LOCATION=westus2, --execute, --host=local, plus the same probe-specific mutation-allow contract already documented on the predecessor leaf), and the resulting runner artifact path or exact remaining blocker.",
+        "If execution reaches product assertions, record verdict-driving observations and cleanup state under runs/executions/ plus the archive note; otherwise capture the exact preflight/runtime failure and the next precise resume condition without reopening the cleared auth/environment gate."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "cloud:staging:cloud-provider-multiple-slb-westus2-local-execute-20260619"
+      ],
+      "depends_on": [],
+      "blocker": "Blocked on environment preview/RP surface availability: with westus2 local auth and mutation gate confirmed, the replay still fails before product assertions with ARM HTTP 400 `UnmarshalError` because the managed cluster request rejects `multipleStandardLoadBalancerConfigurations` as an unknown field. Resume only when the subscription/RP path actually accepts that field for the replayed API surface, or when the request shape is intentionally revised with the same feature intent preserved.",
+      "context": {
+        "live_run_policy": "repeatable-approved",
+        "execution": {
+          "host": "local",
+          "location": "westus2"
+        },
+        "resumeFromTasks": [
+          "cloud-provider-multiple-slb-eastus2-deserializer-propagation-unblock-20260617"
+        ],
+        "trigger": "project.owner.requested 2026-06-19 auth working + westus2",
+        "latestEvidence": "evidence/archive/cloud-provider-multiple-slb-westus2-local-execute-20260619.md",
+        "latestRunnerArtifact": "evidence/archive/cpmslb-ws2-20260619a-cloud-provider-multiple-slb.json",
+        "resumeCondition": "Retry only when the subscription/RP path now accepts `multipleStandardLoadBalancerConfigurations` for the replayed API surface, or after an intentional request-shape change that preserves the feature contract.",
+        "observedBlockerPhase": "setup.cluster-create-arm-schema-deserialize"
+      },
+      "trace": {
+        "created_at": "2026-06-19T11:54:19.131Z",
+        "created_by": "task-tree-tool",
+        "last_worker_result": "blocked",
+        "last_worker_claim": "blocked",
+        "last_worker_summary": "Real westus2/local execute succeeded through auth/gate and reproduced ARM HTTP 400 UnmarshalError on multipleStandardLoadBalancerConfigurations; see evidence/archive/cloud-provider-multiple-slb-westus2-local-execute-20260619.md and evidence/archive/cpmslb-ws2-20260619a-cloud-provider-multiple-slb.json.",
+        "last_worker_completed_at": "2026-06-19T12:43:13.361Z",
+        "last_worker_evidence": [
+          "evidence/archive/cloud-provider-multiple-slb-westus2-local-execute-20260619.md",
+          "evidence/archive/cpmslb-ws2-20260619a-cloud-provider-multiple-slb.json"
+        ],
+        "blocked_at": "2026-06-19T13:05:00.000Z",
+        "blocked_by": "aks-explorer",
+        "review_summary": "Leaf absorbed into blocked state after the westus2/local execute confirmed auth and gate health but reproduced the same ARM deserializer rejection for `multipleStandardLoadBalancerConfigurations` before product assertions."
+      }
+    },
+    "row82-restfirst-bounded-westus2-local-execute-20260619": {
+      "id": "row82-restfirst-bounded-westus2-local-execute-20260619",
+      "parent_id": "spec-runner-and-replays",
+      "state": "backlog",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Execute the exact staging replay surface preserved by row82-restfirst-bounded-live-execute-gated-20260618 using Azure auth via az CLI, AKS_RP_E2E_LOCATION=westus2, and --host=local now that the auth/environment gate has been cleared by 2026-06-19 human steering. Record real westus2 runner evidence or the exact remaining non-auth blocker.",
+      "inputs": [],
+      "outputs": [
+        "runs/executions/",
+        "evidence/archive/row82-restfirst-bounded-westus2-local-execute-20260619.md"
+      ],
+      "acceptance": [
+        "Archive note cites predecessor row82-restfirst-bounded-live-execute-gated-20260618, the exact westus2 local command family (AKS_RP_E2E_LOCATION=westus2, --execute, --host=local, plus the same probe-specific mutation-allow contract already documented on the predecessor leaf), and the resulting runner artifact path or exact remaining blocker.",
+        "If execution reaches product assertions, record verdict-driving observations and cleanup state under runs/executions/ plus the archive note; otherwise capture the exact preflight/runtime failure and the next precise resume condition without reopening the cleared auth/environment gate."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "cloud:staging:row82-restfirst-bounded-westus2-local-execute-20260619"
+      ],
+      "depends_on": [],
+      "context": {
+        "live_run_policy": "repeatable-approved",
+        "execution": {
+          "host": "local",
+          "location": "westus2"
+        },
+        "resumeFromTasks": [
+          "row82-restfirst-bounded-live-execute-gated-20260618"
+        ],
+        "trigger": "project.owner.requested 2026-06-19 auth working + westus2"
+      },
+      "trace": {
+        "created_at": "2026-06-19T11:54:19.326Z",
+        "created_by": "task-tree-tool"
+      }
+    },
+    "app-routing-vm-prerelease-default-internal-westus2-local-execute-20260619": {
+      "id": "app-routing-vm-prerelease-default-internal-westus2-local-execute-20260619",
+      "parent_id": "spec-runner-and-replays",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Execute the exact staging replay surface preserved by vm-prerelease-default-internal-bounded-live-execute-gated-20260618 + app-routing-vm-prerelease-default-internal-nginx-internal-private-live-execute-gated-20260618 using Azure auth via az CLI, AKS_RP_E2E_LOCATION=westus2, and --host=local now that the auth/environment gate has been cleared by 2026-06-19 human steering. Record real westus2 runner evidence or the exact remaining non-auth blocker.",
+      "inputs": [],
+      "outputs": [
+        "runs/executions/",
+        "evidence/archive/app-routing-vm-prerelease-default-internal-westus2-local-execute-20260619.md"
+      ],
+      "acceptance": [
+        "Archive note cites predecessor vm-prerelease-default-internal-bounded-live-execute-gated-20260618, app-routing-vm-prerelease-default-internal-nginx-internal-private-live-execute-gated-20260618, the exact westus2 local command family (AKS_RP_E2E_LOCATION=westus2, --execute, --host=local, plus the same probe-specific mutation-allow contract already documented on the predecessor leaf), and the resulting runner artifact path or exact remaining blocker.",
+        "If execution reaches product assertions, record verdict-driving observations and cleanup state under runs/executions/ plus the archive note; otherwise capture the exact preflight/runtime failure and the next precise resume condition without reopening the cleared auth/environment gate."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "cloud:staging:app-routing-vm-prerelease-default-internal-westus2-local-execute-20260619"
+      ],
+      "depends_on": [],
+      "context": {
+        "live_run_policy": "repeatable-approved",
+        "execution": {
+          "host": "local",
+          "location": "westus2"
+        },
+        "resumeFromTasks": [
+          "vm-prerelease-default-internal-bounded-live-execute-gated-20260618",
+          "app-routing-vm-prerelease-default-internal-nginx-internal-private-live-execute-gated-20260618"
+        ],
+        "trigger": "project.owner.requested 2026-06-19 auth working + westus2",
+        "acceptance_note": "Accepted review: the westus2/local bounded execute for path.app-routing.default.internal-nginx.internal-private passed. ARM readback preserved webAppRouting.enabled=true, defaultIngressControllerType=Internal, and a VirtualMachines default pool, and cleanup was verified. This closes the exact row-80 bounded execute contract."
+      },
+      "trace": {
+        "created_at": "2026-06-19T11:54:19.528Z",
+        "created_by": "task-tree-tool",
+        "promoted_at": "2026-06-19T12:29:26.376Z",
+        "promoted_by": "task-tree-tool",
+        "current_attempt_id": "a_app-routing-vm-prerelease-default-internal-westus2-local-execute-20260619_20260619123958",
+        "assigned_at": "2026-06-19T12:39:58.096Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_app-routing-vm-prerelease-default-internal-westus2-local-execute-20260619",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Real westus2/local bounded execute produced a product pass for path.app-routing.default.internal-nginx.internal-private: managed cluster create succeeded, ARM readback preserved webAppRouting.enabled=true and defaultIngressControllerType=Internal with a VirtualMachines default pool, and cleanup was verified.",
+        "last_worker_completed_at": "2026-06-19T13:24:05Z",
+        "last_worker_evidence": [
+          "evidence/archive/app-routing-vm-prerelease-default-internal-westus2-local-execute-20260619.md",
+          "evidence/archive/app-routing-vm-prerelease-default-internal-westus2-local-execute-20260619-app-routing-vm-prerelease-default-internal-nginx-internal-private.json"
+        ],
+        "reviewed_at": "2026-06-19T13:24:05Z",
+        "reviewed_by": "aks-explorer",
+        "review_summary": "Accepted review: the westus2/local bounded execute for path.app-routing.default.internal-nginx.internal-private passed. ARM readback preserved webAppRouting.enabled=true, defaultIngressControllerType=Internal, and a VirtualMachines default pool, and cleanup was verified. This closes the exact row-80 bounded execute contract."
+      },
+      "session_id": "s_task_app-routing-vm-prerelease-default-internal-westus2-local-execute-20260619",
+      "session_history": [
+        "s_task_app-routing-vm-prerelease-default-internal-westus2-local-execute-20260619"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-19T13:24:05Z",
+      "done_by": "aks-explorer"
+    },
+    "machines-agentpool-api-crud-westus2-local-execute-20260619": {
+      "id": "machines-agentpool-api-crud-westus2-local-execute-20260619",
+      "parent_id": "spec-runner-and-replays",
+      "state": "backlog",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Execute",
+      "inputs": [],
+      "outputs": [
+        "evidence/archive/machines-agentpool-api-crud-westus2-local-execute-20260619.md"
+      ],
+      "acceptance": [
+        "Archive note cites the exact westus2 local command family (AKS_RP_E2E_LOCATION=westus2, --execute, --host=local, plus the replay-specific mutation gate) and the resulting runner artifact path or exact remaining blocker.",
+        "If execution reaches product assertions, record verdict-driving observations and cleanup state under runs/executions/ plus the archive note; otherwise capture the exact preflight/runtime failure and the next precise resume condition without reopening the cleared auth/environment gate."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "cloud:staging:machines-agentpool-api-crud-westus2-local-execute-20260619"
+      ],
+      "depends_on": [],
+      "context": {
+        "live_run_policy": "repeatable-approved",
+        "execution": {
+          "host": "local",
+          "location": "westus2"
+        },
+        "model_path_ids": [
+          "path.machines-agentpool-api-crud.machine-crud-blocked"
+        ],
+        "trigger": "project.owner.requested 2026-06-19 auth working + westus2"
+      },
+      "trace": {
+        "created_at": "2026-06-19T12:21:46.906Z",
+        "created_by": "task-tree-tool"
+      }
+    },
+    "kms-v2-managed-hsm-westus2-local-execute-20260619": {
+      "id": "kms-v2-managed-hsm-westus2-local-execute-20260619",
+      "parent_id": "spec-runner-and-replays",
+      "state": "backlog",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Execute",
+      "inputs": [],
+      "outputs": [
+        "evidence/archive/kms-v2-managed-hsm-westus2-local-execute-20260619.md"
+      ],
+      "acceptance": [
+        "Archive note cites the exact westus2 local command family (AKS_RP_E2E_LOCATION=westus2, --execute, --host=local, plus the replay-specific mutation gate) and the resulting runner artifact path or exact remaining blocker.",
+        "If execution reaches product assertions, record verdict-driving observations and cleanup state under runs/executions/ plus the archive note; otherwise capture the exact preflight/runtime failure and the next precise resume condition without reopening the cleared auth/environment gate."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "cloud:staging:kms-v2-managed-hsm-westus2-local-execute-20260619"
+      ],
+      "depends_on": [],
+      "context": {
+        "live_run_policy": "repeatable-approved",
+        "execution": {
+          "host": "local",
+          "location": "westus2"
+        },
+        "model_path_ids": [
+          "path.kms.v2-managed-hsm"
+        ],
+        "trigger": "project.owner.requested 2026-06-19 auth working + westus2"
+      },
+      "trace": {
+        "created_at": "2026-06-19T12:21:47.119Z",
+        "created_by": "task-tree-tool"
+      }
+    },
+    "planned-maintenance-security-patch-prod-mtc-open-now-westus2-local-execute-20260619": {
+      "id": "planned-maintenance-security-patch-prod-mtc-open-now-westus2-local-execute-20260619",
+      "parent_id": "spec-runner-and-replays",
+      "state": "backlog",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Execute",
+      "inputs": [],
+      "outputs": [
+        "evidence/archive/planned-maintenance-security-patch-prod-mtc-open-now-westus2-local-execute-20260619.md"
+      ],
+      "acceptance": [
+        "Archive note cites the exact westus2 local command family (AKS_RP_E2E_LOCATION=westus2, --execute, --host=local, plus the replay-specific mutation gate) and the resulting runner artifact path or exact remaining blocker.",
+        "If execution reaches product assertions, record verdict-driving observations and cleanup state under runs/executions/ plus the archive note; otherwise capture the exact preflight/runtime failure and the next precise resume condition without reopening the cleared auth/environment gate."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "cloud:staging:planned-maintenance-security-patch-prod-mtc-open-now-westus2-local-execute-20260619"
+      ],
+      "depends_on": [],
+      "context": {
+        "live_run_policy": "repeatable-approved",
+        "execution": {
+          "host": "local",
+          "location": "westus2"
+        },
+        "model_path_ids": [
+          "path.planned-maintenance.security-patch-prod-mtc-open-now"
+        ],
+        "trigger": "project.owner.requested 2026-06-19 auth working + westus2"
+      },
+      "trace": {
+        "created_at": "2026-06-19T12:21:47.312Z",
+        "created_by": "task-tree-tool"
+      }
+    },
+    "trusted-access-dataplane-token-gateway-westus2-local-execute-20260619": {
+      "id": "trusted-access-dataplane-token-gateway-westus2-local-execute-20260619",
+      "parent_id": "spec-runner-and-replays",
+      "state": "backlog",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Execute",
+      "inputs": [],
+      "outputs": [
+        "evidence/archive/trusted-access-dataplane-token-gateway-westus2-local-execute-20260619.md"
+      ],
+      "acceptance": [
+        "Archive note cites the exact westus2 local command family (AKS_RP_E2E_LOCATION=westus2, --execute, --host=local, plus the replay-specific mutation gate) and the resulting runner artifact path or exact remaining blocker.",
+        "If execution reaches product assertions, record verdict-driving observations and cleanup state under runs/executions/ plus the archive note; otherwise capture the exact preflight/runtime failure and the next precise resume condition without reopening the cleared auth/environment gate."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "cloud:staging:trusted-access-dataplane-token-gateway-westus2-local-execute-20260619"
+      ],
+      "depends_on": [],
+      "context": {
+        "live_run_policy": "repeatable-approved",
+        "execution": {
+          "host": "local",
+          "location": "westus2"
+        },
+        "model_path_ids": [
+          "path.trusted-access.dataplane-token-gateway",
+          "path.trusted-access.dataplane-token-gateway.msi-token-access"
+        ],
+        "trigger": "project.owner.requested 2026-06-19 auth working + westus2"
+      },
+      "trace": {
+        "created_at": "2026-06-19T12:21:47.503Z",
+        "created_by": "task-tree-tool"
+      }
+    },
+    "kms-v2plus-managed-hsm-westus2-local-execute-20260619": {
+      "id": "kms-v2plus-managed-hsm-westus2-local-execute-20260619",
+      "parent_id": "spec-runner-and-replays",
+      "state": "backlog",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Execute",
+      "inputs": [],
+      "outputs": [
+        "evidence/archive/kms-v2plus-managed-hsm-westus2-local-execute-20260619.md"
+      ],
+      "acceptance": [
+        "Archive note cites the exact westus2 local command family (AKS_RP_E2E_LOCATION=westus2, --execute, --host=local, plus the replay-specific mutation gate) and the resulting runner artifact path or exact remaining blocker.",
+        "If execution reaches product assertions, record verdict-driving observations and cleanup state under runs/executions/ plus the archive note; otherwise capture the exact preflight/runtime failure and the next precise resume condition without reopening the cleared auth/environment gate."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "cloud:staging:kms-v2plus-managed-hsm-westus2-local-execute-20260619"
+      ],
+      "depends_on": [],
+      "context": {
+        "live_run_policy": "repeatable-approved",
+        "execution": {
+          "host": "local",
+          "location": "westus2"
+        },
+        "model_path_ids": [
+          "path.kms.v2plus-managed-hsm"
+        ],
+        "trigger": "project.owner.requested 2026-06-19 auth working + westus2"
+      },
+      "trace": {
+        "created_at": "2026-06-19T12:21:47.704Z",
+        "created_by": "task-tree-tool"
+      }
+    },
+    "ccp-security-patch-azurelinux-westus2-local-execute-20260619": {
+      "id": "ccp-security-patch-azurelinux-westus2-local-execute-20260619",
+      "parent_id": "spec-runner-and-replays",
+      "state": "backlog",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Execute",
+      "inputs": [],
+      "outputs": [
+        "evidence/archive/ccp-security-patch-azurelinux-westus2-local-execute-20260619.md"
+      ],
+      "acceptance": [
+        "Archive note cites the exact westus2 local command family (AKS_RP_E2E_LOCATION=westus2, --execute, --host=local, plus the replay-specific mutation gate) and the resulting runner artifact path or exact remaining blocker.",
+        "If execution reaches product assertions, record verdict-driving observations and cleanup state under runs/executions/ plus the archive note; otherwise capture the exact preflight/runtime failure and the next precise resume condition without reopening the cleared auth/environment gate."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "cloud:staging:ccp-security-patch-azurelinux-westus2-local-execute-20260619"
+      ],
+      "depends_on": [],
+      "context": {
+        "live_run_policy": "repeatable-approved",
+        "execution": {
+          "host": "local",
+          "location": "westus2"
+        },
+        "model_path_ids": [
+          "path.ccp-security-patch.azurelinux"
+        ],
+        "trigger": "project.owner.requested 2026-06-19 auth working + westus2"
+      },
+      "trace": {
+        "created_at": "2026-06-19T12:21:47.909Z",
+        "created_by": "task-tree-tool"
+      }
+    },
+    "ccp-vpa-os-arch-variant-matrix-westus2-local-execute-20260619": {
+      "id": "ccp-vpa-os-arch-variant-matrix-westus2-local-execute-20260619",
+      "parent_id": "spec-runner-and-replays",
+      "state": "backlog",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Execute",
+      "inputs": [],
+      "outputs": [
+        "evidence/archive/ccp-vpa-os-arch-variant-matrix-westus2-local-execute-20260619.md"
+      ],
+      "acceptance": [
+        "Archive note cites the exact westus2 local command family (AKS_RP_E2E_LOCATION=westus2, --execute, --host=local, plus the replay-specific mutation gate) and the resulting runner artifact path or exact remaining blocker.",
+        "If execution reaches product assertions, record verdict-driving observations and cleanup state under runs/executions/ plus the archive note; otherwise capture the exact preflight/runtime failure and the next precise resume condition without reopening the cleared auth/environment gate."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "cloud:staging:ccp-vpa-os-arch-variant-matrix-westus2-local-execute-20260619"
+      ],
+      "depends_on": [],
+      "context": {
+        "live_run_policy": "repeatable-approved",
+        "execution": {
+          "host": "local",
+          "location": "westus2"
+        },
+        "model_path_ids": [
+          "path.ccp-vpa.os-arch-variant-matrix"
+        ],
+        "trigger": "project.owner.requested 2026-06-19 auth working + westus2"
+      },
+      "trace": {
+        "created_at": "2026-06-19T12:21:48.093Z",
+        "created_by": "task-tree-tool"
+      }
+    },
+    "net-integration-cross-subscription-vnet-westus2-local-execute-20260619": {
+      "id": "net-integration-cross-subscription-vnet-westus2-local-execute-20260619",
+      "parent_id": "spec-runner-and-replays",
+      "state": "backlog",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Execute",
+      "inputs": [],
+      "outputs": [
+        "evidence/archive/net-integration-cross-subscription-vnet-westus2-local-execute-20260619.md"
+      ],
+      "acceptance": [
+        "Archive note cites the exact westus2 local command family (AKS_RP_E2E_LOCATION=westus2, --execute, --host=local, plus the replay-specific mutation gate) and the resulting runner artifact path or exact remaining blocker.",
+        "If execution reaches product assertions, record verdict-driving observations and cleanup state under runs/executions/ plus the archive note; otherwise capture the exact preflight/runtime failure and the next precise resume condition without reopening the cleared auth/environment gate."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "cloud:staging:net-integration-cross-subscription-vnet-westus2-local-execute-20260619"
+      ],
+      "depends_on": [],
+      "context": {
+        "live_run_policy": "repeatable-approved",
+        "execution": {
+          "host": "local",
+          "location": "westus2"
+        },
+        "model_path_ids": [
+          "path.net-integration.cross-subscription-vnet"
+        ],
+        "trigger": "project.owner.requested 2026-06-19 auth working + westus2"
+      },
+      "trace": {
+        "created_at": "2026-06-19T12:21:48.290Z",
+        "created_by": "task-tree-tool"
+      }
+    },
+    "localdns-cluster-topology-westus2-local-execute-20260619": {
+      "id": "localdns-cluster-topology-westus2-local-execute-20260619",
+      "parent_id": "spec-runner-and-replays",
+      "state": "backlog",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Execute",
+      "inputs": [],
+      "outputs": [
+        "evidence/archive/localdns-cluster-topology-westus2-local-execute-20260619.md"
+      ],
+      "acceptance": [
+        "Archive note cites the exact westus2 local command family (AKS_RP_E2E_LOCATION=westus2, --execute, --host=local, plus the replay-specific mutation gate) and the resulting runner artifact path or exact remaining blocker.",
+        "If execution reaches product assertions, record verdict-driving observations and cleanup state under runs/executions/ plus the archive note; otherwise capture the exact preflight/runtime failure and the next precise resume condition without reopening the cleared auth/environment gate."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "cloud:staging:localdns-cluster-topology-westus2-local-execute-20260619"
+      ],
+      "depends_on": [],
+      "context": {
+        "live_run_policy": "repeatable-approved",
+        "execution": {
+          "host": "local",
+          "location": "westus2"
+        },
+        "model_path_ids": [
+          "path.localdns.apiserver-vnet-integration",
+          "path.localdns.network-isolated"
+        ],
+        "trigger": "project.owner.requested 2026-06-19 auth working + westus2"
+      },
+      "trace": {
+        "created_at": "2026-06-19T12:21:48.464Z",
+        "created_by": "task-tree-tool"
+      }
+    },
+    "aad-rbac-managed-v2-reset-preview-bodyful-westus2-local-execute-20260619": {
+      "id": "aad-rbac-managed-v2-reset-preview-bodyful-westus2-local-execute-20260619",
+      "parent_id": "spec-runner-and-replays",
+      "state": "backlog",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Execute the already-modeled next discriminating managed-v2 ResetAAD replay branch on westus2/local by keeping api-version=2025-04-02-preview but switching ResetAADProfile to the full aadProfile request body (--reset-aad-body-mode=bodyful). Use Azure auth via az CLI plus the existing mutation gate to record whether preview-bodyful succeeds or the exact remaining product/runtime blocker.",
+      "inputs": [],
+      "outputs": [
+        "runs/executions/",
+        "evidence/archive/aad-rbac-managed-v2-reset-preview-bodyful-westus2-local-execute-20260619.md"
+      ],
+      "acceptance": [
+        "Archive note cites predecessor aad-rbac-managed-v2-reset-stable-empty-westus2-local-execute-20260619, the exact westus2/local command family (AKS_RP_E2E_LOCATION=westus2, --execute, --host=local, AKS_RP_E2E_ALLOW_CLOUD_MUTATION=aad-rbac-managed-v2-lifecycle, and --reset-aad-body-mode=bodyful on api-version 2025-04-02-preview), and the resulting runner artifact path or exact remaining blocker.",
+        "If execution reaches product assertions, record whether ResetAADProfile succeeds under the preview-bodyful caller contract together with cleanup state; otherwise capture the exact preflight/runtime failure and the next precise resume condition without reopening the cleared AAD env gate."
+      ],
+      "forbidden": [],
+      "conflict_scope": [],
+      "depends_on": [],
+      "context": {
+        "live_run_policy": "repeatable-approved",
+        "mutation_allow": "aad-rbac-managed-v2-lifecycle",
+        "execution": {
+          "host": "local",
+          "location": "westus2"
+        },
+        "resumeFromTasks": [
+          "aad-rbac-managed-v2-reset-stable-empty-westus2-local-execute-20260619"
+        ],
+        "trigger": "owner review promoted preview-bodyful after stable-empty product-gap confirmation"
+      },
+      "trace": {
+        "created_at": "2026-06-19T13:39:12.170Z",
+        "created_by": "task-tree-tool"
+      }
     }
   },
-  "active_task_ids": [
-    "dirty-worktree-checkpoint-frontier-after-multiple-slb-handoff-20260619"
-  ],
+  "active_task_ids": [],
   "archive": {
     "kms-v2-managed-hsm-staging-20260611": {
       "goal": "Execute KMS v2 Managed HSM replay against staging.",

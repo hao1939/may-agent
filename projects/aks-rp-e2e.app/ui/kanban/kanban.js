@@ -1220,7 +1220,7 @@ function renderDetail() {
         ${task.claimed_by ? `<div>Claimed by: ${esc(task.claimed_by)}</div>` : ""}
         ${task.lease_expires_at ? `<div>Lease expires: ${esc(task.lease_expires_at)}</div>` : ""}
         ${task.session_id ? `<div>Session: ${esc(task.session_id)}</div>` : ""}
-        ${task.conflict_scope?.length ? `<div>Conflict scope: ${esc(task.conflict_scope.join(", "))}</div>` : ""}
+        ${task.conflict_scope?.length ? `<div>Conflict scope: ${esc(Array.isArray(task.conflict_scope) ? task.conflict_scope.join(", ") : String(task.conflict_scope))}</div>` : ""}
       </div>
     </div>
     <div class="detail-section steer-box">
