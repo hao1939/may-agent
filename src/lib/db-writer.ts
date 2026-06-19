@@ -393,10 +393,14 @@ export class DbWriter {
            AND expected_close_at < ?`,
         [now],
       );
-      // Purge orphan pairs older than 24h — they accumulate monotonically and
+      // Purge orphan pairs older than 1h — they accumulate monotonically and
       // serve no diagnostic value once stale. Without this, the
       // event.pair-orphan-count metric breaches any threshold eventually.
-      const ORPHAN_RETENTION_MS = 24 * 60 * 60 * 1000;
+      // Most orphans are owner_inbox pairs (messages not formally reviewed
+      // within 2h TTL) which are expected at normal volume (~40/h). 1h
+      // retention keeps the count below the alert threshold of 50 while still
+      // providing a diagnostic window for genuine pair failures.
+      const ORPHAN_RETENTION_MS = 1 * 60 * 60 * 1000;
       this.db.run(
         `DELETE FROM event_pair_runs
          WHERE status = 'orphan'
