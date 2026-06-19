@@ -1,28 +1,28 @@
 {
   "version": 1,
-  "generated_at": "2026-06-19T06:48:03.132Z",
-  "tree_updated_at": "2026-06-19T06:48:03.038Z",
+  "generated_at": "2026-06-19T06:48:18.351Z",
+  "tree_updated_at": "2026-06-19T06:48:18.263Z",
   "kanban": {
     "total_cards": 2164,
     "tree_total": 2207,
     "tree_status_counts": {
-      "active": 4,
+      "active": 3,
       "blocked": 67,
       "done": 2124,
       "backlog": 9,
-      "review": 3
+      "review": 4
     },
     "status_counts": {
       "done": 2090,
       "backlog": 9,
       "blocked": 60,
-      "active": 2,
-      "review": 3
+      "active": 1,
+      "review": 4
     },
     "column_counts": {
       "backlog": 9,
-      "in-progress": 2,
-      "review": 7,
+      "in-progress": 1,
+      "review": 8,
       "blocked": 56,
       "done": 2090
     },
@@ -39,8 +39,7 @@
         "vm-prerelease-autoscaling-base-checkpoint-ownership-reconcile-20260619"
       ],
       "in-progress": [
-        "ccp-security-patch-os-variants-root-packet-canonical-owner-20260619",
-        "vm-prerelease-autoscaling-profile-matrix-checkpoint-ownership-retry-20260619"
+        "ccp-security-patch-os-variants-root-packet-canonical-owner-20260619"
       ],
       "review": [
         "feature-packet-batch-3-exact-output-metadata-repair-20260619",
@@ -48,6 +47,7 @@
         "network-swift-v2-scale-validation-smallshape-live-rerun-gated-20260617",
         "trusted-access-dataplane-token-gateway-runtime-unblock-20260617",
         "vm-prerelease-autoscaling-profile-matrix-checkpoint-ownership-reconcile-20260619",
+        "vm-prerelease-autoscaling-profile-matrix-checkpoint-ownership-retry-20260619",
         "vm-prerelease-policy-addon-pubsub-spec-implementation-20260617",
         "vm-prerelease-virtual-node-addon-source-unblock-20260617"
       ],

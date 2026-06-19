@@ -1,7 +1,7 @@
 {
   "version": 2,
   "project": "aks-rp-e2e",
-  "updated_at": "2026-06-19T06:48:03.038Z",
+  "updated_at": "2026-06-19T06:48:18.263Z",
   "project_lifecycle": "active",
   "root_task_id": "project",
   "active_task_id": "ccp-security-patch-os-variants-root-packet-canonical-owner-20260619",
@@ -121560,7 +121560,7 @@
     "vm-prerelease-autoscaling-profile-matrix-checkpoint-ownership-retry-20260619": {
       "id": "vm-prerelease-autoscaling-profile-matrix-checkpoint-ownership-retry-20260619",
       "parent_id": "feature-knowledge-and-specs",
-      "state": "active",
+      "state": "review",
       "kind": "domain_leaf",
       "priority": "P2",
       "owner": "aks-explorer",
@@ -121592,7 +121592,12 @@
         "assigned_worker": "aks-explorer",
         "last_session": "s_task_vm-prerelease-autoscaling-profile-matrix-checkpoint-ownership-retry-20260619",
         "worker_started_attempt_id": "a_vm-prerelease-autoscaling-profile-matrix-checkpoint-ownership-retry-20260619_20260619064612",
-        "worker_started_at": "2026-06-19T06:46:35.868Z"
+        "worker_started_at": "2026-06-19T06:46:35.868Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Wrote the requested archive note at evidence/archive/vm-prerelease-autoscaling-profile-matrix-checkpoint-ownership-retry-20260619.md, proving the rows 126-130 profile-matrix slice has no accepted exact filepath owner today and that the truthful next step is one bounded canonical-owner successor, while carrying the accepted row-131 spot blocker explicitly.",
+        "last_worker_completed_at": "2026-06-19T06:48:18.258Z",
+        "last_worker_evidence": []
       },
       "session_id": "s_task_vm-prerelease-autoscaling-profile-matrix-checkpoint-ownership-retry-20260619",
       "session_history": [
@@ -121650,8 +121655,7 @@
     }
   },
   "active_task_ids": [
-    "ccp-security-patch-os-variants-root-packet-canonical-owner-20260619",
-    "vm-prerelease-autoscaling-profile-matrix-checkpoint-ownership-retry-20260619"
+    "ccp-security-patch-os-variants-root-packet-canonical-owner-20260619"
   ],
   "archive": {
     "kms-v2-managed-hsm-staging-20260611": {
