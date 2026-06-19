@@ -393,6 +393,16 @@ export class DbWriter {
            AND expected_close_at < ?`,
         [now],
       );
+      // Purge orphan pairs older than 24h — they accumulate monotonically and
+      // serve no diagnostic value once stale. Without this, the
+      // event.pair-orphan-count metric breaches any threshold eventually.
+      const ORPHAN_RETENTION_MS = 24 * 60 * 60 * 1000;
+      this.db.run(
+        `DELETE FROM event_pair_runs
+         WHERE status = 'orphan'
+           AND expected_close_at < ?`,
+        [now - ORPHAN_RETENTION_MS],
+      );
     } catch {
       /* best-effort pair sweep */
     }
