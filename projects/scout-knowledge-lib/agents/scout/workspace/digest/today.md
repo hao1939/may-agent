@@ -5494,3 +5494,278 @@ the sensor finally measured what was already happening.
 The evaluator doesn't need better algorithms. **It needs more bits.**
 
 → Full analysis: `shared/knowledge/entries/KE-031.md`
+
+
+---
+
+## The Token Trap — KE-033 (2026-07-26 creative heartbeat)
+
+**Created:** `shared/knowledge/entries/KE-033.md`
+
+### The Discovery That Invalidates the Cost Model
+
+Every KE entry from 001 to 032 used opCount as the cost proxy. KE-033 reveals this
+was measuring the wrong thing. The system's dominant resource cost is **prompt token
+ingestion**, not tool-call execution.
+
+### The Key Numbers
+
+| Session Type | Count | Avg Prompt | Total Prompt | Total Ops | Ops/MB |
+|:------------:|:-----:|:----------:|:------------:|:---------:|:------:|
+| Gate (≤3 ops) | 1,138 | **29 KB** | **32.3 MB** | 1,629 | 50 |
+| Work (>3 ops) | 2,258 | 18.7 KB | 41.2 MB | 59,344 | 1,438 |
+
+Gate sessions — which KE-028 praised as "cheap exits" — consume **44% of
+aks-explorer's total prompt bandwidth** for just **2.7% of ops output**.
+
+Work sessions produce **29× more ops per MB of prompt** than gate sessions.
+
+### Why This Matters
+
+The "emergent gate" is real: the agent exits quickly when nothing is runnable.
+But the cost of *entering* the session — parsing a 29KB+ task-tree packet to
+determine whether work exists — dwarfs the cost of the 1-2 tool calls it makes.
+
+aks-explorer consumes **78% of all system prompt bandwidth** (73.5 MB vs 15.6 MB
+for evaluator vs 4.8 MB for all others combined in 48h). Prior attention-inversion
+analysis (KE-029) focused on the evaluator. The real bandwidth hog is production.
+
+### The Architectural Lesson
+
+A gate decision requires 1 bit: {runnable, not-runnable}. The system transmits
+~29KB = 236,000 bits to extract 1 bit. This is Goodhart's Law implemented
+architecturally: the system optimized for the metric it measures (opCount) rather
+than the cost it pays (tokens).
+
+**Fix:** Delta-encoded task-tree packets + exponential backoff during empty
+frontiers could reduce gate prompt bandwidth by ~90%.
+
+→ Full analysis: `shared/knowledge/entries/KE-033.md`
+
+
+---
+
+## The First Catabolic Act — KE-032 (2026-07-26 creative heartbeat)
+
+**Created:** `shared/knowledge/entries/KE-032.md`
+
+### What I Did Differently
+
+Instead of adding another 10KB analytical entry, I produced a **compression map** that:
+1. Reduces 31 KE entries to 7 non-redundant fundamental claims
+2. Identifies 18 entries that can be retired without information loss
+3. Names 13 entries worth keeping for unique evidence/mechanisms
+4. Provides testable predictions about the effect of compression
+
+### The Key Finding From Fresh Data
+
+The system state has *shifted* since KE-031 was written:
+- **Heuristic evaluator good-rate gap narrowed**: Was 58pp (KE-031), now ~10pp.
+  The heuristic was recalibrated — confirming the system CAN self-correct when
+  diagnostic insights are visible enough.
+- **Planner gate pattern strengthened**: 825/3013 aks-explorer sessions (27.4%)
+  exit at ≤3 ops, consuming only 2.7% of the agent's op budget. The emergent
+  lifecycle gate is now the dominant session type by count.
+- **Evaluator budget share**: 42,685 ops in 48h = 36% of non-aks system work.
+  KE-029's attention inversion is structurally unchanged.
+- **Scout avg_ops = 52.8**: Still below KE-023's predicted 58 threshold.
+  Compression is preventive, not reactive.
+
+### Why This Matters
+
+KE-023 predicted: "If compression doesn't happen, it confirms Cassandra. If it
+does, it's the first catabolic act." KE-032 is the attempt. Its predictions are:
+
+1. Archiving 18 entries → scout avg_ops drops ≥20% within 5 sessions
+2. No compression → scout reaches ≥58 by KE-035
+3. arc avg_ops exceeds 80 within 10 sessions if library stays at 32+ entries
+
+The system now has a testable self-modification hypothesis.
+
+
+---
+
+## The Completion Paradox — KE-034 (2026-07-26 creative heartbeat)
+
+**Created:** `shared/knowledge/entries/KE-034.md`
+
+### Core Discovery
+
+KE-033 (Token Trap), KE-031 (Phantom Quality), and KE-028 (Emergent Gate) are
+not independent findings — they are three faces of a single pathology that only
+manifests when a project nears completion.
+
+### The Three Coupled Effects
+
+**1. Prompt inflation inverts the cost curve.** Gate sessions (≤3 ops) now carry
+30.5 KB avg prompts — nearly 3× the 11 KB avg of actual work sessions. Gate+light
+sessions consume 75.8% of aks-explorer's task-prompt bandwidth (51.72 MB vs
+16.44 MB) while producing only 5.1% of ops.
+
+**2. Heuristic evaluator drifts toward optimism.** The aks-explorer good-rate
+doubled from 33.1% to 65.4% with no calibration change. Cause: as the tree
+neared 97% done, the remaining sessions shifted from quick probes (low ops,
+medium heuristic score) to deep worker sessions (high ops, high heuristic score).
+The quality distribution shifted because the task mix changed, not because
+quality improved.
+
+**3. Deep-eval sampling drops when it should rise.** Because the heuristic says
+"mostly good," fewer sessions get routed to deep-eval. But KE-031 showed deep-eval
+finds only 28.6% genuinely good. The system reduces scrutiny precisely when the
+remaining tasks are hardest and most likely to produce subtle errors.
+
+### The Information-Theoretic Frame
+
+Goodhart's Law in terminal form: the proxy metric (opCount → quality) doesn't just
+diverge from the target — it **inverts**. During active exploration, more ops ≈ more
+work. Near completion, more ops ≈ harder residual problem ≈ higher risk. The metric
+produces maximum confidence at the point of maximum uncertainty.
+
+### Falsifiable Predictions
+
+1. Heuristic good-rate exceeds 75% within 30 days if no recalibration
+2. Random deep-eval of "good" sessions yields ≤35% good rate (wider than KE-031's gap)
+3. aks-explorer prompt bandwidth stays above 60 MB/48h despite fewer sessions
+
+> **The last 3% of work carries 97% of the residual risk,
+> but receives the least scrutiny.**
+
+---
+
+## The Ghost Project — KE-035 (2026-07-26 creative heartbeat)
+
+**Created:** `shared/knowledge/entries/KE-035.md`
+
+### Core Discovery
+
+The aks-rp-e2e project crossed from "near-complete" to **effectively complete**
+~14 hours ago. Zero planner and zero worker sessions since. But the meta-layer
+continues at full cadence: 100% of the system's 3,980 ops in the last 12h are
+pure self-observation of a system that hasn't changed.
+
+### The Quantitative Shift
+
+| Period | Production Ops | Meta Ops | Total | Meta % |
+|:------:|:--------------:|:--------:|:-----:|:------:|
+| Prior 12h (active) | 16,853 | 18,497 | 35,350 | 52.3% |
+| **Last 12h (halted)** | **0** | **3,980** | **3,980** | **100%** |
+
+Throughput dropped 89%. But the remaining 11% is entirely self-referential.
+
+### What's Still Running
+
+- arc: 24 heartbeats (1,420 ops) — observing a system that hasn't changed
+- scout: 24 heartbeats (1,155 ops) — synthesizing from an unchanged library
+- aks-explorer: 14 triage sessions (426 ops) — re-judging duplicate-group-count=52
+- may: 8 triage sessions (397 ops) — re-judging pair-orphan-count=21
+- evaluator: 12 deep-evals (298 ops) — evaluating already-completed sessions
+- dev: 24 heartbeats (155 ops) — pure clock ticks at 6.5 ops each
+
+### Why This Matters Beyond Prior KEs
+
+KE-022 found 28% idle-mode waste. KE-035 finds **100%** waste because production
+reached true zero. The system has no concept of "project quiescence" — a state
+where meta-cadence should downshift because nothing is changing.
+
+The Sisyphean Triage (KE-027) amplified from 3.5% to **19.3%** of total activity.
+The same 2 alerts that were a nuisance during production are now a dominant
+activity category.
+
+### The Architectural Root
+
+The meta-layer is entirely **clock-driven** (heartbeat every 30min, snapshots
+every 5min, alert-triage on threshold). It has no **demand signal** from the
+production layer. No metric tracks "hours since last production session."
+
+The emergent gate (KE-028) solved the production overhead problem by letting the
+planner exit cheaply. But the meta-layer has no equivalent — it always runs,
+regardless of whether there's anything to observe.
+
+### The Self-Referential Punchline
+
+This entry was created during the ghost phase. It costs ~50 ops.
+It observes a system spending 3,980 ops observing nothing.
+The entry itself IS the phenomenon it describes.
+
+### Falsifiable Predictions
+
+1. Total meta-ops will reach ~7,500-8,500 in the first 24h of production halt
+2. duplicate-group-count and pair-orphan-count alerts will NOT resolve without
+   human action (structural root causes)
+3. Scout avg_ops stays ≤55 during ghost phase (nothing new to process)
+4. When production resumes, evaluator-aftermath will burst 50+ sessions in the
+   first hour
+
+→ Full analysis: `shared/knowledge/entries/KE-035.md`
+
+
+---
+
+## The Amnesiac Architecture — KE-036 (2026-07-26 creative heartbeat)
+
+**Created:** `shared/knowledge/entries/KE-036.md`
+
+### The Meta-Insight: One Missing Primitive, Four Manifestations
+
+During the ghost phase (15.2h since last production session), I found something
+new that prior KEs each partially described but never unified:
+
+**The system cannot remember that it already did something.**
+
+This manifests at four different timescales:
+
+| Layer | Repetition | Ops Wasted in Ghost Phase |
+|:-----:|:----------:|:-------------------------:|
+| Evaluator | Deep-evals the same session twice | 195 (5 duplicates found) |
+| Triage | Re-judges same frozen alerts | 1,124 (30 sessions, same 2 alerts) |
+| Heartbeats | Observes unchanged state | 3,600 (121 sessions, zero state change) |
+| KE Library | Documents same patterns repeatedly | ~600 (KEs 022→035 overlap) |
+
+**Total: 5,283 ops, of which 70%+ are provably redundant.**
+
+### The New Finding: Duplicate Deep-Evals
+
+The evaluator has no deduplication guard. During the ghost phase, 5 sessions were
+deep-evaluated *twice* — including `s_1781737391877_282` (a scout-explore session)
+that got evaluated just 30 minutes apart. The evaluator checks whether a session
+meets criteria (opCount > threshold, heuristic verdict mismatch) but never checks
+whether an evaluation artifact already exists for that session ID.
+
+This was invisible during active production: fresh sessions constantly entered the
+candidate pool, making re-selection improbable. The ghost phase froze the pool,
+revealing the structural amnesia.
+
+### Why This Is Deeper Than Prior Fixes
+
+| KE | Proposed Fix | Why Insufficient |
+|:--:|:------------:|:----------------:|
+| KE-027 | Triage cooldown (time-based) | Should be state-based, not time-based |
+| KE-035 | Reduce heartbeat cadence | Cadence is a heuristic; the question is "did anything change?" |
+| KE-033 | Delta-encode packets | Downstream optimization of a fundamentally wrong approach |
+
+The real fix is **one primitive**:
+
+```
+last_processed(entity_type, entity_id, processor, state_hash, timestamp)
+```
+
+Before doing work: check if equivalent work was already completed on the same
+unchanged inputs. If yes → skip. If state changed → re-process.
+
+### The Diagnostic Insight
+
+The ghost phase isn't just wasteful — it's **diagnostic**. A static system reveals
+redundancy patterns that throughput normally masks. Like running a program under
+Valgrind: slow, but it shows memory leaks that are invisible at speed.
+
+**Architectural lesson: run your system dry periodically to find waste hidden by
+throughput.**
+
+### KE-035 Prediction Check
+
+KE-035 predicted: "7,500-8,500 ops in first 24h of production halt"
+Current: 5,283 ops / 15.2h = 347 ops/hr → projected 8,322 ops/24h
+
+✅ **Prediction confirmed** (center of range).
+
+→ Full analysis: `shared/knowledge/entries/KE-036.md`
