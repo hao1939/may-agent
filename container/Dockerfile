@@ -130,9 +130,10 @@ COPY container/codex-config.toml /etc/codex/config.toml
 COPY container/supervisord.conf /etc/supervisord.conf
 
 # Copy entrypoints and helpers
-COPY container/entrypoint.sh container/start-chrome.sh container/setup-codex-config.sh /usr/local/bin/
+COPY container/entrypoint.sh container/start-chrome.sh container/setup-codex-config.sh container/may-agent-supervisor-restart.sh /usr/local/bin/
 COPY packages/terminal/bin/may-console.cjs /usr/local/bin/may-console
-RUN chmod 755 /usr/local/bin/may-agent /usr/local/bin/entrypoint.sh /usr/local/bin/start-chrome.sh /usr/local/bin/setup-codex-config.sh /usr/local/bin/may-console
+RUN chmod 755 /usr/local/bin/may-agent /usr/local/bin/entrypoint.sh /usr/local/bin/start-chrome.sh /usr/local/bin/setup-codex-config.sh /usr/local/bin/may-agent-supervisor-restart.sh /usr/local/bin/may-console && \
+    ln -sf /usr/local/bin/may-agent-supervisor-restart.sh /usr/local/bin/may-agent-supervisor-restart
 
 # Virtual display
 ENV DISPLAY=:99
