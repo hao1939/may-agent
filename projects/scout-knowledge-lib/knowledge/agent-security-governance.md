@@ -1,8 +1,8 @@
 <ai_context>
 summary: "Canonical note on agent security and governance patterns: attack surfaces, defense architectures, structural governance, state-level access controls (ITAR/Mythos), and supply-chain risks for tool-using AI agents."
-triggers: ["agent security", "agent safety", "agent governance", "prompt injection", "tool sandboxing", "agent trust", "supply chain attack", "agent permissions", "ITAR", "export control", "model access", "infrastructure cost"]
-last_updated: "2026-06-16"
-source_basis: "arXiv papers (June 2026 inbox provenance, 238+ papers + batch-3/6/7 triage — security was #1 cross-cutting theme), HN practitioner discourse (Jun 2026 — hn-scan-3 agent externality taxonomy, hn-scan-10 LinkedIn mega-narrative + multi-vector DPRK attacks, hn-scan-11 ITAR/Mythos + infrastructure cost squeeze), XHS Chinese community structural governance signals (May–Jun 2026). Batch 6 sourcing: MemVenom memory poisoning, Semantic Quorum, SciTrace trajectory safety, MAC-Bench Goodhart compliance."
+triggers: ["agent security", "agent safety", "agent governance", "prompt injection", "tool sandboxing", "agent trust", "supply chain attack", "agent permissions", "ITAR", "export control", "model access", "infrastructure cost", "trojan repos", "agent targeting", "vendor continuity"]
+last_updated: "2026-06-20"
+source_basis: "arXiv papers (June 2026 inbox provenance, 238+ papers + batch-3/6/7 triage — security was #1 cross-cutting theme), HN practitioner discourse (Jun 2026 — hn-scan-3 agent externality taxonomy, hn-scan-10 LinkedIn mega-narrative + multi-vector DPRK attacks, hn-scan-11 ITAR/Mythos + infrastructure cost squeeze, hn-scan-33 10k trojan repos + SK Telecom/Mythos vendor continuity), XHS Chinese community structural governance signals (May–Jun 2026). Batch 6 sourcing: MemVenom memory poisoning, Semantic Quorum, SciTrace trajectory safety, MAC-Bench Goodhart compliance."
 </ai_context>
 
 # Agent Security & Governance Patterns
@@ -107,6 +107,26 @@ channels to compromise software supply chains:
   instruction is now a high-risk input channel requiring sandboxed dependency
   installation as mandatory defense.
   *(HN, Jun 2026; see [2026-06-18-hn-scan-31.md](./findings/2026-06-18-hn-scan-31.md))*
+
+- **10k GitHub trojan repositories targeting agents (745pts, Jun 2026)**:
+  Researcher discovered ~10,000 fake GitHub repositories distributing trojan
+  malware. Comment analysis (guhcampos, 745pt story) reveals the attack is
+  "not targeted to humans — it's targeted to agents. They just need to appear
+  on a fraction of the searches agents do to add dependencies." Repos delete
+  and re-push commits every few hours to game "Last Updated" search ranking.
+  Author identity spoofing at repo level (Jimmc414: "I have found my name
+  attached to new projects that I have nothing to do with"). Disney engineer
+  precedent: human code review of such a trojan also failed ("checked the code
+  himself, it had looked legitimate").
+  Second-order vector (mowfask): "Where are the training-data poisoning
+  repositories? Those set up so the next generation LLMs will be trained to
+  include malware in the code they generate." This shifts from *agents as
+  attack instruments* (the existing thesis) to **agents as attack targets** —
+  adversaries designing attack surfaces specifically for automated consumers.
+  Defense requirements: provenance verification for all agent-installed
+  dependencies, sandboxed installation environments, search-result freshness
+  skepticism (recency ≠ legitimacy).
+  *(HN, Jun 2026; see [2026-06-20-hn-scan-33.md](./findings/2026-06-20-hn-scan-33.md))*
 
 ### 1.5 Data Agent Attack Surfaces (Interpretation → Execution → Policy)
 

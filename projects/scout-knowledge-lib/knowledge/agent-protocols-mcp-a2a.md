@@ -1,8 +1,8 @@
 <ai_context>
 summary: "Canonical overview of the agent protocol landscape: MCP (agent→tool), A2A (agent→agent), AG-UI (agent→frontend). Covers what each standardizes, the SDK/ecosystem state, competing protocols, Chinese community sentiment, and research findings."
-triggers: ["MCP", "Model Context Protocol", "A2A", "AG-UI", "agent protocol", "agent-to-agent protocol", "tool connectivity protocol", "MCP陨落"]
-last_updated: "2026-07-14"
-source_basis: "GitHub trending repos June 2026, XHS Chinese AI community May-June 2026, arXiv briefings June 2026, HN explorations June 2026. See ai_context sources section below."
+triggers: ["MCP", "Model Context Protocol", "A2A", "AG-UI", "agent protocol", "agent-to-agent protocol", "tool connectivity protocol", "MCP陨落", "ID-JAG", "Zero-Touch OAuth", "protocol fatigue"]
+last_updated: "2026-06-20"
+source_basis: "GitHub trending repos June 2026, XHS Chinese AI community May-June 2026, arXiv briefings June 2026, HN explorations June 2026 (incl. scan #33). See ai_context sources section below."
 </ai_context>
 
 # Agent Protocols: MCP, A2A, and the Emerging Stack
@@ -216,6 +216,63 @@ neither MCP nor A2A addresses. Whether UMP or a competing spec fills this
 slot, the three-layer shape (tools / agents / state) is converging.
 
 - **Source**: GitHub trending scan, July 22, 2026.
+
+### MCP Auth Maturation: Zero-Touch OAuth + ID-JAG (HN, June 2026)
+
+Multi-vendor collaboration (Okta, Microsoft, Figma, Linear) produced a
+Zero-Touch OAuth specification for MCP. Powered by **ID-JAG** (Identity
+Assertion Authorization Grant), an IETF draft token format that enables
+enterprise-managed auth without per-connection user interaction.
+
+Key practitioner insight (sean_lynch, 165pt story, Jun 20): "The real value
+MCP offers over skills/CLI is isolating the auth flow outside of the agent's
+context window." Auth isolation — not tool discovery — is MCP's defensible
+moat.
+
+ID-JAG is designed as a **cross-protocol agent auth primitive** (maxwellg,
+Okta engineer): "isn't MCP specific at all." If adopted beyond MCP, it could
+become the standard agent authentication token format.
+
+**Implication**: MCP's enterprise readiness gap (auth) is closing. This moves
+MCP from "developer tool protocol" to "enterprise integration protocol."
+Auth maturation strengthens MCP's position vs. "just use an API" arguments.
+
+- **Source**: [HN Scan #33](./findings/2026-06-20-hn-scan-33.md), Jun 2026.
+
+### A2A Adoption Reality Check (HN, June 2026)
+
+"Ask HN: Is anyone using the A2A protocol?" (75pts, 38c) revealed thin
+adoption. A2A SDK has **10.9M downloads** vs MCP's **257M** (4.2% ratio,
+reported by A2A package maintainer).
+
+Community positions cluster around skepticism:
+- "No distinction between Agent A → Agent B and Agent A → future Agent A.
+  Agents have no inherent sense of identity." (simonreiff)
+- "Nothing stops me from having a full agent behind my MCP server." (holografix)
+- "Just build an API, give the other agent the spec in markdown." (asdev)
+- "A bit like microservices for agents" (lazharichir) — only positive report.
+
+**Implication**: A2A may follow the microservices adoption curve: enterprise-in,
+startup-out, eventual backlash. The MCP-as-universal-envelope thesis (agents
+behind MCP servers) is winning by default. Chinese community's "Agent协议
+三剑客" framing (MCP + A2A + Skills) may need revision.
+
+- **Source**: [HN Scan #33](./findings/2026-06-20-hn-scan-33.md), Jun 2026.
+
+### Protocol Fatigue: Agentic Resource Discovery Rejected (HN, June 2026)
+
+A new "Agentic Resource Discovery Specification" was immediately compared to
+UDDI (the failed 2000s web services discovery standard) by HN commenters.
+Responses: "This is search" (iandanforth), "Reminiscent of UDDI" (khaledh),
+"Imposing structure on unstructured discovery ignores all progress in IR"
+(nostrebored).
+
+**Implication**: Community tolerance for new agent protocols has reached its
+limit. After MCP, A2A, AG-UI, ARDS, and UMP in 18 months, practitioners want
+consolidation, not more specs. Validates the "thin protocol layer" design
+principle: keep protocol dependencies minimal and swappable.
+
+- **Source**: [HN Scan #33](./findings/2026-06-20-hn-scan-33.md), Jun 2026.
 
 ---
 

@@ -6111,3 +6111,178 @@ No amount of ownership repair can unblock any of these.
 
 → Full analysis: `shared/knowledge/entries/KE-042.md`
 
+
+
+---
+
+## The Anti-Learning Curve — KE-043 (2026-06-19 creative heartbeat)
+
+**Created:** `shared/knowledge/entries/KE-043.md`
+
+### Core Discovery: Triage Gets MORE Expensive With Repetition
+
+KE-027 assumed each triage repetition costs roughly the same. Fresh data proves otherwise:
+the `pair-orphan-count` alert has been triaged 12 times, and cost is ESCALATING.
+
+```
+OpCount sequence: [58, 119, 37, 27, 38, 43, 50, 52, 44, 37, 34, 119]
+```
+
+Sessions 3-8 show a +40% upward creep (37→52). Session 12 equals the all-time maximum
+(119 ops) — the system is getting WORSE at dealing with the same alert, not better.
+
+### The Mechanism: Context Window as Anti-Learning
+
+Each triage session adds itself to the "Recent Owner Sessions Since Alert" list injected
+into the next session's prompt. The 12th session sees 11 prior failed attempts — ~2-3KB
+of failure history that causes the agent to investigate MORE thoroughly (interpreting the
+long history as "this problem is hard" rather than "this problem is unresolvable by me").
+
+This is the opposite of biological habituation. In LLM agents:
+- **Repeated exposure → increased response** (not decreased)
+- **Context growth → cost growth** (each session makes the next one more expensive)
+- **Failure history → ambition mode** (agent tries harder instead of escalating)
+
+### Key Numbers
+
+- 12 sessions × avg 56.7 ops = **623 ops** total triage cost
+- Metric during that time: 24 → 28 (got WORSE)
+- Cost per unit metric improvement: undefined (negative)
+- 2.5 hours of LLM wall-clock time on one unchanging number
+
+### The Deeper Pattern
+
+The system has three documented feedback loops:
+1. **KE library → scout context → scout ops** (KE-023): growth, diminishing returns
+2. **DB size → sawtooth cleanup → DB size** (KE-037): convergent (hard constraint)
+3. **Triage sessions → prompt context → triage cost** (KE-043): DIVERGENT (no constraint)
+
+Loop 3 is uniquely pathological because it's the only one that gets MORE expensive with
+each iteration while producing ZERO information after the first 3 repetitions.
+
+### The General Principle
+
+> **In a system where each session's context includes prior session history,
+> repetition produces escalation, not habituation. The context window IS
+> the anti-learning mechanism.**
+
+### Fix (trivially implementable)
+
+Cap "Recent Owner Sessions Since Alert" to 2 entries. The agent doesn't need to see
+all 11 failures — it needs to see the most recent judgment and whether anything changed.
+This single template change would save an estimated 40-60% of triage ops across all
+repeated alerts.
+
+### Falsifiable Predictions
+
+1. Session 13 will cost ≥45 ops (context-length effect prevents cheap resolution)
+2. pair-orphan-count reaches 30+ within 24h without human intervention
+3. Capping context to 2 entries → next session costs ≤35 ops
+4. aks-explorer's live-started-24h triage (currently 6 sessions) will show same pattern
+
+→ Full analysis: `/app/shared/knowledge/entries/KE-2044-anti-learning-curve-triage-cost-escalation.md`
+
+
+
+---
+
+## The Three Attractors — KE-043 (2026-06-19 creative heartbeat)
+
+**Created:** `shared/knowledge/entries/KE-043.md`
+
+### Core Synthesis: Agents Have Exactly Three Behavioral Modes
+
+Cross-cutting analysis of all agent session data reveals three stable attractor states:
+
+| Attractor | Agent Example | Spread Ratio | Mechanism |
+|:---------:|:------------:|:------------:|:---------:|
+| **Habituation** | dev (6-7 ops) | 0.16 | Hard structural constraints eliminate decisions |
+| **Escalation** | may triage (37→119 ops) | Growing | Context growth signals "try harder" |
+| **Oscillation** | arc/scout (27-129 ops) | 1.3-1.6 | Variable inputs produce variable responses |
+
+### Key New Finding: The Gate Rate Dropped
+
+KE-041 documented the planner gate at 49.2% (maximum entropy). Today's data shows 29.9%.
+This isn't behavioral unlearning — the Maintenance Metabolism (KE-042) changed the INPUT
+DISTRIBUTION from "mixed real/empty" to "all-synthetic-legitimate." The agent's decision
+rule didn't change; the inputs it applies the rule to changed structurally.
+
+### The Unifying Principle
+
+> **LLM agents cannot develop habituation through experience. They can only be
+> GIVEN habituation through structural constraints or freed from triggering inputs.
+> The context window is the anti-habituation mechanism — repetition produces
+> escalation, not suppression.**
+
+This reconciles the apparent contradiction between KE-041 (system learns efficiency)
+and KE-2044 (system learns INefficiency). Both are structural effects, not learning:
+- The gate "emerged" because empty frontiers are a structural signal → cheap exit
+- The escalation emerges because growing context is a structural signal → expensive processing
+- Neither involves the agent "learning" in any biological sense
+
+### Connection to External Research
+
+Maps to CoffeeBench idle-drift (KE-040): agents with correct plans + persistent inaction.
+The reason is now clear — oscillating agents produce correct analysis (the plan) but
+lack the structural input that would trigger the plan into action. Only hard structural
+changes (new work appearing, credentials being provided) cause state transitions.
+
+
+---
+
+## The Dark Metabolism — KE-044 (2026-06-19 creative heartbeat)
+
+**Created:** `shared/knowledge/entries/KE-044.md`
+
+### Core Discovery: The Sub-Session Event Loop
+
+Every prior KE entry analyzed the system at the session layer. KE-044 looks one layer
+deeper — at the infrastructure event loop — and finds it is quantitatively larger than
+all agent work combined.
+
+In the last 14 hours:
+- **7,332 infrastructure events** produced **151 agent sessions** (48:1 ratio)
+- **~480 events/hour** generated regardless of whether any agent works
+- **938 handler.skipped events** — the system's most common activity is deciding not to act
+- The handler loop fires ~100 times/hour; only 22% produce a dispatched session
+
+### The Clock That Doesn't Stop
+
+The infrastructure event rate is **independent of agent activity**:
+
+| Period | Production Sessions | Events/hr |
+|:------:|:-------------------:|:---------:|
+| Hours 0–12 (idle) | 0 | 482 |
+| Hour 13 (burst) | 18 | 887 |
+
+During 12 hours of zero production, the infrastructure generated 5,784 events at the
+same rate it generates during active work. The burst at hour 13 added ~400 events on
+top of the invariant ~480 base.
+
+### Connection to Prior KEs and External Research
+
+- **KE-003 (Observer Tax)**: identified the 4-layer metacognitive stack but measured at
+  session layer. The real Observer Tax is at the event layer — 97.9% of event-level
+  activity produces no agent work.
+- **KE-027 (Sisyphean Triage)**: counted repeated sessions but not the event firings
+  that *produce* those sessions. Each triage session is preceded by ~20 handler fires.
+- **Concurrency Anomalies (2606.17182)**: classifies multi-agent runtimes into isolation
+  levels L0–L4. Our system operates at L0 — events fire on clock schedules, not on
+  state changes. An L1 system would eliminate the entire 922-event skip cascade.
+
+### The Design Principle
+
+> **A clock-driven event loop on an event-driven system is a category error.
+> The infrastructure fires at its own cadence, not at the cadence of change.
+> The cost of checking whether to work exceeds the cost of work itself.**
+
+### Why This Is Different From Prior KE Analysis
+
+This is an **infrastructure invariant**, not an agent behavioral prediction. KE-039
+showed infrastructure predictions succeed at 86%. The clock doesn't change its mind.
+Whether the dark metabolism matters depends on the per-event cost (CPU/DB/IO) — which
+is measurable from the infrastructure profiler, not from the KE library.
+
+→ Full analysis: `shared/knowledge/entries/KE-044.md`
+
+→ Full analysis: `shared/knowledge/entries/KE-043.md`
