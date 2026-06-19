@@ -21,6 +21,7 @@ import {
   updateTaskOutputs,
   updateTaskText,
   taskTreeConfig,
+  unblockTask,
   type TaskCompletionClaim,
   writeKanbanSnapshot,
 } from "../workflows/lib/task-tree-tools.ts";
@@ -44,6 +45,7 @@ function usage(): never {
   bun run task-tree complete <task-id> --result done|partial|blocked --summary "..."
   bun run task-tree set-outputs <task-id> --output <path> [--output <path> ...]
   bun run task-tree update-text <task-id> [--goal "..."] [--acceptance "..."] [--acceptance "..."] [--blocker "..."] [--clear-blocker]
+  bun run task-tree unblock <task-id> --reason "blocker resolved"
   bun run task-tree update-accepted-review <task-id> [--review-summary "..."] [--acceptance-note "..."]
   bun run task-tree reject-review <task-id> --reason "acceptance not met" [--fresh-session]
   bun run task-tree requeue-active <task-id> [--reason "session not running"] [--fresh-session]
@@ -341,6 +343,20 @@ if (command === "summary") {
         acceptance: acceptance.length ? acceptance : undefined,
         blocker,
         clearBlocker,
+      }),
+      null,
+      2,
+    ),
+  );
+} else if (command === "unblock") {
+  const taskId = process.argv[3];
+  const reason = option("--reason") ?? option("--summary");
+  if (!taskId || !reason) usage();
+  console.log(
+    JSON.stringify(
+      unblockTask(config, {
+        taskId,
+        reason,
       }),
       null,
       2,

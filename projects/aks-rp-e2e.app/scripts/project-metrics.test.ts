@@ -298,7 +298,13 @@ describe("project metrics", () => {
       recursive: true,
     });
     await writeFile(
-      join(fixture.projectDir, "runs", "executions", "execute-run", "result.json"),
+      join(
+        fixture.projectDir,
+        "runs",
+        "executions",
+        "execute-run",
+        "result.json",
+      ),
       `${JSON.stringify(
         {
           mode: "execute",
@@ -329,7 +335,13 @@ describe("project metrics", () => {
       recursive: true,
     });
     await writeFile(
-      join(fixture.projectDir, "runs", "executions", "cloud-run", "result.json"),
+      join(
+        fixture.projectDir,
+        "runs",
+        "executions",
+        "cloud-run",
+        "result.json",
+      ),
       `${JSON.stringify(
         {
           status: "passed",
@@ -344,5 +356,58 @@ describe("project metrics", () => {
     expect(await metricValue(fixture, "aks-rp-e2e.run.live-started-24h")).toBe(
       "1",
     );
+  });
+
+  test("counts planner timeout and slow planner runs from planner-runs history", async () => {
+    const fixture = await makeFixture();
+    await writeTree(fixture.appDir, { session_id: "s_running" });
+    writeSession(fixture.dbPath, {
+      sessionId: "s_running",
+      status: "running",
+      opCount: 1,
+      startedAt: Date.now() - 10_000,
+      lastActivityAt: Date.now(),
+    });
+    await mkdir(join(fixture.appDir, ".state"), { recursive: true });
+    await writeFile(
+      join(fixture.appDir, ".state", "planner-runs.jsonl"),
+      [
+        JSON.stringify({
+          ts: new Date().toISOString(),
+          kind: "planner_wake",
+          status: "settled",
+          ran_agent: true,
+          steps: ["event-review", "planning-update"],
+          durationMs: 241000,
+          result: 'Agent step "aks-explorer" timed out after 240000ms',
+        }),
+        JSON.stringify({
+          ts: new Date().toISOString(),
+          kind: "planner_wake",
+          status: "assigned",
+          ran_agent: false,
+          steps: ["deterministic-refill"],
+          durationMs: 181000,
+          result:
+            "Routine watchdog refill seeded model-gap work without owner-agent planning.",
+        }),
+        JSON.stringify({
+          ts: new Date(Date.now() - 48 * 60 * 60 * 1000).toISOString(),
+          kind: "planner_wake",
+          status: "assigned",
+          ran_agent: true,
+          steps: ["event-review", "planning-update"],
+          durationMs: 500000,
+          result: 'Agent step "aks-explorer" timed out after 240000ms',
+        }),
+      ].join("\n") + "\n",
+    );
+
+    expect(await metricValue(fixture, "aks-rp-e2e.planner.timeout-24h")).toBe(
+      "1",
+    );
+    expect(
+      await metricValue(fixture, "aks-rp-e2e.planner.slow-count-24h"),
+    ).toBe("2");
   });
 });

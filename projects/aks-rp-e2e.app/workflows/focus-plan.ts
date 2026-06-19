@@ -85,6 +85,104 @@ function focusPlanId(kind: "proposal" | "review", result: FocusResult): string {
   return `focus-${kind}-${result}`;
 }
 
+function packetCount(packet: TaskPlanningPacket, status: string): number {
+  const counts =
+    packet && typeof packet === "object" && packet.counts
+      ? (packet.counts as Record<string, unknown>)
+      : null;
+  const raw = counts?.[status];
+  return typeof raw === "number" && Number.isFinite(raw)
+    ? raw
+    : Number(raw ?? 0) || 0;
+}
+
+function liveFrontierEvidence(packet: TaskPlanningPacket): {
+  activeTaskIds: string[];
+  reviewTaskIds: string[];
+  runnableTaskIds: string[];
+  activeCount: number;
+  blockedCount: number;
+  backlogCount: number;
+} {
+  return {
+    activeTaskIds: [...(packet.active_task_ids ?? [])],
+    reviewTaskIds: [...(packet.frontier.review ?? [])],
+    runnableTaskIds: [...(packet.frontier.runnable ?? [])],
+    activeCount: packetCount(packet, "active"),
+    blockedCount: packetCount(packet, "blocked"),
+    backlogCount: packetCount(packet, "backlog"),
+  };
+}
+
+function liveFrontierEvidenceText(packet: TaskPlanningPacket): string {
+  const evidence = liveFrontierEvidence(packet);
+  return [
+    `counts.active=${evidence.activeCount}`,
+    `active_task_ids=${JSON.stringify(evidence.activeTaskIds)}`,
+    `frontier.review=${JSON.stringify(evidence.reviewTaskIds)}`,
+    `frontier.runnable=${JSON.stringify(evidence.runnableTaskIds)}`,
+    `counts.blocked=${evidence.blockedCount}`,
+    `counts.backlog=${evidence.backlogCount}`,
+  ].join(", ");
+}
+
+function hasNonterminalLiveFrontier(packet: TaskPlanningPacket): boolean {
+  const evidence = liveFrontierEvidence(packet);
+  return (
+    evidence.activeTaskIds.length > 0 ||
+    evidence.reviewTaskIds.length > 0 ||
+    evidence.runnableTaskIds.length > 0 ||
+    evidence.activeCount > 0 ||
+    evidence.blockedCount > 0 ||
+    evidence.backlogCount > 0
+  );
+}
+
+function terminalLanguagePresent(text: string): boolean {
+  return /at ceiling|disable review schedule|no actionable work remains|no further autonomous work/i.test(
+    text,
+  );
+}
+
+function guardFocusSummary(input: {
+  packet: TaskPlanningPacket;
+  result: FocusResult;
+  summary: string;
+}): { result: FocusResult; summary: string } {
+  const title =
+    extractMarker(input.summary, "FOCUS_PLAN_TITLE") || "Focus review";
+  const ownerNext =
+    extractMarker(input.summary, "OWNER_NEXT") ||
+    "Keep the owner review loop active and reconcile the live task-tree frontier before any closure decision.";
+  const evidenceText = liveFrontierEvidenceText(input.packet);
+  const terminalClaim =
+    input.result === "completed" || terminalLanguagePresent(input.summary);
+
+  if (terminalClaim && hasNonterminalLiveFrontier(input.packet)) {
+    return {
+      result: "updated",
+      summary: [
+        "FOCUS_PLAN_RESULT: updated",
+        `FOCUS_PLAN_TITLE: ${title}`,
+        `FOCUS_PLAN_SUMMARY: Terminal/completed or disable-review guidance was suppressed because the current live task-tree frontier is still nonterminal. Evidence: ${evidenceText}. Keep review scheduling enabled until the live frontier is actually terminal.`,
+        `OWNER_NEXT: ${ownerNext}`,
+      ].join("\n"),
+    };
+  }
+
+  if (input.result === "completed") {
+    if (/LIVE_FRONTIER_EVIDENCE:/i.test(input.summary)) {
+      return input;
+    }
+    return {
+      result: input.result,
+      summary: `${input.summary.trim()}\nLIVE_FRONTIER_EVIDENCE: Terminal claim verified against the current live task-tree frontier. ${evidenceText}.`,
+    };
+  }
+
+  return input;
+}
+
 function approvalQuestion(input: {
   result: FocusResult;
   kind: "proposal" | "review";
@@ -400,8 +498,14 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     }),
   });
 
-  const summary = resultText(focusAgentResult);
-  const result = focusResult(summary);
+  const rawSummary = resultText(focusAgentResult);
+  const guarded = guardFocusSummary({
+    packet,
+    result: focusResult(rawSummary),
+    summary: rawSummary,
+  });
+  const summary = guarded.summary;
+  const result = guarded.result;
   const title = extractMarker(summary, "FOCUS_PLAN_TITLE");
   dispatchHumanApproval(ctx, { result, kind, title, summary });
   dispatchOwnerRequested(ctx, { result, kind, summary });

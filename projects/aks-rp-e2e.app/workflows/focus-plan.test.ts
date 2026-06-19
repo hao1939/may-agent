@@ -4,7 +4,8 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { execute } from "./focus-plan.ts";
 
-async function makeWorkspace() {
+async function makeWorkspace(options?: { leafState?: string }) {
+  const leafState = options?.leafState ?? "backlog";
   const root = await mkdtemp(join(tmpdir(), "aks-focus-plan-"));
   const appDir = join(root, "aks-rp-e2e.app");
   const projectDir = join(root, "aks-rp-e2e");
@@ -23,7 +24,7 @@ async function makeWorkspace() {
         tasks: {
           project: {
             id: "project",
-            state: "backlog",
+            state: leafState === "done" ? "done" : "backlog",
             children: ["execution-and-verification"],
             goal: "Learn AKS RP input and expectation space.",
             outputs: ["tasks/tree.json"],
@@ -32,7 +33,7 @@ async function makeWorkspace() {
           "execution-and-verification": {
             id: "execution-and-verification",
             parent_id: "project",
-            state: "backlog",
+            state: leafState === "done" ? "done" : "backlog",
             kind: "lane",
             children: ["run-rest-spec-batch"],
             goal: "Execute runnable specs and feed evidence back.",
@@ -42,7 +43,7 @@ async function makeWorkspace() {
           "run-rest-spec-batch": {
             id: "run-rest-spec-batch",
             parent_id: "execution-and-verification",
-            state: "backlog",
+            state: leafState,
             kind: "domain_leaf",
             priority: "P1",
             children: [],
@@ -66,6 +67,96 @@ function triggerEvent(event: Record<string, unknown>): string {
 }
 
 describe("focus-plan workflow", () => {
+  test("suppresses terminal guidance when live frontier is still nonterminal", async () => {
+    const { appDir, projectDir } = await makeWorkspace({ leafState: "active" });
+    const dispatched: Array<{
+      type: string;
+      payload: Record<string, unknown>;
+    }> = [];
+
+    const result = await execute({
+      task: [
+        `app: ${appDir}`,
+        `project: ${projectDir}`,
+        "agent: aks-explorer",
+        triggerEvent({
+          type: "project.focus.review.requested",
+          project: "aks-rp-e2e",
+          reason: "scheduled-focus-progress-review",
+        }),
+      ].join("\n"),
+      agent: "aks-explorer",
+      done: (message: string) => ({ status: "done", message }),
+      escalate: (message: string) => ({ status: "escalated", message }),
+      emit() {},
+      dispatchEvent(type: string, payload: Record<string, unknown>) {
+        dispatched.push({ type, payload });
+      },
+      runAgent: async () => ({ status: "success" }),
+      runAgentSession: async () => ({
+        status: "success",
+        message:
+          "FOCUS_PLAN_RESULT: completed\nFOCUS_PLAN_TITLE: REST replay focus\nFOCUS_PLAN_SUMMARY: Project at FINAL terminal ceiling. No actionable work remains. Disable review schedule.\nOWNER_NEXT: close the loop",
+      }),
+      summarize: () => "",
+    } as any);
+
+    expect(result.status).toBe("done");
+    expect(result.message).toContain("result updated");
+    expect(result.message).toContain(
+      "Terminal/completed or disable-review guidance was suppressed",
+    );
+    expect(result.message).toContain('active_task_ids=["run-rest-spec-batch"]');
+    expect(result.message).toContain("counts.blocked=0");
+    expect(result.message).toContain("counts.backlog=0");
+    expect(dispatched.map((event) => event.type)).toEqual([
+      "project.owner.requested",
+    ]);
+    expect(dispatched[0].payload).toMatchObject({
+      project: "aks-rp-e2e",
+      reason: "focus-plan-review",
+      focusResult: "updated",
+    });
+    expect(String((dispatched[0].payload as any).params?.summary)).toContain(
+      "Keep review scheduling enabled until the live frontier is actually terminal.",
+    );
+  });
+
+  test("adds explicit live frontier evidence when a terminal result remains", async () => {
+    const { appDir, projectDir } = await makeWorkspace({ leafState: "done" });
+
+    const result = await execute({
+      task: [
+        `app: ${appDir}`,
+        `project: ${projectDir}`,
+        "agent: aks-explorer",
+        triggerEvent({
+          type: "project.focus.review.requested",
+          project: "aks-rp-e2e",
+          reason: "scheduled-focus-progress-review",
+        }),
+      ].join("\n"),
+      agent: "aks-explorer",
+      done: (message: string) => ({ status: "done", message }),
+      escalate: (message: string) => ({ status: "escalated", message }),
+      emit() {},
+      dispatchEvent() {},
+      runAgent: async () => ({ status: "success" }),
+      runAgentSession: async () => ({
+        status: "success",
+        message:
+          "FOCUS_PLAN_RESULT: completed\nFOCUS_PLAN_TITLE: REST replay focus\nFOCUS_PLAN_SUMMARY: Focus done.\nOWNER_NEXT: archive the plan",
+      }),
+      summarize: () => "",
+    } as any);
+
+    expect(result.status).toBe("done");
+    expect(result.message).toContain("LIVE_FRONTIER_EVIDENCE:");
+    expect(result.message).toContain("frontier.review=[]");
+    expect(result.message).toContain("counts.blocked=0");
+    expect(result.message).toContain("counts.backlog=0");
+  });
+
   test("asks for human approval and still wakes owner review for a proposed focus", async () => {
     const { appDir, projectDir } = await makeWorkspace();
     const prompts: string[] = [];

@@ -15,6 +15,7 @@ import {
   type TaskTreeConfig,
   type TaskTree,
 } from "./lib/task-tree-store.ts";
+import { listRunnableBacklogTaskIds } from "./lib/task-tree-tools.ts";
 import { field, readJson, resolveAppDir } from "./lib/workflow-input.ts";
 
 export const name = "project-execution-watchdog";
@@ -84,14 +85,6 @@ function readTree(path: string): TaskTree | null {
 
 function isLeaf(task: TaskTree["tasks"][string]): boolean {
   return (task.children ?? []).length === 0;
-}
-
-function runnableBacklogLeaves(
-  tree: TaskTree,
-): Array<TaskTree["tasks"][string]> {
-  return Object.values(tree.tasks).filter(
-    (task) => isLeaf(task) && task.status === "backlog",
-  );
 }
 
 function activeLeaves(tree: TaskTree): Array<TaskTree["tasks"][string]> {
@@ -286,6 +279,10 @@ function emitOwnerRequested(
 export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
   const config = parseInput(ctx.task, ctx.agent);
   const sharedConfig = buildTaskTreeConfig(config);
+  const runnableBacklogTaskIds = listRunnableBacklogTaskIds(
+    sharedConfig,
+    config.maxConcurrent,
+  );
   const snapshot: WatchdogTreeSnapshot | null = withTreeLock(
     sharedConfig,
     () => {
@@ -294,9 +291,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
       const activeTasks = activeTaskSnapshots(tree);
 
       return {
-        runnableBacklogTaskIds: runnableBacklogLeaves(tree)
-          .map((task) => task.id)
-          .sort(),
+        runnableBacklogTaskIds,
         runnableBacklogTreeUpdatedAt:
           typeof tree.updated_at === "string" ? tree.updated_at : undefined,
         runnableBacklogSnapshotAt: new Date().toISOString(),

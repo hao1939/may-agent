@@ -113,8 +113,13 @@ function isProblemClaim(event: Record<string, unknown>): boolean {
       "requested checkpoint artifact",
       "documented blocker",
       "recorded the precise blocker",
+      "exact repo-local blocker",
       "exact slicing blocker",
       "artifact lists the exact",
+      "documented all",
+      "model/archive/run references",
+      "no single bounded",
+      "safe next decomposition",
       "infra_block",
       "product_constraint",
       "product-gap",
@@ -151,9 +156,20 @@ function isProblemClaim(event: Record<string, unknown>): boolean {
         "reserves domain repo commits",
         "worker may modify",
       ].some((s) => summary.includes(s));
+    const ownerHandoffSignals =
+      (summary.includes("handoff packet") ||
+        summary.includes("send-ready") ||
+        summary.includes("outbound packet")) &&
+      [
+        "source holder",
+        "owner handoff",
+        "missing authoritative",
+        "resume",
+      ].some((s) => summary.includes(s));
     if (
       completionSignals.some((s) => summary.includes(s)) ||
-      ownerCheckpointSignals
+      ownerCheckpointSignals ||
+      ownerHandoffSignals
     ) {
       return false;
     }
@@ -209,6 +225,7 @@ function humanUnblockEscalation(
   const data = eventDetails(event);
   const idValue = metricId(event);
   const staleActive = idValue === "aks-rp-e2e.task.stale-active-with-gaps";
+  const blockedCount = idValue === "aks-rp-e2e.task.blocked-count";
   const id = `esc_aks_rp_e2e_metric_${Date.now()}`;
   return {
     type: "escalation.created",
@@ -220,12 +237,14 @@ function humanUnblockEscalation(
       escalationId: id,
       projectId,
       sourceAgent: "aks-explorer",
-      reason: staleActive
-        ? "aks-rp-e2e has active task-tree work whose worker session is not healthy while knowledge-model gaps remain."
-        : "aks-rp-e2e has no runnable backlog, active worker session, or review task while knowledge-model gaps remain.",
+      reason: blockedCount
+        ? "aks-rp-e2e has accumulated too many blocked task-tree leaves. Most blocked leaves need explicit external source input, Azure/auth context, cloud-mutation approval, or a decision to park them while other work continues."
+        : staleActive
+          ? "aks-rp-e2e has active task-tree work whose worker session is not healthy while knowledge-model gaps remain."
+          : "aks-rp-e2e has no runnable backlog, active worker session, or review task while knowledge-model gaps remain.",
       requestedAction:
         "Reply with steering, approval, missing context, or an unblock decision so the project owner can repair the task tree and continue.",
-      severity: "P0",
+      severity: blockedCount ? "P1" : "P0",
       blockedOn: `metric breach ${idValue}`,
       evidence: {
         metric: data,
@@ -239,9 +258,11 @@ function humanUnblockEscalation(
         instruction:
           "Fold the human reply into the task tree, then wake the project owner.",
       },
-      dedupKey: staleActive
-        ? "aks-rp-e2e:metric:stale-active-with-gaps"
-        : "aks-rp-e2e:metric:no-work-with-gaps",
+      dedupKey: blockedCount
+        ? "aks-rp-e2e:metric:blocked-count"
+        : staleActive
+          ? "aks-rp-e2e:metric:stale-active-with-gaps"
+          : "aks-rp-e2e:metric:no-work-with-gaps",
     },
   };
 }
@@ -367,9 +388,10 @@ async function routeAksRpE2eEvent(
     const id = metricId(event);
     if (
       id === "aks-rp-e2e.task.no-work-with-gaps" ||
-      id === "aks-rp-e2e.task.stale-active-with-gaps"
+      id === "aks-rp-e2e.task.stale-active-with-gaps" ||
+      id === "aks-rp-e2e.task.blocked-count"
     ) {
-      ctx.emit(humanUnblockEscalation(event));
+      return ctx.emit(humanUnblockEscalation(event));
     }
     return ctx.emit(
       projectOwnerEvent("metric-breach", {
@@ -662,7 +684,7 @@ export default defineProjectApp({
         event: "metric.breach",
         emits: ["escalation.created", "project.owner.requested"],
         description:
-          "Project metric breach wakes the owner; no-work-with-gaps also notifies a human.",
+          "Project metric breach wakes the owner unless it crosses an ownership boundary; no-work-with-gaps, stale-active-with-gaps, and blocked-count create an escalation instead of assigning back to the same owner.",
       },
       {
         event: "metric.recovered",

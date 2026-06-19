@@ -51,6 +51,16 @@ type RunResult = {
   } | null;
 };
 
+type PlannerRun = {
+  kind?: string;
+  status?: string;
+  ran_agent?: boolean;
+  steps?: string[];
+  ts?: string;
+  durationMs?: number;
+  result?: string;
+};
+
 type SpecIndexEntry = {
   id?: string;
   status?: string;
@@ -633,6 +643,46 @@ function duplicateArtifactCount(): number {
   return [...groups.values()].filter((count) => count > 3).length;
 }
 
+function plannerRuns(): PlannerRun[] {
+  const plannerRunsPath = join(effectiveAppDir, ".state", "planner-runs.jsonl");
+  if (!existsSync(plannerRunsPath)) return [];
+  try {
+    return readFileSync(plannerRunsPath, "utf-8")
+      .split(/\r?\n/)
+      .map((line) => line.trim())
+      .filter(Boolean)
+      .map((line) => JSON.parse(line) as PlannerRun)
+      .filter((row) => row.kind === "planner_wake");
+  } catch {
+    return [];
+  }
+}
+
+function plannerRunTimestamp(run: PlannerRun): number | null {
+  const parsed = typeof run.ts === "string" ? Date.parse(run.ts) : Number.NaN;
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
+function recentPlannerRuns(hours: number): PlannerRun[] {
+  const since = now - hours * 60 * 60 * 1000;
+  return plannerRuns().filter((run) => {
+    const ts = plannerRunTimestamp(run);
+    return ts != null && ts >= since;
+  });
+}
+
+function isSlowPlannerRun(run: PlannerRun): boolean {
+  if (typeof run.durationMs === "number" && Number.isFinite(run.durationMs)) {
+    return run.durationMs >= 180_000;
+  }
+  const result = (run.result ?? "").toLowerCase();
+  return (
+    result.includes("timed out after") ||
+    result.includes("interrupted") ||
+    result.includes("cancelled")
+  );
+}
+
 function valueFor(metricId: string): number {
   const tasks = taskCounts();
   const model = modelStatus();
@@ -642,6 +692,7 @@ function valueFor(metricId: string): number {
   const specs = specMetrics();
   const openGaps = pathGaps + specs.unverified;
   const live = liveRuns24h();
+  const plannerRecent = recentPlannerRuns(24);
 
   const values: Record<string, () => number> = {
     "aks-rp-e2e.task.ready-count": () => tasks.runnable,
@@ -707,6 +758,17 @@ function valueFor(metricId: string): number {
       live.length === 0
         ? 1
         : 0,
+    "aks-rp-e2e.planner.timeout-24h": () =>
+      plannerRecent.filter((run) => {
+        const result = (run.result ?? "").toLowerCase();
+        return (
+          result.includes("timed out after") &&
+          (run.steps?.includes("event-review") ||
+            run.steps?.includes("planning-update"))
+        );
+      }).length,
+    "aks-rp-e2e.planner.slow-count-24h": () =>
+      plannerRecent.filter((run) => isSlowPlannerRun(run)).length,
     "aks-rp-e2e.artifact.duplicate-group-count": () => duplicateArtifactCount(),
   };
 

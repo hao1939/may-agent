@@ -1,4 +1,3 @@
-const PROJECT_PATH = "projects/aks-rp-e2e";
 const APP_PATH = "projects/aks-rp-e2e.app";
 const TASK_TREE_FILE = "aks-rp-e2e.app/tasks/tree.json";
 
@@ -11,8 +10,6 @@ let state = {
   metricWarning: "",
   kanbanSource: "",
   kanbanWarning: "",
-  project: "",
-  projectMeta: null,
   selectedTaskId: null,
   collapsedTaskIds: new Set(),
 };
@@ -98,26 +95,6 @@ const METRIC_FALLBACKS = {
   "aks-rp-e2e.task.active-count": (stats) => stats.active,
   "aks-rp-e2e.task.ready-count": (stats) => stats.backlog,
   "aks-rp-e2e.task.blocked-count": (stats) => stats.blocked,
-  "aks-rp-e2e.task.completed-24h": () =>
-    state.projectMeta?.currentState?.metrics?.tasksCompleted24h,
-  "aks-rp-e2e.spec.total-count": () =>
-    state.projectMeta?.currentState?.metrics?.specs,
-  "aks-rp-e2e.spec.verified-count": () =>
-    state.projectMeta?.currentState?.metrics?.specsVerified,
-  "aks-rp-e2e.spec.reviewed-exception-count": () =>
-    state.projectMeta?.currentState?.metrics?.specsReviewedExceptions,
-  "aks-rp-e2e.spec.unverified-count": () =>
-    state.projectMeta?.currentState?.metrics?.specsUnverified,
-  "aks-rp-e2e.spec.failed-count": () =>
-    state.projectMeta?.currentState?.metrics?.specsFailed,
-  "aks-rp-e2e.spec.blocked-count": () =>
-    state.projectMeta?.currentState?.metrics?.specsBlocked,
-  "aks-rp-e2e.spec.ready-count": () =>
-    state.projectMeta?.currentState?.metrics?.specsReady,
-  "aks-rp-e2e.spec.draft-count": () =>
-    state.projectMeta?.currentState?.metrics?.specsDraft,
-  "aks-rp-e2e.replay.script-count": () =>
-    state.projectMeta?.currentState?.metrics?.replays,
 };
 
 function taskState(task) {
@@ -600,24 +577,14 @@ async function loadMetrics() {
 }
 
 async function loadData() {
-  const [projectData, appProjectData, taskData, kanbanData] = await Promise.all(
-    [
-      fetchJson(
-        `/api/projects/content?path=${encodeURIComponent(PROJECT_PATH)}`,
-      ).catch(() => ({ content: "" })),
-      fetchJson(
-        `/api/projects/artifact?path=${encodeURIComponent(APP_PATH)}&file=${encodeURIComponent("project.json")}`,
-      ).catch(() => ({ content: "{}" })),
-      fetchJson(
-        `/api/projects/artifact?path=${encodeURIComponent(APP_PATH)}&file=${encodeURIComponent("tasks/tree.json")}`,
-      ),
-      fetchJson(
-        `/api/projects/artifact?path=${encodeURIComponent(APP_PATH)}&file=${encodeURIComponent("tasks/kanban.json")}`,
-      ),
-    ],
-  );
-  state.project = projectData.content || "";
-  state.projectMeta = JSON.parse(appProjectData.content || "{}");
+  const [taskData, kanbanData] = await Promise.all([
+    fetchJson(
+      `/api/projects/artifact?path=${encodeURIComponent(APP_PATH)}&file=${encodeURIComponent("tasks/tree.json")}`,
+    ),
+    fetchJson(
+      `/api/projects/artifact?path=${encodeURIComponent(APP_PATH)}&file=${encodeURIComponent("tasks/kanban.json")}`,
+    ),
+  ]);
   state.tree = JSON.parse(taskData.content || "{}");
   const kanbanSnapshot = JSON.parse(kanbanData.content || "{}");
   if (!kanbanSnapshot?.kanban?.card_ids_by_column)

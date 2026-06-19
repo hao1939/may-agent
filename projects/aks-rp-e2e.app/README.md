@@ -120,11 +120,30 @@ human owner does not need to poll status and steer repeatedly.
 - Six-hour `project.focus.review.requested` reviews whether the current focus
   is on track, off track, completed, stale, or blocked.
 - The durable focus state belongs in `tasks/tree.json` as a visible
-  `focus_plan` branch and in `project.json` as a compact `currentFocus`
-  summary.
+  `focus_plan` branch. `project.json.currentFocus` is only a compact summary of
+  that branch, not an independent live status authority.
 - If approval or steering is needed, the workflow emits `escalation.created`
   for `human:operator`; the normal planner then folds the reply into the task
   tree and continues assigning work.
+
+### Live status authority order
+
+Per the accepted stale-surface scan in
+`../aks-rp-e2e/evidence/archive/planner-status-surface-live-frontier-preference-scan-20260619.md`,
+app-facing planner/status consumers must read current project state in this
+order:
+
+1. `tasks/tree.json` live frontier and counts.
+2. Live derived metrics regenerated from current task/spec/model surfaces.
+3. `project.json.currentState` and `project.json.currentFocus` only as compact
+   summaries/provenance.
+4. Historical root-task ceiling/steady-state context in `tasks/tree.json` only
+   as provenance after reopen events, never as present-tense closure proof.
+
+If these surfaces disagree, prefer the live task-tree frontier and derived
+metrics. Do not treat `project.json` summaries or root ceiling-era context as
+authoritative signals that the project is completed, at ceiling, or safe to
+stop reviewing.
 
 Manual actions exposed by `app.ts`:
 

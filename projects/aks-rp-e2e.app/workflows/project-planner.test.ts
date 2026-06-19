@@ -528,6 +528,200 @@ describe("project owner workflow", () => {
     );
   });
 
+  test("takes a cheap regular-learning-tick quick path when runnable work already exists", async () => {
+    const { appDir, projectDir } = await makeWorkspace();
+    await writeFile(
+      join(appDir, "tasks", "tree.json"),
+      `${JSON.stringify(
+        {
+          version: 1,
+          project: "aks-rp-e2e",
+          project_lifecycle: "active",
+          root_task_id: "project",
+          updated_at: new Date().toISOString(),
+          active_task_id: null,
+          active_task_ids: [],
+          tasks: {
+            project: {
+              id: "project",
+              state: "backlog",
+              children: ["backlog-task"],
+              goal: "project",
+              outputs: ["tasks/tree.json"],
+              acceptance: ["done"],
+            },
+            "backlog-task": {
+              id: "backlog-task",
+              parent_id: "project",
+              state: "backlog",
+              kind: "domain_leaf",
+              priority: "P1",
+              children: [],
+              goal: "Do regular learning work.",
+              outputs: ["evidence/archive/backlog.md"],
+              acceptance: ["done"],
+              conflict_scope: ["learning:backlog"],
+            },
+          },
+        },
+        null,
+        2,
+      )}\n`,
+      "utf8",
+    );
+
+    const prompts: string[] = [];
+    const dispatched: Array<{
+      type: string;
+      payload: Record<string, unknown>;
+    }> = [];
+    const result = await execute({
+      task: [
+        `app: ${appDir}`,
+        `project: ${projectDir}`,
+        "agent: aks-explorer",
+        "maxConcurrent: 5",
+        "## Trigger Event",
+        "```json",
+        JSON.stringify({
+          type: "project.owner.requested",
+          data: {
+            project: "aks-rp-e2e",
+            reason: "regular-learning-tick",
+          },
+        }),
+        "```",
+      ].join("\n"),
+      agent: "aks-explorer",
+      done: (message: string) => ({ status: "done", message }),
+      escalate: (message: string) => ({ status: "escalated", message }),
+      emit() {},
+      dispatchEvent(type: string, payload: Record<string, unknown>) {
+        dispatched.push({ type, payload });
+      },
+      runAgent: async () => ({ status: "success" }),
+      runAgentSession: async (_agent: string, task: string) => {
+        prompts.push(task);
+        return { status: "success", message: "should not run" };
+      },
+      summarize: () => "",
+    } as any);
+
+    expect(result.status).toBe("done");
+    expect(result.message).toContain(
+      "regular-learning-tick quick path assigned 1 task",
+    );
+    expect(prompts).toHaveLength(0);
+    expect(dispatched).toHaveLength(1);
+    expect(dispatched[0]).toMatchObject({
+      type: "project.task.assigned",
+      payload: {
+        taskId: "backlog-task",
+        sessionId: "s_task_backlog-task",
+      },
+    });
+
+    const plannerRuns = await readFile(
+      join(appDir, ".state", "planner-runs.jsonl"),
+      "utf8",
+    );
+    expect(plannerRuns).toContain(
+      '"steps":["regular-learning-tick-quick-path"]',
+    );
+    expect(plannerRuns).toContain('"ran_agent":false');
+    expect(plannerRuns).toContain('"durationMs":');
+    expect(plannerRuns).toContain(
+      "Regular learning tick assigned already-runnable work",
+    );
+  });
+
+  test("skips owner session for regular-learning-tick when review work is already pending", async () => {
+    const { appDir, projectDir } = await makeWorkspace();
+    await writeFile(
+      join(appDir, "tasks", "tree.json"),
+      `${JSON.stringify(
+        {
+          version: 1,
+          project: "aks-rp-e2e",
+          project_lifecycle: "active",
+          root_task_id: "project",
+          updated_at: new Date().toISOString(),
+          active_task_id: null,
+          active_task_ids: [],
+          tasks: {
+            project: {
+              id: "project",
+              state: "backlog",
+              children: ["review-task"],
+              goal: "project",
+              outputs: ["tasks/tree.json"],
+              acceptance: ["done"],
+            },
+            "review-task": {
+              id: "review-task",
+              parent_id: "project",
+              state: "review",
+              kind: "domain_leaf",
+              priority: "P1",
+              children: [],
+              goal: "Review worker result.",
+              outputs: ["evidence/archive/review-task.md"],
+              acceptance: ["done"],
+            },
+          },
+        },
+        null,
+        2,
+      )}\n`,
+      "utf8",
+    );
+
+    const prompts: string[] = [];
+    const result = await execute({
+      task: [
+        `app: ${appDir}`,
+        `project: ${projectDir}`,
+        "agent: aks-explorer",
+        "maxConcurrent: 5",
+        "## Trigger Event",
+        "```json",
+        JSON.stringify({
+          type: "project.owner.requested",
+          data: {
+            project: "aks-rp-e2e",
+            reason: "regular-learning-tick",
+          },
+        }),
+        "```",
+      ].join("\n"),
+      agent: "aks-explorer",
+      done: (message: string) => ({ status: "done", message }),
+      escalate: (message: string) => ({ status: "escalated", message }),
+      emit() {},
+      dispatchEvent() {},
+      runAgent: async () => ({ status: "success" }),
+      runAgentSession: async (_agent: string, task: string) => {
+        prompts.push(task);
+        return { status: "success", message: "should not run" };
+      },
+      summarize: () => "",
+    } as any);
+
+    expect(result.status).toBe("done");
+    expect(result.message).toContain(
+      "Regular learning tick found pending review work already visible",
+    );
+    expect(prompts).toHaveLength(0);
+
+    const plannerRuns = await readFile(
+      join(appDir, ".state", "planner-runs.jsonl"),
+      "utf8",
+    );
+    expect(plannerRuns).toContain('"steps":["regular-learning-tick-noop"]');
+    expect(plannerRuns).toContain('"ran_agent":false');
+    expect(plannerRuns).toContain('"durationMs":');
+  });
+
   test("requeues watchdog-stale active work before quick refill", async () => {
     const { appDir, projectDir } = await makeWorkspace();
     await writeFile(
@@ -1191,6 +1385,125 @@ describe("project owner workflow", () => {
     );
   });
 
+  test("deterministic refill tolerates unrelated blocked leaves", async () => {
+    const { appDir, projectDir } = await makeWorkspace();
+    await writeFile(
+      join(projectDir, "specs", "feature-a-create.json"),
+      "{}\n",
+      "utf8",
+    );
+    await writeFile(
+      join(projectDir, "replays", "feature-a-create.ts"),
+      "export {};\n",
+      "utf8",
+    );
+    await writeFile(
+      join(appDir, "tasks", "tree.json"),
+      `${JSON.stringify(
+        {
+          version: 1,
+          project: "aks-rp-e2e",
+          project_lifecycle: "active",
+          root_task_id: "project",
+          updated_at: new Date().toISOString(),
+          active_task_id: null,
+          active_task_ids: [],
+          tasks: {
+            project: {
+              id: "project",
+              state: "backlog",
+              children: ["blocked-task", "spec-runner-and-replays"],
+              goal: "project",
+              outputs: ["tasks/tree.json"],
+              acceptance: ["done"],
+            },
+            "spec-runner-and-replays": {
+              id: "spec-runner-and-replays",
+              parent_id: "project",
+              state: "backlog",
+              kind: "durable_lane",
+              children: [],
+              goal: "execute specs and replays",
+              outputs: ["runs/executions/"],
+              acceptance: ["runner work represented as child tasks"],
+            },
+            "blocked-task": {
+              id: "blocked-task",
+              parent_id: "project",
+              state: "blocked",
+              kind: "domain_leaf",
+              priority: "P2",
+              children: [],
+              goal: "Unrelated blocked leaf.",
+              outputs: ["evidence/archive/blocked-task.md"],
+              acceptance: ["done"],
+              blocker: "Awaiting unrelated external unblock.",
+            },
+          },
+        },
+        null,
+        2,
+      )}\n`,
+      "utf8",
+    );
+
+    const prompts: string[] = [];
+    const dispatched: Array<{
+      type: string;
+      payload: Record<string, unknown>;
+    }> = [];
+    const result = await execute({
+      task: [
+        `app: ${appDir}`,
+        `project: ${projectDir}`,
+        "agent: aks-explorer",
+        "maxConcurrent: 2",
+        "## Trigger Event",
+        "```json",
+        JSON.stringify({
+          type: "project.owner.requested",
+          data: {
+            project: "aks-rp-e2e",
+            reason: "watchdog-open-work-reconcile",
+          },
+        }),
+        "```",
+      ].join("\n"),
+      agent: "aks-explorer",
+      done: (message: string) => ({ status: "done", message }),
+      escalate: (message: string) => ({ status: "escalated", message }),
+      emit() {},
+      dispatchEvent(type: string, payload: Record<string, unknown>) {
+        dispatched.push({ type, payload });
+      },
+      runAgent: async () => ({ status: "success" }),
+      runAgentSession: async (_agent: string, task: string) => {
+        prompts.push(task);
+        return { status: "success", message: "should not run" };
+      },
+      summarize: () => "",
+    } as any);
+
+    expect(result.status).toBe("done");
+    expect(result.message).toContain("deterministic-refill seeded 1 task");
+    expect(prompts).toHaveLength(0);
+    expect(dispatched).toHaveLength(1);
+    expect(dispatched[0].type).toBe("project.task.assigned");
+    expect(String(dispatched[0].payload.taskId)).toContain(
+      "feature-a-staging-frontier",
+    );
+
+    const plannerRuns = await readFile(
+      join(appDir, ".state", "planner-runs.jsonl"),
+      "utf8",
+    );
+    expect(plannerRuns).toContain('"steps":["deterministic-refill"]');
+    expect(plannerRuns).toContain('"ran_agent":false');
+    expect(plannerRuns).toContain(
+      '"routine-refill:watchdog-open-work-reconcile"',
+    );
+  });
+
   test("skips owner session for already-settled task completion while active work runs", async () => {
     const { appDir, projectDir } = await makeWorkspace();
     await writeFile(
@@ -1392,6 +1705,7 @@ describe("project owner workflow", () => {
     );
     expect(plannerRuns).toContain('"seeded_task_ids"');
     expect(plannerRuns).toContain('"planner-timeout-underfilled-frontier"');
+    expect(plannerRuns).toContain('"durationMs":');
   });
 
   test("seeds source/spec backlog without dispatch when slow execution is already full", async () => {

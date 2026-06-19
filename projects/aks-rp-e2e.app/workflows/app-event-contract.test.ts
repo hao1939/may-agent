@@ -179,6 +179,36 @@ describe("app event contract", () => {
     });
   });
 
+  test("blocked send-ready source-holder handoff stays owner-visible without problem solver escalation", async () => {
+    const { ctx, emitted } = testContext();
+
+    await app.onEvent(ctx, {
+      type: "project.task.completed",
+      project: "aks-rp-e2e",
+      data: {
+        taskId: "vm-prerelease-uninstall-missing-spec-wave-20260619",
+        status: "review",
+        result: "blocked",
+        summary:
+          "Wrote evidence/archive/vm-prerelease-uninstall-missing-spec-wave-20260619.md and a send-ready owner handoff packet showing VM prerelease uninstall rows 197-201 are still blocked on missing authoritative uninstall source, then recorded the exact resume condition for source holder follow-up.",
+      },
+    });
+
+    expect(emitted).toHaveLength(1);
+    expect(emitted[0]).toMatchObject({
+      type: "project.owner.requested",
+      reason: "task-completed",
+      params: {
+        completedTaskId: "vm-prerelease-uninstall-missing-spec-wave-20260619",
+        status: "review",
+        task: {
+          taskId: "vm-prerelease-uninstall-missing-spec-wave-20260619",
+          result: "blocked",
+        },
+      },
+    });
+  });
+
   test("blocked owner-owned checkpoint handoff stays owner-visible without problem solver escalation", async () => {
     const { ctx, emitted } = testContext();
 
@@ -266,6 +296,39 @@ describe("app event contract", () => {
         status: "review",
         task: {
           taskId: "aad-rbac-reset-model-wording-reconcile-20260618",
+          result: "blocked",
+        },
+      },
+    });
+  });
+
+  test("blocked duplicate-family blocker artifact stays owner-visible without problem solver escalation", async () => {
+    const { ctx, emitted } = testContext();
+
+    await app.onEvent(ctx, {
+      type: "project.task.completed",
+      project: "aks-rp-e2e",
+      data: {
+        taskId:
+          "artifact-duplicate-cloud-provider-multiple-slb-family-cleanup-20260619",
+        status: "review",
+        result: "blocked",
+        summary:
+          "Investigated the cloud-provider-multiple-slb-staging-frontier duplicate family, documented all 24 members plus their model/archive/run references, and concluded no single bounded row-80-style rename can safely move the metric without a broader relink/rebucket decomposition.",
+      },
+    });
+
+    expect(emitted).toHaveLength(1);
+    expect(emitted[0]).toMatchObject({
+      type: "project.owner.requested",
+      reason: "task-completed",
+      params: {
+        completedTaskId:
+          "artifact-duplicate-cloud-provider-multiple-slb-family-cleanup-20260619",
+        status: "review",
+        task: {
+          taskId:
+            "artifact-duplicate-cloud-provider-multiple-slb-family-cleanup-20260619",
           result: "blocked",
         },
       },
@@ -445,7 +508,7 @@ describe("app event contract", () => {
     });
   });
 
-  test("no-work metric breach creates human unblock escalation and wakes owner review", async () => {
+  test("no-work metric breach creates human unblock escalation without assigning back to owner", async () => {
     const { ctx, emitted } = testContext();
 
     await app.onEvent(ctx, {
@@ -459,7 +522,7 @@ describe("app event contract", () => {
       },
     });
 
-    expect(emitted).toHaveLength(2);
+    expect(emitted).toHaveLength(1);
     expect(emitted[0]).toMatchObject({
       type: "escalation.created",
       owner: "human:operator",
@@ -470,16 +533,12 @@ describe("app event contract", () => {
         dedupKey: "aks-rp-e2e:metric:no-work-with-gaps",
       },
     });
-    expect(emitted[1]).toMatchObject({
-      type: "project.owner.requested",
-      reason: "metric-breach",
-      params: {
-        metricId: "aks-rp-e2e.task.no-work-with-gaps",
-      },
-    });
+    expect(
+      emitted.some((event) => event.type === "project.owner.requested"),
+    ).toBe(false);
   });
 
-  test("stale-active metric breach creates human unblock escalation and wakes owner review", async () => {
+  test("stale-active metric breach creates human unblock escalation without assigning back to owner", async () => {
     const { ctx, emitted } = testContext();
 
     await app.onEvent(ctx, {
@@ -493,7 +552,7 @@ describe("app event contract", () => {
       },
     });
 
-    expect(emitted).toHaveLength(2);
+    expect(emitted).toHaveLength(1);
     expect(emitted[0]).toMatchObject({
       type: "escalation.created",
       owner: "human:operator",
@@ -505,12 +564,43 @@ describe("app event contract", () => {
         dedupKey: "aks-rp-e2e:metric:stale-active-with-gaps",
       },
     });
-    expect(emitted[1]).toMatchObject({
-      type: "project.owner.requested",
-      reason: "metric-breach",
-      params: {
-        metricId: "aks-rp-e2e.task.stale-active-with-gaps",
+    expect(
+      emitted.some((event) => event.type === "project.owner.requested"),
+    ).toBe(false);
+  });
+
+  test("blocked-count metric breach creates aggregated human unblock escalation without assigning back to owner", async () => {
+    const { ctx, emitted } = testContext();
+
+    await app.onEvent(ctx, {
+      type: "metric.breach",
+      owner: "agent:aks-explorer",
+      data: {
+        metricId: "aks-rp-e2e.task.blocked-count",
+        current: 64,
+        threshold: 5,
+        priority: "P1",
       },
     });
+
+    expect(emitted).toHaveLength(1);
+    expect(emitted[0]).toMatchObject({
+      type: "escalation.created",
+      owner: "human:operator",
+      project: "aks-rp-e2e",
+      data: {
+        projectId: "aks-rp-e2e",
+        severity: "P1",
+        blockedOn: "metric breach aks-rp-e2e.task.blocked-count",
+        dedupKey: "aks-rp-e2e:metric:blocked-count",
+      },
+    });
+    const escalationData = emitted[0].data as Record<string, unknown>;
+    expect(String(escalationData.reason)).toContain(
+      "too many blocked task-tree leaves",
+    );
+    expect(
+      emitted.some((event) => event.type === "project.owner.requested"),
+    ).toBe(false);
   });
 });

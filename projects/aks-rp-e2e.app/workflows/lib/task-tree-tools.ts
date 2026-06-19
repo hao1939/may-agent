@@ -22,6 +22,7 @@ export {
   createTask,
   drainTaskAssignments,
   kanbanTaskTreeState,
+  listRunnableBacklogTaskIds,
   markTaskDone,
   peekTaskAssignments,
   planningPacket,
@@ -35,6 +36,7 @@ export {
   summarizeTaskTree,
   taskKanbanColumn,
   taskTreeConfig,
+  unblockTask,
   writeKanbanSnapshot,
 } from "@may-agent/sdk";
 export type {
@@ -53,6 +55,7 @@ export type {
   TaskTreeRepairResult,
   TaskTreeSummary,
   TaskTreeToolConfig,
+  UnblockTaskInput,
   UpdateTaskOutputsInput,
   UpdateTaskTextInput,
 } from "@may-agent/sdk";

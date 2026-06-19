@@ -351,6 +351,32 @@ const metrics: MetricDef[] = [
     config: { alert: { mode: "consecutive_failures", count: 1 } },
   },
   {
+    id: "aks-rp-e2e.planner.timeout-24h",
+    name: "AKS RP E2E planner owner-session timeouts in 24h",
+    type: "gauge",
+    target: 0,
+    threshold: 0,
+    unit: "count",
+    alertOp: ">",
+    priority: "P1",
+    description:
+      "Owner-visible planner health signal: counts planner_wake records from .state/planner-runs.jsonl in the last 24h whose owner session result timed out. Any nonzero count should wake the owner to inspect planner recovery and backlog refill behavior.",
+    config: { alert: { mode: "consecutive_failures", count: 1 } },
+  },
+  {
+    id: "aks-rp-e2e.planner.slow-count-24h",
+    name: "AKS RP E2E slow planner wakes in 24h",
+    type: "gauge",
+    target: 0,
+    threshold: 0,
+    unit: "count",
+    alertOp: ">",
+    priority: "P2",
+    description:
+      "Owner-visible planner slowness signal: counts planner_wake records in the last 24h that either took at least 180s wall time or ended interrupted/cancelled. This catches slow owner/planner loops before they become silent refill gaps.",
+    config: { alert: { mode: "consecutive_failures", count: 1 } },
+  },
+  {
     id: "aks-rp-e2e.artifact.duplicate-group-count",
     name: "AKS RP E2E duplicate artifact groups",
     type: "gauge",

@@ -203,6 +203,40 @@ describe("project execution watchdog", () => {
     expect(updated.tasks["backlog-task"].state).toBe("backlog");
   });
 
+  test("does not treat dependency-waiting backlog leaves as runnable", async () => {
+    const projectDir = await makeProject();
+    await writeTree(projectDir, {
+      "external-wait": task("external-wait", "blocked", {
+        blocker: "External owner response required.",
+      }),
+      "waiting-task": task("waiting-task", "backlog", {
+        depends_on: ["external-wait"],
+      }),
+    });
+
+    const dispatched: Array<{
+      type: string;
+      payload: Record<string, unknown>;
+    }> = [];
+    const result = await execute(context({ projectDir, dispatched }));
+
+    expect(result.status).toBe("done");
+    expect(result.message).toContain(
+      "Watchdog emitted project.owner.requested: watchdog-open-work-reconcile.",
+    );
+    expect(dispatched).toEqual([
+      {
+        type: "project.owner.requested",
+        payload: {
+          project: "aks-rp-e2e",
+          reason: "watchdog-open-work-reconcile",
+          maxConcurrent: 3,
+          requested_by: "project-execution-watchdog",
+        },
+      },
+    ]);
+  });
+
   test("wakes owner for an active leaf whose runtime session is no longer running", async () => {
     const projectDir = await makeProject();
     const stateDbPath = join(projectDir, "may.db");
