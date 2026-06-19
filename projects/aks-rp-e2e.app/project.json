@@ -25,48 +25,39 @@
     "Continuously reconcile Go e2ev3 source coverage, including suite-condition variants, and tidy feature/spec/model structure so the knowledge base stays canonical."
   ],
   "currentState": {
-    "summary": "Coverage-closure work remains live after the 2026-06-17 reopen. The reopened Go e2ev3 total-coverage branch now exposes 404 features with 349 pass, 471 paths with 413 pass, 0 unknown paths, and 974 evidence records; the live task tree currently shows 1043 total tasks with 1036 done, 6 active, 1 review, and 0 backlog. The executable frontier is 4 active closure leaves plus 1 review leaf while draft-sweep, evidence-gap closure, probe-wiring validation, metadata repair, and net-integration backfill reconciliation converge the remaining closure wave.",
-    "activeTaskId": "go-e2ev3-draft-sweep-artifact-reconciliation-20260617",
+    "summary": "The live task tree now shows 2389 total tasks with 2291 done, 0 active leaves, 68 blocked nodes (61 blocked leaves), 2 review leaves, and 28 backlog leaves. The westus2/local verification frontier is materially cleaner: `ccp-agent-lifecycle-deployment-westus2-local-execute-20260619` is now a reviewed real product pass, `aad-rbac-nonaad-reset-stable-empty-westus2-local-execute-20260619` is now a reviewed stable-empty product-gap, `app-routing-vm-prerelease-default-internal-westus2-local-execute-20260619` is now a reviewed bounded product pass, and `aad-rbac-managed-v2-reset-stable-empty-westus2-local-execute-20260619` is now closed as the reviewed stable-empty product-gap result. The managed-v2 follow-up is now explicit backlog as `aad-rbac-managed-v2-reset-preview-bodyful-westus2-local-execute-20260619`. `jwt-authenticator-upgrade-survival-westus2-local-execute-20260619` is now truthfully blocked on runner/runtime stability after a real westus2/local partial execute cleared the old auth/subscription gate but lost replay-owned final evidence when the worker restarted. `ccp-connected-cluster-proxy-auth-westus2-local-execute-20260619`, `localdns-autodefault-upgrade-pool-level-westus2-local-execute-20260619`, `private-cluster-vnet-integration-update-westus2-local-execute-20260619`, `cloud-provider-multiple-slb-westus2-local-execute-20260619`, and `managedsystem-day2-count-type-westus2-local-execute-20260619` remain truthfully blocked on specific reproduced non-auth/runtime blockers.",
+    "activeTaskId": null,
     "metrics": {
-      "features": 404,
-      "featuresPass": 349,
-      "paths": 471,
-      "pathsPass": 413,
-      "passRatePaths": "87.7%",
-      "passRateFeatures": "86.4%",
-      "tasksCompleted": 1036,
-      "tasksActive": 6,
-      "tasksInReview": 1,
-      "tasksBacklog": 0,
-      "tasksTotal": 1043,
-      "uncommittedChanges": 167,
-      "lastCommit": "4c41b57",
-      "evidence": 974,
-      "taskCompleted24h": 233,
-      "liveStarted24h": 59,
-      "liveSucceeded24h": 5,
-      "specUnverified": 382,
-      "specFailed": 0,
-      "unknownPaths": 0
+      "features": 411,
+      "featuresPass": 340,
+      "paths": 478,
+      "pathsPass": 412,
+      "passRatePaths": "86.2%",
+      "passRateFeatures": "82.7%",
+      "tasksCompleted": 2291,
+      "tasksActive": 0,
+      "tasksInReview": 2,
+      "tasksBlocked": 68,
+      "tasksBacklog": 28,
+      "tasksTotal": 2389,
+      "uncommittedChanges": 338,
+      "lastCommit": "a4c157d",
+      "unknownPaths": 1,
+      "blockedLeafCount": 61
     }
   },
   "currentFocus": {
-    "summary": "The approved focus is still correct: close total Go e2ev3 coverage by reconciling abandoned worker output, validating landed CCP/traffic/RP and net-integration work, wiring remaining probe gaps, and converting anonymous evidence gaps into named path-scoped outcomes.",
-    "nextAction": "Keep the reopened closure branch moving: finish the 4 active leaves (draft-sweep artifact reconciliation, net-integration pass-evidence backfill queue, two-evidence-gap closure, and project-metadata repair), clear the 1 review leaf (probe-wiring batch-2 validation), then convert any residual unverified-spec or evidence gaps they expose into explicit follow-up leaves under the same closure plan.",
-    "activeTaskIds": [
-      "go-e2ev3-draft-sweep-artifact-reconciliation-20260617",
-      "go-e2ev3-net-integration-pass-evidence-backfill-queue-20260617",
-      "go-e2ev3-two-evidence-gap-closure-20260617",
-      "project-metadata-live-surface-repair-20260617"
-    ],
-    "focusPlanId": "go-e2ev3-total-coverage-closure-20260617",
+    "summary": "The current 12-24h focus is to preserve the exact blocked westus2/local routes, keep `jwt-authenticator-upgrade-survival-westus2-local-execute-20260619` blocked on runner/runtime stability rather than treating it as a clean active execute center, and treat managed-v2 preview-bodyful as explicit backlog rather than a still-open review decision.",
+    "nextAction": "Use `tasks/tree.json` plus the fresh westus2/local evidence notes as the routing authority. `jwt-authenticator-upgrade-survival-westus2-local-execute-20260619` should resume only when the same westus2/local command family can run under a stable execution window long enough to flush replay-owned final evidence for the pending kubeconfig/JWT/create-upgrade/post-upgrade assertions. Keep `ccp-connected-cluster-proxy-auth-westus2-local-execute-20260619` blocked on the surrogate `InvalidAADClusterToken` contract, `localdns-autodefault-upgrade-pool-level-westus2-local-execute-20260619` blocked on upgrade-envelope plus `HTTP 409` sequencing repair, `private-cluster-vnet-integration-update-westus2-local-execute-20260619` blocked on baseline cluster-create cancellation, `managedsystem-day2-count-type-westus2-local-execute-20260619` blocked on the local Azure CLI create-path crash, and `cloud-provider-multiple-slb-westus2-local-execute-20260619` blocked on the reproduced ARM deserializer rejection until a real environment/request-surface change occurs. If a stable rerun window is not available and no higher-priority human comment arrives, choose the next promotion from the explicit backlog list rather than pretending JWT is still actively executing.",
+    "activeTaskIds": [],
+    "focusPlanId": "focus-plan-westus2-local-queue-20260619",
     "focusPlanStatus": "active",
-    "priorFocusPlanId": "focus-plan-20260614-combined-source-hygiene",
+    "priorFocusPlanId": "go-e2ev3-total-coverage-closure-20260617",
     "priorFocusResult": "completed",
     "focusReview": {
-      "reviewedAt": "2026-06-17T06:18:00.000Z",
-      "result": "on_track",
-      "note": "The reopened total-coverage effort is now producing concrete results, not just alarms: 233 tasks completed in 24h, 59 live starts, 5 live successes, specs/index.json repaired with 56 missing specs, source-grounded speculor verification landed, and the remaining work is broken into bounded audit/reconciliation leaves. The project is no longer off_track; it is actively converging on full source-to-model accountability."
+      "reviewedAt": "2026-06-19T14:24:30Z",
+      "result": "updated",
+      "note": "Frontier reconciliation now reflects the post-execute queue truthfully: `jwt-authenticator-upgrade-survival-westus2-local-execute-20260619` is blocked on runner/runtime stability after a real westus2/local partial execute cleared the old auth/subscription gate, `aad-rbac-managed-v2-reset-preview-bodyful-westus2-local-execute-20260619` remains explicit backlog, and the reproduced blocked routes stay narrowed to their exact non-auth/runtime resume conditions."
     }
   },
   "focusPlan": {
@@ -83,5 +74,5 @@
     "tasks/README.md",
     "tasks/tree.json"
   ],
-  "updatedAt": "2026-06-17T06:32:54.000Z"
+  "updatedAt": "2026-06-19T14:24:30Z"
 }

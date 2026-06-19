@@ -480,6 +480,36 @@ function sessionRestartReason(sessionId: string): string | null {
   }
 }
 
+function activeTaskWorkerSessionRow(taskId: string): Record<string, unknown> | null {
+  if (!existsSync(stateDbPath)) return null;
+  const db = new Database(stateDbPath, { readonly: true });
+  const taskIdPattern = new RegExp(
+    String.raw`"taskId"\s*:\s*"${taskId.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}"`,
+  );
+  try {
+    const rows = db
+      .query(
+        `
+      select status, outcome, opCount, startedAt, lastActivityAt, task
+      from sessions
+      where source = 'workflow:task-worker'
+      order by startedAt desc
+      limit 200
+    `,
+      )
+      .all() as Array<Record<string, unknown>>;
+    for (const row of rows) {
+      const taskText = typeof row.task === "string" ? row.task : "";
+      if (taskIdPattern.test(taskText)) return row;
+    }
+    return null;
+  } catch {
+    return null;
+  } finally {
+    db.close();
+  }
+}
+
 function activeLeafTasks(): TaskNode[] {
   const tree = loadTaskTree();
   return Object.values(tree.tasks ?? {}).filter(
@@ -505,6 +535,7 @@ function activeTaskIsWithinStartGrace(task: TaskNode): boolean {
 }
 
 function activeTaskRestartReason(task: TaskNode): string | null {
+  const taskId = typeof task.id === "string" ? task.id.trim() : "";
   const sessionId =
     typeof task.session_id === "string" && task.session_id.trim()
       ? task.session_id.trim()
@@ -515,6 +546,12 @@ function activeTaskRestartReason(task: TaskNode): string | null {
   const reason = sessionRestartReason(sessionId);
   if (reason === "session-not-running" && activeTaskIsWithinStartGrace(task)) {
     return null;
+  }
+  if (reason === "session-not-running" && sessionId.startsWith("s_task_") && taskId) {
+    const workerRow = activeTaskWorkerSessionRow(taskId);
+    const workerReason = sessionRestartReasonFromRow(workerRow);
+    if (workerReason === null) return null;
+    if (workerReason !== "session-not-running") return workerReason;
   }
   return reason;
 }

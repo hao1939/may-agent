@@ -4,7 +4,7 @@
   "updated_at": "2026-06-19T13:48:21Z",
   "project_lifecycle": "active",
   "root_task_id": "project",
-  "active_task_id": "jwt-authenticator-upgrade-survival-westus2-local-execute-20260619",
+  "active_task_id": null,
   "tasks": {
     "project": {
       "id": "project",
@@ -129884,7 +129884,7 @@
     "jwt-authenticator-upgrade-survival-westus2-local-execute-20260619": {
       "id": "jwt-authenticator-upgrade-survival-westus2-local-execute-20260619",
       "parent_id": "spec-runner-and-replays",
-      "state": "active",
+      "state": "blocked",
       "kind": "domain_leaf",
       "priority": "P2",
       "owner": "aks-explorer",

@@ -205,6 +205,42 @@ describe("project metrics", () => {
     ).toBe("0");
   });
 
+  test("treats synthetic s_task session ids as healthy when a matching worker session is running", async () => {
+    const fixture = await makeFixture();
+    await writeTree(fixture.appDir, { session_id: "s_task_active-task" });
+    const db = new Database(fixture.dbPath);
+    db.exec(`
+      create table sessions (
+        sessionId text primary key,
+        status text not null,
+        outcome text,
+        opCount integer default 0,
+        startedAt integer not null,
+        lastActivityAt integer,
+        source text,
+        task text
+      )
+    `);
+    db.query("insert into sessions values (?, ?, ?, ?, ?, ?, ?, ?)").run(
+      "s_real_worker",
+      "running",
+      null,
+      1,
+      Date.now() - 10_000,
+      Date.now(),
+      "workflow:task-worker",
+      '{"data":{"taskId":"active-task"}}',
+    );
+    db.close();
+
+    expect(
+      await metricValue(fixture, "aks-rp-e2e.task.stale-active-count"),
+    ).toBe("0");
+    expect(
+      await metricValue(fixture, "aks-rp-e2e.task.stale-active-with-gaps"),
+    ).toBe("0");
+  });
+
   test("does not count blocked-dependent live backlog as runnable work", async () => {
     const fixture = await makeFixture();
     await writeFile(
