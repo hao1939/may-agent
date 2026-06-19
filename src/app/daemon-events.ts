@@ -42,6 +42,7 @@ export function attachEventPersistence(opts: {
 }): void {
   const dbWriter = new DbWriter(opts.persistDir);
   opts.bus.subscribe(dbWriter.handler, { priority: "first" });
+  opts.bus.setDeliveryRecorder(dbWriter.recordDelivery);
 }
 
 export function attachDaemonEventSubscribers(opts: {

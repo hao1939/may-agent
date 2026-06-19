@@ -110,6 +110,9 @@ export type {
   MetricQuery,
   AlertQuery,
   ProjectQuery,
+  WorkflowRunQuery,
+  EventDeliveryHealth,
+  EventDeliveryHealthQuery,
 } from "./query-service.js";
 export { createWorkflowHandler } from "@may-agent/sdk";
 export type { WorkflowHandlerOptions } from "@may-agent/sdk";

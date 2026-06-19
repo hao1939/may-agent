@@ -149,6 +149,22 @@ export interface ClosedLoopStewardContext {
   recentStewardRuns: Record<string, unknown>[];
 }
 
+export interface EventDeliveryHealthQuery {
+  now?: number;
+  lookbackMs?: number;
+  limit?: number;
+}
+
+export interface EventDeliveryHealth {
+  now: number;
+  since: number;
+  ownerInboxOpenCount: number;
+  unhandledEvents: Record<string, unknown>[];
+  overduePendingEvents: Record<string, unknown>[];
+  orphanPairs: Record<string, unknown>[];
+  overdueOpenPairs: Record<string, unknown>[];
+}
+
 export interface HeartbeatContextQuery {
   agent: string;
   now?: number;
@@ -199,10 +215,13 @@ export interface QueryAPI {
   metricAlertContext(filter: MetricAlertContextQuery): MetricAlertContext;
   metricAlertReactorState(filter: MetricAlertReactorStateQuery): MetricAlertReactorState;
   closedLoopStewardContext(filter?: ClosedLoopStewardContextQuery): ClosedLoopStewardContext;
+  eventDeliveryHealth(filter?: EventDeliveryHealthQuery): EventDeliveryHealth;
   heartbeatContext(filter: HeartbeatContextQuery): HeartbeatContext;
   evaluatorDeepEvalScan(filter?: EvaluatorDeepEvalScanQuery): EvaluatorDeepEvalScanContext;
   evaluatorAftermathContext(filter: EvaluatorAftermathContextQuery): EvaluatorAftermathContext;
   sql(sql: string, params?: unknown[], opts?: QueryOptions): QueryResult;
+  /** Record that inbox-routed events were reviewed. Emits follow-up events and closes pairs. */
+  reviewInboxEvents(eventIds: number[], reviewedBy?: string): number;
   /** Mark inbox events as handled after consumption. Returns count updated. */
   markInboxHandled(eventIds: number[], handledBy?: string): number;
   /** Expire stale pending messages older than the given age. Returns count expired. */
@@ -933,6 +952,8 @@ export {
   readTask,
   rejectTaskReview,
   requeueStaleActiveTasks,
+  updateTaskOutputs,
+  updateTaskText,
   repairTaskTreeRollups,
   saveTaskTreeWithKanbanSnapshot,
   summarizeTaskTree,
@@ -954,10 +975,12 @@ export type {
   ModelPathStatusEntry,
   ModelStatusSummary,
   RejectTaskReviewInput,
+  UpdateTaskTextInput,
   TaskPlanningPacket,
   TaskPlanningSnapshot,
   TaskTreeSummary,
   TaskTreeToolConfig,
+  UpdateTaskOutputsInput,
 } from "./project-task-tree.js";
 
 export {

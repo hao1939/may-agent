@@ -169,6 +169,19 @@ export type MarkTaskDoneInput = {
   resolution?: string;
 };
 
+export type UpdateTaskOutputsInput = {
+  taskId: string;
+  outputs: string[];
+};
+
+export type UpdateTaskTextInput = {
+  taskId: string;
+  goal?: string;
+  acceptance?: string[];
+  blocker?: string;
+  clearBlocker?: boolean;
+};
+
 export type RejectTaskReviewInput = {
   taskId: string;
   reason: string;
@@ -1066,12 +1079,10 @@ export function confirmRunnableBacklogLeaves(config: ToolConfig, limit = 10): st
     const tree = readTaskTree(config);
     const promoted: string[] = [];
     const candidates = Object.values(tree.tasks)
-      .filter((task) => task.status === "backlog" && isLeaf(task))
+      .filter((task) => isRunnableBacklogLeaf(tree, task))
       .sort(taskSort);
     for (const task of candidates) {
       if (promoted.length >= limit) break;
-      if (!isClearEnough(task)) continue;
-      if (!dependenciesSatisfied(tree, task)) continue;
       task.status = "backlog";
       task.state = "backlog";
       task.trace = {
@@ -1165,6 +1176,73 @@ export function markTaskDone(config: ToolConfig, input: MarkTaskDoneInput): Task
       task_id: task.id,
       resolution: task.resolution,
       summary: input.summary,
+    });
+    return task;
+  });
+}
+
+export function updateTaskOutputs(config: ToolConfig, input: UpdateTaskOutputsInput): TaskNode {
+  return withTreeLock(config, () => {
+    const tree = readTaskTree(config);
+    const task = tree.tasks[input.taskId];
+    if (!task) throw new Error(`Task not found: ${input.taskId}`);
+    const outputs = normalizeStringArray(input.outputs);
+    if (outputs.length === 0) throw new Error("Task outputs cannot be empty");
+    task.outputs = outputs;
+    saveTaskTreeWithKanbanSnapshot(config, tree);
+    appendToolJournal(config, {
+      kind: "task_outputs_updated",
+      task_id: task.id,
+      outputs,
+    });
+    return task;
+  });
+}
+
+export function updateTaskText(config: ToolConfig, input: UpdateTaskTextInput): TaskNode {
+  return withTreeLock(config, () => {
+    const tree = readTaskTree(config);
+    const task = tree.tasks[input.taskId];
+    if (!task) throw new Error(`Task not found: ${input.taskId}`);
+
+    const hasGoal = typeof input.goal === "string";
+    const hasAcceptance = input.acceptance !== undefined;
+    const hasBlocker = typeof input.blocker === "string";
+    const clearBlocker = input.clearBlocker === true;
+    if (!hasGoal && !hasAcceptance && !hasBlocker && !clearBlocker) {
+      throw new Error("Provide at least one of goal, acceptance, blocker, or clearBlocker");
+    }
+
+    if (hasGoal) {
+      const goal = input.goal?.trim() ?? "";
+      if (!goal) throw new Error("Task goal cannot be empty");
+      task.goal = goal;
+    }
+
+    let acceptance: string[] | undefined;
+    if (hasAcceptance) {
+      acceptance = normalizeStringArray(input.acceptance);
+      if (acceptance.length === 0) throw new Error("Task acceptance cannot be empty");
+      task.acceptance = acceptance;
+    }
+
+    if (clearBlocker) {
+      task.blocker = undefined;
+    }
+    if (hasBlocker) {
+      const blocker = input.blocker?.trim() ?? "";
+      task.blocker = blocker || undefined;
+    }
+
+    saveTaskTreeWithKanbanSnapshot(config, tree);
+    appendToolJournal(config, {
+      kind: "task_text_updated",
+      task_id: task.id,
+      goal_updated: hasGoal,
+      acceptance_updated: hasAcceptance,
+      blocker_updated: hasBlocker || clearBlocker,
+      acceptance_count: acceptance?.length,
+      blocked_state: task.blocker ? "present" : "cleared",
     });
     return task;
   });

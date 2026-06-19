@@ -11,6 +11,7 @@
  */
 
 import { log } from "../lib/log.js";
+import { DEFAULT_OWNER_DELIVERY_NOTE } from "../lib/event-delivery.js";
 
 // ── Event Types ────────────────────────────────────────────────────────
 
@@ -134,6 +135,7 @@ export type SystemEvent =
   | { type: "heartbeat.step_started"; source?: string; owner: string; data: { agent?: string; workflow: string; step: string } }
   | { type: "heartbeat.diagnostics_started"; source?: string; owner: string; data: { agent: string; step: string } }
   | { type: "heartbeat.diagnostics_completed"; source?: string; owner: string; data: { agent: string; step: string; summary: string } }
+  | { type: "runtime.daemon.heartbeat"; source: "daemon"; owner: "agent:may"; data: { pid: number; interfaceAgent: string; socketEnabled: boolean } }
   | { type: "handler.started"; source: "cron"; owner: string; data: { handler: string; agent: string } }
   | { type: "handler.completed"; source: "cron"; owner: string; data: { handler: string; agent: string; durationMs: number } }
   | { type: "handler.failed"; source: "cron"; owner: string; data: { handler: string; agent: string; error: string; durationMs: number } }
@@ -431,8 +433,19 @@ export function eventData(event: unknown): Record<string, unknown> {
 
 // ── EventBus ───────────────────────────────────────────────────────────
 
-export type Subscriber = (event: AgentEvent) => void;
+export type DeliveryRoute = "direct" | "owner_inbox" | "noop";
+export type DeliveryResult = {
+  accepted: true;
+  by: string;
+  route?: DeliveryRoute;
+  note?: string;
+};
+export type SubscriberResult = DeliveryResult | void;
+export type Subscriber = (event: AgentEvent) => SubscriberResult;
 export type SubscribeOptions = { priority?: "first" | "normal" };
+export type DeliveryRecorder = (event: AgentEvent, result: DeliveryResult) => void;
+
+export const EVENT_ROW_ID = Symbol.for("may-agent.eventRowId");
 
 /**
  * EventBus — typed pub/sub.
@@ -448,6 +461,7 @@ export type SubscribeOptions = { priority?: "first" | "normal" };
 export class EventBus {
   private firstSubscribers: Subscriber[] = [];
   private normalSubscribers: Subscriber[] = [];
+  private deliveryRecorder: DeliveryRecorder | undefined;
   private emitDepth = 0;
   private reportingFailures = false;
   private pendingFailureEvents: AgentEvent[] = [];
@@ -462,25 +476,34 @@ export class EventBus {
     };
   }
 
+  setDeliveryRecorder(fn: DeliveryRecorder): void {
+    this.deliveryRecorder = fn;
+  }
+
   /** Emit an event. Runs "first" subscribers (persistence) before "normal" (handlers/UI). */
   emit(event: AgentEvent): void {
     this.emitDepth++;
+    let delivery: DeliveryResult | undefined;
     try {
       for (const fn of this.firstSubscribers) {
         try {
-          fn(event);
+          delivery ??= normalizeDeliveryResult(fn(event));
         } catch (err) {
           this.reportSubscriberFailure(event, "first", err);
         }
       }
       for (const fn of this.normalSubscribers) {
         try {
-          fn(event);
+          delivery ??= normalizeDeliveryResult(fn(event));
         } catch (err) {
           /* subscriber errors never break the bus */
           this.reportSubscriberFailure(event, "normal", err);
         }
       }
+      delivery ??= ownerInboxFallback(event);
+      delivery ??= pairTrackerFallback(event);
+      delivery ??= defaultOwnerFallback(event);
+      if (delivery) this.deliveryRecorder?.(event, delivery);
     } finally {
       this.emitDepth--;
       if (this.emitDepth === 0) this.flushFailureEvents();
@@ -522,4 +545,91 @@ export class EventBus {
       this.reportingFailures = false;
     }
   }
+}
+
+function normalizeDeliveryResult(result: SubscriberResult): DeliveryResult | undefined {
+  if (!result || result.accepted !== true || typeof result.by !== "string" || !result.by.trim()) return undefined;
+  return {
+    accepted: true,
+    by: result.by.trim(),
+    ...(result.route ? { route: result.route } : {}),
+    ...(result.note ? { note: result.note } : {}),
+  };
+}
+
+function ownerInboxFallback(event: AgentEvent): DeliveryResult | undefined {
+  if (!isOwnerInboxCandidate(event.type)) return undefined;
+  const record = event as Record<string, unknown>;
+  const owner = typeof record.owner === "string" ? record.owner.trim() : "";
+  if (!owner) return undefined;
+  return {
+    accepted: true,
+    by: `owner-inbox:${owner}`,
+    route: "owner_inbox",
+    note: "owner-addressed event accepted by owner inbox fallback",
+  };
+}
+
+function pairTrackerFallback(event: AgentEvent): DeliveryResult | undefined {
+  if (!isPairTrackedEvent(event.type)) return undefined;
+  if (!hasPairCorrelationKey(event)) return undefined;
+  return {
+    accepted: true,
+    by: "event-pair-tracker",
+    route: "direct",
+    note: "lifecycle event accepted by pair tracker",
+  };
+}
+
+function defaultOwnerFallback(event: AgentEvent): DeliveryResult | undefined {
+  const record = event as Record<string, unknown>;
+  const owner = typeof record.owner === "string" ? record.owner.trim() : "";
+  if (!owner) return undefined;
+  return {
+    accepted: true,
+    by: `default-owner:${owner}`,
+    route: "direct",
+    note: DEFAULT_OWNER_DELIVERY_NOTE,
+  };
+}
+
+function isPairTrackedEvent(eventType: string): boolean {
+  if (eventType === "session.start" || eventType === "session.end") return true;
+  return [
+    ".started",
+    ".completed",
+    ".failed",
+    ".requested",
+    ".accepted",
+    ".rejected",
+    ".created",
+    ".resolved",
+    ".dismissed",
+    ".closed",
+    ".assigned",
+    ".blocked",
+  ].some((suffix) => eventType.endsWith(suffix));
+}
+
+function hasPairCorrelationKey(event: AgentEvent): boolean {
+  const data = eventData(event);
+  if (event.type.startsWith("session.")) return hasKey(data.sessionId);
+  if (event.type.startsWith("workflow.")) return hasKey(data.workflowRunId);
+  if (event.type.startsWith("handler.")) return hasKey(data.handlerRunId) || hasKey(data.workflowRunId) || hasKey(data.handler);
+  if (event.type.startsWith("escalation.")) return hasKey(data.escalationId);
+  if (event.type.startsWith("project.task.")) return hasKey(data.taskId);
+  return hasKey(data.requestId);
+}
+
+function hasKey(value: unknown): boolean {
+  return (typeof value === "string" && !!value.trim()) || (typeof value === "number" && Number.isFinite(value));
+}
+
+function isOwnerInboxCandidate(eventType: string): boolean {
+  if (eventType === "message.created" || eventType === "learning.feedback") return true;
+  if (eventType === "metric.breach" || eventType === "metric.recovered" || eventType === "metric.stalled") return true;
+  if (eventType === "escalation.created") return true;
+  if (eventType === "project.feedback.created" || eventType === "project.comment.created") return true;
+  if (eventType === "project.owner.requested" || eventType === "project.planning.requested") return true;
+  return eventType.endsWith(".requested");
 }

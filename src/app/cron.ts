@@ -18,7 +18,7 @@
 import { readFileSync, existsSync, watchFile, unwatchFile, type StatWatcher } from "node:fs";
 import { createHash } from "node:crypto";
 import { resolve, dirname } from "node:path";
-import type { EventBus, SystemEvent } from "./event-bus.js";
+import type { DeliveryResult, EventBus, SystemEvent } from "./event-bus.js";
 import type { SubagentManager } from "../lib/index.js";
 import { getDb } from "../lib/requests.js";
 import type { CronEntry, WorkflowBackedHandler } from "../lib/cron-tool.js";
@@ -311,7 +311,10 @@ export class Cron {
     if (this.entries.some((e) => e.name === entry.name) && !this.syntheticEntries.has(entry.name)) return;
 
     const old = this.syntheticEntries.get(entry.name);
-    if (old && JSON.stringify(old) === JSON.stringify(entry)) return;
+    if (old && JSON.stringify(old) === JSON.stringify(entry)) {
+      this.buildEventSubscriptions();
+      return;
+    }
 
     this.syntheticEntries.set(entry.name, entry);
     const index = this.entries.findIndex((candidate) => candidate.name === entry.name);
@@ -432,17 +435,25 @@ export class Cron {
   subscribeToBus(bus: EventBus): void {
     if (this._busSubscribed) return;
     this._busSubscribed = true;
-    bus.subscribe((event) => {
+    bus.subscribe((event): DeliveryResult | void => {
       // Convention trigger: any entry can be manually fired by emitting
       // `trigger.<entry-name>`. This keeps operator/adapters simple and avoids
       // per-entry `on` boilerplate for timer jobs.
       if (event.type.startsWith("trigger.")) {
         const entryName = event.type.slice("trigger.".length);
         if (entryName) {
-          this.triggerNow(entryName, {
+          const triggered = this.triggerNow(entryName, {
             force: true,
             triggerEvent: toEventEnvelope(event as any, { source: "manual", owner: "agent:may" }),
           });
+          if (triggered) {
+            return {
+              accepted: true,
+              by: `cron:${entryName}`,
+              route: "direct",
+              note: "manual trigger dispatched",
+            };
+          }
         }
         return;
       }
@@ -453,13 +464,29 @@ export class Cron {
         const entryName = agent === "may" ? "heartbeat" : `heartbeat-${agent}`;
         // Only trigger if it wasn't fired by us (avoid loop: fireHandler emits → bus → triggerNow)
         if (!this.isRunning(entryName)) {
-          this.triggerNow(entryName, { force: true });
+          const triggered = this.triggerNow(entryName, { force: true });
+          if (triggered) {
+            return {
+              accepted: true,
+              by: `cron:${entryName}`,
+              route: "direct",
+              note: "heartbeat trigger dispatched",
+            };
+          }
         }
         return;
       }
       if (!event.type.includes(".")) return;
       if (!isEventEnvelope(event)) return;
-      this.triggerSubscribers(event.type, event);
+      const triggered = this.triggerSubscribers(event.type, event);
+      if (triggered > 0) {
+        return {
+          accepted: true,
+          by: `cron:${triggered}`,
+          route: "direct",
+          note: `dispatched ${triggered} subscribed handler(s)`,
+        };
+      }
     });
   }
 
@@ -592,6 +619,12 @@ export class Cron {
 
   getEntries(): CronEntry[] {
     return [...this.entries];
+  }
+
+  getEventSubscriptions(): Record<string, string[]> {
+    return Object.fromEntries(
+      [...this.eventSubscriptions.entries()].map(([eventType, entryNames]) => [eventType, [...entryNames]]),
+    );
   }
 
   /** Trigger an entry immediately. Force bypasses debounce, but never overlaps a running entry.
