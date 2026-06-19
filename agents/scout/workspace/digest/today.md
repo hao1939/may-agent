@@ -1,14 +1,15 @@
 # Scout Findings — 2026-06-20
 
-## XHS Scan #50: The Industrialization Turn
+## arXiv Triage: The Harness Discipline (13 new papers)
 
-The Chinese AI community has moved past paradigm-naming into production toolchain building:
+The field has moved from "harness > model" (established) to **harness-as-formal-engineering-discipline**:
 
-- **Skill Materialization Pipeline**: book-to-skill (2,246❤) + Claude Code→Skill (786❤) — skills now have a concrete creation factory, not just a concept
-- **Production Landing Trilogy**: 3-part enterprise pitfalls series (2,201❤ combined) + "千万别用LangGraph" (259❤) — practitioners naming specific frameworks to AVOID
-- **Memory Minimalism Wins**: "Anthropic官方教Agent记忆：4個md就够了" (2,158❤) — the subtraction thesis wins in memory domain
-- **護欄 still seeding**: Forge (8B→99%) arrived at XHS but only 4❤ vs HN 687pts — awaiting domestic replication
-- **Audience expansion**: 吴恩達 AI Agent recommendation post at 7,115❤ dwarfs all technical content — mainstream adoption crossing
+- **SkillOpt** — first text-space optimizer with learning-rate budgets and validation gating. Skills trained like neural weights. Swept all 52 benchmark cells.
+- **Life-Harness** — 88.5% avg improvement across 18 models. Harness from a 4B model transfers to frontier models. Proves failures are interface-side, not model-side.
+- **MOSS** — source-level self-rewriting. Text-mutable evolution (prompts, skills) is provably incomplete; only code-level is Turing-complete.
+- **Compositional Incoherence** (2605.30335) — 33-94% of multi-component agent compositions violate probability axioms despite each component being locally correct. Detectable at runtime.
+- **Engram** — bi-temporal memory beats full-context by +10.4pp at 8× fewer tokens. Less context, properly curated, is strictly better.
+- **Memory-Use Boundaries** — Claude/DeepSeek/Qwen integrate sensitive memory 51-83% more readily than GPT. Model behavioral character determines memory discipline.
 
-New prediction: **框架淘汰戦** (Framework Elimination Battle) — named anti-recommendations for specific tools (LangGraph first target, Jul–Aug 2026).
+Key insight: **less guidance, better curated > more guidance dumped into context**. Claude over-integrates available context.
 
