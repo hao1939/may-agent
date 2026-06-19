@@ -151,7 +151,10 @@ function isProblemClaim(event: Record<string, unknown>): boolean {
         "reserves domain repo commits",
         "worker may modify",
       ].some((s) => summary.includes(s));
-    if (completionSignals.some((s) => summary.includes(s)) || ownerCheckpointSignals) {
+    if (
+      completionSignals.some((s) => summary.includes(s)) ||
+      ownerCheckpointSignals
+    ) {
       return false;
     }
   }
@@ -204,6 +207,8 @@ function humanUnblockEscalation(
   event: Record<string, unknown>,
 ): Record<string, unknown> {
   const data = eventDetails(event);
+  const idValue = metricId(event);
+  const staleActive = idValue === "aks-rp-e2e.task.stale-active-with-gaps";
   const id = `esc_aks_rp_e2e_metric_${Date.now()}`;
   return {
     type: "escalation.created",
@@ -215,12 +220,13 @@ function humanUnblockEscalation(
       escalationId: id,
       projectId,
       sourceAgent: "aks-explorer",
-      reason:
-        "aks-rp-e2e has no runnable backlog, active, or review task while knowledge-model gaps remain.",
+      reason: staleActive
+        ? "aks-rp-e2e has active task-tree work whose worker session is not healthy while knowledge-model gaps remain."
+        : "aks-rp-e2e has no runnable backlog, active worker session, or review task while knowledge-model gaps remain.",
       requestedAction:
         "Reply with steering, approval, missing context, or an unblock decision so the project owner can repair the task tree and continue.",
       severity: "P0",
-      blockedOn: "metric breach aks-rp-e2e.task.no-work-with-gaps",
+      blockedOn: `metric breach ${idValue}`,
       evidence: {
         metric: data,
         appTaskTree: "/app/projects/aks-rp-e2e.app/tasks/tree.json",
@@ -233,7 +239,9 @@ function humanUnblockEscalation(
         instruction:
           "Fold the human reply into the task tree, then wake the project owner.",
       },
-      dedupKey: "aks-rp-e2e:metric:no-work-with-gaps",
+      dedupKey: staleActive
+        ? "aks-rp-e2e:metric:stale-active-with-gaps"
+        : "aks-rp-e2e:metric:no-work-with-gaps",
     },
   };
 }
@@ -291,7 +299,8 @@ async function routeAksRpE2eEvent(
 
   if (
     event.type === "project.problem.resolved" ||
-    event.type === "project.problem.escalated"
+    event.type === "project.problem.escalated" ||
+    event.type === "project.problem.unknown"
   ) {
     const problemKey =
       eventString(event, "problemKey") || eventString(event, "problem_key");
@@ -299,7 +308,9 @@ async function routeAksRpE2eEvent(
       projectOwnerEvent(
         event.type === "project.problem.resolved"
           ? "problem-resolved"
-          : "problem-escalated",
+          : event.type === "project.problem.escalated"
+            ? "problem-escalated"
+            : "problem-unknown",
         {
           problemKey,
           problem: eventDetails(event),
@@ -354,7 +365,10 @@ async function routeAksRpE2eEvent(
 
   if (event.type === "metric.breach" && isAksProjectMetric(event)) {
     const id = metricId(event);
-    if (id === "aks-rp-e2e.task.no-work-with-gaps") {
+    if (
+      id === "aks-rp-e2e.task.no-work-with-gaps" ||
+      id === "aks-rp-e2e.task.stale-active-with-gaps"
+    ) {
       ctx.emit(humanUnblockEscalation(event));
     }
     return ctx.emit(
@@ -544,6 +558,7 @@ export default defineProjectApp({
     { type: "project.problem.requested", project: projectId },
     { type: "project.problem.resolved", project: projectId },
     { type: "project.problem.escalated", project: projectId },
+    { type: "project.problem.unknown", project: projectId },
     { type: "task.requeued", project: projectId },
     "escalation.resolved",
     "escalation.dismissed",
@@ -565,7 +580,11 @@ export default defineProjectApp({
           "Worker executes one assigned leaf and returns a reviewable completion claim.",
       },
       "aks-rp-e2e-problem-solver": {
-        emits: ["project.problem.resolved", "project.problem.escalated"],
+        emits: [
+          "project.problem.resolved",
+          "project.problem.escalated",
+          "project.problem.unknown",
+        ],
         description:
           "Problem solver diagnoses blocked/failed work and reports the result to the owner.",
       },
@@ -620,6 +639,11 @@ export default defineProjectApp({
         description: "Escalated problem returns to owner reconciliation.",
       },
       {
+        event: "project.problem.unknown",
+        emits: ["project.owner.requested"],
+        description: "Unknown problem result returns to owner reconciliation.",
+      },
+      {
         event: "task.requeued",
         emits: ["project.owner.requested"],
         description: "Runtime requeue returns the task to owner review.",
@@ -662,6 +686,7 @@ export default defineProjectApp({
           "project.problem.requested",
           "project.problem.resolved",
           "project.problem.escalated",
+          "project.problem.unknown",
           "project.focus.plan.requested",
           "project.focus.review.requested",
         ],

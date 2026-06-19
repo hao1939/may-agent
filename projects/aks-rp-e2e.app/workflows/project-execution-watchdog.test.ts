@@ -130,6 +130,7 @@ function context(input: {
   projectDir: string;
   stateDbPath?: string;
   maxConcurrent?: number;
+  sessionStartGraceMs?: number;
   dispatched?: Array<{ type: string; payload: Record<string, unknown> }>;
 }) {
   return {
@@ -139,6 +140,7 @@ function context(input: {
       `stateDb: ${input.stateDbPath ?? join(input.projectDir, "missing.db")}`,
       "maxAttempts: 2",
       `maxConcurrent: ${input.maxConcurrent ?? 3}`,
+      `sessionStartGraceMs: ${input.sessionStartGraceMs ?? 60000}`,
     ].join("\n"),
     agent: "aks-explorer",
     done: (message: string) => ({ status: "done", message }),
@@ -404,6 +406,54 @@ describe("project execution watchdog", () => {
     );
     expect(updated.tasks["active-task"].state).toBe("active");
     expect(updated.tasks["active-task"].blocker).toBeUndefined();
+  });
+
+  test("does not call a newly assigned active leaf stale before the worker session starts", async () => {
+    const projectDir = await makeProject();
+    const assignedAt = new Date().toISOString();
+    await writeTree(
+      projectDir,
+      {
+        "active-task": task("active-task", "active", {
+          session_id: "s_missing",
+          trace: {
+            assigned_at: assignedAt,
+          },
+        }),
+      },
+      {
+        active_task_id: "active-task",
+        active_task_ids: ["active-task"],
+      },
+    );
+
+    const dispatched: Array<{
+      type: string;
+      payload: Record<string, unknown>;
+    }> = [];
+    const result = await execute(
+      context({
+        projectDir,
+        sessionStartGraceMs: 60_000,
+        dispatched,
+      }),
+    );
+
+    expect(result.status).toBe("done");
+    expect(result.message).toContain(
+      "Watchdog emitted project.owner.requested: watchdog-capacity-underfilled.",
+    );
+    expect(dispatched).toEqual([
+      {
+        type: "project.owner.requested",
+        payload: {
+          project: "aks-rp-e2e",
+          reason: "watchdog-capacity-underfilled",
+          maxConcurrent: 3,
+          requested_by: "project-execution-watchdog",
+        },
+      },
+    ]);
   });
 
   test("wakes owner when open work has no runnable backlog leaves", async () => {

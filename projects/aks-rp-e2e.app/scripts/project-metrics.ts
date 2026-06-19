@@ -1,6 +1,7 @@
 import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
 import { dirname, extname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import { Database } from "bun:sqlite";
 import {
   summarizeTaskTree,
   taskTreeConfig,
@@ -14,6 +15,7 @@ type TaskNode = {
   kind?: string;
   goal?: string;
   children?: string[];
+  session_id?: string;
   updated_at?: string;
   trace?: Record<string, unknown>;
   attempts?: unknown[];
@@ -70,11 +72,24 @@ type SpecMetrics = {
 };
 
 const appDir = resolve(dirname(fileURLToPath(import.meta.url)), "..");
+const effectiveAppDir = resolve(process.env.AKS_RP_E2E_APP_DIR ?? appDir);
 const projectDir = resolve(
-  process.env.PROJECT_DIR ?? join(appDir, "..", "aks-rp-e2e"),
+  process.env.PROJECT_DIR ?? join(effectiveAppDir, "..", "aks-rp-e2e"),
+);
+const stateDbPath = resolve(
+  process.env.MAY_DB_PATH ??
+    join(effectiveAppDir, "..", "..", ".state", "may.db"),
 );
 const desiredParallelism = Number.parseInt(
   process.env.AKS_RP_E2E_DESIRED_PARALLELISM ?? "5",
+  10,
+);
+const staleActiveNoActivityMs = Number.parseInt(
+  process.env.AKS_RP_E2E_STALE_ACTIVE_MS ?? "600000",
+  10,
+);
+const sessionStartGraceMs = Number.parseInt(
+  process.env.AKS_RP_E2E_SESSION_START_GRACE_MS ?? "60000",
   10,
 );
 const now = Date.now();
@@ -133,7 +148,9 @@ function timestampOf(task: TaskNode): number | null {
 }
 
 function loadTaskTree(): TaskTree {
-  return readJson<TaskTree>(join(appDir, "tasks", "tree.json"), { tasks: {} });
+  return readJson<TaskTree>(join(effectiveAppDir, "tasks", "tree.json"), {
+    tasks: {},
+  });
 }
 
 function taskState(task: TaskNode): string {
@@ -176,7 +193,7 @@ function taskCounts() {
   try {
     frontier = summarizeTaskTree(
       taskTreeConfig({
-        appDir,
+        appDir: effectiveAppDir,
         projectDir,
         worker: "aks-explorer",
         maxConcurrent: desiredParallelism,
@@ -195,12 +212,16 @@ function taskCounts() {
     const ts = timestampOf(task);
     return ts != null && ts >= dayAgo;
   }).length;
+  const activeStale = staleActiveTaskCount();
+  const activeRunning = runningActiveTaskCount();
   return {
     total: tasks.length,
     runnable:
       frontier?.runnable.length ??
       tasks.filter(isWorkerExecutableBacklogLeaf).length,
     active: frontier?.active.length ?? byStatus.get("active") ?? 0,
+    activeRunning,
+    activeStale,
     review: frontier?.review.length ?? byStatus.get("review") ?? 0,
     backlog: byStatus.get("backlog") ?? 0,
     blocked: frontier?.blocked.length ?? byStatus.get("blocked") ?? 0,
@@ -361,7 +382,7 @@ function hasOpenSpecVerificationWork(
       );
     }) ||
     tasks.runnable > 0 ||
-    tasks.active > 0 ||
+    tasks.activeRunning > 0 ||
     tasks.review > 0
   );
 }
@@ -371,6 +392,124 @@ function countReplays(): number {
     const rel = path.slice(join(projectDir, "replays").length + 1);
     return extname(path) === ".ts" && !rel.startsWith("lib/");
   }).length;
+}
+
+function sessionRestartReasonFromRow(
+  row: Record<string, unknown> | null,
+): string | null {
+  if (!row) return "session-not-running";
+  if (row.status !== "running") return "session-not-running";
+  if (row.outcome === "error" || row.outcome === "interrupted")
+    return `session-${row.outcome}`;
+
+  const opCount =
+    typeof row.opCount === "number" && Number.isFinite(row.opCount)
+      ? row.opCount
+      : null;
+  const startedAt =
+    typeof row.startedAt === "number" && Number.isFinite(row.startedAt)
+      ? row.startedAt
+      : null;
+  const lastActivityAt =
+    typeof row.lastActivityAt === "number" &&
+    Number.isFinite(row.lastActivityAt)
+      ? row.lastActivityAt
+      : startedAt;
+  const staleSince = lastActivityAt ?? startedAt;
+  if (
+    opCount === 0 &&
+    staleSince !== null &&
+    Date.now() - staleSince > staleActiveNoActivityMs
+  ) {
+    return "session-no-activity";
+  }
+
+  return null;
+}
+
+function sessionRestartReason(sessionId: string): string | null {
+  if (!existsSync(stateDbPath)) return "session-not-running";
+  const db = new Database(stateDbPath, { readonly: true });
+  try {
+    const row = db
+      .query(
+        `
+      select status, outcome, opCount, startedAt, lastActivityAt
+      from sessions
+      where sessionId = ?
+      limit 1
+    `,
+      )
+      .get(sessionId) as Record<string, unknown> | null;
+    return sessionRestartReasonFromRow(row);
+  } catch {
+    try {
+      const row = db
+        .query(
+          `
+        select status
+        from sessions
+        where sessionId = ?
+        limit 1
+      `,
+        )
+        .get(sessionId) as Record<string, unknown> | null;
+      return sessionRestartReasonFromRow(row);
+    } catch {
+      return "session-not-running";
+    }
+  } finally {
+    db.close();
+  }
+}
+
+function activeLeafTasks(): TaskNode[] {
+  const tree = loadTaskTree();
+  return Object.values(tree.tasks ?? {}).filter(
+    (task) => isLeaf(task) && taskState(task) === "active",
+  );
+}
+
+function activeTaskIsWithinStartGrace(task: TaskNode): boolean {
+  const trace = task.trace ?? {};
+  const candidates = [
+    typeof trace.assigned_at === "string" ? trace.assigned_at : undefined,
+    typeof trace.worker_started_at === "string"
+      ? trace.worker_started_at
+      : undefined,
+  ].filter((value): value is string => Boolean(value));
+  for (const value of candidates) {
+    const parsed = Date.parse(value);
+    if (Number.isFinite(parsed) && Date.now() - parsed <= sessionStartGraceMs) {
+      return true;
+    }
+  }
+  return false;
+}
+
+function activeTaskRestartReason(task: TaskNode): string | null {
+  const sessionId =
+    typeof task.session_id === "string" && task.session_id.trim()
+      ? task.session_id.trim()
+      : "";
+  if (!sessionId) {
+    return activeTaskIsWithinStartGrace(task) ? null : "missing-session";
+  }
+  const reason = sessionRestartReason(sessionId);
+  if (reason === "session-not-running" && activeTaskIsWithinStartGrace(task)) {
+    return null;
+  }
+  return reason;
+}
+
+function staleActiveTaskCount(): number {
+  return activeLeafTasks().filter((task) => activeTaskRestartReason(task))
+    .length;
+}
+
+function runningActiveTaskCount(): number {
+  return activeLeafTasks().filter((task) => !activeTaskRestartReason(task))
+    .length;
 }
 
 function hasLiveExecutionRunnableBacklog(): boolean {
@@ -409,7 +548,9 @@ function hasLiveExecutionRunnableBacklog(): boolean {
       .filter((value): value is string => Boolean(value))
       .join(" ")
       .toLowerCase();
-    const hasExecutionSignal = idSignals.some((signal) => haystack.includes(signal));
+    const hasExecutionSignal = idSignals.some((signal) =>
+      haystack.includes(signal),
+    );
     if (!hasExecutionSignal) return false;
     return !negativeSignals.some((signal) => haystack.includes(signal));
   });
@@ -482,12 +623,13 @@ function valueFor(metricId: string): number {
   const values: Record<string, () => number> = {
     "aks-rp-e2e.task.ready-count": () => tasks.runnable,
     "aks-rp-e2e.task.active-count": () => tasks.active,
+    "aks-rp-e2e.task.stale-active-count": () => tasks.activeStale,
     "aks-rp-e2e.task.blocked-count": () => tasks.blocked,
     "aks-rp-e2e.task.completed-24h": () => tasks.completed24h,
     "aks-rp-e2e.task.no-work-with-gaps": () =>
       !tasks.projectClosed &&
       tasks.runnable === 0 &&
-      tasks.active === 0 &&
+      tasks.activeRunning === 0 &&
       openGaps > 0
         ? 1
         : 0,
@@ -495,10 +637,12 @@ function valueFor(metricId: string): number {
       !tasks.projectClosed && tasks.runnable === 0 && openGaps > 0 ? 1 : 0,
     "aks-rp-e2e.task.capacity-underfilled-with-gaps": () =>
       !tasks.projectClosed &&
-      tasks.runnable + tasks.active < Math.max(1, desiredParallelism) &&
+      tasks.runnable + tasks.activeRunning < Math.max(1, desiredParallelism) &&
       openGaps > 0
         ? 1
         : 0,
+    "aks-rp-e2e.task.stale-active-with-gaps": () =>
+      !tasks.projectClosed && tasks.activeStale > 0 && openGaps > 0 ? 1 : 0,
     "aks-rp-e2e.model.unknown-path-count": () =>
       (pathStatus.unknown ?? 0) + (pathStatus["source-enumerated"] ?? 0),
     "aks-rp-e2e.model.failed-path-count": () => pathStatus.fail ?? 0,

@@ -123,7 +123,10 @@ async function runSolverStep(input: {
 
 function problemResultType(
   text: string,
-): "project.problem.resolved" | "project.problem.escalated" | "project.problem.unknown" {
+):
+  | "project.problem.resolved"
+  | "project.problem.escalated"
+  | "project.problem.unknown" {
   if (/PROBLEM_RESULT:\s*resolved/i.test(text))
     return "project.problem.resolved";
   if (/PROBLEM_RESULT:\s*escalated/i.test(text))
@@ -146,7 +149,10 @@ function problemResultType(
 function emitProblemResult(
   ctx: WorkflowContext,
   input: {
-    type: "project.problem.resolved" | "project.problem.escalated" | "project.problem.unknown";
+    type:
+      | "project.problem.resolved"
+      | "project.problem.escalated"
+      | "project.problem.unknown";
     problemKey: string;
     affectedTasks: string[];
     summary: string;

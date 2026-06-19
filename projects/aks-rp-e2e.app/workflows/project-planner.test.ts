@@ -770,11 +770,7 @@ describe("project owner workflow", () => {
             project: {
               id: "project",
               state: "active",
-              children: [
-                "active-task",
-                "already-done-task",
-                "blocked-task",
-              ],
+              children: ["active-task", "already-done-task", "blocked-task"],
               goal: "project",
               outputs: ["tasks/tree.json"],
               acceptance: ["done"],
@@ -887,7 +883,9 @@ describe("project owner workflow", () => {
     expect(plannerRuns).toContain(
       "Watchdog stale-active review was a false positive",
     );
-    expect(plannerRuns).toContain("settled/non-active after live-tree revalidation");
+    expect(plannerRuns).toContain(
+      "settled/non-active after live-tree revalidation",
+    );
     expect(plannerRuns).toContain('"ran_agent":false');
   });
 
@@ -1003,8 +1001,12 @@ describe("project owner workflow", () => {
     );
     expect(plannerRuns).toContain('"steps":["stale-runnable-backlog-noop"]');
     expect(plannerRuns).toContain('"ran_agent":false');
-    expect(plannerRuns).toContain('"active_task_ids":["policy-addon-audit","policy-addon-pubsub"]');
-    expect(plannerRuns).toContain("trigger tree updated_at=2026-06-17T20:30:13.409Z");
+    expect(plannerRuns).toContain(
+      '"active_task_ids":["policy-addon-audit","policy-addon-pubsub"]',
+    );
+    expect(plannerRuns).toContain(
+      "trigger tree updated_at=2026-06-17T20:30:13.409Z",
+    );
   });
 
   test("skips owner session for stale watchdog-runnable-backlog packets even when unrelated blocked leaves exist", async () => {
@@ -1019,7 +1021,8 @@ describe("project owner workflow", () => {
           project_lifecycle: "active",
           root_task_id: "project",
           updated_at: treeUpdatedAt,
-          active_task_id: "managedsystem-disable-migration-staging-frontier-20260618",
+          active_task_id:
+            "managedsystem-disable-migration-staging-frontier-20260618",
           active_task_ids: [
             "managedsystem-disable-migration-staging-frontier-20260618",
             "vm-prerelease-app-routing-ownership-repair-20260618",
@@ -1046,10 +1049,13 @@ describe("project owner workflow", () => {
               kind: "domain_leaf",
               priority: "P1",
               owner: "aks-explorer",
-              session_id: "s_task_managedsystem-disable-migration-staging-frontier-20260618",
+              session_id:
+                "s_task_managedsystem-disable-migration-staging-frontier-20260618",
               children: [],
               goal: "Continue ManagedSystem staging frontier work.",
-              outputs: ["evidence/archive/managedsystem-disable-migration-staging-frontier-20260618.md"],
+              outputs: [
+                "evidence/archive/managedsystem-disable-migration-staging-frontier-20260618.md",
+              ],
               acceptance: ["done"],
             },
             "vm-prerelease-app-routing-ownership-repair-20260618": {
@@ -1059,10 +1065,13 @@ describe("project owner workflow", () => {
               kind: "domain_leaf",
               priority: "P1",
               owner: "aks-explorer",
-              session_id: "s_task_vm-prerelease-app-routing-ownership-repair-20260618",
+              session_id:
+                "s_task_vm-prerelease-app-routing-ownership-repair-20260618",
               children: [],
               goal: "Repair VM prerelease app-routing ownership mapping.",
-              outputs: ["evidence/archive/vm-prerelease-app-routing-ownership-repair-20260618.md"],
+              outputs: [
+                "evidence/archive/vm-prerelease-app-routing-ownership-repair-20260618.md",
+              ],
               acceptance: ["done"],
             },
             "app-routing-vm-prerelease-handwritten-gap-matrix-20260618": {
@@ -1074,34 +1083,42 @@ describe("project owner workflow", () => {
               owner: "aks-explorer",
               children: [],
               goal: "Old superseded handwritten gap matrix leaf.",
-              outputs: ["evidence/archive/app-routing-vm-prerelease-handwritten-gap-matrix-20260618.md"],
+              outputs: [
+                "evidence/archive/app-routing-vm-prerelease-handwritten-gap-matrix-20260618.md",
+              ],
               acceptance: ["done"],
             },
-            "app-routing-vm-prerelease-handwritten-source-blocker-matrix-20260618": {
-              id: "app-routing-vm-prerelease-handwritten-source-blocker-matrix-20260618",
-              parent_id: "project",
-              state: "done",
-              kind: "domain_leaf",
-              priority: "P2",
-              owner: "aks-explorer",
-              children: [],
-              goal: "Replacement blocker matrix leaf already accepted.",
-              outputs: ["evidence/archive/app-routing-vm-prerelease-handwritten-source-blocker-matrix-20260618.md"],
-              acceptance: ["done"],
-            },
-            "aad-rbac-managed-v2-reset-stable-empty-rerun-await-aad-env-20260617": {
-              id: "aad-rbac-managed-v2-reset-stable-empty-rerun-await-aad-env-20260617",
-              parent_id: "project",
-              state: "blocked",
-              kind: "domain_leaf",
-              priority: "P2",
-              owner: "aks-explorer",
-              children: [],
-              goal: "Unrelated blocked AAD rerun leaf.",
-              outputs: ["evidence/archive/aad-rbac-managed-v2-reset-stable-empty-rerun-await-aad-env-20260617.md"],
-              acceptance: ["done"],
-              blocker: "Awaiting external AAD environment gate.",
-            },
+            "app-routing-vm-prerelease-handwritten-source-blocker-matrix-20260618":
+              {
+                id: "app-routing-vm-prerelease-handwritten-source-blocker-matrix-20260618",
+                parent_id: "project",
+                state: "done",
+                kind: "domain_leaf",
+                priority: "P2",
+                owner: "aks-explorer",
+                children: [],
+                goal: "Replacement blocker matrix leaf already accepted.",
+                outputs: [
+                  "evidence/archive/app-routing-vm-prerelease-handwritten-source-blocker-matrix-20260618.md",
+                ],
+                acceptance: ["done"],
+              },
+            "aad-rbac-managed-v2-reset-stable-empty-rerun-await-aad-env-20260617":
+              {
+                id: "aad-rbac-managed-v2-reset-stable-empty-rerun-await-aad-env-20260617",
+                parent_id: "project",
+                state: "blocked",
+                kind: "domain_leaf",
+                priority: "P2",
+                owner: "aks-explorer",
+                children: [],
+                goal: "Unrelated blocked AAD rerun leaf.",
+                outputs: [
+                  "evidence/archive/aad-rbac-managed-v2-reset-stable-empty-rerun-await-aad-env-20260617.md",
+                ],
+                acceptance: ["done"],
+                blocker: "Awaiting external AAD environment gate.",
+              },
           },
         },
         null,

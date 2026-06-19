@@ -47,6 +47,18 @@ const metrics: MetricDef[] = [
     description: "Dashboard counter for currently assigned task-tree leaves.",
   },
   {
+    id: "aks-rp-e2e.task.stale-active-count",
+    name: "AKS RP E2E stale active task count",
+    type: "gauge",
+    target: 0,
+    threshold: 999999,
+    unit: "count",
+    alertOp: ">",
+    priority: "P3",
+    description:
+      "Dashboard counter for active task-tree leaves whose attached worker session is missing, not running, errored/interrupted, or still at zero operations after the stale threshold.",
+  },
+  {
     id: "aks-rp-e2e.task.blocked-count",
     name: "AKS RP E2E blocked task count",
     type: "gauge",
@@ -81,6 +93,19 @@ const metrics: MetricDef[] = [
     priority: "P0",
     description:
       "P0 unblock signal: no dependency-clear runnable backlog or active worker task while model path gaps or unverified specs remain. Review tasks do not suppress this alert; they are owner work, so the breach should wake the owner to accept, reject, split, or create follow-up tasks.",
+    config: { alert: { mode: "consecutive_failures", count: 1 } },
+  },
+  {
+    id: "aks-rp-e2e.task.stale-active-with-gaps",
+    name: "AKS RP E2E stale active task while verification gaps remain",
+    type: "health",
+    target: 0,
+    threshold: 0,
+    unit: "boolean",
+    alertOp: ">",
+    priority: "P0",
+    description:
+      "P0 stuck signal: the task tree says work is active, but at least one active leaf has no healthy worker session while model path gaps or unverified specs remain. This catches restart/recovery holes where active task-tree state masks an idle project.",
     config: { alert: { mode: "consecutive_failures", count: 1 } },
   },
   {

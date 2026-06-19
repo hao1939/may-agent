@@ -268,7 +268,7 @@ async function runAssignedMode(
     );
 
   const start = markAttemptStartedOnce(config, { taskId, attemptId });
-  if (!start.ok) return ctx.done(start.reason);
+  if (start.ok === false) return ctx.done(start.reason);
   const task = start.task;
 
   const result = await runTaskAgent({

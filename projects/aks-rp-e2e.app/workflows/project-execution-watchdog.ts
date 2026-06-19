@@ -29,11 +29,14 @@ type WatchdogConfig = {
   agent: string;
   maxConcurrent: number;
   staleNoActivityMs: number;
+  sessionStartGraceMs: number;
 };
 
 type ActiveTaskSnapshot = {
   taskId: string;
   sessionId?: string;
+  assignedAt?: string;
+  workerStartedAt?: string;
 };
 
 type WatchdogTreeSnapshot = {
@@ -58,6 +61,7 @@ function parseInput(raw: string, defaultAgent: string): WatchdogConfig {
     agent: field(raw, "agent") ?? defaultAgent,
     maxConcurrent: Number(field(raw, "maxConcurrent") ?? 3),
     staleNoActivityMs: Number(field(raw, "staleNoActivityMs") ?? 600_000),
+    sessionStartGraceMs: Number(field(raw, "sessionStartGraceMs") ?? 60_000),
   };
 }
 
@@ -103,6 +107,14 @@ function activeTaskSnapshots(tree: TaskTree): ActiveTaskSnapshot[] {
       sessionId:
         typeof task.session_id === "string" && task.session_id.trim()
           ? task.session_id.trim()
+          : undefined,
+      assignedAt:
+        task.trace && typeof task.trace.assigned_at === "string"
+          ? task.trace.assigned_at
+          : undefined,
+      workerStartedAt:
+        task.trace && typeof task.trace.worker_started_at === "string"
+          ? task.trace.worker_started_at
           : undefined,
     }))
     .sort((a, b) => a.taskId.localeCompare(b.taskId));
@@ -200,16 +212,44 @@ function restartReasonForSession(
   }
 }
 
+function activeTaskIsWithinStartGrace(
+  config: WatchdogConfig,
+  task: ActiveTaskSnapshot,
+): boolean {
+  for (const value of [task.assignedAt, task.workerStartedAt]) {
+    if (!value) continue;
+    const parsed = Date.parse(value);
+    if (
+      Number.isFinite(parsed) &&
+      Date.now() - parsed <= config.sessionStartGraceMs
+    ) {
+      return true;
+    }
+  }
+  return false;
+}
+
 function activeTaskRestartReason(
   config: WatchdogConfig,
   task: ActiveTaskSnapshot,
 ): string | null {
-  if (!task.sessionId) return "missing-session";
-  return restartReasonForSession(
+  if (!task.sessionId) {
+    return activeTaskIsWithinStartGrace(config, task)
+      ? null
+      : "missing-session";
+  }
+  const reason = restartReasonForSession(
     config.stateDbPath,
     task.sessionId,
     config.staleNoActivityMs,
   );
+  if (
+    reason === "session-not-running" &&
+    activeTaskIsWithinStartGrace(config, task)
+  ) {
+    return null;
+  }
+  return reason;
 }
 
 function staleActiveTasks(

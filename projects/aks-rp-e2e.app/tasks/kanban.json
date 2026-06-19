@@ -1,57 +1,61 @@
 {
   "version": 1,
-  "generated_at": "2026-06-18T12:19:02.095Z",
-  "tree_updated_at": "2026-06-18T12:18:59.422Z",
+  "generated_at": "2026-06-19T06:48:03.132Z",
+  "tree_updated_at": "2026-06-19T06:48:03.038Z",
   "kanban": {
-    "total_cards": 2146,
-    "tree_total": 2188,
+    "total_cards": 2164,
+    "tree_total": 2207,
     "tree_status_counts": {
       "active": 4,
-      "blocked": 73,
-      "done": 2107,
-      "backlog": 4
+      "blocked": 67,
+      "done": 2124,
+      "backlog": 9,
+      "review": 3
     },
     "status_counts": {
-      "done": 2074,
-      "blocked": 66,
+      "done": 2090,
+      "backlog": 9,
+      "blocked": 60,
       "active": 2,
-      "backlog": 4
+      "review": 3
     },
     "column_counts": {
-      "backlog": 4,
+      "backlog": 9,
       "in-progress": 2,
-      "review": 4,
-      "blocked": 62,
-      "done": 2074
+      "review": 7,
+      "blocked": 56,
+      "done": 2090
     },
     "card_ids_by_column": {
       "backlog": [
-        "vm-prerelease-autoscaling-row126-profile-canonical-branch-scout-20260618",
-        "vm-prerelease-autoscaling-row127-agentpool-ops-canonical-branch-scout-20260618",
-        "vm-prerelease-autoscaling-row128-defaulting-canonical-branch-scout-20260618",
-        "vm-prerelease-autoscaling-row129-resetting-canonical-branch-scout-20260618"
+        "aad-rbac-managed-v2-reset-stable-empty-rerun-await-aad-env-20260617",
+        "app-routing-vm-prerelease-default-acnginx-internal-handwritten-source-blocker-20260617",
+        "app-routing-vm-prerelease-default-external-nginx-external-public-handwritten-verdict-contract-blocker-20260617",
+        "app-routing-vm-prerelease-osm-external-nginx-external-handwritten-source-unblock-20260617",
+        "app-routing-vm-prerelease-osm-external-nginx-internal-handwritten-source-blocker-20260617",
+        "app-routing-vm-prerelease-osm-internal-nginx-internal-handwritten-source-blocker-20260617",
+        "go-e2ev3-devinfra-exact-upstream-scenario-inventory-blocker-20260618",
+        "jwt-authenticator-upgrade-survival-arm-auth-env-blocker-20260617",
+        "vm-prerelease-autoscaling-base-checkpoint-ownership-reconcile-20260619"
       ],
       "in-progress": [
-        "rp-nodepool-trio-output-ownership-attach-and-checkpoint-20260618",
-        "vm-prerelease-autoscaling-row125-service-principal-contradiction-reconcile-20260618"
+        "ccp-security-patch-os-variants-root-packet-canonical-owner-20260619",
+        "vm-prerelease-autoscaling-profile-matrix-checkpoint-ownership-retry-20260619"
       ],
       "review": [
+        "feature-packet-batch-3-exact-output-metadata-repair-20260619",
+        "feature-packet-batch-3-exact-output-metadata-repair-retry-20260619",
         "network-swift-v2-scale-validation-smallshape-live-rerun-gated-20260617",
         "trusted-access-dataplane-token-gateway-runtime-unblock-20260617",
+        "vm-prerelease-autoscaling-profile-matrix-checkpoint-ownership-reconcile-20260619",
         "vm-prerelease-policy-addon-pubsub-spec-implementation-20260617",
         "vm-prerelease-virtual-node-addon-source-unblock-20260617"
       ],
       "blocked": [
-        "aad-rbac-managed-v2-reset-stable-empty-rerun-await-aad-env-20260617",
         "aad-rbac-nonaad-reset-stable-empty-rerun-gated-20260617",
         "app-routing-default-domain-tls-lifecycle-full-replay-rerun-gated-20260617",
-        "app-routing-vm-prerelease-default-acnginx-internal-handwritten-source-blocker-20260617",
-        "app-routing-vm-prerelease-default-external-nginx-external-public-handwritten-verdict-contract-blocker-20260617",
         "app-routing-vm-prerelease-default-internal-nginx-internal-private-live-execute-gated-20260618",
         "app-routing-vm-prerelease-handwritten-source-holder-response-await-20260618",
-        "app-routing-vm-prerelease-osm-external-nginx-external-handwritten-source-unblock-20260617",
-        "app-routing-vm-prerelease-osm-external-nginx-internal-handwritten-source-blocker-20260617",
-        "app-routing-vm-prerelease-osm-internal-nginx-internal-handwritten-source-blocker-20260617",
         "auth-env-live-gate-holder-response-await-20260618",
         "ccp-agent-lifecycle-deployment-live-execute-gated-20260617",
         "ccp-connected-cluster-proxy-auth-live-execute-gated-20260617",
@@ -59,9 +63,7 @@
         "ccp-coredns-metrics-endpoint-live-execute-gated-20260617",
         "ccp-tunnelfront-konnectivity-migration-source-unblock-20260617",
         "cloud-provider-multiple-slb-eastus2-deserializer-propagation-unblock-20260617",
-        "go-e2ev3-devinfra-exact-upstream-scenario-inventory-blocker-20260618",
         "go-e2ev3-devinfra-upstream-scenario-source-holder-response-await-20260618",
-        "jwt-authenticator-upgrade-survival-arm-auth-env-blocker-20260617",
         "localdns-autodefault-upgrade-pool-level-live-execute-gated-20260617",
         "managedsystem-create-time-runtime-closure-after-sku-fix-gated-20260618",
         "managedsystem-day2-count-type-live-execute-gated-20260617",
@@ -88,6 +90,8 @@
         "vm-prerelease-addonv2-asm-overlay-handwritten-source-blocker-20260618",
         "vm-prerelease-agic-overlay-source-holder-response-await-20260618",
         "vm-prerelease-approuting-osm-external-exact-source-blocker-20260617",
+        "vm-prerelease-autoscaling-row125-handwritten-source-equivalent-blocker-20260619",
+        "vm-prerelease-autoscaling-row131-spot-handwritten-source-unblock-20260619",
         "vm-prerelease-azure-keyvault-secrets-provider-handwritten-source-blocker-20260618",
         "vm-prerelease-azure-keyvault-secrets-provider-source-holder-response-await-20260618",
         "vm-prerelease-default-internal-bounded-live-execute-gated-20260618",
@@ -600,6 +604,7 @@
         "ccp-security-patch-azurelinux-staging-retry-20260616",
         "ccp-security-patch-azurelinux-staging-reverify-20260615",
         "ccp-security-patch-batch-staging-verify-20260615",
+        "ccp-security-patch-os-variants-checkpoint-ownership-reconcile-20260619",
         "ccp-security-patch-ubuntu2404-methodology-fix-20260616",
         "ccp-security-patch-ubuntu2404-source-spec-frontier-20260614",
         "ccp-security-patch-ubuntu2404-source-spec-frontier-20260615",
@@ -817,6 +822,7 @@
         "fix-ceiling-summary-whitespace",
         "fix-spec-status-schema-batch2",
         "focus-plan-frontier-reconciliation-packet-20260618",
+        "focus-plan-terminal-claim-reconciliation-20260619",
         "frontier-worker-output-audit-20260617",
         "gap-verdict-freshness-audit",
         "go-e2ev3-ccp-traffic-rp-artifact-reconciliation-20260617",
@@ -1017,6 +1023,7 @@
         "machines-agentpool-api-crud-env-blocker-packet-20260617",
         "machines-agentpool-api-crud-preview-gate-surface-reconcile-20260617",
         "machines-agentpool-api-crud-staging-20260615",
+        "machines-agentpool-checkpoint-ownership-reconcile-20260619",
         "managedsystem-add-existing-control-followup-packet-20260618",
         "managedsystem-adjacent-surface-resume-matrix-20260618",
         "managedsystem-adjacent-surface-unlock-matrix-20260617",
@@ -1525,8 +1532,10 @@
         "private-cluster-vnet-webhook-dns-staging-20260615",
         "private-cluster-webhook-batch-staging-exec-20260616",
         "private-cluster-webhook-staging-batch-20260615",
+        "problem-result-routing-planner-wake-fix-20260619",
         "project-manifest-live-tree-divergence-packet-20260618",
         "project-metadata-live-surface-repair-20260617",
+        "project-root-reopen-context-refresh-20260619",
         "promote-21-unknown-features-pass",
         "promote-batch-3-features",
         "promote-pass-specs-to-verified",
@@ -1617,6 +1626,9 @@
         "rp-nodepool-lifecycle-rollback-transport-target-repair-20260617",
         "rp-nodepool-lifecycle-rollback-version-availability-blocker-20260617",
         "rp-nodepool-lifecycle-rollback-zero-history-model-sync-20260617",
+        "rp-nodepool-rollback-helper-hold-reconcile-20260619",
+        "rp-nodepool-rollback-output-ownership-repair-20260619",
+        "rp-nodepool-trio-output-ownership-attach-and-checkpoint-20260618",
         "rp-preflight-staging-20260615",
         "rp-preflight-validation-feature-yaml-20260615",
         "rp-preflight-validation-source-spec-frontier-20260615",
@@ -2031,6 +2043,14 @@
         "vm-prerelease-approuting-osm-internal-nginx-internal-source-packet-20260617",
         "vm-prerelease-approuting-osm-internal-nginx-internal-spec-authoring-20260617",
         "vm-prerelease-approuting-row79-89-disposition-matrix-refresh-20260617",
+        "vm-prerelease-autoscaling-row125-service-principal-contradiction-reconcile-20260618",
+        "vm-prerelease-autoscaling-row126-profile-canonical-branch-scout-20260618",
+        "vm-prerelease-autoscaling-row127-agentpool-ops-canonical-branch-scout-20260618",
+        "vm-prerelease-autoscaling-row128-defaulting-canonical-branch-scout-20260618",
+        "vm-prerelease-autoscaling-row129-resetting-canonical-branch-scout-20260618",
+        "vm-prerelease-autoscaling-row130-skip-local-storage-canonical-branch-scout-20260619",
+        "vm-prerelease-autoscaling-row131-spot-canonical-branch-scout-20260619",
+        "vm-prerelease-autoscaling-row131-spot-source-recovery-20260619",
         "vm-prerelease-autoscaling-spec-batch1-20260618",
         "vm-prerelease-azure-cni-core-overlay-spec-batch1-20260618",
         "vm-prerelease-azure-keyvault-secrets-provider-handwritten-source-extraction-20260618",
@@ -2183,6 +2203,6 @@
       ]
     },
     "escalated": 0,
-    "settled_pct": 100
+    "settled_pct": 99
   }
 }

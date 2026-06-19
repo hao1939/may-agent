@@ -9,7 +9,7 @@
     "integrity": "bun run ./scripts/check-integrity.ts",
     "syntax": "rm -rf .state/syntax-check && bun build ./app.ts ./workflows/project-execution-watchdog.ts ./workflows/project-planner.ts ./workflows/task-worker.ts ./workflows/problem-solver.ts ./workflows/focus-plan.ts --target=bun --format=esm --outdir .state/syntax-check --external @may-agent/sdk && rm -rf .state/syntax-check",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "test": "bun test ./workflows/*.test.ts ./e2e/replanning-flow.test.ts --timeout 30000",
+    "test": "bun test ./workflows/*.test.ts ./scripts/*.test.ts ./e2e/replanning-flow.test.ts --timeout 30000",
     "test:ui": "bun test ./e2e/feature-page.test.ts ./e2e/project-ui-replan-buttons.test.ts --timeout 30000",
     "format": "bun x prettier --write .",
     "format:check": "bun x prettier --check .",

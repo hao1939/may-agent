@@ -694,7 +694,9 @@ describe("task tree tools", () => {
     expect(tree.tasks["blocked-task"].goal).toBe("new goal");
     expect(tree.tasks["blocked-task"].acceptance).toEqual(["new acceptance"]);
     expect(tree.tasks["blocked-task"].blocker).toBe("new blocker");
-    expect(tree.tasks["blocked-task"].outputs).toEqual(["evidence/archive/blocked.md"]);
+    expect(tree.tasks["blocked-task"].outputs).toEqual([
+      "evidence/archive/blocked.md",
+    ]);
 
     const journal = await readFile(
       join(projectDir, ".state", "journal.jsonl"),
@@ -767,7 +769,8 @@ describe("task tree tools", () => {
     expect(updated.acceptance).toEqual(["accepted wording is synced"]);
     expect(updated.trace?.review_summary).toBe("fresh review summary");
     expect(
-      (updated.context as { acceptance_note?: string; keep?: string }).acceptance_note,
+      (updated.context as { acceptance_note?: string; keep?: string })
+        .acceptance_note,
     ).toBe("fresh acceptance note");
     expect((updated.context as { keep?: string }).keep).toBe("preserve-me");
 

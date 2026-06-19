@@ -468,6 +468,14 @@ function validateEventGraph(projectApp: ProjectApp): void {
     addMapValue(adapterConsumers, adapter.event, "adapter");
   }
 
+  for (const event of adapterConsumers.keys()) {
+    const handlers = handlerConsumers.get(event);
+    if (!handlers?.length) continue;
+    fail(
+      `event ${event} is both a workflow trigger (${handlers.join(", ")}) and an app adapter; keep workflow events routed directly and adapt only distinct input events`,
+    );
+  }
+
   for (const handler of projectApp.workflowHandlers ?? []) {
     if (handler.enabled === false || !handler.name) continue;
     const graphHandler = graph.handlers?.[handler.name];

@@ -28,13 +28,17 @@ function testContext() {
 }
 
 describe("app event contract", () => {
-  test("manifest subscribes to project metric events", () => {
+  test("manifest subscribes to project metric and problem-result events", () => {
     expect(app.events).toContainEqual({
       type: "metric.breach",
       project: "aks-rp-e2e",
     });
     expect(app.events).toContainEqual({
       type: "metric.recovered",
+      project: "aks-rp-e2e",
+    });
+    expect(app.events).toContainEqual({
+      type: "project.problem.unknown",
       project: "aks-rp-e2e",
     });
   });
@@ -164,7 +168,8 @@ describe("app event contract", () => {
       type: "project.owner.requested",
       reason: "task-completed",
       params: {
-        completedTaskId: "go-e2ev3-knowledge-map-done-slice-checkpoint-20260617",
+        completedTaskId:
+          "go-e2ev3-knowledge-map-done-slice-checkpoint-20260617",
         status: "review",
         task: {
           taskId: "go-e2ev3-knowledge-map-done-slice-checkpoint-20260617",
@@ -181,7 +186,8 @@ describe("app event contract", () => {
       type: "project.task.completed",
       project: "aks-rp-e2e",
       data: {
-        taskId: "app-routing-default-domain-tls-owner-checkpoint-commit-20260617",
+        taskId:
+          "app-routing-default-domain-tls-owner-checkpoint-commit-20260617",
         status: "review",
         result: "blocked",
         summary:
@@ -304,7 +310,7 @@ describe("app event contract", () => {
     });
   });
 
-  test("problem solver results wake the owner for tree reconciliation", async () => {
+  test("problem solver resolved results wake the owner for tree reconciliation", async () => {
     const { ctx, emitted } = testContext();
 
     await app.onEvent(ctx, {
@@ -324,6 +330,31 @@ describe("app event contract", () => {
         problem: {
           summary:
             "Configured runner ARM token path and verified auth preflight.",
+        },
+      },
+    });
+  });
+
+  test("problem solver unknown results wake the owner for tree reconciliation", async () => {
+    const { ctx, emitted } = testContext();
+
+    await app.onEvent(ctx, {
+      type: "project.problem.unknown",
+      project: "aks-rp-e2e",
+      problemKey: "aks-rp-e2e:task-problem:triage-me",
+      affectedTasks: ["triage-task"],
+      summary: "error",
+    });
+
+    expect(emitted).toHaveLength(1);
+    expect(emitted[0]).toMatchObject({
+      type: "project.owner.requested",
+      reason: "problem-unknown",
+      params: {
+        problemKey: "aks-rp-e2e:task-problem:triage-me",
+        problem: {
+          summary: "error",
+          affectedTasks: ["triage-task"],
         },
       },
     });
@@ -444,6 +475,41 @@ describe("app event contract", () => {
       reason: "metric-breach",
       params: {
         metricId: "aks-rp-e2e.task.no-work-with-gaps",
+      },
+    });
+  });
+
+  test("stale-active metric breach creates human unblock escalation and wakes owner review", async () => {
+    const { ctx, emitted } = testContext();
+
+    await app.onEvent(ctx, {
+      type: "metric.breach",
+      owner: "agent:aks-explorer",
+      data: {
+        metricId: "aks-rp-e2e.task.stale-active-with-gaps",
+        current: 1,
+        threshold: 0,
+        priority: "P0",
+      },
+    });
+
+    expect(emitted).toHaveLength(2);
+    expect(emitted[0]).toMatchObject({
+      type: "escalation.created",
+      owner: "human:operator",
+      project: "aks-rp-e2e",
+      data: {
+        projectId: "aks-rp-e2e",
+        severity: "P0",
+        blockedOn: "metric breach aks-rp-e2e.task.stale-active-with-gaps",
+        dedupKey: "aks-rp-e2e:metric:stale-active-with-gaps",
+      },
+    });
+    expect(emitted[1]).toMatchObject({
+      type: "project.owner.requested",
+      reason: "metric-breach",
+      params: {
+        metricId: "aks-rp-e2e.task.stale-active-with-gaps",
       },
     });
   });

@@ -181,7 +181,9 @@ function derivedPathSignals(path: string): string[] {
     signals = featureSignalsFromSpecPath(siblingSpecPath);
   }
 
-  const normalized = [...new Set(signals.filter(Boolean).map((signal) => signal.toLowerCase()))];
+  const normalized = [
+    ...new Set(signals.filter(Boolean).map((signal) => signal.toLowerCase())),
+  ];
   derivedPathSignalsCache.set(path, normalized);
   return normalized;
 }

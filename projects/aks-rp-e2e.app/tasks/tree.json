@@ -1,10 +1,10 @@
 {
   "version": 2,
   "project": "aks-rp-e2e",
-  "updated_at": "2026-06-19T05:56:04.248Z",
+  "updated_at": "2026-06-19T06:48:03.038Z",
   "project_lifecycle": "active",
   "root_task_id": "project",
-  "active_task_id": "rp-nodepool-trio-output-ownership-attach-and-checkpoint-20260618",
+  "active_task_id": "ccp-security-patch-os-variants-root-packet-canonical-owner-20260619",
   "tasks": {
     "project": {
       "id": "project",
@@ -22,7 +22,7 @@
       "parent_id": null,
       "priority": "P1",
       "owner": "aks-explorer",
-      "goal": "Learn AKS input space and expectation space systematically, feature by feature, then use that knowledge to improve coverage, design higher-value tests, and discover product/test gaps.",
+      "goal": "Maintain and extend the AKS input/expectation knowledge map across all Go e2ev3 scenarios, keeping reopened coverage-closure and blocker-accountability work live until the active/review/blocked frontier is resolved or explicitly terminalized.",
       "inputs": [
         "project.json",
         "model/knowledge-map/model.json",
@@ -39,8 +39,9 @@
         "evidence/archive/"
       ],
       "acceptance": [
-        "Feature knowledge/spec generation, runner execution, evidence feedback, and user review keep feeding each other until the AKS input/expectation map is credible across AKS RP features.",
-        "Each top-level lane has concrete executable leaves or an exact external/human gate.",
+        "Feature knowledge/spec generation, runner execution, evidence feedback, and user review keep feeding each other until the AKS input/expectation map is credible across AKS RP features and the reopened Go e2ev3 scenario-coverage closure is reconciled.",
+        "Each top-level lane has concrete executable leaves or an exact external/human gate, and live project status is read from current frontier counts plus active/review/blocked leaves rather than historical ceiling snapshots alone.",
+        "Historical 2026-06-14 ceiling/wind-down notes in strategy_context/context are provenance only; while trace.reopened_at=2026-06-17T02:47:00Z remains the latest root steering event, planner/focus-plan consumers must treat the project as reopened rather than accepted-at-ceiling.",
         "Cloud mutation only happens through explicit gated runner/replay tasks with cleanup and diagnosis evidence."
       ],
       "forbidden": [
@@ -1908,7 +1909,10 @@
       "goal": "Create source-grounded feature packets (features/*.yaml) for 3-5 newly discovered Go e2ev3 families identified in the batch-3 survey. For each family: extract feature intent, API surface, ARM paths, source plan files, cross-feature dependencies, and expected model feature IDs. Follow features/SCHEMA.md. Each packet should identify at least the main scenarios and their input/expectation variables.",
       "inputs": [],
       "outputs": [
-        "features/*.yaml"
+        "features/machines-agentpool.yaml",
+        "features/paf-throttling.yaml",
+        "features/image-cleaner.yaml",
+        "features/node-restriction.yaml"
       ],
       "acceptance": [
         "3-5 new feature packets created following SCHEMA.md. Each has featureId, meta section with featureArea/apiSurface/armPath/sourceHints, and coveredFeatureIds. bun run check passes (schema validation)."
@@ -23696,7 +23700,22 @@
         "vm-prerelease-wave1-row44-backendpooltype-source-body-blocker-20260618",
         "vm-prerelease-autoscaling-row127-agentpool-ops-canonical-branch-scout-20260618",
         "vm-prerelease-autoscaling-row128-defaulting-canonical-branch-scout-20260618",
-        "vm-prerelease-autoscaling-row129-resetting-canonical-branch-scout-20260618"
+        "vm-prerelease-autoscaling-row129-resetting-canonical-branch-scout-20260618",
+        "vm-prerelease-autoscaling-row125-handwritten-source-equivalent-blocker-20260619",
+        "vm-prerelease-autoscaling-row131-spot-canonical-branch-scout-20260619",
+        "vm-prerelease-autoscaling-row130-skip-local-storage-canonical-branch-scout-20260619",
+        "rp-nodepool-rollback-helper-hold-reconcile-20260619",
+        "vm-prerelease-autoscaling-row131-spot-source-recovery-20260619",
+        "vm-prerelease-autoscaling-row131-spot-handwritten-source-unblock-20260619",
+        "rp-nodepool-rollback-output-ownership-repair-20260619",
+        "ccp-security-patch-os-variants-checkpoint-ownership-reconcile-20260619",
+        "machines-agentpool-checkpoint-ownership-reconcile-20260619",
+        "vm-prerelease-autoscaling-profile-matrix-checkpoint-ownership-reconcile-20260619",
+        "vm-prerelease-autoscaling-base-checkpoint-ownership-reconcile-20260619",
+        "feature-packet-batch-3-exact-output-metadata-repair-20260619",
+        "ccp-security-patch-os-variants-root-packet-canonical-owner-20260619",
+        "vm-prerelease-autoscaling-profile-matrix-checkpoint-ownership-retry-20260619",
+        "feature-packet-batch-3-exact-output-metadata-repair-retry-20260619"
       ],
       "goal": "Learn AKS feature intent and maintain source-grounded feature packets, input/expectation paths, and runnable test specs.",
       "inputs": [],
@@ -58313,7 +58332,9 @@
       "priority": "P1",
       "owner": "aks-explorer",
       "children": [
-        "planner-context-quality-impl"
+        "planner-context-quality-impl",
+        "focus-plan-terminal-claim-reconciliation-20260619",
+        "project-root-reopen-context-refresh-20260619"
       ],
       "goal": "Improve the planning packet so the planner LLM has enough information to make correct decisions without retry loops. The planner created 11 duplicate tasks for a path already at staging-pass because the packet didn't include path status.",
       "context": {
@@ -70551,7 +70572,7 @@
     "aad-rbac-managed-v2-reset-stable-empty-rerun-await-aad-env-20260617": {
       "id": "aad-rbac-managed-v2-reset-stable-empty-rerun-await-aad-env-20260617",
       "parent_id": "spec-runner-and-replays",
-      "state": "blocked",
+      "state": "backlog",
       "kind": "domain_leaf",
       "priority": "P2",
       "owner": "aks-explorer",
@@ -70568,11 +70589,15 @@
       "conflict_scope": [
         "feature:aad-rbac"
       ],
-      "depends_on": [],
-      "blocker": "External unblock required: provide AKS_RP_E2E_AAD_ADMIN_GROUP_OID and AKS_RP_E2E_AAD_TENANT_ID in the execute environment so the stable-empty ResetAAD replay can proceed past preflight and reach the 2024-09-01 ARM call.",
+      "depends_on": [
+        "auth-env-live-gate-holder-response-await-20260618"
+      ],
       "trace": {
         "created_at": "2026-06-17T12:14:35.253Z",
-        "created_by": "task-tree-tool"
+        "created_by": "task-tree-tool",
+        "last_reconciled_at": "2026-06-19T06:45:47.034Z",
+        "last_reconciled_by": "aks-explorer metric-alert-triage",
+        "last_reconciled_note": "Converted duplicate blocked leaf to backlog dependency on auth-env-live-gate-holder-response-await-20260618 so the shared external wait is counted once in the blocked frontier."
       }
     },
     "go-e2ev3-private-cluster-source-coverage-map-20260617": {
@@ -83275,7 +83300,7 @@
     "jwt-authenticator-upgrade-survival-arm-auth-env-blocker-20260617": {
       "id": "jwt-authenticator-upgrade-survival-arm-auth-env-blocker-20260617",
       "parent_id": "spec-runner-and-replays",
-      "state": "blocked",
+      "state": "backlog",
       "kind": "domain_leaf",
       "priority": "P2",
       "owner": "aks-explorer",
@@ -83294,11 +83319,15 @@
         "path:path.jwt-authenticator.upgrade-survival",
         "artifact:jwt-authenticator-upgrade-survival"
       ],
-      "depends_on": [],
-      "blocker": "External unblock required: send the ready handoff in evidence/archive/jwt-authenticator-arm-auth-holder-request-draft-20260618.md to obtain a real subscription ID (AKS_RP_E2E_SUBSCRIPTION_ID or AZURE_SUBSCRIPTION_ID) plus one working ARM token path via ARM_ACCESS_TOKEN, managed identity, or installed az CLI; resume jwt-authenticator-upgrade-survival only after those exact prerequisites exist so the staging replay can pass ARM preflight and reach product assertions.",
+      "depends_on": [
+        "auth-env-live-gate-holder-response-await-20260618"
+      ],
       "trace": {
         "created_at": "2026-06-17T17:56:45.666Z",
-        "created_by": "task-tree-tool"
+        "created_by": "task-tree-tool",
+        "last_reconciled_at": "2026-06-19T06:45:47.034Z",
+        "last_reconciled_by": "aks-explorer metric-alert-triage",
+        "last_reconciled_note": "Converted duplicate blocked leaf to backlog dependency on auth-env-live-gate-holder-response-await-20260618 so the shared external wait is counted once in the blocked frontier."
       }
     },
     "ccp-connected-cluster-proxy-auth-source-equivalent-search-20260617": {
@@ -88800,7 +88829,10 @@
       "goal": "Author the first generic RP nodepool lifecycle rollback canonical landing from the accepted VM prerelease rollback contract: extend the generic rollback feature/spec/model scaffolding so Scenario_AgentPool_Rollback is no longer only a VM-prerelease note and the VM row is attached as a variant path rather than a VM-only root.",
       "inputs": [],
       "outputs": [
-        "../aks-rp-e2e/evidence/archive/rp-nodepool-lifecycle-rollback-canonical-landing-authoring-20260617.md"
+        "../aks-rp-e2e/evidence/archive/rp-nodepool-lifecycle-rollback-canonical-landing-authoring-20260617.md",
+        "../aks-rp-e2e/features/rp-nodepool-lifecycle/rollback.yaml",
+        "../aks-rp-e2e/specs/rp-nodepool-lifecycle-rollback.json",
+        "../aks-rp-e2e/replays/rp-nodepool-lifecycle-rollback.ts"
       ],
       "acceptance": [
         "Archive note cites evidence/archive/vm-prerelease-agentpool-rollback-vm-contract-authoring-20260617.md plus each touched canonical feature/spec/model/view file, shows rollback is added under the generic rp-nodepool-lifecycle family with a source-grounded draft landing and a VM variant attachment, keeps observed behavior unknown/no-execution, and records any replay stub or follow-on replay gap explicitly without overclaiming runnable live coverage."
@@ -92831,7 +92863,7 @@
     "app-routing-vm-prerelease-osm-external-nginx-external-handwritten-source-unblock-20260617": {
       "id": "app-routing-vm-prerelease-osm-external-nginx-external-handwritten-source-unblock-20260617",
       "parent_id": "feature-knowledge-and-specs",
-      "state": "blocked",
+      "state": "backlog",
       "kind": "domain_leaf",
       "priority": "P2",
       "owner": "aks-explorer",
@@ -92851,17 +92883,21 @@
         "path:path.app-routing.vm-prerelease.osm-external-nginx-external",
         "artifact:app-routing-vm-prerelease-osm-external-nginx-external"
       ],
-      "depends_on": [],
-      "blocker": "External/source unblock required: use the shared outbound source-holder bundle in evidence/archive/app-routing-vm-prerelease-handwritten-source-holder-review-matrix-20260618.md and routing note evidence/archive/app-routing-vm-prerelease-handwritten-source-holder-branch-routing-20260618.md. Provide a row-84 handwritten or accepted archived-equivalent packet that proves the exact row-84 request or mutator lineage and confirms whether its verdict-bearing external exposure contract matches the recovered prerelease external-public helper pair; do not reopen the persisted-`osm` search.",
+      "depends_on": [
+        "app-routing-vm-prerelease-handwritten-source-holder-response-await-20260618"
+      ],
       "trace": {
         "created_at": "2026-06-17T21:35:33.802Z",
-        "created_by": "task-tree-tool"
+        "created_by": "task-tree-tool",
+        "last_reconciled_at": "2026-06-19T06:45:47.034Z",
+        "last_reconciled_by": "aks-explorer metric-alert-triage",
+        "last_reconciled_note": "Converted duplicate blocked leaf to backlog dependency on app-routing-vm-prerelease-handwritten-source-holder-response-await-20260618 so the shared external wait is counted once in the blocked frontier."
       }
     },
     "app-routing-vm-prerelease-default-acnginx-internal-handwritten-source-blocker-20260617": {
       "id": "app-routing-vm-prerelease-default-acnginx-internal-handwritten-source-blocker-20260617",
       "parent_id": "feature-knowledge-and-specs",
-      "state": "blocked",
+      "state": "backlog",
       "kind": "domain_leaf",
       "priority": "P2",
       "owner": "aks-explorer",
@@ -92880,11 +92916,15 @@
         "path:path.app-routing.vm-prerelease.default-acnginx-internal",
         "artifact:app-routing-vm-prerelease-default-acnginx-internal"
       ],
-      "depends_on": [],
-      "blocker": "External/source unblock required: use the shared outbound source-holder bundle in evidence/archive/app-routing-vm-prerelease-handwritten-source-holder-review-matrix-20260618.md and routing note evidence/archive/app-routing-vm-prerelease-handwritten-source-holder-branch-routing-20260618.md. Provide a handwritten Go snippet or accepted archived exact request payload for Scenario_AppRouting_MixedMultiZone_Internal_ACNginx and/or Scenario_AppRouting_Ubuntu_Single_Internal_ACNginx that proves (1) the exact field carrying the default selector, (2) the exact field or verdict-bearing surface carrying internal exposure, and (3) whether row 83 is body/verdict-equivalent to canonical row 79; do not reopen a broader family-wide source search.",
+      "depends_on": [
+        "app-routing-vm-prerelease-handwritten-source-holder-response-await-20260618"
+      ],
       "trace": {
         "created_at": "2026-06-17T21:37:04.143Z",
-        "created_by": "task-tree-tool"
+        "created_by": "task-tree-tool",
+        "last_reconciled_at": "2026-06-19T06:45:47.034Z",
+        "last_reconciled_by": "aks-explorer metric-alert-triage",
+        "last_reconciled_note": "Converted duplicate blocked leaf to backlog dependency on app-routing-vm-prerelease-handwritten-source-holder-response-await-20260618 so the shared external wait is counted once in the blocked frontier."
       }
     },
     "rp-nodepool-lifecycle-rollback-devbox-arm-read-bridge-20260617": {
@@ -92968,7 +93008,7 @@
     "app-routing-vm-prerelease-osm-external-nginx-internal-handwritten-source-blocker-20260617": {
       "id": "app-routing-vm-prerelease-osm-external-nginx-internal-handwritten-source-blocker-20260617",
       "parent_id": "feature-knowledge-and-specs",
-      "state": "blocked",
+      "state": "backlog",
       "kind": "domain_leaf",
       "priority": "P2",
       "owner": "aks-explorer",
@@ -92988,11 +93028,15 @@
         "path:path.app-routing.vm-prerelease.osm-external-nginx-internal",
         "artifact:app-routing-vm-prerelease-osm-external-nginx-internal"
       ],
-      "depends_on": [],
-      "blocker": "External/source unblock required: use the shared outbound source-holder bundle in evidence/archive/app-routing-vm-prerelease-handwritten-source-holder-review-matrix-20260618.md and routing note evidence/archive/app-routing-vm-prerelease-handwritten-source-holder-branch-routing-20260618.md. Provide handwritten or public-source evidence proving any row-89-specific internal exposure, helper, or verdict surface beyond defaultIngressControllerType=External, or authoritative proof that no extra such surface exists, without reopening the family-wide selector search.",
+      "depends_on": [
+        "app-routing-vm-prerelease-handwritten-source-holder-response-await-20260618"
+      ],
       "trace": {
         "created_at": "2026-06-17T21:39:15.985Z",
-        "created_by": "task-tree-tool"
+        "created_by": "task-tree-tool",
+        "last_reconciled_at": "2026-06-19T06:45:47.034Z",
+        "last_reconciled_by": "aks-explorer metric-alert-triage",
+        "last_reconciled_note": "Converted duplicate blocked leaf to backlog dependency on app-routing-vm-prerelease-handwritten-source-holder-response-await-20260618 so the shared external wait is counted once in the blocked frontier."
       }
     },
     "app-routing-vm-prerelease-default-external-nginx-external-public-staging-frontier-20260617": {
@@ -93916,7 +93960,7 @@
     "app-routing-vm-prerelease-osm-internal-nginx-internal-handwritten-source-blocker-20260617": {
       "id": "app-routing-vm-prerelease-osm-internal-nginx-internal-handwritten-source-blocker-20260617",
       "parent_id": "feature-knowledge-and-specs",
-      "state": "blocked",
+      "state": "backlog",
       "kind": "domain_leaf",
       "priority": "P2",
       "owner": "aks-explorer",
@@ -93936,11 +93980,15 @@
         "path:path.app-routing.vm-prerelease.osm-internal-nginx-internal",
         "artifact:app-routing-vm-prerelease-osm-internal-nginx-internal"
       ],
-      "depends_on": [],
-      "blocker": "External/source unblock required: use the shared outbound source-holder bundle in evidence/archive/app-routing-vm-prerelease-handwritten-source-holder-review-matrix-20260618.md and routing note evidence/archive/app-routing-vm-prerelease-handwritten-source-holder-branch-routing-20260618.md. Provide handwritten or public-source evidence proving any row-85-specific internal exposure, helper, or verdict surface beyond defaultIngressControllerType=Internal, or authoritative proof that no extra such surface exists, without reopening the family-wide selector search.",
+      "depends_on": [
+        "app-routing-vm-prerelease-handwritten-source-holder-response-await-20260618"
+      ],
       "trace": {
         "created_at": "2026-06-17T21:55:50.912Z",
-        "created_by": "task-tree-tool"
+        "created_by": "task-tree-tool",
+        "last_reconciled_at": "2026-06-19T06:45:47.034Z",
+        "last_reconciled_by": "aks-explorer metric-alert-triage",
+        "last_reconciled_note": "Converted duplicate blocked leaf to backlog dependency on app-routing-vm-prerelease-handwritten-source-holder-response-await-20260618 so the shared external wait is counted once in the blocked frontier."
       }
     },
     "vm-prerelease-virtual-node-addon-serverless-execute-implementation-20260617": {
@@ -98195,7 +98243,7 @@
     "app-routing-vm-prerelease-default-external-nginx-external-public-handwritten-verdict-contract-blocker-20260617": {
       "id": "app-routing-vm-prerelease-default-external-nginx-external-public-handwritten-verdict-contract-blocker-20260617",
       "parent_id": "feature-knowledge-and-specs",
-      "state": "blocked",
+      "state": "backlog",
       "kind": "domain_leaf",
       "priority": "P2",
       "owner": "aks-explorer",
@@ -98214,11 +98262,15 @@
         "path:path.app-routing.default.external-nginx.external-public",
         "artifact:app-routing-vm-prerelease-default-external-nginx-external-public"
       ],
-      "depends_on": [],
-      "blocker": "External/source unblock required: authoritative row-82 proof is still needed only for verdict authority. The latest outbound-ready ask packet is evidence/archive/app-routing-vm-prerelease-default-external-verdict-source-ask-20260618.md. Resume this branch only when handwritten Go source, an accepted archived scenario excerpt, or authoritative-equivalent proof for Scenario_AppRouting_Ubuntu_MultiZone_External_ExternalNginx confirms whether public load-balancer address presence and Host-header HTTP 200 are canonical verdict-bearing assertions, not just replay conveniences; the recovered create/readback body and probe implementation are no longer the active blocker.",
+      "depends_on": [
+        "app-routing-vm-prerelease-handwritten-source-holder-response-await-20260618"
+      ],
       "trace": {
         "created_at": "2026-06-17T23:40:14.865Z",
-        "created_by": "task-tree-tool"
+        "created_by": "task-tree-tool",
+        "last_reconciled_at": "2026-06-19T06:45:47.034Z",
+        "last_reconciled_by": "aks-explorer metric-alert-triage",
+        "last_reconciled_note": "Converted duplicate blocked leaf to backlog dependency on app-routing-vm-prerelease-handwritten-source-holder-response-await-20260618 so the shared external wait is counted once in the blocked frontier."
       }
     },
     "app-routing-vm-prerelease-default-external-nginx-external-public-vm-cli-surface-audit-20260617": {
@@ -109271,7 +109323,7 @@
     "go-e2ev3-devinfra-exact-upstream-scenario-inventory-blocker-20260618": {
       "id": "go-e2ev3-devinfra-exact-upstream-scenario-inventory-blocker-20260618",
       "parent_id": "feature-knowledge-and-specs",
-      "state": "blocked",
+      "state": "backlog",
       "kind": "domain_leaf",
       "priority": "P2",
       "owner": "aks-explorer",
@@ -109289,11 +109341,15 @@
       "conflict_scope": [
         "sig:devinfra"
       ],
-      "depends_on": [],
-      "blocker": "External/source unblock required: attach one durable repo-local artifact that enumerates all seven test/e2ev3/sigs/devinfra NewScenario() names verbatim (with file-path/source context) via upstream Go snippet, archived authoritative-equivalent excerpt, or accepted devbox/source-holder paste. Repo-local recovery is now exhausted: evidence/archive/go-e2ev3-devinfra-local-trace-inventory-recovery-20260618.md confirms durable plus non-durable local traces/workspace artifacts still cannot reconstruct the seven-name inventory. The visible outbound wait state is go-e2ev3-devinfra-upstream-scenario-source-holder-response-await-20260618; do not reopen local rediscovery or speculative classification. Resume by rerunning classification only once that exact seven-name inventory is attached.",
+      "depends_on": [
+        "go-e2ev3-devinfra-upstream-scenario-source-holder-response-await-20260618"
+      ],
       "trace": {
         "created_at": "2026-06-18T05:07:41.545Z",
-        "created_by": "task-tree-tool"
+        "created_by": "task-tree-tool",
+        "last_reconciled_at": "2026-06-19T06:45:47.034Z",
+        "last_reconciled_by": "aks-explorer metric-alert-triage",
+        "last_reconciled_note": "Converted duplicate blocked leaf to backlog dependency on go-e2ev3-devinfra-upstream-scenario-source-holder-response-await-20260618 so the shared external wait is counted once in the blocked frontier."
       }
     },
     "rp-cluster-lifecycle-adjacent-successor-feature-normalization-20260618": {
@@ -120155,7 +120211,7 @@
     "rp-nodepool-trio-output-ownership-attach-and-checkpoint-20260618": {
       "id": "rp-nodepool-trio-output-ownership-attach-and-checkpoint-20260618",
       "parent_id": "feature-knowledge-and-specs",
-      "state": "active",
+      "state": "done",
       "kind": "domain_leaf",
       "priority": "P2",
       "owner": "aks-explorer",
@@ -120179,18 +120235,36 @@
       "trace": {
         "created_at": "2026-06-18T10:17:07.056Z",
         "created_by": "task-tree-tool",
-        "current_attempt_id": "a_rp-nodepool-trio-output-ownership-attach-and-checkpoint-20260618_20260618101707",
-        "assigned_at": "2026-06-18T10:17:07.308Z",
+        "assigned_at": "2026-06-19T06:23:29.683Z",
         "assigned_by": "planner",
         "assigned_worker": "aks-explorer",
         "last_session": "s_task_rp-nodepool-trio-output-ownership-attach-and-checkpoint-20260618",
-        "worker_started_attempt_id": "a_rp-nodepool-trio-output-ownership-attach-and-checkpoint-20260618_20260618101707",
-        "worker_started_at": "2026-06-18T10:17:42.778Z"
+        "worker_started_attempt_id": "a_rp-nodepool-trio-output-ownership-attach-and-checkpoint-20260618_20260619062329",
+        "worker_started_at": "2026-06-19T06:23:30.125Z",
+        "stale_active_requeued_at": "2026-06-19T06:23:29.514Z",
+        "stale_active_requeue_reason": "watchdog-stale-active-review",
+        "stale_active_fresh_session": false,
+        "previous_attempt_id": "a_rp-nodepool-trio-output-ownership-attach-and-checkpoint-20260618_20260618101707",
+        "current_attempt_id": "a_rp-nodepool-trio-output-ownership-attach-and-checkpoint-20260618_20260619062329",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Recorded the RP nodepool trio ownership/checkpoint result in evidence/archive/rp-nodepool-trio-output-ownership-attach-and-checkpoint-20260618.md after verifying the six exact outputs are already attached to go-e2ev3-ccp-traffic-rp-artifact-reconciliation-20260617 and rerunning domain:checkpoint. The fresh helper run showed the original trio surfaces are no longer dirty; the only remaining filepath-level mismatch is the live hold on features/rp-nodepool-lifecycle/rollback.yaml.",
+        "last_worker_completed_at": "2026-06-19T06:23:30.249Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-19T06:24:16.974Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: evidence/archive/rp-nodepool-trio-output-ownership-attach-and-checkpoint-20260618.md validates that the six exact RP nodepool trio outputs are already attached to go-e2ev3-ccp-traffic-rp-artifact-reconciliation-20260617, fresh domain:checkpoint no longer shows the original trio or features/rp-nodepool-lifecycle.yaml as dirty, and the only remaining live filepath-level helper hold is features/rp-nodepool-lifecycle/rollback.yaml."
       },
       "session_id": "s_task_rp-nodepool-trio-output-ownership-attach-and-checkpoint-20260618",
       "session_history": [
         "s_task_rp-nodepool-trio-output-ownership-attach-and-checkpoint-20260618"
-      ]
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-19T06:24:16.974Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: evidence/archive/rp-nodepool-trio-output-ownership-attach-and-checkpoint-20260618.md validates that the six exact RP nodepool trio outputs are already attached to go-e2ev3-ccp-traffic-rp-artifact-reconciliation-20260617, fresh domain:checkpoint no longer shows the original trio or features/rp-nodepool-lifecycle.yaml as dirty, and the only remaining live filepath-level helper hold is features/rp-nodepool-lifecycle/rollback.yaml."
+      }
     },
     "vm-prerelease-wave1-row44-backendpooltype-source-backed-landing-20260618": {
       "id": "vm-prerelease-wave1-row44-backendpooltype-source-backed-landing-20260618",
@@ -120360,7 +120434,7 @@
     "vm-prerelease-autoscaling-row125-service-principal-contradiction-reconcile-20260618": {
       "id": "vm-prerelease-autoscaling-row125-service-principal-contradiction-reconcile-20260618",
       "parent_id": "feature-knowledge-and-specs",
-      "state": "active",
+      "state": "done",
       "kind": "domain_leaf",
       "priority": "P2",
       "owner": "aks-explorer",
@@ -120389,17 +120463,33 @@
         "assigned_at": "2026-06-18T10:21:58.156Z",
         "assigned_by": "planner",
         "assigned_worker": "aks-explorer",
-        "last_session": "s_task_vm-prerelease-autoscaling-row125-service-principal-contradiction-reconcile-20260618"
+        "last_session": "s_task_vm-prerelease-autoscaling-row125-service-principal-contradiction-reconcile-20260618",
+        "worker_started_attempt_id": "a_vm-prerelease-autoscaling-row125-service-principal-contradiction-reconcile-20260618_20260618102158",
+        "worker_started_at": "2026-06-19T06:18:23.773Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Created a repo-local archive note reconciling VM prerelease AutoScaling row 125 and concluded it must remain an exact source blocker because the only preserved row-local evidence still conflicts (`Service_Principal` name vs `use_shared_identity=true` substrate) and no source-equivalent body exists to collapse it into row 124.",
+        "last_worker_completed_at": "2026-06-19T06:19:56.744Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-19T06:20:45.233Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: archive note traced the exact row-125 matrix and coverage surfaces, proved the service-principal versus use_shared_identity=true contradiction remains unresolved repo-locally, and narrowed the branch to one exact handwritten/source-equivalent blocker instead of broad autoscaling rediscovery."
       },
       "session_id": "s_task_vm-prerelease-autoscaling-row125-service-principal-contradiction-reconcile-20260618",
       "session_history": [
         "s_task_vm-prerelease-autoscaling-row125-service-principal-contradiction-reconcile-20260618"
-      ]
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-19T06:20:45.233Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: archive note traced the exact row-125 matrix and coverage surfaces, proved the service-principal versus use_shared_identity=true contradiction remains unresolved repo-locally, and narrowed the branch to one exact handwritten/source-equivalent blocker instead of broad autoscaling rediscovery."
+      }
     },
     "vm-prerelease-autoscaling-row126-profile-canonical-branch-scout-20260618": {
       "id": "vm-prerelease-autoscaling-row126-profile-canonical-branch-scout-20260618",
       "parent_id": "feature-knowledge-and-specs",
-      "state": "backlog",
+      "state": "done",
       "kind": "domain_leaf",
       "priority": "P2",
       "owner": "aks-explorer",
@@ -120423,7 +120513,32 @@
       "depends_on": [],
       "trace": {
         "created_at": "2026-06-18T10:21:58.420Z",
-        "created_by": "task-tree-tool"
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_vm-prerelease-autoscaling-row126-profile-canonical-branch-scout-20260618_20260619061957",
+        "assigned_at": "2026-06-19T06:19:57.054Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vm-prerelease-autoscaling-row126-profile-canonical-branch-scout-20260618",
+        "worker_started_attempt_id": "a_vm-prerelease-autoscaling-row126-profile-canonical-branch-scout-20260618_20260619061957",
+        "worker_started_at": "2026-06-19T06:19:57.375Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Wrote the row-126 canonical-branch scout note at evidence/archive/vm-prerelease-autoscaling-row126-profile-canonical-branch-scout-20260618.md and verified that row 126 is already covered by spec.cluster-autoscaler.vm-prerelease-profile-matrix with passing repo-local check evidence.",
+        "last_worker_completed_at": "2026-06-19T06:21:15.668Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-19T06:21:55.241Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: archive note cites the row-126 matrix anchor, adjacent source/spec packets, shared profile-matrix spec/replay linkage, and fresh bounded replay-check evidence proving row 126 is already truthfully covered repo-locally via spec.cluster-autoscaler.vm-prerelease-profile-matrix."
+      },
+      "session_id": "s_task_vm-prerelease-autoscaling-row126-profile-canonical-branch-scout-20260618",
+      "session_history": [
+        "s_task_vm-prerelease-autoscaling-row126-profile-canonical-branch-scout-20260618"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-19T06:21:55.241Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: archive note cites the row-126 matrix anchor, adjacent source/spec packets, shared profile-matrix spec/replay linkage, and fresh bounded replay-check evidence proving row 126 is already truthfully covered repo-locally via spec.cluster-autoscaler.vm-prerelease-profile-matrix."
       }
     },
     "vm-prerelease-addonv2-asm-overlay-handwritten-source-blocker-20260618": {
@@ -120490,7 +120605,7 @@
     "vm-prerelease-autoscaling-row127-agentpool-ops-canonical-branch-scout-20260618": {
       "id": "vm-prerelease-autoscaling-row127-agentpool-ops-canonical-branch-scout-20260618",
       "parent_id": "feature-knowledge-and-specs",
-      "state": "active",
+      "state": "done",
       "kind": "domain_leaf",
       "priority": "P2",
       "owner": "aks-explorer",
@@ -120517,17 +120632,33 @@
         "assigned_at": "2026-06-19T05:56:03.836Z",
         "assigned_by": "planner",
         "assigned_worker": "aks-explorer",
-        "last_session": "s_task_vm-prerelease-autoscaling-row127-agentpool-ops-canonical-branch-scout-20260618"
+        "last_session": "s_task_vm-prerelease-autoscaling-row127-agentpool-ops-canonical-branch-scout-20260618",
+        "worker_started_attempt_id": "a_vm-prerelease-autoscaling-row127-agentpool-ops-canonical-branch-scout-20260618_20260619055603",
+        "worker_started_at": "2026-06-19T06:18:23.456Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Recovered and documented the current repo-local canonical branch for VM prerelease AutoScaling row 127, proving it is already covered by the existing profile-matrix spec/replay and validating that wiring with a fresh check-only evidence run.",
+        "last_worker_completed_at": "2026-06-19T06:20:01.547Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-19T06:20:45.437Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: archive note and fresh check evidence proved row 127 already has a truthful repo-local canonical branch via spec.cluster-autoscaler.vm-prerelease-profile-matrix and its replay, so no narrower blocker is needed."
       },
       "session_id": "s_task_vm-prerelease-autoscaling-row127-agentpool-ops-canonical-branch-scout-20260618",
       "session_history": [
         "s_task_vm-prerelease-autoscaling-row127-agentpool-ops-canonical-branch-scout-20260618"
-      ]
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-19T06:20:45.437Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: archive note and fresh check evidence proved row 127 already has a truthful repo-local canonical branch via spec.cluster-autoscaler.vm-prerelease-profile-matrix and its replay, so no narrower blocker is needed."
+      }
     },
     "vm-prerelease-autoscaling-row128-defaulting-canonical-branch-scout-20260618": {
       "id": "vm-prerelease-autoscaling-row128-defaulting-canonical-branch-scout-20260618",
       "parent_id": "feature-knowledge-and-specs",
-      "state": "active",
+      "state": "done",
       "kind": "domain_leaf",
       "priority": "P2",
       "owner": "aks-explorer",
@@ -120554,17 +120685,33 @@
         "assigned_at": "2026-06-19T05:56:04.045Z",
         "assigned_by": "planner",
         "assigned_worker": "aks-explorer",
-        "last_session": "s_task_vm-prerelease-autoscaling-row128-defaulting-canonical-branch-scout-20260618"
+        "last_session": "s_task_vm-prerelease-autoscaling-row128-defaulting-canonical-branch-scout-20260618",
+        "worker_started_attempt_id": "a_vm-prerelease-autoscaling-row128-defaulting-canonical-branch-scout-20260618_20260619055604",
+        "worker_started_at": "2026-06-19T06:18:23.623Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Confirmed row 128 already has a truthful repo-local canonical branch via spec.cluster-autoscaler.vm-prerelease-profile-matrix, wrote the requested archive note, and re-ran bounded check-mode verification for the shared profile-matrix replay.",
+        "last_worker_completed_at": "2026-06-19T06:20:17.571Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-19T06:21:55.397Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: archive note names the exact row-128 matrix anchor, explicit defaulting/reset assertion hooks inside spec.cluster-autoscaler.vm-prerelease-profile-matrix, maintained ledger linkage, and fresh bounded replay-check evidence showing row 128 is already truthfully covered by the shared profile-matrix branch."
       },
       "session_id": "s_task_vm-prerelease-autoscaling-row128-defaulting-canonical-branch-scout-20260618",
       "session_history": [
         "s_task_vm-prerelease-autoscaling-row128-defaulting-canonical-branch-scout-20260618"
-      ]
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-19T06:21:55.397Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: archive note names the exact row-128 matrix anchor, explicit defaulting/reset assertion hooks inside spec.cluster-autoscaler.vm-prerelease-profile-matrix, maintained ledger linkage, and fresh bounded replay-check evidence showing row 128 is already truthfully covered by the shared profile-matrix branch."
+      }
     },
     "vm-prerelease-autoscaling-row129-resetting-canonical-branch-scout-20260618": {
       "id": "vm-prerelease-autoscaling-row129-resetting-canonical-branch-scout-20260618",
       "parent_id": "feature-knowledge-and-specs",
-      "state": "active",
+      "state": "done",
       "kind": "domain_leaf",
       "priority": "P2",
       "owner": "aks-explorer",
@@ -120591,21 +120738,39 @@
         "assigned_at": "2026-06-19T05:56:04.242Z",
         "assigned_by": "planner",
         "assigned_worker": "aks-explorer",
-        "last_session": "s_task_vm-prerelease-autoscaling-row129-resetting-canonical-branch-scout-20260618"
+        "last_session": "s_task_vm-prerelease-autoscaling-row129-resetting-canonical-branch-scout-20260618",
+        "worker_started_attempt_id": "a_vm-prerelease-autoscaling-row129-resetting-canonical-branch-scout-20260618_20260619055604",
+        "worker_started_at": "2026-06-19T06:18:23.924Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Documented that row 129 already has a truthful repo-local canonical branch via the shared profile-matrix spec/replay, wrote the required archive note, and verified the row-local replay wiring with a fresh repo-only check run.",
+        "last_worker_completed_at": "2026-06-19T06:20:03.776Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-19T06:20:45.681Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: archive note and fresh check evidence proved row 129 already has a truthful repo-local canonical branch via spec.cluster-autoscaler.vm-prerelease-profile-matrix with reset operation coverage, so the older missing-spec successor is superseded."
       },
       "session_id": "s_task_vm-prerelease-autoscaling-row129-resetting-canonical-branch-scout-20260618",
       "session_history": [
         "s_task_vm-prerelease-autoscaling-row129-resetting-canonical-branch-scout-20260618"
-      ]
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-19T06:20:45.681Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: archive note and fresh check evidence proved row 129 already has a truthful repo-local canonical branch via spec.cluster-autoscaler.vm-prerelease-profile-matrix with reset operation coverage, so the older missing-spec successor is superseded."
+      }
     },
     "problem-result-escalation-leak": {
       "id": "problem-result-escalation-leak",
       "parent_id": "project",
-      "state": "backlog",
+      "state": "done",
       "kind": "work",
       "priority": "P1",
       "owner": "aks-explorer",
-      "children": [],
+      "children": [
+        "problem-result-routing-planner-wake-fix-20260619"
+      ],
       "goal": "Problem-solver results (resolved/escalated/unknown) should be consumed by the planner in the owner workflow, not leak out as top-level escalation events. The planner should reconcile them into the task tree — retry, accept, block, or supersede the affected task branch.",
       "context": {
         "problem": "19 of 33 pending escalations were actually successful work results from the problem-solver. They reported as escalation.created because project.problem.unknown/escalated events bypass the planner and leak to the escalation handler.",
@@ -120619,14 +120784,874 @@
         "Only genuinely unresolvable problems reach may or human as escalations",
         "Escalation.pending-count stays near zero during normal operation"
       ]
+    },
+    "vm-prerelease-autoscaling-row125-handwritten-source-equivalent-blocker-20260619": {
+      "id": "vm-prerelease-autoscaling-row125-handwritten-source-equivalent-blocker-20260619",
+      "parent_id": "feature-knowledge-and-specs",
+      "state": "blocked",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Hold VM prerelease AutoScaling row 125 on the one exact remaining source-equivalent dependency by recording the precise resume condition for Scenario_AutoScaling_Service_Principal until handwritten or authoritative-equivalent row-local body evidence explains whether the service-principal label is real semantics or stale naming despite use_shared_identity=true.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vm-prerelease-autoscaling-row125-handwritten-source-equivalent-blocker-20260619.md"
+      ],
+      "acceptance": [
+        "Blocked leaf cites evidence/archive/vm-prerelease-autoscaling-row125-service-principal-contradiction-reconcile-20260618.md plus the exact row-125 matrix/coverage surfaces and states the contradiction in evidence-backed terms: Scenario_AutoScaling_Service_Principal and cluster autoscaling service principal versus preserved extraArgs use_shared_identity=true.",
+        "Blocker names one precise resume condition only: provide handwritten Go, accepted archived exact request body, or authoritative-equivalent row-125 packet proving whether service-principal semantics survive in the request/verdict contract or whether row 125 can truthfully collapse into row 124; do not reopen broad autoscaling family rediscovery.",
+        "Task remains a source-blocker holder only, with no cloud execution and no unsupported product claim."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "feature:autoscaling",
+        "feature:virtualmachines",
+        "ledger:virtualmachine-prerelease"
+      ],
+      "depends_on": [],
+      "blocker": "External/source-equivalent unblock required: provide handwritten Go, accepted archived exact request body, or authoritative-equivalent row-125 packet for Scenario_AutoScaling_Service_Principal that resolves the preserved contradiction between the service-principal scenario/test name and matrix extraArgs use_shared_identity=true, proving whether row 125 carries real service-principal semantics or can truthfully collapse into row 124.",
+      "trace": {
+        "created_at": "2026-06-19T06:20:45.046Z",
+        "created_by": "task-tree-tool"
+      }
+    },
+    "vm-prerelease-autoscaling-row131-spot-canonical-branch-scout-20260619": {
+      "id": "vm-prerelease-autoscaling-row131-spot-canonical-branch-scout-20260619",
+      "parent_id": "feature-knowledge-and-specs",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Recover the smallest truthful repo-local canonical branch for VM prerelease AutoScaling row 131 by mapping the exact spot-autoscaling source anchor, adjacent accepted specs, and row-local substrate so the branch can either land one row-131-specific spec/replay linkage or narrow to one exact blocker.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vm-prerelease-autoscaling-row131-spot-canonical-branch-scout-20260619.md"
+      ],
+      "acceptance": [
+        "Archive note cites evidence/archive/vm-prerelease-autoscaling-spec-batch1-20260618.md, the exact row-131 matrix anchor, and every adjacent spot-autoscaling source/spec packet used to judge reuse or non-reuse.",
+        "Work either lands the smallest truthful row-131 canonical spec/replay or variant linkage for spot-autoscaling semantics, or records one exact blocker/successor proving why landing is still source-limited; do not collapse row 131 into rows 124-130 without exact reuse proof.",
+        "Repo-local only, no cloud execution and no broad family rewrite; if repo files change, the note lists the exact touched spec/replay/ledger/index surfaces and any required bounded verification command."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "feature:autoscaling",
+        "feature:virtualmachines",
+        "ledger:virtualmachine-prerelease"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-19T06:22:29.046Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_vm-prerelease-autoscaling-row131-spot-canonical-branch-scout-20260619_20260619062231",
+        "assigned_at": "2026-06-19T06:22:31.599Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vm-prerelease-autoscaling-row131-spot-canonical-branch-scout-20260619",
+        "worker_started_attempt_id": "a_vm-prerelease-autoscaling-row131-spot-canonical-branch-scout-20260619_20260619062231",
+        "worker_started_at": "2026-06-19T06:23:29.905Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Wrote a new archive note at evidence/archive/vm-prerelease-autoscaling-row131-spot-canonical-branch-scout-20260619.md that recovers the exact row-131 matrix anchor, inspects all adjacent spot/autoscaling packets, and records one precise blocker: no repo-local spec/replay joins VirtualMachines substrate, autoscaling semantics, and spot semantics for row 131.",
+        "last_worker_completed_at": "2026-06-19T06:24:44.114Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-19T06:25:07.747Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: the archive note revalidated the exact row-131 matrix anchor, compared every adjacent spot/autoscaling packet, and showed a precise repo-local source gap — no current spec/replay joins VirtualMachines substrate, autoscaling semantics, and spot semantics, so the truthful outcome is a bounded successor rather than collapsing row 131 into adjacent branches."
+      },
+      "session_id": "s_task_vm-prerelease-autoscaling-row131-spot-canonical-branch-scout-20260619",
+      "session_history": [
+        "s_task_vm-prerelease-autoscaling-row131-spot-canonical-branch-scout-20260619"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-19T06:25:07.747Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: the archive note revalidated the exact row-131 matrix anchor, compared every adjacent spot/autoscaling packet, and showed a precise repo-local source gap — no current spec/replay joins VirtualMachines substrate, autoscaling semantics, and spot semantics, so the truthful outcome is a bounded successor rather than collapsing row 131 into adjacent branches."
+      }
+    },
+    "vm-prerelease-autoscaling-row130-skip-local-storage-canonical-branch-scout-20260619": {
+      "id": "vm-prerelease-autoscaling-row130-skip-local-storage-canonical-branch-scout-20260619",
+      "parent_id": "feature-knowledge-and-specs",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Recover the smallest truthful repo-local canonical branch for VM prerelease AutoScaling row 130 by mapping the exact skipNodesWithLocalStorage source anchor, adjacent accepted specs, and row-local substrate so the branch can either land one row-130-specific spec/replay linkage or narrow to one exact blocker.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vm-prerelease-autoscaling-row130-skip-local-storage-canonical-branch-scout-20260619.md"
+      ],
+      "acceptance": [
+        "Archive note cites evidence/archive/vm-prerelease-autoscaling-spec-batch1-20260618.md, the exact row-130 matrix anchor, and every adjacent skipNodesWithLocalStorage source/spec packet used to judge reuse or non-reuse.",
+        "Work either lands the smallest truthful row-130 canonical spec/replay or variant linkage for skipNodesWithLocalStorage semantics, or records one exact blocker/successor proving why landing is still source-limited; do not collapse row 130 into rows 126-129 without exact reuse proof.",
+        "Repo-local only, no cloud execution and no broad family rewrite; if repo files change, the note lists the exact touched spec/replay/ledger/index surfaces and any required bounded verification command."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "feature:autoscaling",
+        "feature:virtualmachines",
+        "ledger:virtualmachine-prerelease"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-19T06:22:29.200Z",
+        "created_by": "task-tree-tool",
+        "promoted_at": "2026-06-19T06:24:53.103Z",
+        "promoted_by": "task-tree-tool",
+        "current_attempt_id": "a_vm-prerelease-autoscaling-row130-skip-local-storage-canonical-branch-scout-20260619_20260619062508",
+        "assigned_at": "2026-06-19T06:25:08.138Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vm-prerelease-autoscaling-row130-skip-local-storage-canonical-branch-scout-20260619",
+        "worker_started_attempt_id": "a_vm-prerelease-autoscaling-row130-skip-local-storage-canonical-branch-scout-20260619_20260619062508",
+        "worker_started_at": "2026-06-19T06:25:25.643Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Completed the row-130 scout by proving the smallest truthful repo-local canonical branch already exists via `spec.cluster-autoscaler.vm-prerelease-profile-matrix` + `replays/cluster-autoscaler-vm-prerelease-profile-matrix.ts`, then archived the evidence-backed note and emitted bounded check evidence.",
+        "last_worker_completed_at": "2026-06-19T06:26:31.339Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-19T06:28:43.288Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: the archive note revalidated row 130 against the exact matrix anchor, adjacent skipNodesWithLocalStorage packets, and current coverage ledger, proving the smallest truthful canonical branch already exists via spec.cluster-autoscaler.vm-prerelease-profile-matrix plus replays/cluster-autoscaler-vm-prerelease-profile-matrix.ts rather than a remaining blocker."
+      },
+      "session_id": "s_task_vm-prerelease-autoscaling-row130-skip-local-storage-canonical-branch-scout-20260619",
+      "session_history": [
+        "s_task_vm-prerelease-autoscaling-row130-skip-local-storage-canonical-branch-scout-20260619"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-19T06:28:43.288Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: the archive note revalidated row 130 against the exact matrix anchor, adjacent skipNodesWithLocalStorage packets, and current coverage ledger, proving the smallest truthful canonical branch already exists via spec.cluster-autoscaler.vm-prerelease-profile-matrix plus replays/cluster-autoscaler-vm-prerelease-profile-matrix.ts rather than a remaining blocker."
+      }
+    },
+    "rp-nodepool-rollback-helper-hold-reconcile-20260619": {
+      "id": "rp-nodepool-rollback-helper-hold-reconcile-20260619",
+      "parent_id": "feature-knowledge-and-specs",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Reconcile the exact live domain:checkpoint helper hold on features/rp-nodepool-lifecycle/rollback.yaml after the RP nodepool trio ownership repair by checking the rollback feature/spec/replay lineage and proving whether the path can clear to candidate or naming the one exact remaining ownership mismatch.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/rp-nodepool-rollback-helper-hold-reconcile-20260619.md"
+      ],
+      "acceptance": [
+        "Archive note cites evidence/archive/rp-nodepool-trio-output-ownership-attach-and-checkpoint-20260618.md plus the accepted rollback mapping/source artifacts and names the exact current owner task, feature file, spec, and replay surfaces for the rollback path.",
+        "Work reruns bun run --silent domain:checkpoint -- --json focused on features/rp-nodepool-lifecycle/rollback.yaml and records the live helper classification/recommendation together with whether the rollback feature/spec/replay trio are candidate, hold, or otherwise absent because they are clean.",
+        "Work stays repo-local and ends with either one exact bounded metadata/ownership fix candidate or one exact blocker/successor for rollback.yaml; do not reopen the non-rollback nodepool trio or unrelated RP lifecycle families."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "feature:rp-nodepool-lifecycle",
+        "artifact:domain-checkpoint"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-19T06:24:17.161Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_rp-nodepool-rollback-helper-hold-reconcile-20260619_20260619062417",
+        "assigned_at": "2026-06-19T06:24:17.359Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_rp-nodepool-rollback-helper-hold-reconcile-20260619",
+        "worker_started_attempt_id": "a_rp-nodepool-rollback-helper-hold-reconcile-20260619_20260619062417",
+        "worker_started_at": "2026-06-19T06:24:30.178Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Reconciled the live rollback helper hold and wrote evidence/archive/rp-nodepool-rollback-helper-hold-reconcile-20260619.md showing the rollback feature/spec/replay trio remains on checkpoint hold because the accepted canonical rollback owner task lacks exact output metadata for those three paths.",
+        "last_worker_completed_at": "2026-06-19T06:26:03.939Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-19T06:28:43.097Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: the archive note reran domain:checkpoint for the rollback trio, cited the accepted rollback lineage, and isolated one exact remaining ownership mismatch — missing exact output metadata on rp-nodepool-lifecycle-rollback-canonical-landing-authoring-20260617 for rollback.yaml, the rollback spec, and the rollback replay."
+      },
+      "session_id": "s_task_rp-nodepool-rollback-helper-hold-reconcile-20260619",
+      "session_history": [
+        "s_task_rp-nodepool-rollback-helper-hold-reconcile-20260619"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-19T06:28:43.097Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: the archive note reran domain:checkpoint for the rollback trio, cited the accepted rollback lineage, and isolated one exact remaining ownership mismatch — missing exact output metadata on rp-nodepool-lifecycle-rollback-canonical-landing-authoring-20260617 for rollback.yaml, the rollback spec, and the rollback replay."
+      }
+    },
+    "vm-prerelease-autoscaling-row131-spot-source-recovery-20260619": {
+      "id": "vm-prerelease-autoscaling-row131-spot-source-recovery-20260619",
+      "parent_id": "feature-knowledge-and-specs",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Recover the smallest truthful next source packet for VM prerelease AutoScaling row 131 by checking handwritten e2ev3 or authoritative repo-local equivalents for Scenario_AutoScaling_Spot, and either land one exact row-131 spot+autoscaling+VirtualMachines canonical packet/linkage or prove the one remaining source dependency that keeps the branch isolated.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vm-prerelease-autoscaling-row131-spot-source-recovery-20260619.md"
+      ],
+      "acceptance": [
+        "Archive note cites the accepted row-131 scout artifact plus the exact handwritten/source-equivalent surfaces inspected for Scenario_AutoScaling_Spot, including whether any row-local request body or expectation packet proves VirtualMachines substrate together with spot and autoscaling semantics.",
+        "Work either lands one exact row-131 canonical packet/linkage or records one exact remaining source dependency with enough detail to justify blocking; do not broaden into the whole autoscaling family or reuse VMSS spot-pool eviction without explicit equivalence proof.",
+        "Repo-local only, no cloud execution; if repo files change, the note lists the exact spec/replay/ledger/index surfaces touched and any bounded verification command."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "feature:autoscaling",
+        "feature:virtualmachines",
+        "ledger:virtualmachine-prerelease"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-19T06:25:07.940Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_vm-prerelease-autoscaling-row131-spot-source-recovery-20260619_20260619062827",
+        "assigned_at": "2026-06-19T06:28:27.661Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vm-prerelease-autoscaling-row131-spot-source-recovery-20260619",
+        "worker_started_attempt_id": "a_vm-prerelease-autoscaling-row131-spot-source-recovery-20260619_20260619062827",
+        "worker_started_at": "2026-06-19T06:29:24.957Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Created a repo-local archive note at evidence/archive/vm-prerelease-autoscaling-row131-spot-source-recovery-20260619.md showing row 131 still lacks a truthful canonical packet and isolating one exact remaining source dependency: a handwritten/source-equivalent Scenario_AutoScaling_Spot packet that joins VirtualMachines substrate, autoscaling, and spot semantics.",
+        "last_worker_completed_at": "2026-06-19T06:30:38.482Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-19T06:31:27.998Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: the row-131 source-recovery note inspected the row-local matrix/ledger and adjacent autoscaling plus spot packet surfaces, proved the current VMSS spot-pool-eviction draft is not equivalent, and isolated one exact remaining handwritten/source-equivalent dependency, so follow-up now lives in the new blocked row-131 source-unblock leaf."
+      },
+      "session_id": "s_task_vm-prerelease-autoscaling-row131-spot-source-recovery-20260619",
+      "session_history": [
+        "s_task_vm-prerelease-autoscaling-row131-spot-source-recovery-20260619"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-19T06:31:27.998Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: the row-131 source-recovery note inspected the row-local matrix/ledger and adjacent autoscaling plus spot packet surfaces, proved the current VMSS spot-pool-eviction draft is not equivalent, and isolated one exact remaining handwritten/source-equivalent dependency, so follow-up now lives in the new blocked row-131 source-unblock leaf."
+      }
+    },
+    "problem-result-routing-planner-wake-fix-20260619": {
+      "id": "problem-result-routing-planner-wake-fix-20260619",
+      "parent_id": "problem-result-escalation-leak",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Route project.problem.resolved/escalated/unknown results back into planner wakeups instead of leaking as top-level escalations by patching the project-local app event handling and capturing the smallest bounded verification that the planner now receives the result context for task-tree reconciliation.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/problem-result-routing-planner-wake-fix-20260619.md"
+      ],
+      "acceptance": [
+        "Archive note cites the exact project-local app surfaces inspected or changed (for example event router/workflow handler and any touched test or helper files), explains the before/after path for project.problem.resolved|escalated|unknown, and keeps scope to routing the result back to the planner rather than broad escalation redesign.",
+        "Work includes one bounded verification command or fixture-driven check showing that a project.problem.* result now produces a planner wake/reconciliation path instead of directly surfacing as a top-level escalation; if full verification is not possible locally, the note records the exact remaining verification gap and why the routing change is still grounded.",
+        "If repo files change, the note lists the exact app files touched under /app/projects/aks-rp-e2e.app (and any shared package files), plus any follow-up tree action needed for affected blocked/retry branches; no worker runs domain cloud probes."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "tooling:problem-result-routing"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-19T06:31:01.280Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_problem-result-routing-planner-wake-fix-20260619_20260619063101",
+        "assigned_at": "2026-06-19T06:31:01.509Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_problem-result-routing-planner-wake-fix-20260619",
+        "worker_started_attempt_id": "a_problem-result-routing-planner-wake-fix-20260619_20260619063101",
+        "worker_started_at": "2026-06-19T06:31:44.541Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Patched the aks-rp-e2e app so project.problem.unknown is subscribed and routed back into project.owner/planner reconciliation, updated the planner prompt contract accordingly, and wrote a bounded verification note with passing targeted tests.",
+        "last_worker_completed_at": "2026-06-19T06:33:48.038Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-19T06:34:34.297Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: archive note and bounded tests show project.problem.unknown is now subscribed, routed through app.ts into project.owner.requested with reason problem-unknown, and reflected in the planner prompt so solver results feed planner reconciliation instead of leaking as top-level escalation noise."
+      },
+      "session_id": "s_task_problem-result-routing-planner-wake-fix-20260619",
+      "session_history": [
+        "s_task_problem-result-routing-planner-wake-fix-20260619"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-19T06:34:34.297Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: archive note and bounded tests show project.problem.unknown is now subscribed, routed through app.ts into project.owner.requested with reason problem-unknown, and reflected in the planner prompt so solver results feed planner reconciliation instead of leaking as top-level escalation noise."
+      }
+    },
+    "vm-prerelease-autoscaling-row131-spot-handwritten-source-unblock-20260619": {
+      "id": "vm-prerelease-autoscaling-row131-spot-handwritten-source-unblock-20260619",
+      "parent_id": "feature-knowledge-and-specs",
+      "state": "blocked",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Hold VM prerelease AutoScaling row 131 on the single remaining handwritten/source-equivalent dependency by capturing the exact authoritative packet needed for Scenario_AutoScaling_Spot before any attempt to collapse it into row 124 autoscaling or the VMSS spot-pool-eviction draft.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vm-prerelease-autoscaling-row131-spot-handwritten-source-unblock-20260619.md"
+      ],
+      "acceptance": [
+        "Blocked leaf cites the accepted row-131 scout and source-recovery notes, states that repo-local evidence preserves only separate fragments (row-local matrix anchor, VM autoscaling substrate, adjacent VMSS spot semantics), and records that no current repo-local packet truthfully joins VirtualMachines substrate + autoscaling + spot semantics for Scenario_AutoScaling_Spot.",
+        "The blocker states the precise resume condition: resume only when handwritten e2ev3 source or an accepted authoritative repo-local equivalent proves Scenario_AutoScaling_Spot with VirtualMachines substrate plus spot-specific autoscaling request/expectation semantics; do not reuse row 124 base autoscaling or spec.virtualmachines.spot-pool-eviction without explicit equivalence proof.",
+        "Task remains repo-local/source-oriented only; no cloud execution, and any future unblocking packet must route back to this branch rather than broadening into the whole autoscaling family."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "feature:autoscaling",
+        "feature:virtualmachines",
+        "ledger:virtualmachine-prerelease"
+      ],
+      "depends_on": [],
+      "blocker": "External/source unblock required: provide handwritten e2ev3 source or an accepted authoritative repo-local equivalent for Scenario_AutoScaling_Spot that explicitly joins VirtualMachines substrate, autoscaling semantics, and spot-specific request or expectation semantics. Until that packet exists, do not collapse row 131 into row 124 autoscaling or spec.virtualmachines.spot-pool-eviction.",
+      "trace": {
+        "created_at": "2026-06-19T06:31:27.743Z",
+        "created_by": "task-tree-tool"
+      }
+    },
+    "focus-plan-terminal-claim-reconciliation-20260619": {
+      "id": "focus-plan-terminal-claim-reconciliation-20260619",
+      "parent_id": "planner-context-quality",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Reconcile the stale focus-plan terminal/no-frontier claim against the reopened project state so planner inputs stop advertising project-ceiling/disable-review conclusions while live active or blocked work remains.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/focus-plan-terminal-claim-reconciliation-20260619.md"
+      ],
+      "acceptance": [
+        "Archive note cites the exact stale terminal-state inputs still present in project/task-tree context or focus-plan packet composition, alongside live summary/frontier evidence showing problem-result-routing-planner-wake-fix-20260619 active and blocked leaves still visible, and classifies the 1018/1018 zero-frontier disable-review claim as stale or mis-scoped rather than authoritative.",
+        "Note identifies the smallest project-local follow-up surface that should change next (for example task-tree root context, focus-plan packet composition, or a related app helper) so future focus-plan runs respect the 2026-06-17 reopen and do not suggest terminal ceiling while active/blocked work remains.",
+        "No domain replay or cloud probe work runs. If repo files or tree text need updates, the note lists the exact files/tasks and states whether the result-routing fix should land before or together with the context refresh."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "tooling:focus-plan-terminal-claim"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-19T06:33:14.764Z",
+        "created_by": "task-tree-tool",
+        "promoted_at": "2026-06-19T06:33:20.875Z",
+        "promoted_by": "task-tree-tool",
+        "current_attempt_id": "a_focus-plan-terminal-claim-reconciliation-20260619_20260619063322",
+        "assigned_at": "2026-06-19T06:33:22.877Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_focus-plan-terminal-claim-reconciliation-20260619",
+        "worker_started_attempt_id": "a_focus-plan-terminal-claim-reconciliation-20260619_20260619063322",
+        "worker_started_at": "2026-06-19T06:33:46.676Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Produced the requested archive note at evidence/archive/focus-plan-terminal-claim-reconciliation-20260619.md, tying the repeated 1018/1018 zero-frontier disable-review summaries to stale focus-plan run inputs and contrasting them with the current live task-tree packet showing active, review, and blocked frontier still present.",
+        "last_worker_completed_at": "2026-06-19T06:35:21.476Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-19T06:37:21.746Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: evidence/archive/focus-plan-terminal-claim-reconciliation-20260619.md cites the stale 1018/1018 zero-frontier focus-plan summaries, contrasts them with the reopened live frontier, and identifies the root task-tree context as the smallest corrective surface, with result-routing landing before or with the context refresh."
+      },
+      "session_id": "s_task_focus-plan-terminal-claim-reconciliation-20260619",
+      "session_history": [
+        "s_task_focus-plan-terminal-claim-reconciliation-20260619"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-19T06:37:21.746Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: evidence/archive/focus-plan-terminal-claim-reconciliation-20260619.md cites the stale 1018/1018 zero-frontier focus-plan summaries, contrasts them with the reopened live frontier, and identifies the root task-tree context as the smallest corrective surface, with result-routing landing before or with the context refresh."
+      }
+    },
+    "project-root-reopen-context-refresh-20260619": {
+      "id": "project-root-reopen-context-refresh-20260619",
+      "parent_id": "planner-context-quality",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Replace stale project-ceiling/wind-down metadata in the root task-tree/project context with the reopened coverage posture and live blocker summary after the terminal-claim reconciliation note lands, so future planner/focus-plan packets stop inheriting 2026-06-14 completion claims while active or blocked work remains.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/project-root-reopen-context-refresh-20260619.md"
+      ],
+      "acceptance": [
+        "Archive note cites the exact stale root-level planner inputs still advertising completion or steady-state (for example strategy_context, ceiling_state, steady_state, acceptance/review summaries) and contrasts them with the 2026-06-17 reopen plus current active/blocked frontier state.",
+        "Using task-tree tooling, the worker updates the relevant project/root text or lane context so bun run task-tree show project no longer frames the project as accepted-at-ceiling/wind-down while reopened scenario-coverage and blocker-tracking work remains active.",
+        "The note states whether the root-context refresh should land only after focus-plan-terminal-claim-reconciliation-20260619 is accepted or can be merged in the same change slice, and it does not run domain replay or cloud mutation work."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "tooling:planner-root-context"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-19T06:35:58.333Z",
+        "created_by": "task-tree-tool",
+        "promoted_at": "2026-06-19T06:36:04.518Z",
+        "promoted_by": "task-tree-tool",
+        "current_attempt_id": "a_project-root-reopen-context-refresh-20260619_20260619063625",
+        "assigned_at": "2026-06-19T06:36:25.224Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_project-root-reopen-context-refresh-20260619",
+        "worker_started_attempt_id": "a_project-root-reopen-context-refresh-20260619_20260619063625",
+        "worker_started_at": "2026-06-19T06:36:25.591Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Produced the archive note at evidence/archive/project-root-reopen-context-refresh-20260619.md and used task-tree tooling to refresh the root project goal/acceptance so `bun run task-tree show project` now frames the project as reopened rather than wind-down-only.",
+        "last_worker_completed_at": "2026-06-19T06:37:45.004Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-19T06:38:31.098Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted: archive note and task-tree show project prove the root goal/acceptance now frame the project as reopened, with historical 2026-06-14 ceiling notes explicitly downgraded to provenance while active/review/blocked frontier work remains."
+      },
+      "session_id": "s_task_project-root-reopen-context-refresh-20260619",
+      "session_history": [
+        "s_task_project-root-reopen-context-refresh-20260619"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-19T06:38:31.098Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted: archive note and task-tree show project prove the root goal/acceptance now frame the project as reopened, with historical 2026-06-14 ceiling notes explicitly downgraded to provenance while active/review/blocked frontier work remains."
+      }
+    },
+    "rp-nodepool-rollback-output-ownership-repair-20260619": {
+      "id": "rp-nodepool-rollback-output-ownership-repair-20260619",
+      "parent_id": "feature-knowledge-and-specs",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Repair the exact output ownership metadata for the canonical RP nodepool rollback landing by attaching features/rp-nodepool-lifecycle/rollback.yaml, specs/rp-nodepool-lifecycle-rollback.json, and replays/rp-nodepool-lifecycle-rollback.ts to the accepted owner task, rerunning domain:checkpoint, and proving whether the rollback helper hold clears.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/rp-nodepool-rollback-output-ownership-repair-20260619.md"
+      ],
+      "acceptance": [
+        "Archive note cites evidence/archive/rp-nodepool-rollback-helper-hold-reconcile-20260619.md plus the accepted canonical rollback landing, lists the three exact rollback paths, and records the owning-task before/after state showing whether rp-nodepool-lifecycle-rollback-canonical-landing-authoring-20260617 now carries exact output metadata for all three surfaces.",
+        "Work reruns bun run --silent domain:checkpoint -- --json after the metadata repair and records the helper classification/recommendation for features/rp-nodepool-lifecycle/rollback.yaml together with the rollback spec/replay surfaces, proving whether the hold is cleared or naming one exact residual mismatch.",
+        "Work stays repo-local, does not reopen non-rollback RP nodepool surfaces or cloud execution, and ends with either a clean rollback helper result or one exact bounded successor if a residual ownership mismatch remains."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "feature:rp-nodepool-lifecycle",
+        "artifact:domain-checkpoint"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-19T06:37:21.938Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_rp-nodepool-rollback-output-ownership-repair-20260619_20260619063722",
+        "assigned_at": "2026-06-19T06:37:22.142Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_rp-nodepool-rollback-output-ownership-repair-20260619",
+        "worker_started_attempt_id": "a_rp-nodepool-rollback-output-ownership-repair-20260619_20260619063722",
+        "worker_started_at": "2026-06-19T06:37:37.787Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Repaired exact output ownership on rp-nodepool-lifecycle-rollback-canonical-landing-authoring-20260617 via task-tree set-outputs, reran domain:checkpoint, and archived the rollback ownership repair note proving the accepted-owner gap is fixed while the in-session helper hold remains due to the active repair task overlap.",
+        "last_worker_completed_at": "2026-06-19T06:39:08.639Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-19T06:40:23.307Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: the archive note shows the canonical rollback landing now explicitly owns rollback.yaml, rp-nodepool-lifecycle-rollback.json, and rp-nodepool-lifecycle-rollback.ts, and the only residual domain:checkpoint hold was this review task's own active overlap, not a remaining ownership mismatch."
+      },
+      "session_id": "s_task_rp-nodepool-rollback-output-ownership-repair-20260619",
+      "session_history": [
+        "s_task_rp-nodepool-rollback-output-ownership-repair-20260619"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-19T06:40:23.307Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: the archive note shows the canonical rollback landing now explicitly owns rollback.yaml, rp-nodepool-lifecycle-rollback.json, and rp-nodepool-lifecycle-rollback.ts, and the only residual domain:checkpoint hold was this review task's own active overlap, not a remaining ownership mismatch."
+      }
+    },
+    "ccp-security-patch-os-variants-checkpoint-ownership-reconcile-20260619": {
+      "id": "ccp-security-patch-os-variants-checkpoint-ownership-reconcile-20260619",
+      "parent_id": "feature-knowledge-and-specs",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Reconcile the exact domain:checkpoint needs-planner-review state for features/ccp-security-patch-os-variants.yaml by tracing whether an accepted task should already own that feature slice or whether one bounded new owner/split is required, then archive the lineage evidence and leave one exact repair successor if needed.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/ccp-security-patch-os-variants-checkpoint-ownership-reconcile-20260619.md"
+      ],
+      "acceptance": [
+        "Archive note cites the current domain:checkpoint slice for features/ccp-security-patch-os-variants.yaml and names any accepted task candidates found in the task tree/history or proves that none currently claim exact ownership.",
+        "Note records one exact file/task lineage decision for this feature slice only: either an already accepted task authored the file and needs exact output metadata repair, or one bounded owner-authoring/split successor is named with the precise file surface to fix.",
+        "Work stays repo-local, does not reopen unrelated CCP security-patch variants or cloud execution, and ends with either a precise task-tree metadata repair candidate or one exact bounded successor for features/ccp-security-patch-os-variants.yaml."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "feature:ccp-security-patch-os-variants"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-19T06:40:23.520Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_ccp-security-patch-os-variants-checkpoint-ownership-reconcile-20260619_20260619064023",
+        "assigned_at": "2026-06-19T06:40:23.727Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_ccp-security-patch-os-variants-checkpoint-ownership-reconcile-20260619",
+        "worker_started_attempt_id": "a_ccp-security-patch-os-variants-checkpoint-ownership-reconcile-20260619_20260619064023",
+        "worker_started_at": "2026-06-19T06:40:34.689Z",
+        "last_worker_result": "blocked",
+        "last_worker_claim": "blocked",
+        "last_worker_summary": "error",
+        "last_worker_completed_at": "2026-06-19T06:43:06.961Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-19T06:45:04.366Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: the archive note proved features/ccp-security-patch-os-variants.yaml still has no accepted exact owner, and the truthful next step is one bounded root-packet canonical-owner successor rather than child-task metadata repair."
+      },
+      "session_id": "s_task_ccp-security-patch-os-variants-checkpoint-ownership-reconcile-20260619",
+      "session_history": [
+        "s_task_ccp-security-patch-os-variants-checkpoint-ownership-reconcile-20260619"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-19T06:45:04.366Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: the archive note proved features/ccp-security-patch-os-variants.yaml still has no accepted exact owner, and the truthful next step is one bounded root-packet canonical-owner successor rather than child-task metadata repair."
+      }
+    },
+    "machines-agentpool-checkpoint-ownership-reconcile-20260619": {
+      "id": "machines-agentpool-checkpoint-ownership-reconcile-20260619",
+      "parent_id": "feature-knowledge-and-specs",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Reconcile the exact domain:checkpoint needs-planner-review state for features/machines-agentpool.yaml by tracing whether an accepted task should already own that feature slice or whether one bounded new owner/split is required, then archive the lineage evidence and leave one exact repair successor if needed.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/machines-agentpool-checkpoint-ownership-reconcile-20260619.md"
+      ],
+      "acceptance": [
+        "Archive note cites the current domain:checkpoint slice for features/machines-agentpool.yaml and names any accepted task candidates found in the task tree/history or proves that none currently claim exact ownership.",
+        "Note records one exact file/task lineage decision for this feature slice only: either an already accepted task authored the file and needs exact output metadata repair, or one bounded owner-authoring/split successor is named with the precise file surface to fix.",
+        "Work stays repo-local, does not reopen unrelated Machines/agentpool families or cloud execution, and ends with either a precise task-tree metadata repair candidate or one exact bounded successor for features/machines-agentpool.yaml."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "feature:machines-agentpool"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-19T06:40:23.926Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_machines-agentpool-checkpoint-ownership-reconcile-20260619_20260619064024",
+        "assigned_at": "2026-06-19T06:40:24.133Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_machines-agentpool-checkpoint-ownership-reconcile-20260619",
+        "worker_started_attempt_id": "a_machines-agentpool-checkpoint-ownership-reconcile-20260619_20260619064024",
+        "worker_started_at": "2026-06-19T06:40:35.050Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Archived a machines-agentpool checkpoint lineage note proving `features/machines-agentpool.yaml` already has an accepted authoring task candidate (`feature-packet-batch-3-new-families`) and that the remaining blocker is exact output metadata, not missing ownership.",
+        "last_worker_completed_at": "2026-06-19T06:42:03.150Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-19T06:42:37.942Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted the archive note: it proves features/machines-agentpool.yaml already has an accepted authoring lineage through feature-packet-batch-3-new-families and that the remaining checkpoint issue is exact output metadata, not missing ownership."
+      },
+      "session_id": "s_task_machines-agentpool-checkpoint-ownership-reconcile-20260619",
+      "session_history": [
+        "s_task_machines-agentpool-checkpoint-ownership-reconcile-20260619"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-19T06:42:37.942Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted the archive note: it proves features/machines-agentpool.yaml already has an accepted authoring lineage through feature-packet-batch-3-new-families and that the remaining checkpoint issue is exact output metadata, not missing ownership."
+      }
+    },
+    "vm-prerelease-autoscaling-profile-matrix-checkpoint-ownership-reconcile-20260619": {
+      "id": "vm-prerelease-autoscaling-profile-matrix-checkpoint-ownership-reconcile-20260619",
+      "parent_id": "feature-knowledge-and-specs",
+      "state": "review",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Reconcile the exact domain:checkpoint needs-planner-review state for specs/cluster-autoscaler-vm-prerelease-profile-matrix.json and replays/cluster-autoscaler-vm-prerelease-profile-matrix.ts by tracing whether accepted VM prerelease autoscaling row tasks already own that canonical slice or whether one bounded new owner/split is required, then archive the lineage evidence and leave one exact repair successor if needed.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vm-prerelease-autoscaling-profile-matrix-checkpoint-ownership-reconcile-20260619.md"
+      ],
+      "acceptance": [
+        "Archive note cites the current domain:checkpoint slices for specs/cluster-autoscaler-vm-prerelease-profile-matrix.json and replays/cluster-autoscaler-vm-prerelease-profile-matrix.ts, names any accepted task candidates found in the task tree/history, or proves that none currently claim exact ownership.",
+        "Note records one exact lineage decision for the profile-matrix canonical slice only: either accepted row-scoped autoscaling work already authored the spec/replay and needs exact output metadata repair, or one bounded owner-authoring/split successor is named with the precise file surfaces to fix.",
+        "Work stays repo-local, does not reopen unrelated autoscaling families or cloud execution, and ends with either a precise task-tree metadata repair candidate or one exact bounded successor for the profile-matrix spec/replay slice."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "feature:autoscaling",
+        "artifact:cluster-autoscaler-vm-prerelease-profile-matrix"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-19T06:42:06.977Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_vm-prerelease-autoscaling-profile-matrix-checkpoint-ownership-reconcile-20260619_20260619064207",
+        "assigned_at": "2026-06-19T06:42:07.147Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vm-prerelease-autoscaling-profile-matrix-checkpoint-ownership-reconcile-20260619",
+        "worker_started_attempt_id": "a_vm-prerelease-autoscaling-profile-matrix-checkpoint-ownership-reconcile-20260619_20260619064207",
+        "worker_started_at": "2026-06-19T06:43:02.221Z",
+        "last_worker_result": "blocked",
+        "last_worker_claim": "blocked",
+        "last_worker_summary": "error",
+        "last_worker_completed_at": "2026-06-19T06:43:06.348Z",
+        "last_worker_evidence": []
+      },
+      "session_id": "s_task_vm-prerelease-autoscaling-profile-matrix-checkpoint-ownership-reconcile-20260619",
+      "session_history": [
+        "s_task_vm-prerelease-autoscaling-profile-matrix-checkpoint-ownership-reconcile-20260619"
+      ],
+      "blocker": "Worker returned no durable archive note; retry through vm-prerelease-autoscaling-profile-matrix-checkpoint-ownership-retry-20260619 with the accepted row-131 spot source blocker carried explicitly from vm-prerelease-autoscaling-row131-spot-handwritten-source-unblock-20260619."
+    },
+    "vm-prerelease-autoscaling-base-checkpoint-ownership-reconcile-20260619": {
+      "id": "vm-prerelease-autoscaling-base-checkpoint-ownership-reconcile-20260619",
+      "parent_id": "feature-knowledge-and-specs",
+      "state": "backlog",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Reconcile the exact domain:checkpoint needs-planner-review state for specs/cluster-autoscaler-vm-prerelease-autoscaling-base.json and replays/cluster-autoscaler-vm-prerelease-autoscaling-base.ts by tracing whether an accepted task should already own that canonical base slice or whether one bounded new owner/split is required, then archive the lineage evidence and leave one exact repair successor if needed.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vm-prerelease-autoscaling-base-checkpoint-ownership-reconcile-20260619.md"
+      ],
+      "acceptance": [
+        "Archive note cites the current domain:checkpoint slices for specs/cluster-autoscaler-vm-prerelease-autoscaling-base.json and replays/cluster-autoscaler-vm-prerelease-autoscaling-base.ts, names any accepted task candidates found in the task tree/history, or proves that none currently claim exact ownership.",
+        "Note records one exact lineage decision for the autoscaling-base canonical slice only: either an accepted task already authored the spec/replay and needs exact output metadata repair, or one bounded owner-authoring/split successor is named with the precise file surfaces to fix.",
+        "Work stays repo-local, does not reopen unrelated autoscaling families or cloud execution, and ends with either a precise task-tree metadata repair candidate or one exact bounded successor for the autoscaling-base spec/replay slice."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "feature:autoscaling",
+        "artifact:cluster-autoscaler-vm-prerelease-autoscaling-base"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-19T06:42:07.331Z",
+        "created_by": "task-tree-tool",
+        "promoted_at": "2026-06-19T06:46:00.407Z",
+        "promoted_by": "task-tree-tool"
+      }
+    },
+    "feature-packet-batch-3-exact-output-metadata-repair-20260619": {
+      "id": "feature-packet-batch-3-exact-output-metadata-repair-20260619",
+      "parent_id": "feature-knowledge-and-specs",
+      "state": "review",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Repair the accepted task metadata for feature-packet-batch-3-new-families so domain:checkpoint can attach its authored family packets by exact output path, starting with features/machines-agentpool.yaml and the other three batch-3 feature packets proven in the accepted lineage note.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/feature-packet-batch-3-exact-output-metadata-repair-20260619.md"
+      ],
+      "acceptance": [
+        "Archive note cites the accepted lineage note for features/machines-agentpool.yaml plus the current task-tree metadata for feature-packet-batch-3-new-families, proving the present mismatch is wildcard output metadata rather than missing authorship.",
+        "Task-tree metadata for feature-packet-batch-3-new-families is updated from broad wildcard output(s) to the exact authored packet paths for the four batch-3 families: features/machines-agentpool.yaml, features/paf-throttling.yaml, features/image-cleaner.yaml, and features/node-restriction.yaml.",
+        "Verification reruns the supported checkpoint surface and records the before/after result for the repaired slices without reopening unrelated family authoring or cloud execution."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "feature:machines-agentpool",
+        "feature:paf-throttling",
+        "feature:image-cleaner",
+        "feature:node-restriction"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-19T06:42:38.116Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_feature-packet-batch-3-exact-output-metadata-repair-20260619_20260619064238",
+        "assigned_at": "2026-06-19T06:42:38.310Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_feature-packet-batch-3-exact-output-metadata-repair-20260619",
+        "worker_started_attempt_id": "a_feature-packet-batch-3-exact-output-metadata-repair-20260619_20260619064238",
+        "worker_started_at": "2026-06-19T06:43:02.585Z",
+        "last_worker_result": "blocked",
+        "last_worker_claim": "blocked",
+        "last_worker_summary": "error",
+        "last_worker_completed_at": "2026-06-19T06:43:11.152Z",
+        "last_worker_evidence": []
+      },
+      "session_id": "s_task_feature-packet-batch-3-exact-output-metadata-repair-20260619",
+      "session_history": [
+        "s_task_feature-packet-batch-3-exact-output-metadata-repair-20260619"
+      ],
+      "blocker": "Worker returned no durable archive note; retry through feature-packet-batch-3-exact-output-metadata-repair-retry-20260619 using supported task-tree metadata mutation or an exact tooling blocker."
+    },
+    "ccp-security-patch-os-variants-root-packet-canonical-owner-20260619": {
+      "id": "ccp-security-patch-os-variants-root-packet-canonical-owner-20260619",
+      "parent_id": "feature-knowledge-and-specs",
+      "state": "active",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Create one canonical owner branch for features/ccp-security-patch-os-variants.yaml by reconciling the shared parent packet lineage across its broad original authoring plus accepted AzureLinux and Ubuntu2404 edits, then either attach the exact file to one truthful owner task or land one bounded root-packet owner slice that can declare the exact output path.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/ccp-security-patch-os-variants-root-packet-canonical-owner-20260619.md"
+      ],
+      "acceptance": [
+        "Archive note cites the accepted checkpoint-ownership reconcile artifact plus the exact accepted tasks and git/file lineage surfaces that contributed to features/ccp-security-patch-os-variants.yaml, proving why the parent packet cannot be truthfully attached to one child-specific task without broader reconciliation.",
+        "Work lands one exact ownership repair for features/ccp-security-patch-os-variants.yaml only: either the task tree is updated so one truthful owner task declares that exact file output, or one bounded root-packet owner successor is named with the precise file surface still to land; do not reopen cloud execution or sibling CCP families.",
+        "Verification records the before/after checkpoint state for features/ccp-security-patch-os-variants.yaml or, if no metadata mutation is possible yet, the precise remaining tree/tooling action required for that single file."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "feature:ccp-security-patch-os-variants"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-19T06:45:26.189Z",
+        "created_by": "task-tree-tool",
+        "promoted_at": "2026-06-19T06:46:00.407Z",
+        "promoted_by": "task-tree-tool",
+        "current_attempt_id": "a_ccp-security-patch-os-variants-root-packet-canonical-owner-20260619_20260619064612",
+        "assigned_at": "2026-06-19T06:46:12.081Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_ccp-security-patch-os-variants-root-packet-canonical-owner-20260619",
+        "worker_started_attempt_id": "a_ccp-security-patch-os-variants-root-packet-canonical-owner-20260619_20260619064612",
+        "worker_started_at": "2026-06-19T06:46:35.698Z"
+      },
+      "session_id": "s_task_ccp-security-patch-os-variants-root-packet-canonical-owner-20260619",
+      "session_history": [
+        "s_task_ccp-security-patch-os-variants-root-packet-canonical-owner-20260619"
+      ]
+    },
+    "vm-prerelease-autoscaling-profile-matrix-checkpoint-ownership-retry-20260619": {
+      "id": "vm-prerelease-autoscaling-profile-matrix-checkpoint-ownership-retry-20260619",
+      "parent_id": "feature-knowledge-and-specs",
+      "state": "active",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Retry the profile-matrix checkpoint ownership reconcile with the row-131 spot blocker now explicit: trace whether accepted VM prerelease autoscaling row tasks already own specs/cluster-autoscaler-vm-prerelease-profile-matrix.json and replays/cluster-autoscaler-vm-prerelease-profile-matrix.ts, and if not, name one bounded canonical-owner or metadata-repair successor without reopening unrelated autoscaling branches.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vm-prerelease-autoscaling-profile-matrix-checkpoint-ownership-retry-20260619.md"
+      ],
+      "acceptance": [
+        "Archive note cites the current checkpoint slices for specs/cluster-autoscaler-vm-prerelease-profile-matrix.json and replays/cluster-autoscaler-vm-prerelease-profile-matrix.ts, the accepted row-scoped autoscaling tasks for rows 126-130, and the blocked leaf vm-prerelease-autoscaling-row131-spot-handwritten-source-unblock-20260619 so the row-131 gap is carried as exact existing evidence rather than rediscovered.",
+        "Note records one exact lineage decision for the profile-matrix canonical slice only: either an accepted task already authored the spec/replay and needs exact output metadata repair, or one bounded owner-authoring/split successor is named with the precise file surfaces to fix; do not collapse row 131 into row 124 or the VMSS spot-pool-eviction draft without explicit equivalence proof.",
+        "Work stays repo-local, does not run cloud probes, and ends with either a precise metadata-repair candidate or one exact bounded successor for the profile-matrix spec/replay slice."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "feature:autoscaling",
+        "artifact:cluster-autoscaler-vm-prerelease-profile-matrix"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-19T06:45:47.767Z",
+        "created_by": "task-tree-tool",
+        "promoted_at": "2026-06-19T06:46:00.407Z",
+        "promoted_by": "task-tree-tool",
+        "current_attempt_id": "a_vm-prerelease-autoscaling-profile-matrix-checkpoint-ownership-retry-20260619_20260619064612",
+        "assigned_at": "2026-06-19T06:46:12.504Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vm-prerelease-autoscaling-profile-matrix-checkpoint-ownership-retry-20260619",
+        "worker_started_attempt_id": "a_vm-prerelease-autoscaling-profile-matrix-checkpoint-ownership-retry-20260619_20260619064612",
+        "worker_started_at": "2026-06-19T06:46:35.868Z"
+      },
+      "session_id": "s_task_vm-prerelease-autoscaling-profile-matrix-checkpoint-ownership-retry-20260619",
+      "session_history": [
+        "s_task_vm-prerelease-autoscaling-profile-matrix-checkpoint-ownership-retry-20260619"
+      ]
+    },
+    "feature-packet-batch-3-exact-output-metadata-repair-retry-20260619": {
+      "id": "feature-packet-batch-3-exact-output-metadata-repair-retry-20260619",
+      "parent_id": "feature-knowledge-and-specs",
+      "state": "review",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Retry the batch-3 exact-output metadata repair for feature-packet-batch-3-new-families using only supported task-tree mutation paths, starting from the accepted lineage proof for the four batch-3 feature packets and ending with either an exact metadata update or one focused tooling/action blocker for that single accepted task.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/feature-packet-batch-3-exact-output-metadata-repair-retry-20260619.md"
+      ],
+      "acceptance": [
+        "Archive note cites the accepted lineage note for feature-packet-batch-3-new-families plus the current task-tree metadata mismatch, proving the issue is exact-output declaration rather than missing authorship for features/machines-agentpool.yaml, features/paf-throttling.yaml, features/image-cleaner.yaml, and features/node-restriction.yaml.",
+        "Work applies the exact metadata repair for that accepted task through a supported task-tree path, or records one precise tooling blocker and the single next action needed to attach those four exact outputs; do not reopen family authoring or cloud execution.",
+        "Verification records the before/after checkpoint state for the repaired slices or, if mutation is blocked, the exact unsupported primitive/error that must be solved."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "feature:machines-agentpool",
+        "feature:paf-throttling",
+        "feature:image-cleaner",
+        "feature:node-restriction"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-19T06:45:47.960Z",
+        "created_by": "task-tree-tool",
+        "promoted_at": "2026-06-19T06:46:00.407Z",
+        "promoted_by": "task-tree-tool",
+        "current_attempt_id": "a_feature-packet-batch-3-exact-output-metadata-repair-retry-20260619_20260619064612",
+        "assigned_at": "2026-06-19T06:46:12.285Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_feature-packet-batch-3-exact-output-metadata-repair-retry-20260619",
+        "worker_started_attempt_id": "a_feature-packet-batch-3-exact-output-metadata-repair-retry-20260619_20260619064612",
+        "worker_started_at": "2026-06-19T06:46:35.984Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Verified that feature-packet-batch-3 exact-output metadata was already repaired on the accepted task `feature-packet-batch-3-new-families`, and wrote a durable archive note documenting the current exact outputs plus fresh checkpoint evidence for `features/machines-agentpool.yaml`.",
+        "last_worker_completed_at": "2026-06-19T06:48:03.033Z",
+        "last_worker_evidence": []
+      },
+      "session_id": "s_task_feature-packet-batch-3-exact-output-metadata-repair-retry-20260619",
+      "session_history": [
+        "s_task_feature-packet-batch-3-exact-output-metadata-repair-retry-20260619"
+      ]
     }
   },
   "active_task_ids": [
-    "rp-nodepool-trio-output-ownership-attach-and-checkpoint-20260618",
-    "vm-prerelease-autoscaling-row125-service-principal-contradiction-reconcile-20260618",
-    "vm-prerelease-autoscaling-row127-agentpool-ops-canonical-branch-scout-20260618",
-    "vm-prerelease-autoscaling-row128-defaulting-canonical-branch-scout-20260618",
-    "vm-prerelease-autoscaling-row129-resetting-canonical-branch-scout-20260618"
+    "ccp-security-patch-os-variants-root-packet-canonical-owner-20260619",
+    "vm-prerelease-autoscaling-profile-matrix-checkpoint-ownership-retry-20260619"
   ],
   "archive": {
     "kms-v2-managed-hsm-staging-20260611": {

@@ -191,10 +191,12 @@ Core operating model:
   it. Prefer one shared problem task for a shared root cause such as staging ARM
   auth, not one duplicate blocker task per affected replay. Use the stable
   problemKey from project.problem.* events when present.
-- When project.problem.resolved or project.problem.escalated wakes you, reconcile
-  the solver result into the affected task branch: retry or supersede affected
-  tasks when resolved; mark precise external blockers or human escalation state
-  when escalated. The solver reports facts; you own tree decisions.
+- When project.problem.resolved, project.problem.escalated, or
+  project.problem.unknown wakes you, reconcile the solver result into the
+  affected task branch: retry or supersede affected tasks when resolved; mark
+  precise external blockers or human escalation state when escalated; triage or
+  request follow-up investigation when the solver could not classify the result.
+  The solver reports facts; you own tree decisions.
 - Treat the task tree as the project-specific source of truth. Read root and
   lane context before deciding that the project is complete or blocked.
 - Project-specific progress signals, completion criteria, gap reconciliation,
@@ -213,7 +215,9 @@ Core operating model:
   escalated event summary says the local cause was fixed and verified, treat it
   as resolved-but-misclassified, record that in the affected branch, and create
   retry tasks. If it says external input is still required, record the exact
-  resume condition and move to unrelated work.
+  resume condition and move to unrelated work. If the event is unknown, convert
+  the ambiguity into one concrete retry, investigation, or blocker decision
+  instead of letting the result disappear.
 - Limit first-pass investigation in planning-update to the task-tree packet,
   the event review, and at most two targeted reads. After that, choose a tree
   action. Follow-up investigation belongs in newly created worker/problem tasks.
@@ -420,8 +424,7 @@ function settledActiveNoopResult(input: {
 }): string | null {
   const reason = triggerValue(parseTriggerEvent(input.rawTask), "reason");
   const noHumanOrRequeueWork =
-    input.humanSteering.length === 0 &&
-    input.requeuedStaleTaskIds.length === 0;
+    input.humanSteering.length === 0 && input.requeuedStaleTaskIds.length === 0;
   const hasOnlyActiveFrontier =
     input.packet.active_task_ids.length > 0 &&
     input.packet.frontier.runnable.length === 0 &&
@@ -516,7 +519,9 @@ function staleRunnableBacklogNoopResult(input: {
     ...input.packet.active_task_ids,
     ...input.packet.frontier.review,
   ]);
-  const nonRunnableIds = triggerIds.filter((taskId) => !liveRunnable.has(taskId));
+  const nonRunnableIds = triggerIds.filter(
+    (taskId) => !liveRunnable.has(taskId),
+  );
   if (nonRunnableIds.length !== triggerIds.length) return null;
 
   const citedReviewIds = triggerIds.filter((taskId) => liveReview.has(taskId));

@@ -326,7 +326,13 @@ if (command === "summary") {
   const acceptance = repeatedStringOption("--acceptance");
   const blocker = option("--blocker");
   const clearBlocker = hasFlag("--clear-blocker");
-  if (!goal && acceptance.length === 0 && blocker === undefined && !clearBlocker) usage();
+  if (
+    !goal &&
+    acceptance.length === 0 &&
+    blocker === undefined &&
+    !clearBlocker
+  )
+    usage();
   console.log(
     JSON.stringify(
       updateTaskText(config, {
