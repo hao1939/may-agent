@@ -84,6 +84,7 @@ function optionalNumber(value: unknown): number | undefined {
 
 export function normalizeExecutionStatus(kind: ExecutionKind, status: string): ExecutionStatus {
   if (kind === "workflow" && status === "blocked") return "blocked";
+  if (kind === "workflow" && status === "escalated") return "blocked";
   if (status === "done") return "done";
   if (status === "error") return "error";
   if (status === "interrupted") return "interrupted";
@@ -145,8 +146,8 @@ export function workflowToolResultToExecutionResult(result: WorkflowToolResult):
     return {
       id: result.workflowRunId,
       kind: "workflow",
-      status: "escalated",
-      summary: compact(result.reason, "workflow escalated"),
+      status: "blocked",
+      summary: compact(result.reason, "workflow blocked"),
       traceId: result.workflowRunId,
       evidence: { workflow: result.workflow, context: result.context, steps: result.steps },
     };
@@ -159,7 +160,12 @@ export function workflowToolResultToExecutionResult(result: WorkflowToolResult):
       status: "blocked",
       summary: compact(result.reason, "workflow blocked"),
       traceId: result.workflowRunId,
-      evidence: { workflow: result.workflow, completedSteps: result.completedSteps.length },
+      evidence: {
+        workflow: result.workflow,
+        context: result.context,
+        steps: result.steps,
+        completedSteps: result.completedSteps?.length ?? 0,
+      },
     };
   }
 

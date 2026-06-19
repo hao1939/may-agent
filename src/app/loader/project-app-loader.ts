@@ -376,12 +376,14 @@ function pruneProjectAppNames(
   }
 }
 
-function installWorkflowHandlers(cron: Cron, descriptor: ProjectAppDescriptor): number {
+function installWorkflowHandlers(opts: ProjectAppLoaderOptions, cron: Cron, descriptor: ProjectAppDescriptor): number {
   let count = 0;
   const currentNames = new Set<string>();
   for (const handler of descriptor.app.workflowHandlers ?? []) {
     currentNames.add(handler.name);
     const workflow = handler.handler;
+    const agentName = workflow.agent ?? descriptor.owner;
+    const projectId = workflow.projectId ?? descriptor.id;
     const entry: CronEntry = {
       name: handler.name,
       enabled: handler.enabled !== false,
@@ -391,16 +393,49 @@ function installWorkflowHandlers(cron: Cron, descriptor: ProjectAppDescriptor): 
       maxConcurrentTriggers: handler.maxConcurrentTriggers,
       on: handler.on ?? [],
       context: handler.context,
-      agent: workflow.agent ?? descriptor.owner,
+      agent: agentName,
       handler: {
         workflow: workflow.workflow,
-        agent: workflow.agent ?? descriptor.owner,
-        projectId: workflow.projectId ?? descriptor.id,
+        agent: agentName,
+        projectId,
         includeEvent: workflow.includeEvent,
         task: workflow.task,
         timeoutMs: workflow.timeoutMs,
       },
     };
+    // Register a workflow-backed handler so resolveMode() succeeds when
+    // event-subscribed entries are triggered from the bus.  Without this,
+    // crons that lack a handlerResolver (project-app owner crons) silently
+    // drop event-triggered dispatches because no JS handler is registered.
+    const workflowName = workflow.workflow;
+    const taskText = workflow.task;
+    const includeEvent = workflow.includeEvent;
+    const handlerName = handler.name;
+    cron.registerHandler(handlerName, async (event?: EventEnvelope) => {
+      const task = includeEvent && event
+        ? `${taskText}\n\n## Trigger Event\n\`\`\`json\n${JSON.stringify(event, null, 2)}\n\`\`\``
+        : taskText;
+      const runId = `wr_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`;
+      const sessionId = opts.manager.runAgent(agentName, task, {
+        source: `workflow:${workflowName}`,
+        projectId,
+        workflowRunId: runId,
+      });
+      opts.bus.emit({
+        type: "handler.workflow_dispatched",
+        source: `agent:${agentName}`,
+        owner: `agent:${agentName}`,
+        data: {
+          handler: handlerName,
+          workflow: workflowName,
+          source: agentName,
+          projectId,
+          workflowRunId: runId,
+          sessionId,
+          status: "dispatched",
+        },
+      } as AgentEvent);
+    });
     cron.addSyntheticEntry(entry);
     count++;
   }
@@ -565,7 +600,7 @@ export async function installProjectApps(
     const activeAppIds = activeCronAppIds.get(cron) ?? new Set<string>();
     activeAppIds.add(descriptor.id);
     activeCronAppIds.set(cron, activeAppIds);
-    entries += installWorkflowHandlers(cron, descriptor);
+    entries += installWorkflowHandlers(opts, cron, descriptor);
     entries += installSchedules(opts, cron, descriptor);
     installed.push(descriptor);
   }

@@ -752,17 +752,19 @@ export function createQueryService(opts: QueryServiceOptions): QueryAPI {
       const alertId = filter.alertId ?? (typeof normalizedAlert?.id === "number" ? normalizedAlert.id : null);
       const since = typeof filter.since === "number" ? filter.since : 0;
 
+      const judgmentWhere = alertId != null
+        ? "json_extract(data, '$.alertId') = ?"
+        : "json_extract(data, '$.metricId') = ?";
+      const judgmentParam = alertId != null ? alertId : metricId;
+
       const latestJudgment = db.prepare(
         `SELECT id, data, timestamp
          FROM events
          WHERE event_type = 'metric.alert_judged'
-           AND (
-             json_extract(data, '$.alertId') = ?
-             OR json_extract(data, '$.metricId') = ?
-           )
+           AND ${judgmentWhere}
          ORDER BY timestamp DESC, id DESC
          LIMIT 1`,
-      ).get(alertId, metricId) as Record<string, unknown> | null;
+      ).get(judgmentParam) as Record<string, unknown> | null;
 
       const latestSnapshot = db.prepare(
         `SELECT value, sample_size, measured_at, measured_by, note
@@ -772,19 +774,22 @@ export function createQueryService(opts: QueryServiceOptions): QueryAPI {
          LIMIT 1`,
       ).get(metricId) as Record<string, unknown> | null;
 
+      const routedWhere = alertId != null
+        ? "json_extract(data, '$.alertId') = ?"
+        : "json_extract(data, '$.metricId') = ?";
+      const routedParam = alertId != null ? alertId : metricId;
+
       const recentFeedbackRouted = db.prepare(
         `SELECT id, source, owner, data, timestamp
          FROM events
          WHERE event_type = 'metric.feedback.routed'
            AND timestamp >= ?
-           AND (
-             json_extract(data, '$.alertId') = ?
-             OR json_extract(data, '$.metricId') = ?
-           )
+           AND ${routedWhere}
          ORDER BY timestamp DESC, id DESC
          LIMIT 1`,
-      ).get(since, alertId, metricId) as Record<string, unknown> | null;
+      ).get(since, routedParam) as Record<string, unknown> | null;
 
+      const taskPattern = alertId != null ? `%"alertId": ${alertId}%` : `%${metricId}%`;
       const recentTriageRun = db.prepare(
         `SELECT runId, status, startedAt
          FROM workflow_runs
@@ -793,18 +798,18 @@ export function createQueryService(opts: QueryServiceOptions): QueryAPI {
            AND task LIKE ?
          ORDER BY startedAt DESC
          LIMIT 1`,
-      ).get(since, `%${metricId}%`) as Record<string, unknown> | null;
+      ).get(since, taskPattern) as Record<string, unknown> | null;
 
       const recentTriageJudgment = recentTriageRun
         ? db.prepare(
           `SELECT id
            FROM events
            WHERE event_type = 'metric.alert_judged'
-             AND json_extract(data, '$.metricId') = ?
+             AND ${judgmentWhere}
              AND timestamp >= ?
            ORDER BY timestamp DESC, id DESC
            LIMIT 1`,
-        ).get(metricId, recentTriageRun.startedAt) as Record<string, unknown> | null
+        ).get(judgmentParam, recentTriageRun.startedAt) as Record<string, unknown> | null
         : null;
 
       const recentOwnerSession = filter.owner
@@ -824,11 +829,11 @@ export function createQueryService(opts: QueryServiceOptions): QueryAPI {
           `SELECT id
            FROM events
            WHERE event_type = 'metric.alert_judged'
-             AND json_extract(data, '$.metricId') = ?
+             AND ${judgmentWhere}
              AND timestamp >= ?
            ORDER BY timestamp DESC, id DESC
            LIMIT 1`,
-        ).get(metricId, recentOwnerSession.startedAt) as Record<string, unknown> | null
+        ).get(judgmentParam, recentOwnerSession.startedAt) as Record<string, unknown> | null
         : null;
 
       return {

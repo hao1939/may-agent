@@ -192,14 +192,14 @@ describe("workflow run persistence", () => {
     expect(run!.status).toBe("done");
   });
 
-  it("escalated workflow persists with escalated status", async () => {
+  it("blocked workflow persists with blocked status", async () => {
     writeWorkflow(
       "esc.ts",
       `
       export const name = "esc";
-      export const description = "Escalates";
+      export const description = "Blocks";
       export async function execute(ctx) {
-        return ctx.escalate("too hard");
+        return ctx.blocked("too hard");
       }
     `,
     );
@@ -209,11 +209,11 @@ describe("workflow run persistence", () => {
 
     const result = await tool.execute("tc1", { action: "run", name: "esc", task: "hard task" });
     const parsed = JSON.parse(result.content[0].text) as WorkflowToolResult;
-    expect(parsed.type).toBe("escalated");
-    if (parsed.type !== "escalated") return;
+    expect(parsed.type).toBe("blocked");
+    if (parsed.type !== "blocked") return;
 
     const run = getWorkflowRun(persistDir, parsed.workflowRunId);
-    expect(run!.status).toBe("escalated");
+    expect(run!.status).toBe("blocked");
     expect(run!.result_reason).toBe("too hard");
   });
 
@@ -294,14 +294,14 @@ describe("workflow result: step summaries", () => {
     expect(parsed.workflowRunId).toBeDefined();
   });
 
-  it("escalated result includes workflowRunId and steps", async () => {
+  it("blocked result includes workflowRunId and steps", async () => {
     writeWorkflow(
       "esc-steps.ts",
       `
       export const name = "esc-steps";
-      export const description = "Escalates with info";
+      export const description = "Blocks with info";
       export async function execute(ctx) {
-        return ctx.escalate("nope", { detail: "x" });
+        return ctx.blocked("nope", { detail: "x" });
       }
     `,
     );
@@ -311,8 +311,8 @@ describe("workflow result: step summaries", () => {
 
     const result = await tool.execute("tc1", { action: "run", name: "esc-steps", task: "task" });
     const parsed = JSON.parse(result.content[0].text) as WorkflowToolResult;
-    expect(parsed.type).toBe("escalated");
-    if (parsed.type !== "escalated") return;
+    expect(parsed.type).toBe("blocked");
+    if (parsed.type !== "blocked") return;
 
     expect(parsed.workflowRunId).toBeDefined();
     expect(parsed.steps).toEqual([]);
@@ -331,7 +331,7 @@ describe("workflow nesting depth cap", () => {
       export async function execute(ctx) {
         const inner = await ctx.runWorkflow("inner", "sub-task");
         if (inner.type === "done") return ctx.done("outer+inner: " + inner.summary);
-        return ctx.escalate("inner failed");
+        return ctx.blocked("inner failed");
       }
     `,
     );
@@ -356,7 +356,7 @@ describe("workflow nesting depth cap", () => {
     expect(parsed.summary).toContain("inner done");
   });
 
-  it("exceeding max depth escalates", async () => {
+  it("exceeding max depth blocks", async () => {
     writeWorkflow(
       "recursive.ts",
       `
@@ -364,7 +364,7 @@ describe("workflow nesting depth cap", () => {
       export const description = "Calls itself";
       export async function execute(ctx) {
         const sub = await ctx.runWorkflow("recursive", "recurse");
-        if (sub.type === "escalate") return ctx.escalate("hit depth: " + sub.reason);
+        if (sub.type === "blocked" || sub.type === "escalate") return ctx.blocked("hit depth: " + sub.reason);
         return ctx.done("should not get here");
       }
     `,
@@ -375,8 +375,8 @@ describe("workflow nesting depth cap", () => {
 
     const result = await tool.execute("tc1", { action: "run", name: "recursive", task: "go" });
     const parsed = JSON.parse(result.content[0].text) as WorkflowToolResult;
-    expect(parsed.type).toBe("escalated");
-    if (parsed.type !== "escalated") return;
+    expect(parsed.type).toBe("blocked");
+    if (parsed.type !== "blocked") return;
     expect(parsed.reason).toContain("depth");
   });
 
@@ -389,7 +389,7 @@ describe("workflow nesting depth cap", () => {
       export async function execute(ctx) {
         const sub = await ctx.runWorkflow("child-wf", "child task");
         if (sub.type === "done") return ctx.done("parent+child");
-        return ctx.escalate("child failed");
+        return ctx.blocked("child failed");
       }
     `,
     );
@@ -513,7 +513,7 @@ describe("trace()", () => {
       export const description = "Calls inner";
       export async function execute(ctx) {
         const sub = await ctx.runWorkflow("inner-trace", "inner task");
-        return sub.type === "done" ? ctx.done("outer: " + sub.summary) : ctx.escalate("fail");
+        return sub.type === "done" ? ctx.done("outer: " + sub.summary) : ctx.blocked("fail");
       }
     `,
     );

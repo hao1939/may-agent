@@ -138,7 +138,8 @@ function toLoopTraceExecution(result: ExecutionResult): LoopTraceExecution {
 function resumeDiagnosticStatus(eventType: string, data: Row): ExecutionResult["status"] {
   if (eventType === "workflow.resume_skipped") {
     const status = stringValue(data.status);
-    if (status === "done" || status === "escalated") return status;
+    if (status === "done") return status;
+    if (status === "blocked" || status === "escalated") return "blocked";
     return "interrupted";
   }
   return data.recoverable === false ? "error" : "interrupted";

@@ -139,6 +139,55 @@ function formatMetricValue(value, unit) {
   return String(Math.round(n)) + (unit && unit !== 'count' ? unit : '');
 }
 
+function metricBreached(metric) {
+  if (!metric) return false;
+  if (metric.alertOpen || metric.breached) return true;
+  if (metric.threshold == null || metric.current == null) return false;
+  const above = metric.alert_op === '>' || metric.alert_op === 'above';
+  return above ? Number(metric.current) > Number(metric.threshold) : Number(metric.current) < Number(metric.threshold);
+}
+
+function metricPriorityRank(priority) {
+  return ({ P0: 0, P1: 1, P2: 2, P3: 3 })[priority] ?? 4;
+}
+
+function normalizeProjectMetricKey(value) {
+  return String(value || '')
+    .trim()
+    .toLowerCase()
+    .replace(/^projects\//, '')
+    .replace(/\/project\.(md|json)$/i, '')
+    .replace(/\.app$/, '');
+}
+
+function metricBelongsToProject(metric, project) {
+  const metricProject = normalizeProjectMetricKey(metric.project);
+  const name = normalizeProjectMetricKey(project.name);
+  const path = normalizeProjectMetricKey(project.path);
+  const routeId = normalizeProjectMetricKey(projectIdOf(project));
+  const keys = new Set([
+    name,
+    path,
+    routeId,
+    name.replace(/\.app$/, ''),
+    path.replace(/\.app$/, ''),
+    routeId.replace(/\.app$/, ''),
+  ]);
+  if (metricProject && keys.has(metricProject)) return true;
+
+  const baseName = name.replace(/\.app$/, '');
+  return !!baseName && String(metric.id || '').toLowerCase().startsWith(baseName + '.');
+}
+
+function shortMetricLabel(metric, project) {
+  const projectBase = normalizeProjectMetricKey(project.name).replace(/\.app$/, '');
+  const id = String(metric.id || '');
+  if (projectBase && id.toLowerCase().startsWith(projectBase + '.')) {
+    return id.slice(projectBase.length + 1);
+  }
+  return id.split('.').slice(-2).join('.');
+}
+
 function scheduleLivenessRefresh() {
   if (livenessRefreshTimer) clearTimeout(livenessRefreshTimer);
   livenessRefreshTimer = setTimeout(loadLiveness, 500);
@@ -300,6 +349,7 @@ async function loadLiveness() {
         html += `<div class="liveness-item liveness-alert">
           <div class="meta">${formatAgo(alert.createdAt)} · <strong>${esc(alert.metricId)}</strong> · ${esc(alert.priority || 'P2')} ${resolveBtn}</div>
           <div>${esc(alert.message || '')}</div>
+          ${renderAlertJudgment(alert)}
         </div>`;
       }
     }
@@ -318,8 +368,8 @@ async function loadLiveness() {
     }
     html += `</div></div></div>`;
 
-    // — Projects panel (design's screen-1 fifth panel) — sorted by activity —
-    html += `<div class="liveness-section" style="margin-top:16px"><h3>Projects · sorted by recent activity</h3><div class="liveness-list" id="liveness-projects">Loading…</div></div>`;
+    // — Projects panel (design's screen-1 fifth panel) — sorted by metric risk, then activity —
+    html += `<div class="liveness-section" style="margin-top:16px"><h3>Project metric health</h3><div class="liveness-list" id="liveness-projects">Loading…</div></div>`;
 
     panel.innerHTML = html;
     void renderLivenessProjects();
@@ -328,38 +378,77 @@ async function loadLiveness() {
   }
 }
 
-// Renders the projects-by-activity strip on the dashboard.
-// Pulse: green = touched in last hour, yellow = last 24h, gray = older.
+// Renders the project metric health strip on the dashboard.
+// The front page should answer whether each active project is still moving,
+// not just whether the runtime is alive.
 async function renderLivenessProjects() {
   const el = document.getElementById('liveness-projects');
   if (!el) return;
   try {
-    const res = await fetch('/api/projects');
-    const all = await res.json();
+    const [projectsRes, metricsRes] = await Promise.all([
+      fetch('/api/projects'),
+      fetch('/api/metrics'),
+    ]);
+    const all = await projectsRes.json();
+    const metricData = await metricsRes.json().catch(() => ({ metrics: [] }));
     if (!Array.isArray(all)) { el.innerHTML = ''; return; }
-    // Active only — hide done/blocked from the front-page strip.
-    // Front-page strip is for live work — hide all terminal/stalled projects.
-    const HIDDEN = new Set(['done', 'complete', 'closed', 'waiting', 'blocked', 'paused']);
-    const active = all.filter(p => !HIDDEN.has(p.status));
-    active.sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0));
-    if (active.length === 0) { el.innerHTML = `<div class="liveness-item">No active projects.</div>`; return; }
+    const allMetrics = Array.isArray(metricData.metrics) ? metricData.metrics : [];
+    const TERMINAL = new Set(['done', 'complete', 'closed']);
+    const active = all.filter(p => !TERMINAL.has(p.status));
+    const enriched = active.map((project) => {
+      const metrics = allMetrics
+        .filter((metric) => metricBelongsToProject(metric, project))
+        .sort((a, b) => {
+          const aa = metricBreached(a) ? 0 : 1;
+          const bb = metricBreached(b) ? 0 : 1;
+          return aa - bb || metricPriorityRank(a.priority) - metricPriorityRank(b.priority) || String(a.id).localeCompare(String(b.id));
+        });
+      const alertCount = metrics.filter(metricBreached).length;
+      const topPriority = metrics.reduce((rank, metric) => Math.min(rank, metricPriorityRank(metric.priority)), 9);
+      return { project, metrics, alertCount, topPriority };
+    });
+    enriched.sort((a, b) =>
+      b.alertCount - a.alertCount ||
+      a.topPriority - b.topPriority ||
+      (b.project.updatedAt || 0) - (a.project.updatedAt || 0)
+    );
+    if (enriched.length === 0) { el.innerHTML = `<div class="liveness-item">No active projects.</div>`; return; }
     const now = Date.now();
     let html = '';
-    for (const p of active.slice(0, 6)) {
+    for (const item of enriched.slice(0, 8)) {
+      const p = item.project;
       const age = now - (p.updatedAt || 0);
       const pulse = age < 3600_000 ? '●' : age < 86_400_000 ? '◐' : '○';
       const pulseColor = age < 3600_000 ? 'var(--green,#3fb950)' : age < 86_400_000 ? 'var(--yellow,#d29922)' : 'var(--fg2)';
       const owner = p.owner && p.owner !== 'unknown' ? p.owner : '';
-      const metricSummary = (p.metrics && p.metrics.length)
-        ? `${p.metrics.length} metric${p.metrics.length === 1 ? '' : 's'}`
-        : '';
-      // Path -> route id
       const routeId = projectIdOf(p);
-      html += `<div class="liveness-item" style="cursor:pointer;display:flex;align-items:center;gap:10px" onclick="routeTo('/projects/' + '${attrEsc(routeId)}')">
-        <span style="color:${pulseColor};font-size:14px" title="${formatAgo(p.updatedAt)}">${pulse}</span>
-        <span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"><strong>${esc(p.name)}</strong>${owner ? ` <span class="meta">${esc(owner)}</span>` : ''}</span>
-        <span class="meta" style="font-size:11px">${formatAgo(p.updatedAt)}</span>
-        ${metricSummary ? `<span class="meta" style="font-size:11px">${esc(metricSummary)}</span>` : ''}
+      const statusTone = p.status === 'blocked' ? 'var(--red)' : p.status === 'waiting' || p.status === 'paused' ? 'var(--yellow)' : 'var(--fg2)';
+      const metricChips = item.metrics.slice(0, 5).map((metric) => {
+        const breached = metricBreached(metric);
+        const value = formatMetricValue(metric.current, metric.unit);
+        const label = shortMetricLabel(metric, p);
+        const thresholdLabel = metric.threshold == null ? '' : `${metric.alert_op === '<' || metric.alert_op === 'below' ? 'min' : 'max'} ${formatMetricValue(metric.threshold, metric.unit)}`;
+        return `<button class="project-metric-chip ${breached ? 'alerting' : ''}" onclick="event.stopPropagation(); routeTo('/metrics/${attrEsc(metric.id)}')" title="${esc(metric.id)}${thresholdLabel ? ' · ' + esc(thresholdLabel) : ''}">
+          <span class="project-metric-label">${esc(label)}</span>
+          <b>${esc(value)}</b>
+        </button>`;
+      }).join('');
+      const moreCount = Math.max(0, item.metrics.length - 5);
+      const alertLabel = item.alertCount > 0
+        ? `<span class="project-health-alert">${item.alertCount} alert${item.alertCount === 1 ? '' : 's'}</span>`
+        : item.metrics.length > 0
+          ? `<span class="project-health-ok">metrics ok</span>`
+          : `<span class="project-health-muted">no project metrics</span>`;
+
+      html += `<div class="liveness-item project-health-item" onclick="routeTo('/projects/' + '${attrEsc(routeId)}')">
+        <div class="project-health-main">
+          <span style="color:${pulseColor};font-size:14px" title="${formatAgo(p.updatedAt)}">${pulse}</span>
+          <span class="project-health-title"><strong>${esc(p.name)}</strong>${owner ? ` <span class="meta">${esc(owner)}</span>` : ''}</span>
+          <span class="project-health-status" style="color:${statusTone}">${esc(p.status || 'unknown')}</span>
+          <span class="meta" style="font-size:11px">${formatAgo(p.updatedAt)}</span>
+          ${alertLabel}
+        </div>
+        <div class="project-health-metrics">${metricChips || '<span class="meta">No registered project metrics yet.</span>'}${moreCount ? `<span class="project-health-muted">+${moreCount}</span>` : ''}</div>
       </div>`;
     }
     el.innerHTML = html;

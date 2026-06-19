@@ -54,7 +54,7 @@ describe("workflow composition: runWorkflow", () => {
         if (result.type === "done") {
           return ctx.done("parent got: " + result.summary);
         }
-        return ctx.escalate("sub-workflow failed");
+        return ctx.blocked("sub-workflow failed");
       }
     `,
     );
@@ -80,9 +80,9 @@ describe("workflow composition: runWorkflow", () => {
       "failing-sub.ts",
       `
       export const name = "failing-sub";
-      export const description = "Always escalates";
+      export const description = "Always blocks";
       export async function execute(ctx) {
-        return ctx.escalate("can't do it");
+        return ctx.blocked("can't do it");
       }
     `,
     );
@@ -91,11 +91,11 @@ describe("workflow composition: runWorkflow", () => {
       "parent-esc.ts",
       `
       export const name = "parent-esc";
-      export const description = "Parent that handles sub escalation";
+      export const description = "Parent that handles sub blocker";
       export async function execute(ctx) {
         const result = await ctx.runWorkflow("failing-sub", "task");
-        if (result.type === "escalate") {
-          return ctx.escalate("sub escalated: " + result.reason);
+        if (result.type === "blocked" || result.type === "escalate") {
+          return ctx.blocked("sub blocked: " + result.reason);
         }
         return ctx.done("should not reach");
       }
@@ -112,9 +112,9 @@ describe("workflow composition: runWorkflow", () => {
     });
     const parsed = JSON.parse(result.content[0].text) as WorkflowToolResult;
 
-    expect(parsed.type).toBe("escalated");
-    if (parsed.type === "escalated") {
-      expect(parsed.reason).toContain("sub escalated: can't do it");
+    expect(parsed.type).toBe("blocked");
+    if (parsed.type === "blocked") {
+      expect(parsed.reason).toContain("sub blocked: can't do it");
     }
   });
 
@@ -126,8 +126,8 @@ describe("workflow composition: runWorkflow", () => {
       export const description = "Calls nonexistent sub";
       export async function execute(ctx) {
         const result = await ctx.runWorkflow("nonexistent", "task");
-        if (result.type === "escalate") {
-          return ctx.escalate("sub not found: " + result.reason);
+        if (result.type === "blocked" || result.type === "escalate") {
+          return ctx.blocked("sub not found: " + result.reason);
         }
         return ctx.done("should not reach");
       }
@@ -144,8 +144,8 @@ describe("workflow composition: runWorkflow", () => {
     });
     const parsed = JSON.parse(result.content[0].text) as WorkflowToolResult;
 
-    expect(parsed.type).toBe("escalated");
-    if (parsed.type === "escalated") {
+    expect(parsed.type).toBe("blocked");
+    if (parsed.type === "blocked") {
       expect(parsed.reason).toContain("not found");
     }
   });

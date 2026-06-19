@@ -10,7 +10,12 @@ import { getModel } from "@earendil-works/pi-ai";
 import { SubagentManager } from "../../src/lib/manager.js";
 import { ChatSession } from "../../src/app/chat-session.js";
 import { EventBus } from "../../src/app/event-bus.js";
-import { appendSessionMessage, readSessionMeta, writeSessionMeta, ensureSessionDir } from "../../src/lib/persistence.js";
+import {
+  appendSessionMessage,
+  readSessionMeta,
+  writeSessionMeta,
+  ensureSessionDir,
+} from "../../src/lib/persistence.js";
 import type { AgentTool } from "@earendil-works/pi-agent-core";
 
 // ── Helpers ─────────────────────────────────────────────────────────────
@@ -107,38 +112,63 @@ describe("ChatSession", () => {
     expect(status[0].autoClose).toBe("never");
   });
 
-  it("starts a new traceable turn with prior transcript context after completion", async () => {
+  it("reuses the same persistent session across completed chat turns", async () => {
     const runOpts: any[] = [];
-    const originalRun = manager.run.bind(manager);
-    (manager as any).run = (agentName: string, task: string, opts?: any) => {
-      runOpts.push(opts ?? {});
-      return originalRun(agentName, task, opts);
-    };
+    const sends: Array<{ sessionId: string; message: string }> = [];
+    let created = false;
+    const fakeManager = {
+      status: () =>
+        created
+          ? [
+              {
+                sessionId: "s_chat",
+                agent: "may",
+                task: "first message",
+                status: "idle",
+                startedAt: Date.now(),
+                runtime: "0s",
+                outputDir: "",
+                kind: "chat",
+                autoClose: "never",
+              },
+            ]
+          : [],
+      hasActiveSession: (sessionId: string) => created && sessionId === "s_chat",
+      run: (_agentName: string, _task: string, opts?: any) => {
+        runOpts.push(opts ?? {});
+        created = true;
+        return "s_chat";
+      },
+      send: (sessionId: string, message: string) => {
+        sends.push({ sessionId, message });
+      },
+      waitForIdle: async () => {},
+      close: () => {},
+      progress: () => [],
+    } as unknown as SubagentManager;
 
-    const session = new ChatSession({ manager, bus, agentName: "may", persistDir });
+    const session = new ChatSession({ manager: fakeManager, bus, agentName: "may", persistDir });
     session.handleInput("first message");
 
     const firstId = session.getSessionId();
     expect(firstId).toBeTruthy();
 
-    // Wait for first turn to complete.
-    await new Promise((r) => setTimeout(r, 500));
-
     session.handleInput("second message");
     expect(session.getSessionId()).toBeTruthy();
-    expect(session.getSessionId()).not.toBe(firstId);
-    expect(runOpts[1]?.resumeMessages?.length).toBeGreaterThan(0);
-    expect(runOpts[1]?.sessionId).toBeUndefined();
-    expect(runOpts[1]?.parentSessionId).toBe(firstId);
+    expect(session.getSessionId()).toBe(firstId);
+    expect(runOpts.length).toBe(1);
+    expect(sends).toEqual([{ sessionId: firstId!, message: "second message" }]);
 
     const secondId = session.getSessionId();
-    await new Promise((r) => setTimeout(r, 500));
 
     session.handleInput("third message");
     expect(session.getSessionId()).toBeTruthy();
-    expect(session.getSessionId()).not.toBe(secondId);
-    expect(runOpts[2]?.parentSessionId).toBe(secondId);
-    expect(JSON.stringify(runOpts[2]?.resumeMessages ?? [])).toContain("first message");
+    expect(session.getSessionId()).toBe(secondId);
+    expect(runOpts.length).toBe(1);
+    expect(sends).toEqual([
+      { sessionId: firstId!, message: "second message" },
+      { sessionId: firstId!, message: "third message" },
+    ]);
   });
 
   it("ignores empty input", () => {

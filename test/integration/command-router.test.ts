@@ -135,11 +135,29 @@ describe("command router", () => {
     h.router.close();
   });
 
-  it("starts a chat session for canonical chat.start.requested when no chat session is bound", () => {
-    const runs: Array<{ agent: string; task: string; kind?: string; requestId?: string }> = [];
+  it("starts a persistent chat session for canonical chat.start.requested when no chat session is bound", () => {
+    const runs: Array<{
+      agent: string;
+      task: string;
+      kind?: string;
+      autoClose?: string;
+      source?: string;
+      requestId?: string;
+    }> = [];
     const h = createHarness({
-      run: (agent: string, task: string, opts?: { kind?: string; requestId?: string }) => {
-        runs.push({ agent, task, kind: opts?.kind, requestId: opts?.requestId });
+      run: (
+        agent: string,
+        task: string,
+        opts?: { kind?: string; autoClose?: string; source?: string; requestId?: string },
+      ) => {
+        runs.push({
+          agent,
+          task,
+          kind: opts?.kind,
+          autoClose: opts?.autoClose,
+          source: opts?.source,
+          requestId: opts?.requestId,
+        });
         return "s_new";
       },
     } as Partial<SubagentManager>);
@@ -151,13 +169,121 @@ describe("command router", () => {
       data: { agent: "dev", message: "investigate", channel: "cli", requestId: "r1" },
     });
 
-    expect(runs).toEqual([{ agent: "dev", task: "investigate", kind: "chat", requestId: "r1" }]);
-    expect(h.emitted).toContainEqual(expect.objectContaining({
-      type: "message.created",
-      source: "cli",
-      owner: "agent:dev",
-      data: expect.objectContaining({ to: "dev", content: "investigate", intent: "chat.start" }),
-    }));
+    expect(runs).toEqual([
+      { agent: "dev", task: "investigate", kind: "chat", autoClose: "never", source: "cli", requestId: "r1" },
+    ]);
+    expect(h.emitted).toContainEqual(
+      expect.objectContaining({
+        type: "message.created",
+        source: "cli",
+        owner: "agent:dev",
+        data: expect.objectContaining({ to: "dev", content: "investigate", intent: "chat.start" }),
+      }),
+    );
+    h.router.close();
+  });
+
+  it("normalizes human.input.received into chat.start.requested", () => {
+    const handled: Array<{ message: string; source?: string }> = [];
+    const h = createHarness();
+    h.setChatSession({
+      handleInput: (message: string, source?: string) => handled.push({ message, source }),
+    } as unknown as ChatSession);
+
+    h.bus.emit({
+      type: "human.input.received",
+      source: "telegram",
+      owner: "agent:may",
+      data: {
+        actor: "human:hao",
+        text: "please review",
+        conversation: { channel: "telegram", channelThreadId: "123", channelMessageId: 701 },
+        target: { agent: "may" },
+      },
+    } as any);
+
+    expect(handled).toEqual([{ message: "please review", source: "telegram" }]);
+    expect(h.emitted).toContainEqual(
+      expect.objectContaining({
+        type: "chat.start.requested",
+        source: "telegram",
+        owner: "agent:may",
+        data: expect.objectContaining({
+          message: "please review",
+          channel: "telegram",
+          channelThreadId: "123",
+          channelMessageId: 701,
+        }),
+      }),
+    );
+    h.router.close();
+  });
+
+  it("normalizes targeted human.input.received into session.steer.requested", () => {
+    const resumed: Array<{ sessionId: string; message: string; source?: string }> = [];
+    const h = createHarness({
+      status: () => [],
+      resumeSession: (sessionId: string, message: string, opts?: { source?: string }) => {
+        resumed.push({ sessionId, message, source: opts?.source });
+        return sessionId;
+      },
+    } as Partial<SubagentManager>);
+
+    h.bus.emit({
+      type: "human.input.received",
+      source: "web-ui",
+      owner: "agent:may",
+      data: {
+        text: "follow up",
+        conversation: { channel: "web-ui" },
+        target: { sessionId: "s_cold" },
+      },
+    } as any);
+
+    expect(resumed).toEqual([{ sessionId: "s_cold", message: "follow up", source: "web-ui" }]);
+    expect(h.emitted).toContainEqual(
+      expect.objectContaining({
+        type: "session.steer.requested",
+        source: "web-ui",
+        data: { sessionId: "s_cold", message: "follow up" },
+      }),
+    );
+    h.router.close();
+  });
+
+  it("normalizes project-targeted human.input.received into project.comment.created", () => {
+    const projectRoot = mkdtempSync(join(tmpdir(), "router-project-human-input-"));
+    const projectPath = "projects/demo-human-input";
+    const projectDir = join(projectRoot, projectPath);
+    mkdirp(projectDir);
+    writeFileSync(
+      join(projectDir, "project.md"),
+      ["---", "id: demo-human-input", "owner: tech-lead", "status: active", "---", "", "# Demo", ""].join("\n"),
+      "utf-8",
+    );
+    const h = createHarness({}, projectRoot);
+
+    h.bus.emit({
+      type: "human.input.received",
+      source: "telegram",
+      owner: "agent:tech-lead",
+      data: {
+        actor: "hao",
+        text: "please add the golang extraction task",
+        conversation: { channel: "telegram" },
+        target: { projectPath },
+      },
+    } as any);
+
+    expect(readFileSync(join(projectDir, "discussion.md"), "utf-8")).toContain("please add the golang extraction task");
+    expect(h.emitted).toContainEqual(
+      expect.objectContaining({
+        type: "project.comment.created",
+        source: "telegram",
+        owner: "agent:tech-lead",
+        data: { projectPath, comment: "please add the golang extraction task", author: "hao" },
+      }),
+    );
     h.router.close();
   });
 
@@ -199,16 +325,7 @@ describe("command router", () => {
     mkdirp(projectDir);
     writeFileSync(
       join(projectDir, "project.md"),
-      [
-        "---",
-        "id: demo",
-        "owner: tech-lead",
-        "status: active",
-        "---",
-        "",
-        "# Demo",
-        "",
-      ].join("\n"),
+      ["---", "id: demo", "owner: tech-lead", "status: active", "---", "", "# Demo", ""].join("\n"),
       "utf-8",
     );
     const h = createHarness({}, projectRoot);
@@ -222,12 +339,14 @@ describe("command router", () => {
 
     expect(readFileSync(join(projectDir, "discussion.md"), "utf-8")).toContain("please continue");
     expect(readFileSync(join(projectDir, "project.md"), "utf-8")).toContain("status: active");
-    expect(h.emitted).toContainEqual(expect.objectContaining({
-      type: "project.nudge",
-      source: "test",
-      owner: "agent:tech-lead",
-      data: { projectPath, comment: true, commentText: "please continue" },
-    }));
+    expect(h.emitted).toContainEqual(
+      expect.objectContaining({
+        type: "project.nudge",
+        source: "test",
+        owner: "agent:tech-lead",
+        data: { projectPath, comment: true, commentText: "please continue" },
+      }),
+    );
     h.router.close();
   });
 
@@ -238,16 +357,7 @@ describe("command router", () => {
     mkdirp(projectDir);
     writeFileSync(
       join(projectDir, "project.md"),
-      [
-        "---",
-        "id: demo-yaml",
-        "owner: tech-lead",
-        "status: waiting",
-        "---",
-        "",
-        "# Demo",
-        "",
-      ].join("\n"),
+      ["---", "id: demo-yaml", "owner: tech-lead", "status: waiting", "---", "", "# Demo", ""].join("\n"),
       "utf-8",
     );
     const h = createHarness({}, projectRoot);
@@ -263,18 +373,24 @@ describe("command router", () => {
     expect(projContent).toContain("status: active");
     expect(projContent).not.toContain("status: waiting");
     expect(readFileSync(join(projectDir, "discussion.md"), "utf-8")).toContain("wake up");
-    expect(h.emitted).toContainEqual(expect.objectContaining({
-      type: "project.nudge",
-      source: "test",
-      owner: "agent:tech-lead",
-      data: { projectPath, comment: true, commentText: "wake up" },
-    }));
+    expect(h.emitted).toContainEqual(
+      expect.objectContaining({
+        type: "project.nudge",
+        source: "test",
+        owner: "agent:tech-lead",
+        data: { projectPath, comment: true, commentText: "wake up" },
+      }),
+    );
     h.router.close();
   });
 
   it("handles session.cancel.requested", () => {
     const cancelled: string[] = [];
-    const h = createHarness({ cancel: (sessionId: string) => { cancelled.push(sessionId); } } as Partial<SubagentManager>);
+    const h = createHarness({
+      cancel: (sessionId: string) => {
+        cancelled.push(sessionId);
+      },
+    } as Partial<SubagentManager>);
 
     h.bus.emit({ type: "session.cancel.requested", sessionId: "s_1", source: "web-ui" });
 
@@ -289,7 +405,9 @@ describe("command router", () => {
         { sessionId: "s_1", agent: "dev", status: "running", task: "", runtime: "codex" },
         { sessionId: "s_2", agent: "dev", status: "idle", task: "", runtime: "codex" },
       ],
-      cancel: (sessionId: string) => { cancelled.push(sessionId); },
+      cancel: (sessionId: string) => {
+        cancelled.push(sessionId);
+      },
     } as Partial<SubagentManager>);
 
     h.bus.emit({

@@ -216,14 +216,14 @@ describe("runtime integration", () => {
     expect(JSON.parse(breach.data)).not.toHaveProperty("owner");
   });
 
-  it("keeps workflow escalation local until the caller promotes it across the workflow boundary", async () => {
+  it("keeps workflow blocker local until the caller promotes it across the workflow boundary", async () => {
     const { root, stateDir } = makeRoot("may-workflow-boundary-");
     const workflowDir = join(root, "agents", "dev", "workflows");
     mkdirSync(workflowDir, { recursive: true });
     writeFileSync(join(workflowDir, "blocked.ts"), `
       export const name = "blocked";
       export async function execute(ctx) {
-        return ctx.escalate("missing approval", {
+        return ctx.blocked("missing approval", {
           owner: "human:operator",
           requestedAction: "Approve or reject the rollout",
           evidence: { change: "database migration" },
@@ -265,7 +265,7 @@ describe("runtime integration", () => {
     });
     const parsed = JSON.parse(result.content[0].text) as WorkflowToolResult;
 
-    expect(parsed.type).toBe("escalated");
+    expect(parsed.type).toBe("blocked");
     expect(runtimeEvents.some((event) => event.type === "escalation.created")).toBe(false);
     const beforePromotion = getDb(stateDir).prepare(
       "SELECT COUNT(*) AS count FROM events WHERE event_type = ?",
@@ -286,7 +286,7 @@ describe("runtime integration", () => {
         lastAssistantText: "ok",
       }),
     });
-    if (parsed.type === "escalated") {
+    if (parsed.type === "blocked") {
       sdk.escalate(parsed.reason, parsed.context as never);
     }
 

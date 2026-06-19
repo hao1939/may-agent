@@ -339,7 +339,7 @@ export interface Deliverable {
 }
 
 export interface SDKWorkflowResult {
-  status: "done" | "escalated";
+  status: "done" | "blocked";
   summary: string;
   runId?: string;
 }
@@ -711,6 +711,7 @@ function optionalExecutionNumber(value: unknown): number | undefined {
 
 export function normalizeExecutionStatus(kind: ExecutionKind, status: string): ExecutionStatus {
   if (kind === "workflow" && status === "blocked") return "blocked";
+  if (kind === "workflow" && status === "escalated") return "blocked";
   if (status === "done") return "done";
   if (status === "error") return "error";
   if (status === "interrupted") return "interrupted";
@@ -792,6 +793,8 @@ export function workflowRowToExecutionResult(row: WorkflowExecutionRow): Executi
 
 export type WorkflowResult =
   | { type: "done"; summary: string }
+  | { type: "blocked"; reason: string; context?: unknown }
+  /** @deprecated Use { type: "blocked" } / ctx.blocked(). */
   | { type: "escalate"; reason: string; context?: unknown };
 
 export interface WorkflowEvent {
@@ -832,6 +835,8 @@ export interface WorkflowContext {
   runFunction(label: string, fn: () => Promise<string>): Promise<TaskResult>;
   summarize(result: TaskResult, opts?: Record<string, unknown>): string;
   done(summary: string): WorkflowResult;
+  blocked(reason: string, context?: unknown): WorkflowResult;
+  /** @deprecated Use blocked(). This is a local blocked result, not escalation.created. */
   escalate(reason: string, context?: unknown): WorkflowResult;
   createSession(opts: SessionOptions): Promise<SessionHandle>;
 }
@@ -946,12 +951,14 @@ export {
   createTask,
   drainTaskAssignments,
   kanbanTaskTreeState,
+  listRunnableBacklogTaskIds,
   markTaskDone,
   peekTaskAssignments,
   planningPacket,
   readTask,
   rejectTaskReview,
   requeueStaleActiveTasks,
+  unblockTask,
   updateTaskOutputs,
   updateTaskText,
   repairTaskTreeRollups,
@@ -980,6 +987,7 @@ export type {
   TaskPlanningSnapshot,
   TaskTreeSummary,
   TaskTreeToolConfig,
+  UnblockTaskInput,
   UpdateTaskOutputsInput,
 } from "./project-task-tree.js";
 

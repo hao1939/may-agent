@@ -19,6 +19,7 @@ import {
   extractLastAssistantText,
   classifyTerminalAssistantFailure,
   formatDuration,
+  truncateForPrompt,
 } from "./manager-utils.js";
 import { composeGuards, type BeforeToolCallHook } from "./tools/compose-guards.js";
 import {
@@ -27,12 +28,15 @@ import {
   sessionOutputDir,
   readSessionMessages,
   readArchivedSessionMessages,
+  readCompactedMessages,
+  saveCompactedMessages,
   loadActiveSessionMetas,
   unarchiveSession,
   RegistryStore,
   sessionDir,
   archiveSession,
 } from "./persistence.js";
+import { createCompactionTransform } from "./compaction.js";
 import {
   updateSessionDb,
   updateSessionProgress,
@@ -119,6 +123,18 @@ type DispatchDedupDb = {
   records?: Record<string, { agent?: string; lastStatus?: string; taskPrefix?: string }>;
   version?: number;
 };
+
+const CHAT_TOOL_DENYLIST = new Set([
+  "bash",
+  "background_exec",
+  "checkpoint",
+  "cron",
+  "edit",
+  "finish",
+  "scrape_webpage",
+  "workflow",
+  "write",
+]);
 
 function isHeartbeatSession(meta: { source?: string; task?: string }): boolean {
   const source = meta.source ?? "";
@@ -254,6 +270,7 @@ export class SubagentManager {
   callDepths = new Map<string, number>();
   private _sessions = new Map<string, ActiveSession>();
   private results = new Map<string, Promise<TaskResult>>();
+  private idlePromises = new Map<string, Promise<void>>();
   private completedResults = new Map<string, TaskResult>();
   private _persistDir: string;
   private _projectRoot: string;
@@ -458,13 +475,16 @@ export class SubagentManager {
     const beforeToolCall = guards.length
       ? this.createGuardSignalHook(composeGuards(...guards), sessionId, def.name, opts)
       : undefined;
+    const persistentChat = this.isPersistentChatPolicy(kind, autoClose);
+    const sessionTools = this.resolveSessionTools(def, persistentChat);
     const agent = new Agent({
       initialState: {
-        systemPrompt: this.resolveSystemPrompt(def),
+        systemPrompt: this.resolveSessionSystemPrompt(def, { kind, autoClose, sessionId, task }),
         model: def.model,
-        tools: def.tools,
+        tools: sessionTools,
       },
       beforeToolCall,
+      transformContext: this.createSessionCompactionTransform(def, sessionId, persistentChat),
       getApiKey: def.apiKey === "dynamic" ? () => this.getCopilotToken() : def.apiKey ? () => def.apiKey! : undefined,
     });
 
@@ -537,17 +557,31 @@ export class SubagentManager {
 
     this._sessions.set(sessionId, session);
 
-    // Run agent
-    const promise = this.executeSession(session).then((result) => {
-      if (result.status === "done" || result.status === "error" || result.status === "interrupted") {
-        this._sessions.delete(sessionId);
-      } else {
-        session.status = "paused";
-      }
-      this.completedResults.set(sessionId, result);
-      return result;
-    });
-    this.results.set(sessionId, promise);
+    // Run agent. Persistent chat sessions complete a turn by going idle;
+    // task/call sessions complete by emitting session.end and leaving memory.
+    if (this.isPersistentChat(session)) {
+      this.startChatTurn(
+        session,
+        async () => {
+          if (session.resumeMessages) {
+            agent.state.messages = session.resumeMessages as any;
+          }
+          await agent.prompt(task);
+        },
+        task,
+      );
+    } else {
+      const promise = this.executeSession(session).then((result) => {
+        if (result.status === "done" || result.status === "error" || result.status === "interrupted") {
+          this._sessions.delete(sessionId);
+        } else {
+          session.status = "paused";
+        }
+        this.completedResults.set(sessionId, result);
+        return result;
+      });
+      this.results.set(sessionId, promise);
+    }
 
     return sessionId;
   }
@@ -555,6 +589,7 @@ export class SubagentManager {
   cancel(sessionId: string): void {
     const session = this._sessions.get(sessionId);
     if (session) {
+      const wasRunning = session.status === "running";
       if (session.timeoutTimer) clearTimeout(session.timeoutTimer);
       session.status = "interrupted";
       session.agent.abort();
@@ -566,6 +601,10 @@ export class SubagentManager {
         opCount: session.toolCalls,
         lastActivityAt: Date.now(),
       });
+      if (!wasRunning) {
+        this._sessions.delete(sessionId);
+        this.idlePromises.delete(sessionId);
+      }
     }
   }
 
@@ -581,8 +620,18 @@ export class SubagentManager {
     if (session.status === "running") {
       session.agent.steer(msg as any);
     } else {
-      session.status = "running";
-      session.agent.followUp(msg as any);
+      if (this.isPersistentChat(session)) {
+        this.startChatTurn(
+          session,
+          async () => {
+            session.agent.followUp(msg as any);
+          },
+          text,
+        );
+      } else {
+        session.status = "running";
+        session.agent.followUp(msg as any);
+      }
     }
   }
 
@@ -669,6 +718,14 @@ export class SubagentManager {
   }
 
   async waitForIdle(sessionId: string): Promise<void> {
+    const session = this._sessions.get(sessionId);
+    if (session) {
+      if (session.status === "idle") return;
+      const idlePromise = this.idlePromises.get(sessionId);
+      if (idlePromise) return idlePromise;
+      await session.agent.waitForIdle();
+      return;
+    }
     await this.waitFor(sessionId);
   }
 
@@ -1225,7 +1282,8 @@ export class SubagentManager {
   }
 
   private buildResumeMessages(sessionId: string): AgentMessage[] {
-    let messages = readSessionMessages(this._persistDir, sessionId);
+    let messages =
+      readCompactedMessages(this._persistDir, sessionId) ?? readSessionMessages(this._persistDir, sessionId);
     if (messages.length === 0) messages = readArchivedSessionMessages(this._persistDir, sessionId);
     const repaired = messages.slice();
     const last = repaired[repaired.length - 1] as any;
@@ -1293,7 +1351,7 @@ export class SubagentManager {
     };
   }
 
-  private resolveSystemPrompt(def: SubagentDefinition | undefined): string {
+  private resolveSystemPrompt(def: SubagentDefinition | undefined, toolsOverride?: AgentTool[]): string {
     if (!def) return "";
     if (def.systemPrompt !== undefined) return def.systemPrompt;
 
@@ -1308,8 +1366,121 @@ export class SubagentManager {
       if (identity) sections.push(identity);
     }
 
-    sections.push(this.runtimeEnvironment(def, agentDir));
+    sections.push(this.runtimeEnvironment(def, agentDir, toolsOverride));
     return `<system_instructions>\n${sections.join("\n\n")}\n</system_instructions>`;
+  }
+
+  private resolveSessionSystemPrompt(
+    def: SubagentDefinition,
+    session: { kind: SessionKind; autoClose: "immediate" | "never"; sessionId: string; task: string },
+  ): string {
+    const persistentChat = this.isPersistentChatPolicy(session.kind, session.autoClose);
+    const tools = this.resolveSessionTools(def, persistentChat);
+    const base = this.resolveSystemPrompt(def, tools);
+    if (!persistentChat) return base;
+
+    return `${base}\n\n<chat_runtime_context>\n${this.chatSessionInstructions()}\n\n${this.buildChatContextPacket(session.sessionId, def.name, session.task)}\n</chat_runtime_context>`;
+  }
+
+  private chatSessionInstructions(): string {
+    return [
+      "# Persistent Human Chat",
+      "- This is the human-facing May chat session. Stay responsive and keep the conversation open.",
+      "- Do not call finish(); a chat turn completes by answering the human and going idle.",
+      "- Use read/status/query tools to understand state; delegate concrete project or code work to the right owner/worker agent.",
+      "- Treat the system state packet below as a fresh snapshot. It is context, not a task tree packet.",
+      "- When you take or delegate action for a human request, close the loop with a clear result or a visible follow-up.",
+    ].join("\n");
+  }
+
+  private buildChatContextPacket(sessionId: string, agentName: string, task: string): string {
+    const lines = ["# Fresh System State", `- Generated: ${new Date().toISOString()}`];
+    lines.push(`- Chat session: ${sessionId}`);
+    lines.push(`- Agent: ${agentName}`);
+    lines.push(`- Current human message: ${truncateForPrompt(task, 300)}`);
+
+    const active = this.status()
+      .filter((session) => session.sessionId !== sessionId)
+      .slice(0, 8)
+      .map(
+        (session) =>
+          `${session.sessionId} ${session.agent} ${session.status}${session.kind ? `/${session.kind}` : ""}: ${truncateForPrompt(session.task, 120)}`,
+      );
+    lines.push(active.length > 0 ? `- Other active sessions: ${active.join("; ")}` : "- Other active sessions: none");
+
+    try {
+      const db = getDb(this._persistDir);
+      const projects = db
+        .prepare(
+          `SELECT id, owner, status, priority, updated_at
+           FROM projects
+           WHERE status IS NULL OR status NOT IN ('done', 'closed', 'archived')
+           ORDER BY COALESCE(updated_at, 0) DESC
+           LIMIT 6`,
+        )
+        .all() as Array<{ id?: string; owner?: string; status?: string; priority?: string; updated_at?: number }>;
+      if (projects.length > 0) {
+        lines.push(
+          `- Active projects: ${projects
+            .map(
+              (project) =>
+                `${project.id ?? "unknown"}(${project.status ?? "active"}${project.priority ? ` ${project.priority}` : ""}${project.owner ? ` owner=${project.owner}` : ""})`,
+            )
+            .join("; ")}`,
+        );
+      } else {
+        lines.push("- Active projects: none recorded");
+      }
+
+      const alerts = db
+        .prepare(
+          `SELECT ma.id, ma.metric_id, ma.message, ma.created_at, m.owner, m.project
+           FROM metric_alerts ma
+           LEFT JOIN metrics m ON m.id = ma.metric_id
+           WHERE ma.resolved_at IS NULL
+           ORDER BY ma.created_at DESC
+           LIMIT 6`,
+        )
+        .all() as Array<{ id?: number; metric_id?: string; message?: string; owner?: string; project?: string }>;
+      if (alerts.length > 0) {
+        lines.push(
+          `- Open metric alerts: ${alerts
+            .map(
+              (alert) =>
+                `#${alert.id ?? "?"} ${alert.metric_id ?? "unknown"}${alert.project ? ` project=${alert.project}` : ""}${alert.owner ? ` owner=${alert.owner}` : ""}: ${truncateForPrompt(alert.message ?? "", 120)}`,
+            )
+            .join("; ")}`,
+        );
+      } else {
+        lines.push("- Open metric alerts: none");
+      }
+
+      const recentFailures = db
+        .prepare(
+          `SELECT sessionId, agent, status, error, task
+           FROM sessions
+           WHERE status IN ('error', 'interrupted')
+           ORDER BY COALESCE(endedAt, startedAt) DESC
+           LIMIT 5`,
+        )
+        .all() as Array<{ sessionId?: string; agent?: string; status?: string; error?: string; task?: string }>;
+      if (recentFailures.length > 0) {
+        lines.push(
+          `- Recent failed/interrupted sessions: ${recentFailures
+            .map(
+              (session) =>
+                `${session.sessionId ?? "unknown"} ${session.agent ?? "unknown"} ${session.status ?? "unknown"}: ${truncateForPrompt(session.error || session.task || "", 140)}`,
+            )
+            .join("; ")}`,
+        );
+      } else {
+        lines.push("- Recent failed/interrupted sessions: none");
+      }
+    } catch (err) {
+      lines.push(`- DB state packet: unavailable (${err instanceof Error ? err.message : String(err)})`);
+    }
+
+    return lines.join("\n");
   }
 
   private resolveAgentDir(def: SubagentDefinition): string | undefined {
@@ -1330,7 +1501,11 @@ export class SubagentManager {
     return text || undefined;
   }
 
-  private runtimeEnvironment(def: SubagentDefinition, agentDir: string | undefined): string {
+  private runtimeEnvironment(
+    def: SubagentDefinition,
+    agentDir: string | undefined,
+    toolsOverride?: AgentTool[],
+  ): string {
     const root = def.projectRoot ?? this._projectRoot;
     const relAgentDir = agentDir && root && agentDir.startsWith(root) ? agentDir.slice(root.length + 1) : agentDir;
     const relWorkspace =
@@ -1340,7 +1515,7 @@ export class SubagentManager {
         ? def.knowledgeDir.slice(root.length + 1)
         : def.knowledgeDir;
 
-    const toolNames = def.tools.map((tool: any) => tool?.name).filter(Boolean);
+    const toolNames = (toolsOverride ?? def.tools).map((tool: any) => tool?.name).filter(Boolean);
     const lines = ["# Runtime Environment"];
     lines.push(`- Project root: ${root}`);
     if (relAgentDir) lines.push(`- Agent directory: ${relAgentDir}`);
@@ -1514,6 +1689,208 @@ export class SubagentManager {
       error: errorText,
       finishResult: finishParams as any,
     };
+  }
+
+  private isPersistentChat(session: ActiveSession): boolean {
+    return this.isPersistentChatPolicy(session.kind, session.autoClose);
+  }
+
+  private isPersistentChatPolicy(kind: SessionKind, autoClose: "immediate" | "never"): boolean {
+    return kind === "chat" || autoClose === "never";
+  }
+
+  private resolveSessionTools(def: SubagentDefinition, persistentChat: boolean): AgentTool[] {
+    if (!persistentChat) return def.tools;
+    return def.tools.filter((tool) => !CHAT_TOOL_DENYLIST.has(tool.name));
+  }
+
+  private createSessionCompactionTransform(
+    def: SubagentDefinition,
+    sessionId: string,
+    persistentChat: boolean,
+  ): ((messages: AgentMessage[], signal?: AbortSignal) => Promise<AgentMessage[]>) | undefined {
+    if (!persistentChat && !def.compaction) return undefined;
+
+    const transform = createCompactionTransform(def.model, {
+      onCompact: (info) => {
+        log(
+          "info",
+          `[manager] Compacted ${sessionId} (${def.name}): ${info.messagesCompacted} compacted, ${info.messagesKept} kept, ${info.tokensBefore}->${info.tokensAfter} tokens`,
+        );
+      },
+    });
+
+    return async (messages) => {
+      const compacted = await transform(messages);
+      if (compacted !== messages) {
+        try {
+          saveCompactedMessages(this._persistDir, sessionId, compacted);
+        } catch (err) {
+          log(
+            "warn",
+            `[manager] Failed to save compacted context for ${sessionId}: ${err instanceof Error ? err.message : String(err)}`,
+          );
+        }
+      }
+      return compacted;
+    };
+  }
+
+  private startChatTurn(session: ActiveSession, start: () => Promise<void>, turnTask?: string): void {
+    const { sessionId } = session;
+    const def = this.agents.get(session.agentName)?.definition;
+    if (def) {
+      session.agent.state.systemPrompt = this.resolveSessionSystemPrompt(def, {
+        kind: session.kind,
+        autoClose: session.autoClose,
+        sessionId,
+        task: turnTask ?? session.task,
+      });
+    }
+    session.status = "running";
+    try {
+      writeFileSync(join(sessionDir(this._persistDir, sessionId), "[STARTED]"), new Date().toISOString(), "utf-8");
+    } catch {
+      /* best-effort */
+    }
+    this._registry.updateSessionStatus(sessionId, "running");
+    updateSessionDb(this._persistDir, sessionId, {
+      status: "running",
+      error: undefined,
+      lastActivityAt: Date.now(),
+    });
+    try {
+      getDb(this._persistDir).run(`UPDATE sessions SET endedAt = NULL, error = NULL WHERE sessionId = ?`, [sessionId]);
+    } catch {
+      /* best-effort */
+    }
+
+    const promise = this.executeChatTurn(session, start);
+    this.idlePromises.set(sessionId, promise);
+    promise.catch(() => undefined);
+  }
+
+  private async executeChatTurn(session: ActiveSession, start: () => Promise<void>): Promise<void> {
+    const { agent, sessionId, agentName, task } = session;
+    const turnStartedAt = Date.now();
+    let errorText: string | undefined;
+
+    try {
+      await start();
+      await agent.waitForIdle();
+    } catch (err) {
+      errorText = err instanceof Error ? err.message : String(err);
+      log("error", `[runtime] ${sessionId} chat turn failed: ${err}`);
+    }
+
+    const messages = agent.state.messages as AgentMessage[];
+    const finishParams = extractFinishParams(messages as any[]);
+    const assistantText = extractLastAssistantText(messages);
+    const terminalAssistantFailure = !finishParams ? classifyTerminalAssistantFailure(messages) : undefined;
+    if (!errorText && terminalAssistantFailure) {
+      errorText = terminalAssistantFailure;
+    }
+    if (!errorText && !finishParams && !assistantText) {
+      errorText = "Agent ended without producing a response";
+    }
+
+    const lastText = finishParams?.summary ?? assistantText ?? "";
+    const durationMs = Date.now() - turnStartedAt;
+
+    if (session.status === "interrupted" || errorText) {
+      const status: "error" | "interrupted" = session.status === "interrupted" ? "interrupted" : "error";
+      if (session.timeoutTimer) clearTimeout(session.timeoutTimer);
+      try {
+        unlinkSync(join(sessionDir(this._persistDir, sessionId), "[STARTED]"));
+      } catch {}
+      this._registry.updateSessionStatus(sessionId, status, errorText);
+      updateSessionDb(this._persistDir, sessionId, {
+        status,
+        endedAt: Date.now(),
+        error: errorText,
+        outcome: lastText,
+        opCount: session.toolCalls,
+        lastActivityAt: Date.now(),
+      });
+      this._sessions.delete(sessionId);
+      this.idlePromises.delete(sessionId);
+      const result: TaskResult = {
+        sessionId,
+        status,
+        lastAssistantText: lastText,
+        messages,
+        duration: formatDuration(durationMs),
+        outputDir: sessionOutputDir(this._persistDir, sessionId),
+        error: errorText,
+        finishResult: finishParams as any,
+      };
+      this.completedResults.set(sessionId, result);
+
+      this.bus?.emit({
+        type: "session.end",
+        source: session.source ?? "runtime",
+        owner: normalizeEventOwner(agentName),
+        timestamp: Date.now(),
+        data: {
+          sessionId,
+          agent: agentName,
+          outcome: status,
+          summary: lastText,
+          durationMs,
+          status,
+          task,
+          error: errorText,
+          finishParams: finishParams as any,
+          opCount: session.toolCalls,
+          turnCount: session.turnCount,
+          parentSessionId: session.parentSessionId,
+          workflowRunId: session.workflowRunId,
+          projectId: session.projectId,
+          kind: session.kind,
+          requestId: session.requestId,
+          stepLabel: session.stepLabel,
+        },
+      } as any);
+      if (errorText) throw new Error(errorText);
+      throw new Error(`Session "${sessionId}" interrupted`);
+    }
+
+    session.status = "idle";
+    this._registry.updateSessionStatus(sessionId, "idle");
+    updateSessionDb(this._persistDir, sessionId, {
+      status: "idle",
+      error: undefined,
+      outcome: lastText,
+      opCount: session.toolCalls,
+      lastActivityAt: Date.now(),
+    });
+    try {
+      unlinkSync(join(sessionDir(this._persistDir, sessionId), "[STARTED]"));
+    } catch {}
+
+    this.bus?.emit({
+      type: "session.idle",
+      source: session.source ?? "runtime",
+      owner: normalizeEventOwner(agentName),
+      timestamp: Date.now(),
+      data: {
+        sessionId,
+        agent: agentName,
+        summary: lastText,
+        durationMs,
+        status: "idle",
+        task,
+        finishParams: finishParams as any,
+        opCount: session.toolCalls,
+        turnCount: session.turnCount,
+        parentSessionId: session.parentSessionId,
+        workflowRunId: session.workflowRunId,
+        projectId: session.projectId,
+        kind: session.kind,
+        requestId: session.requestId,
+        stepLabel: session.stepLabel,
+      },
+    } as any);
   }
 
   private bridgeEvents(session: ActiveSession): void {
