@@ -277,16 +277,18 @@ May can delegate hard problems to external CLI agents (Claude Code, Codex)
 without the human leaving the conversation. The result comes back through
 May, not a separate terminal tab.
 
-CLI delegation is not a new may-agent agent type. It is a durable subprocess
-runner with structured outputs and normal events.
+CLI delegation is not a new may-agent agent type, and May should not run long
+CLI work synchronously inside the chat turn. It is an event-tracked durable
+subprocess runner with structured outputs and normal events.
 
 ### Pattern
 
 ```
 Human asks hard question
-  → May starts a durable CLI task with focused prompt and safety mode
+  → May requests a durable CLI task with focused prompt and safety mode
   → May tells human "investigating..."
   → Chat stays responsive for other messages
+  → CLI runner handles the request asynchronously
   → CLI finishes → cli.task.completed event
   → event routes to the conversation owner
   → May reads result, summarizes, presents in chat
@@ -297,21 +299,43 @@ Human asks hard question
 CLI tasks use the same event model as all other work:
 
 ```
+cli.task.requested  { taskId, tool, mode, cwd, promptPath, resultPath, sourceOwner, sourceSessionId }
 cli.task.started    { taskId, tool, mode, cwd, promptPath, resultPath, sourceSessionId }
-cli.task.completed  { taskId, tool, resultPath, exitCode, summary }
-cli.task.failed     { taskId, tool, resultPath, error, exitCode }
-cli.task.orphaned   { taskId, tool, pid, reason }
+cli.task.completed  { taskId, tool, resultPath, exitCode, summary, cliSessionId? }
+cli.task.failed     { taskId, tool, resultPath, error, exitCode, cliSessionId? }
+cli.task.orphaned   { taskId, tool, pid, reason, cliSessionId? }
 ```
 
-`cli.task.completed` is routed to May or the conversation owner. May then
-presents the result in the chat. The chat session does not subscribe to every
-CLI event directly.
+`cli.task.requested` is routed to the CLI runner. The runner is the only owner
+of process lifecycle. `cli.task.completed`, `cli.task.failed`, and
+`cli.task.orphaned` are routed back to `sourceOwner` or the conversation owner.
+May then presents the result in the chat. The chat session does not subscribe
+to every CLI event directly.
+
+When `sourceSessionId` is present, the runner also emits
+`session.steer.requested` back to that session with the summary, result path,
+event log path, native CLI session id, and resume command. This keeps the
+requester loop closed without making the original tool call synchronous. If the
+source session is gone, normal session recovery/resume handling decides whether
+it can be resumed; otherwise the owner-inbox event remains the durable fallback.
 
 ### Tracking
 
 CLI tasks are tracked like any other work:
 - Persisted before process spawn: task id, command, cwd, pid, prompt path,
   result path, source session, timeout, and status
+- Native CLI session id recorded when available:
+  - Codex: `thread.started.thread_id`
+  - Claude Code: `session_id` from stream-json events
+- Resume metadata recorded beside the result so May or a human can continue
+  the exact CLI conversation later when that is useful.
+- Effective execution policy recorded. Codex must first run with the requested
+  sandbox. In container environments where Codex's `read-only` sandbox cannot
+  start because unprivileged user namespaces are disabled, the runner may retry
+  `investigate`/`review` tasks once with a clearly recorded compatibility
+  fallback. The requested sandbox remains in the task record, and the effective
+  sandbox plus fallback reason are written to `task.json` and terminal events.
+  This fallback must not be silent.
 - Visible in a CLI task read model and linked from sessions/tasks/UI
 - Duration, terminal state, stdout/stderr tail, and structured result recorded
 - Pair tracker detects orphans (started but never completed)
@@ -343,7 +367,7 @@ use its non-interactive/scriptable mode with the same runner contract.
 ```typescript
 // May's chat tools include:
 {
-  name: "run-cli-agent",
+  name: "run_cli_agent",
   description: "Delegate a task to Claude Code or Codex CLI",
   parameters: {
     tool: "claude" | "codex",
@@ -355,20 +379,21 @@ use its non-interactive/scriptable mode with the same runner contract.
     timeoutMs?: number,
     outputSchema?: string,   // JSON schema path/name for structured result
     worktree?: string,       // required or auto-created for patch mode
+    resumeSessionId?: string // optional native Claude/Codex session id
   }
 }
 ```
 
-The tool writes the prompt and task record first, spawns the CLI, emits
-`cli.task.started`, and returns `{ taskId, status: "running", resultPath }`
-immediately. May continues the conversation. When the CLI finishes, the runner
-writes a structured result file and emits `cli.task.completed` or
-`cli.task.failed`.
+The tool writes the prompt and task record first, emits `cli.task.requested`,
+and returns `{ taskId, status: "accepted", resultPath }` immediately. May
+continues the conversation. The CLI runner consumes the request, emits
+`cli.task.started`, runs the CLI, writes a structured result file, and emits
+`cli.task.completed` or `cli.task.failed`.
 
 For Codex, the command shape should be based on non-interactive execution:
 
 ```bash
-codex exec --json --sandbox read-only -o "$RESULT_PATH" "$PROMPT" \
+codex exec --json --skip-git-repo-check --sandbox read-only -o "$RESULT_PATH" "$PROMPT" \
   > "$EVENTS_JSONL"
 ```
 
@@ -379,6 +404,12 @@ For patch mode, use `--sandbox workspace-write` only in an isolated workspace
 or worktree. The result should include the diff summary, changed files,
 verification commands, and any remaining risk. Raw stdout/stderr is supporting
 evidence, not the primary result format.
+
+Existing direct tools such as `cc_worker` and `codex_worker` may remain as
+manual/compatibility tools, but they are not the robust May chat delegation
+path. They block the caller until the subprocess exits and do not provide
+durable task records, owner-routed completion events, orphan recovery, or
+metrics. Production May delegation should use `run_cli_agent`.
 
 ## What This Is Not
 

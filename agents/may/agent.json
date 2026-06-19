@@ -12,6 +12,7 @@
     "agents",
     "message",
     "cron",
+    "cli-delegation",
     "system-status",
     "finish"
   ],
