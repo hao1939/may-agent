@@ -8,9 +8,11 @@ import {
 
 type TaskNode = {
   id?: string;
+  parent_id?: string;
   state?: string;
   status?: string;
   kind?: string;
+  goal?: string;
   children?: string[];
   updated_at?: string;
   trace?: Record<string, unknown>;
@@ -371,6 +373,48 @@ function countReplays(): number {
   }).length;
 }
 
+function hasLiveExecutionRunnableBacklog(): boolean {
+  const tree = loadTaskTree();
+  const tasks = Object.values(tree.tasks ?? {});
+  const idSignals = [
+    "staging",
+    "execute",
+    "execution",
+    "verify",
+    "verification",
+    "frontier",
+    "spec-runner",
+    "ready-spec-execution",
+    "live",
+  ];
+  const negativeSignals = [
+    "repo-local",
+    "source-holder-response-await",
+    "handwritten-source",
+    "ownership-attach",
+    "checkpoint",
+    "canonical-branch-scout",
+    "contradiction-reconcile",
+    "planner",
+    "focus-plan",
+    "metadata",
+    "repair",
+    "reconcile",
+    "draft-sweep",
+  ];
+
+  return tasks.some((task) => {
+    if (taskState(task) !== "backlog" || !isLeaf(task)) return false;
+    const haystack = [task.id, task.goal, task.kind, task.parent_id]
+      .filter((value): value is string => Boolean(value))
+      .join(" ")
+      .toLowerCase();
+    const hasExecutionSignal = idSignals.some((signal) => haystack.includes(signal));
+    if (!hasExecutionSignal) return false;
+    return !negativeSignals.some((signal) => haystack.includes(signal));
+  });
+}
+
 function runResults(): RunResult[] {
   return listFiles(join(projectDir, "runs", "executions"), (path) =>
     path.endsWith("/result.json"),
@@ -406,6 +450,16 @@ function duplicateArtifactCount(): number {
     (item) => extname(item) === ".json" || extname(item) === ".md",
   )) {
     const base = path.split("/").pop() ?? "";
+    // Metric-alert/admin evidence is required workflow bookkeeping, not AKS
+    // feature/run evidence. Counting repeated alert-note families here creates a
+    // self-breaching hygiene loop where alert triage artifacts inflate the
+    // duplicate-artifact metric themselves.
+    if (
+      base.startsWith("metric-alert-") ||
+      base.startsWith("artifact-duplicate-group-count-")
+    ) {
+      continue;
+    }
     const key = base
       .replace(/-\d{8}T\d{6}Z.*$/, "")
       .replace(/-\d{8,}.*$/, "")
@@ -482,6 +536,7 @@ function valueFor(metricId: string): number {
       !tasks.projectClosed &&
       countReplays() > 0 &&
       specs.unverified > 0 &&
+      hasLiveExecutionRunnableBacklog() &&
       live.length === 0
         ? 1
         : 0,
