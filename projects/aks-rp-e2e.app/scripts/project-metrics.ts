@@ -193,6 +193,26 @@ function isWorkerExecutableBacklogLeaf(task: TaskNode): boolean {
   return true;
 }
 
+function archivedCompletedTaskIds24h(): Set<string> {
+  const archiveDir = join(effectiveAppDir, "tasks", "archive");
+  const completed = new Set<string>();
+  for (const path of listFiles(
+    archiveDir,
+    (candidate) =>
+      extname(candidate) === ".json" &&
+      candidate.includes("done-leaves-"),
+  )) {
+    const archive = readJson<{ tasks?: TaskNode[] }>(path, {});
+    for (const [index, task] of (archive.tasks ?? []).entries()) {
+      if (taskState(task) !== "done") continue;
+      const ts = timestampOf(task);
+      if (ts == null || ts < dayAgo) continue;
+      completed.add(task.id ?? `${path}#${index}`);
+    }
+  }
+  return completed;
+}
+
 function taskCounts() {
   const tree = loadTaskTree();
   const tasks = Object.values(tree.tasks ?? {});
@@ -219,11 +239,14 @@ function taskCounts() {
     const status = taskState(task);
     byStatus.set(status, (byStatus.get(status) ?? 0) + 1);
   }
-  const completed24h = tasks.filter((task) => {
-    if (taskState(task) !== "done") return false;
+  const completed24hTaskIds = archivedCompletedTaskIds24h();
+  for (const [index, task] of tasks.entries()) {
+    if (taskState(task) !== "done") continue;
     const ts = timestampOf(task);
-    return ts != null && ts >= dayAgo;
-  }).length;
+    if (ts == null || ts < dayAgo) continue;
+    completed24hTaskIds.add(task.id ?? `tree#${index}`);
+  }
+  const completed24h = completed24hTaskIds.size;
   const activeStale = staleActiveTaskCount();
   const activeRunning = runningActiveTaskCount();
   const blockedLeaves = tasks.filter(
