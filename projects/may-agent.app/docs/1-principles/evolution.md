@@ -87,7 +87,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     const { execSync } = await import("node:child_process");
     return execSync("bun test", { encoding: "utf-8" });
   });
-  if (verify.status === "error") return ctx.escalate("Tests failed");
+  if (verify.status === "error") return ctx.blocked("Tests failed");
   return ctx.done("Implemented and verified");
 }
 ```
@@ -261,7 +261,7 @@ See [sdk.md](../2a-design/sdk.md) for the canonical AgentSDK and WorkflowSDK int
 
 ```typescript
 // From a workflow: local terminal result; caller/boundary decides whether to route it.
-return ctx.escalate("Can't determine correct approach — need human guidance");
+return ctx.blocked("Can't determine correct approach — need human guidance");
 
 // From handler/agent code: external owner-routed escalation.
 ctx.sdk.escalate("Metric breached but fix unclear — need direction");

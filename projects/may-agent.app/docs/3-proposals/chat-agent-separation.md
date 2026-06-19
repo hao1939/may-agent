@@ -228,6 +228,8 @@ class ChatSession {
 Chat-May should not be a privileged side channel that mutates runtime state
 directly. Human intent should still enter the system as canonical events:
 
+- `human.input.received` is the unified ingress event for free-form human input
+  from Telegram, web UI, terminal, socket, or future channels
 - `chat.start.requested` creates or binds a chat session
 - `session.steer.requested` targets an existing session
 - `project.comment.created` gives project-local owners context
@@ -238,6 +240,36 @@ directly. Human intent should still enter the system as canonical events:
 
 Chat tools may provide ergonomic wrappers around these events, but the durable
 record should be the event, not an untracked in-memory method call.
+
+Transport adapters should only understand channel mechanics: Telegram reply
+ids, web auth, socket framing, terminal lines, attachments. They should not
+decide backend behavior. The adapter emits `human.input.received` with channel
+metadata and an optional target:
+
+```typescript
+human.input.received {
+  actor: "human:hao",
+  text: string,
+  conversation: {
+    channel: "telegram" | "web-ui" | "console" | "socket",
+    channelThreadId?: string,
+    channelMessageId?: number,
+    replyToInputId?: string,
+  },
+  target?: {
+    owner?: string,
+    agent?: string,
+    sessionId?: string,
+    projectPath?: string,
+    taskId?: string,
+  }
+}
+```
+
+The input router converts that raw input event into typed intent events. If the
+UI already knows the intent, it may emit the typed event directly. The point is
+not to collapse every semantic action into one event; the point is to keep
+transport-specific code out of backend decision paths.
 
 ## CLI Agent Delegation
 
@@ -362,19 +394,25 @@ evidence, not the primary result format.
 
 ## Implementation Order
 
-1. Route `kind: "chat"` / `autoClose: "never"` through the manager's chat-turn
+1. ✅ Route `kind: "chat"` / `autoClose: "never"` through the manager's chat-turn
    path so successful turns move running → idle instead of emitting terminal
    `session.end`.
-2. Add chat turn states/events: running → idle, visible error/recovery, source
+2. ✅ Add chat turn states/events: running → idle, visible error/recovery, source
    channel, op count, and last activity.
-3. Build chat-specific system prompt: identity, user preferences, fresh system
+3. ✅ Build chat-specific system prompt: identity, user preferences, fresh system
    state, and conversation summary; no task-tree packet unless requested.
-4. Build chat-specific tool preset: status, steering, delegation, event emit,
+   Current implementation injects a compact fresh system packet at chat turn
+   start; deeper conversation-summary tuning can follow from real usage.
+4. ✅ Build chat-specific tool preset: status, steering, delegation, event emit,
    project/task reads, CLI delegation; no `finish()` and no broad mutation
-   tools by default.
-5. Add compaction support through pi-agent-core `transformContext`.
-6. Verify restart recovery: persisted transcript reloads, fresh system summary
+   tools by default. Current implementation filters persistent chat away from
+   terminal/mutation/lifecycle tools while keeping read/status/delegation tools.
+5. ✅ Add compaction support through pi-agent-core `transformContext`.
+6. ⚠️ Verify restart recovery: persisted transcript reloads, fresh system summary
    injects, and failed recovery produces an explicit event/notification.
+   Current implementation prefers compact snapshots during resume and refreshes
+   the chat prompt on every turn; recovery still needs an end-to-end restart
+   scenario with notification verification.
 7. Add durable CLI delegation runner: persist task before spawn, run Claude
    Code / Codex in non-interactive mode, write structured result files, emit
    `cli.task.*` events, recover orphans after restart, and present results in

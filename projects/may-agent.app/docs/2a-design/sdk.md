@@ -131,17 +131,17 @@ shapes in the codebase. Workflow `.ts` files (via `WorkflowContext`) see the
 **internal** shape; SDK consumers (handlers calling `sdk.runWorkflow()`) see
 the **external** shape. The mapping happens in `sdk-impl.ts`.
 
-**Internal** (what `ctx.done()` and `ctx.escalate()` return inside a workflow):
+**Internal** (what `ctx.done()` and `ctx.blocked()` return inside a workflow):
 ```typescript
 type WorkflowResult =
   | { type: "done"; summary: string }
-  | { type: "escalate"; reason: string; context?: unknown };
+  | { type: "blocked"; reason: string; context?: unknown };
 ```
 
 **External** (what `sdk.runWorkflow()` returns to handlers):
 ```typescript
 interface WorkflowResult {
-  status: "done" | "escalated";
+  status: "done" | "blocked";
   summary: string;
   runId?: string;
 }
@@ -154,7 +154,8 @@ interface WorkflowContext {
   task: string;
   agent: string;
   done(summary: string): WorkflowResult;          // internal shape, no opts
-  escalate(reason: string, context?: unknown): WorkflowResult;  // internal shape
+  blocked(reason: string, context?: unknown): WorkflowResult;  // internal shape
+  escalate(reason: string, context?: unknown): WorkflowResult; // deprecated alias for blocked()
   // ... plus runAgent, runWorkflow, emit, query, getDb, etc.
 }
 ```
@@ -164,14 +165,22 @@ adds `done(summary, opts?: DoneOpts)` with optional deliverables/contextUpdates/
 nextSteps. This is available when using `buildWorkflowSDK()` but **not** in the
 `WorkflowContext` passed to workflow `execute()` functions (KE-1561).
 
-Workflow escalation is intentionally simpler than the general SDK helper because
-workflow execution is synchronous. `ctx.escalate(...)` returns a terminal
+Workflow blocking is intentionally simpler than the general SDK helper because
+workflow execution is synchronous. `ctx.blocked(...)` returns a terminal
 `WorkflowResult` immediately. It does not automatically emit
 `escalation.created` or wake another owner. The `context` parameter is
 `unknown` — there is no structured `WorkflowEscalationContext` type in the
-runtime. The caller/boundary decides whether the local escalated result should
+runtime. The caller/boundary decides whether the local blocked result should
 be handled locally, persisted as workflow trace, or promoted into an external
 owner-routed escalation event.
+
+At the top-level project workflow boundary, the runtime follows normal
+ownership: a blocked project workflow is persisted as `workflow_runs.status =
+"blocked"` and the project/workflow owner is woken with `project.owner.requested`
+containing `workflowRunId`, workflow name, owner, project id, parent session /
+workflow lineage, reason, and compact context. Nested workflow blockers are
+returned to their parent workflow synchronously and do not emit an owner wake by
+themselves.
 
 `runAgent` and `runWorkflow` should share option semantics where possible:
 source, project/session parentage, timeout, request id, and trace metadata. The
@@ -202,6 +211,8 @@ interface ExecutionResult {
 
 `TaskResult` and `WorkflowResult` can include more detail, but both should map
 to this shape for UI, diagnostics, tests, and resume handling.
+For workflows, legacy `escalated` statuses are normalized to `blocked`;
+`escalated` remains only for non-workflow historical compatibility.
 
 Resume should follow the same symmetry:
 

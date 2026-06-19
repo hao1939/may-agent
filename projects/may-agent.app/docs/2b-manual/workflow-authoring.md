@@ -7,7 +7,7 @@ A workflow is a TypeScript file in `agents/<name>/workflows/`. It exports `name`
 
 Workflows are deliberately synchronous: each step returns a result before the
 next step runs, and `runWorkflow()` resolves only when the workflow is done or
-escalated. Use `agents.fork` for background agent sessions outside workflow
+locally blocked. Use `agents.fork` for background agent sessions outside workflow
 control.
 
 ```typescript
@@ -22,7 +22,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
 
   // 2. Use results to decide next steps
   if (dev.status === "error") {
-    return ctx.escalate("Dev failed", { error: dev.error });
+    return ctx.blocked("Dev failed", { error: dev.error });
   }
 
   // 3. Finish
@@ -44,7 +44,8 @@ Available via `ctx`:
 | `ctx.summarize(result)` | Build rich context from a TaskResult for handoff |
 | `ctx.createSession(opts)` | Persistent multi-turn session (worker pattern) |
 | `ctx.done(summary)` | Mark workflow as successful |
-| `ctx.escalate(reason, context?)` | End the workflow with a local escalated result after the workflow decides the blocker should bubble to its caller. It does not emit an external escalation event. |
+| `ctx.blocked(reason, context?)` | End the workflow with a local blocked result after the workflow decides the blocker should bubble to its caller. It does not emit an external escalation event. |
+| `ctx.escalate(reason, context?)` | Deprecated alias for `ctx.blocked(...)`. It is not `escalation.created`. |
 | `ctx.emit(event)` | Emit a typed event |
 | `ctx.dispatchEvent(type, data)` | Dispatch to handler subscribers |
 | `ctx.getDb()` | Access shared SQLite database |
@@ -55,24 +56,29 @@ Available via `ctx`:
 
 Every workflow must end with either:
 - `return ctx.done(summary)` — success
-- `return ctx.escalate(reason)` — failure/blocked
+- `return ctx.blocked(reason)` — locally blocked
 
 Never return without calling one of these.
 
-`ctx.escalate(...)` is synchronous and terminal. The workflow stops immediately;
-the caller receives `{ type: "escalate", reason, context }`. This is local to the
+`ctx.blocked(...)` is synchronous and terminal. The workflow stops immediately;
+the caller receives `{ type: "blocked", reason, context }`. This is local to the
 workflow call. The caller or handler may promote it to an external
 `escalation.created` event only when the blocker must route to another owner.
+For top-level project workflows, the runtime also wakes the project/workflow
+owner with `project.owner.requested` and includes workflow run id, caller
+lineage, reason, and compact context. Nested workflows return the blocked result
+to their parent workflow synchronously; the nested workflow does not wake the
+owner directly.
 
 Because workflow execution is synchronous, a workflow can handle a blocker
 inside the workflow before returning: run a repair step, ask another agent with
 `ctx.runAgent`, run a sub-workflow, retry, verify, or notify. Use
-`ctx.escalate(...)` only when the workflow has reached a terminal local blocker
+`ctx.blocked(...)` only when the workflow has reached a terminal local blocker
 and wants the caller to decide whether to record it, retry another path, or
 promote it outside the workflow boundary.
 
 Do not make the workflow wait for an external human/owner response after it has
-returned `ctx.escalate(...)`. If human/owner routing is required, the caller or
+returned `ctx.blocked(...)`. If human/owner routing is required, the caller or
 runtime boundary should promote the local result to `escalation.created`.
 
 Typical blocker paths:
@@ -83,7 +89,8 @@ Typical blocker paths:
 | Another agent can answer synchronously | Use `ctx.runAgent(...)` and continue with its result |
 | A reusable recipe should handle the problem | Use `ctx.runWorkflow(...)` and continue or return based on its result |
 | A human/operator should see context but no response is required during this run | Use `ctx.notify(...)` and continue or finish with an honest summary |
-| The workflow cannot safely decide the next action | `return ctx.escalate(reason, context)` and let the caller/boundary decide |
+| The workflow cannot safely decide the next action | `return ctx.blocked(reason, context)` and let the caller/boundary decide |
+| A top-level project workflow blocks | Runtime persists `workflow_runs.status = "blocked"` and wakes the project/workflow owner with lineage |
 | The blocker crosses an ownership boundary after the workflow returns | Caller/boundary may emit `escalation.created`; the workflow itself should not |
 
 Use the second argument only for compact boundary context. It may become
@@ -91,7 +98,7 @@ owner-facing context later if the caller promotes the result to an external
 escalation:
 
 ```typescript
-return ctx.escalate("Missing sessionId", {
+return ctx.blocked("Missing sessionId", {
   requestedAction: "Fix the session.completed emitter to include sessionId.",
   evidence: { trigger: event },
 });
@@ -109,7 +116,7 @@ const verify = await ctx.runFunction("verify", async () => {
   return "PASS";
 });
 if (verify.status === "error") {
-  return ctx.escalate("Verification failed", { output: verify.lastAssistantText });
+  return ctx.blocked("Verification failed", { output: verify.lastAssistantText });
 }
 return ctx.done("Implemented and verified");
 ```
@@ -158,7 +165,7 @@ for (let i = 1; i <= MAX_ATTEMPTS; i++) {
   if (verify.passed) return ctx.done("Verified");
   fixTask = `Fix errors:\n${verify.output}\n\nOriginal: ${task}`;
 }
-return ctx.escalate("Failed after all attempts");
+return ctx.blocked("Failed after all attempts");
 ```
 
 ## Invoking a Workflow

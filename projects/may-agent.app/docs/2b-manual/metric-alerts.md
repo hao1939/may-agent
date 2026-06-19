@@ -40,7 +40,9 @@ validation signal, usually the next `metrics-snapshot` and `metric.recovered`.
 - `P0`: safety or system integrity. Must get explicit owner action now.
 - `P1`: important health issue. Must get explicit owner action.
 - `P2`: normal drift. Visible in heartbeat; act when it matters.
-- `P3`: watch only/noisy/accepted exception. Should not interrupt work.
+- `P3`: watch/noisy/accepted-exception lane. Should not interrupt work
+  immediately, but a still-open P3 alert still needs an eventual owner
+  judgment or recovery signal.
 
 Downgrading is allowed only when the owner has evidence that the alert is not
 currently worth interrupting work. Downgrade is not a way to hide unknowns.

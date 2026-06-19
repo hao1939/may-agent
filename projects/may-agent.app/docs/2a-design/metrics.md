@@ -275,7 +275,9 @@ signals outside that contract do not make the project active by themselves.
 The usual path is owner/context-driven: agents see metric state and unresolved
 alerts, known owner auto-handlers can act first, and the generic alert reactor
 only handles the remaining cases. `metric-alert-reactor` forks an owner directly
-only for P0 or unhandled P1/P2 alerts after the configured grace period.
+for P0 and runs fallback triage for still-open lower-priority alerts after the
+configured grace period. P3 gets a longer grace period and longer retriage
+cooldown, but it is not exempt from owner judgment.
 
 Agents handling an alert must follow
 [manual/metric-alerts.md](../2b-manual/metric-alerts.md): judge the alert, choose one
@@ -390,7 +392,7 @@ A metric at target is a signal the bar is too low. Never coast.
 
 - **Source of truth**: `metrics` table in DB. This doc is design rationale.
 - **Snapshot handler:** `agents/may/handlers/metrics-snapshot.ts` — auto-registers, measures every 5min, emits `metric.breach` events when `breached && !openAlert`
-- **Alert reactor:** `agents/may/handlers/metric-alert-reactor.ts` — consumes `metric.breach` events. P0 forks the owner directly. P1+ remain visible for heartbeat/project/steward handling.
+- **Alert reactor:** `agents/may/handlers/metric-alert-reactor.ts` — consumes `metric.breach` events. P0 forks the owner directly. P1/P2/P3 remain visible for heartbeat/project handling first, then get fallback owner triage if still open after their grace period.
 - **DB schema:** `projects/may-agent/src/lib/db/schema.ts`
 - **Retention**: snapshots kept 30 days, pruned after each measurement run
 - **Error isolation**: each metric measured independently — one failure doesn't block others

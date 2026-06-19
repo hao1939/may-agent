@@ -66,6 +66,11 @@ Examples:
 - `project.owner.requested` targets the project in `data.project`,
   `data.projectId`, or `data.project_id`; only handlers for that project should
   run. `project.planning.requested` is the legacy compatibility alias.
+- A top-level project workflow that returns `ctx.blocked(...)` is persisted as
+  `workflow_runs.status = "blocked"` and wakes the project/workflow owner with
+  `project.owner.requested` carrying `workflowRunId`, workflow name, owner,
+  caller lineage, reason, and compact context. Nested workflow blockers return
+  to their parent workflow synchronously.
 - `session.steer.requested` targets `data.sessionId`; if that session is gone,
   the owner handles the failed intent.
 - `metric.breach` targets `data.metricId`; the metric/project owner is the

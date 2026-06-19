@@ -94,7 +94,7 @@ sdk.message("bob", "Your PR was merged");    // → bob's inbox as owner agent:b
 ## External Escalate
 
 Use `sdk.escalate(...)` from handlers or agent-side SDK code when the blocker
-must be routed outside the current owner. Workflow `ctx.escalate(...)` is a
+must be routed outside the current owner. Workflow `ctx.blocked(...)` is a
 local terminal workflow result; it does not emit this event by itself.
 
 For human routing, set `owner: "human:<role>"`. May is the human's deputy for
@@ -116,7 +116,7 @@ Typical escalation choices:
 |-----------|-----|
 | The current handler/agent is blocked and May should route or resolve | `sdk.escalate(reason)` |
 | A human decision is required | `sdk.escalate(reason, { owner: "human:<role>", requestedAction, evidence })` |
-| A workflow hit a local blocker | Return `ctx.escalate(...)`; let the caller decide whether to promote it |
+| A workflow hit a local blocker | Return `ctx.blocked(...)`; let the caller decide whether to promote it |
 | The owner has resolved an escalation | Emit `escalation.resolved` with `outcome`, `summary`, and optional `resumeInstruction` |
 
 When a terminal `escalation.resolved` event matches an earlier

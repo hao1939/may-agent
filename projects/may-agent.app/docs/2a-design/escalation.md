@@ -30,9 +30,12 @@ blocked work -> escalation.created -> owner handles it -> escalation.resolved ->
 ```
 
 This lifecycle starts only when work crosses an ownership boundary. A synchronous
-workflow can return `ctx.escalate(...)` as a local terminal result without
+workflow can return `ctx.blocked(...)` as a local terminal result without
 emitting `escalation.created`; the caller or runtime boundary decides whether
-that local result should be promoted into the external lifecycle.
+that local blocked result should be promoted into the external lifecycle.
+For top-level project workflows, the runtime first routes the blocked workflow
+back to the workflow/project owner via `project.owner.requested`. That owner
+route is still not an escalation; it is normal ownership following the workflow.
 
 Escalation can chain upward. If an agent owner cannot resolve the blocker, it
 emits or links the next escalation to a human owner; when that human escalation is
@@ -293,18 +296,18 @@ Metrics should measure lifecycle health, not replace judgment:
 | Resume lifecycle | `projects/may-agent/src/lib/escalation-lifecycle.ts` subscribes to `escalation.resolved` to drive session resume. Event types are defined in `event-bus.ts`. | Code is wired but **never triggered** — zero `escalation.resolved` events means resume code is dead. Slice 4 infra exists but has no inputs. |
 | `dedupKey` | Design doc specifies `dedupKey` for duplicate suppression. | **All 35 escalations have `dedupKey: null`.** Session-finish boundary does not populate it. Dedup metric (`escalation.noisy-dedup-count`) has no signal. |
 | Escalation metrics | Doc specifies 5 lifecycle metrics (open-count, resolve-time, resume-success, dedup-count, unowned-count). | **None exist** in the active metrics table. No escalation health observability. |
-| Workflow escalation | Workflow `ctx.escalate(reason, context)` returns an escalated workflow result and stops the synchronous workflow. | Good target shape. It should not automatically publish `escalation.created`; boundary code decides whether the local workflow escalation needs owner routing. |
+| Workflow blocking | Workflow `ctx.blocked(reason, context)` returns a local blocked workflow result and stops the synchronous workflow. | It should not automatically publish `escalation.created`; boundary code decides whether the local blocker needs owner routing. |
 | Docs | `events.md` documents the common event envelope and canonical escalation taxonomy. | Handler/manual examples should keep using direct `event.data` payloads. |
 
-## Workflow Escalation: Simple Sync Path
+## Workflow Blocking: Simple Sync Path
 
 Workflow execution is synchronous: `runWorkflow(...)` blocks until the workflow
-returns `done` or `escalate`. That means escalation inside workflow code is a
-local terminal result, not automatically a cross-agent event:
+returns `done` or `blocked`. A local workflow blocker is not automatically a
+cross-agent event:
 
 ```typescript
 if (!sessionId) {
-  return ctx.escalate("Missing sessionId", {
+  return ctx.blocked("Missing sessionId", {
     requestedAction: "Fix the event producer so session.completed includes sessionId.",
     evidence: { trigger },
   });
@@ -312,10 +315,10 @@ if (!sessionId) {
 ```
 
 The workflow author does not create escalation ids, write lifecycle rows, wake
-owners, or manage resume. `ctx.escalate(reason, context?)` does exactly one
+owners, or manage resume. `ctx.blocked(reason, context?)` does exactly one
 thing:
 
-1. Return `{ type: "escalate", reason, context }` to the synchronous workflow
+1. Return `{ type: "blocked", reason, context }` to the synchronous workflow
    caller, so the current workflow stops cleanly.
 
 The synchronous caller then chooses one of three paths:
@@ -323,13 +326,14 @@ The synchronous caller then chooses one of three paths:
 | Caller decision | Meaning |
 |-----------------|---------|
 | Handle locally | The caller has enough context to retry, repair, mark the job failed, or return a normal error. No external event is needed. |
-| Record as workflow result | The escalation is useful trace context but not an owner-routed work item. Persist the workflow run as `escalated`; do not wake another owner. |
-| Promote to external escalation | The blocker crosses an ownership boundary. Emit canonical `escalation.created` from the boundary layer with workflow lineage and resume context. |
+| Record as workflow result | The blocker is useful trace context but not an owner-routed work item. Persist the workflow run as `blocked`; do not wake another owner. |
+| Wake workflow/project owner | A top-level project workflow is blocked. Runtime emits `project.owner.requested` with workflow lineage so the owner can repair, retry, update the task tree, or decide the next route. |
+| Promote to external escalation | The blocker crosses beyond the workflow/project owner boundary. Emit canonical `escalation.created` from the boundary layer with workflow lineage and resume context. |
 
-When a boundary promotes the local workflow escalation to `escalation.created`,
+When a boundary promotes the local workflow blocker to `escalation.created`,
 runtime owns the canonical event defaults:
 
-| Field | Default for workflow escalation |
+| Field | Default for promoted workflow blocker |
 |-------|---------------------------------|
 | `owner` | `context.owner` when supplied; otherwise `agent:may` |
 | `source` | current workflow agent, e.g. `agent:evaluator` |
@@ -337,13 +341,13 @@ runtime owns the canonical event defaults:
 | `data.sourceAgent` | current workflow agent |
 | `data.sourceSessionId` | parent session id when available |
 | `data.projectId` | workflow/project context when available |
-| `data.reason` | first argument to `ctx.escalate` |
+| `data.reason` | first argument to `ctx.blocked` |
 | `data.requestedAction` | `context.requestedAction`, or `Investigate and resolve or answer this blocker: ${reason}` |
 | `data.evidence` | `context.evidence`, plus compact workflow context if present |
 | `data.resume` | `{ kind: "session", checkpointRef, instruction }`; include `workflowRunId` separately as context |
 | `data.dedupKey` | stable hash from workflow, owner, source agent, and reason |
 
-The synchronous caller should treat `escalate` as a terminal workflow result. It
+The synchronous caller should treat `blocked` as a terminal workflow result. It
 should not wait for the owner to resolve anything in the same call stack. Later
 resolution is event-driven only if a boundary promoted the local result into an
 external `escalation.created` event.
@@ -379,8 +383,10 @@ escalation lifecycle.
 - Reject the removed `sdk.escalate(target, reason)` shape. Callers pass routing
   through `opts.owner`; the only shorthand is `owner: "human"` mapping to
   `owner: "human:operator"`.
-- Keep workflow `ctx.escalate(reason, context)` as the sync terminal helper
-  above. It should not emit `escalation.created` by itself.
+- Keep workflow `ctx.blocked(reason, context)` as the sync terminal helper
+  above. It should not emit `escalation.created` by itself. `ctx.escalate(...)`
+  may remain as a deprecated compatibility alias, but docs and new workflows
+  should not use it.
 - Add a boundary promotion helper only where needed, for example
   `promoteWorkflowEscalation(result, lineage)` or equivalent handler/runtime
   code that emits canonical `escalation.created` when the blocker must route to

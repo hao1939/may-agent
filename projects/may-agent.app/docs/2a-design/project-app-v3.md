@@ -765,6 +765,11 @@ The canonical task event contract is intentionally small:
 
 - `project.owner.requested` is handled by the project owner workflow. It reviews,
   repairs, refills, and explicitly assigns runnable backlog leaves.
+- Top-level project workflows that return `ctx.blocked(...)` are persisted as
+  `workflow_runs.status = "blocked"` and wake the project/workflow owner via
+  `project.owner.requested` with `reason: "workflow-blocked"`, workflow run id,
+  workflow owner, caller lineage, blocker reason, and compact context. Nested
+  workflow blockers return to their parent workflow synchronously.
 - `project.task.assigned` is handled by the worker workflow. It carries the
   owner-selected task id, attempt id, session id, and worker. The worker
   does not pick from the tree.

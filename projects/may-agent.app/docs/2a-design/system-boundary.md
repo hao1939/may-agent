@@ -201,6 +201,8 @@ interface ExecutionResult {
 
 `TaskResult` and `WorkflowResult` can carry richer details, but they should map
 to this shape. This keeps tracing, diagnostics, UI, and tests simple.
+For workflows, legacy `escalated` rows/results are normalized to `blocked`.
+`escalated` remains only for non-workflow historical compatibility.
 
 Resume should follow the same symmetry:
 
@@ -400,7 +402,7 @@ Workflow contexts add workflow-local conveniences:
 ```ts
 ctx.runFunction(label, fn)
 ctx.done(summary)
-ctx.escalate(reason, context?) // local terminal workflow result; no event unless a boundary promotes it
+ctx.blocked(reason, context?) // local terminal workflow result; no event unless a boundary promotes it
 ctx.task
 ctx.agent
 ```
@@ -602,7 +604,7 @@ provably wrong.
 | Event backlog or slow subscriber | Keep emit path bounded; measure handler/subscriber duration; alert on sustained backlog/latency. | handler duration/backlog metric. |
 | Handler throws | Mark handler failed, keep scheduler alive, expose failure in handler metrics. | `handler.failed`, `handler.success-rate`. |
 | Workflow step times out | Mark step/session interrupted or error, preserve partial trace, let workflow decide retry/escalate when safe. | workflow step result + session status. |
-| Workflow blocked by guard | Preserve completed steps and block reason; emit guard signal; route to owner or next recovery path. | `workflow.blocked`, `guard.triggered`. |
+| Workflow blocked by guard | Preserve completed steps and block reason; emit guard signal; route to owner or next recovery path. | local `workflow.blocked` callback, durable `workflow_runs.status = "blocked"`, `guard.triggered`. |
 | `resumeWorkflow` sees corrupted/partial state | Inspect durable state first; resume only when lineage and next step are clear. Otherwise return diagnostic status and escalate/requeue rather than replay blindly. | `workflow.resume_failed` with reason. |
 | Session resume sees missing/corrupt transcript | Preserve original session id/state; inject recovery context only when safe; otherwise mark interrupted/error with reason. | session status + recovery event. |
 | Owner resolution is ambiguous or wrong | Prefer explicit owner, then project owner, then convention, then `may`. If owner is invalid, route to `may` and emit routing anomaly. | `routing.owner_invalid` / metric. |
