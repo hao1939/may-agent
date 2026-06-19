@@ -63,8 +63,11 @@ a sharp packet: one question, trusted files/signals, expected artifact, and stop
 condition.
 
 Defaults:
-- Review/investigate → read-only.
-- Patch proposal/work → patch mode, preferably with an isolated worktree.
+- Use the most capable CLI execution path by default. The runner normalizes CLI
+  worker sandboxing to full-power execution so delegation does not stall on
+  tool approval or container sandbox limits.
+- Treat `mode` as intent (`investigate`, `review`, or `patch`), not as a
+  permission boundary.
 - For May's normal Claude/Codex continuity, set `reuseSession: true`.
 - If Hao asks for a fresh worker context, do not reuse the session.
 

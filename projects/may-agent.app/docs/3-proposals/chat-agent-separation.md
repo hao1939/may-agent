@@ -329,13 +329,13 @@ CLI tasks are tracked like any other work:
   - Claude Code: `session_id` from stream-json events
 - Resume metadata recorded beside the result so May or a human can continue
   the exact CLI conversation later when that is useful.
-- Effective execution policy recorded. `investigate` and `review` default to
-  `read-only`; `patch` defaults to `workspace-write`. The runner must not
-  silently retry a read-only Codex task with `danger-full-access`. If a
-  sandboxed review cannot start in this container, the CLI task should fail
-  loudly with its native session/resume metadata when available. Retrying with
-  broader permissions is a separate owner or human decision, not an automatic
-  compatibility fallback.
+- Effective execution policy recorded. May's CLI workers are trusted delegated
+  instruments, so the runner normalizes execution to the most capable
+  non-interactive mode by default (`danger-full-access` for Codex and bypass
+  permissions for Claude Code). `mode` remains an intent label
+  (`investigate`, `review`, or `patch`), not a permission boundary. Safety comes
+  from May's owner judgment, a sharp task packet, evidence review, and normal
+  git/test verification rather than per-task sandbox negotiation.
 - Worker-spawned Codex sessions use the runner skill home. The runner exports
   `CODEX_HOME` from the May persist directory by default, so reusable skills
   installed under `.state/.codex/skills` are available to May's delegated Codex
@@ -365,17 +365,19 @@ or orphaned.
 | Need | Default |
 |------|---------|
 | Quick question or explanation | May answers directly |
-| Bounded investigation or review | Use configured CLI worker with read-only execution |
-| Patch/fix proposal | Use configured CLI worker; prefer isolated workspace/worktree for mutation-heavy work |
+| Bounded investigation or review | Use configured CLI worker with full-power execution and an explicit no-mutation instruction when appropriate |
+| Patch/fix proposal | Use configured CLI worker with full-power execution; prefer isolated workspace/worktree for mutation-heavy work |
 | Project-owned work | Prefer project owner/task agent; CLI only if explicitly useful |
 
 May chooses the CLI from policy and current availability, not hard-coded vendor
 preference. Codex should use `codex exec` for non-interactive automation, with
 JSONL or schema output when the result is consumed by code. Claude Code should
 use its non-interactive/scriptable mode with the same runner contract. For
-Claude patch-mode worker jobs in this trusted container, the runner uses
+Claude worker jobs in this trusted container, the runner uses
 `bypassPermissions`/`--dangerously-skip-permissions`; otherwise Claude can stop
-on write approval and leave the async job stuck.
+on approval and leave the async job stuck. For Codex worker jobs, the runner
+uses `--sandbox danger-full-access` so container namespace limits do not break
+ordinary file reads.
 
 May should not require users to know the exact tool call. Natural steering is
 enough. Phrases such as "ask Codex", "ask Claude", "get a second opinion",
@@ -394,7 +396,7 @@ Default routing:
 | "second opinion" | Use one CLI worker, usually the one best suited to the task |
 | "compare Claude and Codex" | Launch one bounded task for each tool, then May compares the artifacts |
 | "deep dive/investigate" | Use a CLI worker only after narrowing the question and expected artifact |
-| "review this code/design" | Use read-only review mode |
+| "review this code/design" | Use review mode with a no-mutation instruction when the task should only inspect |
 | "propose/try a patch" | Use patch mode, preferably in an isolated worktree |
 
 ### Tool shape
@@ -410,7 +412,7 @@ Default routing:
     prompt: string,          // what to investigate or implement
     cwd: string,             // working directory
     files?: string[],        // relevant files to focus on
-    sandbox?: "read-only" | "workspace-write" | "danger-full-access",
+    sandbox?: "read-only" | "workspace-write" | "danger-full-access", // legacy/compat; runner normalizes full-power
     timeoutMs?: number,
     outputSchema?: string,   // JSON schema path/name for structured result
     worktree?: string,       // required or auto-created for patch mode
@@ -429,7 +431,7 @@ continues the conversation. The CLI runner consumes the request, emits
 For Codex, the command shape should be based on non-interactive execution:
 
 ```bash
-codex exec --json --skip-git-repo-check --sandbox read-only -o "$RESULT_PATH" "$PROMPT" \
+codex exec --json --skip-git-repo-check --sandbox danger-full-access -o "$RESULT_PATH" "$PROMPT" \
   > "$EVENTS_JSONL"
 ```
 

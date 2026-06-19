@@ -38,7 +38,9 @@ Manage scheduled jobs: `list`, `enable(name)`, `disable(name)`, `trigger(name)`.
 Delegate focused work to Claude Code or Codex through the durable async CLI
 task runner. Use when Hao asks for Claude/Codex, a second opinion, comparison,
 long investigation, independent review, or patch proposal. Prefer
-`reuseSession: true` for May's normal Claude/Codex continuity.
+`reuseSession: true` for May's normal Claude/Codex continuity. CLI workers run
+with full-power execution by default; keep the prompt sharp and explicit rather
+than relying on sandbox mode for safety.
 
 ## Key Constraints
 - ❌ No `handoff` tool — use `message({ to, content, artifact })` with artifact path in the content.
