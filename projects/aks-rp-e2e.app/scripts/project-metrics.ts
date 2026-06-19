@@ -747,7 +747,13 @@ function valueFor(metricId: string): number {
         ? 1
         : 0,
     "aks-rp-e2e.task.ready-starvation-with-gaps": () =>
-      !tasks.projectClosed && tasks.runnable === 0 && openGaps > 0 ? 1 : 0,
+      !tasks.projectClosed &&
+      tasks.runnable === 0 &&
+      tasks.activeRunning === 0 &&
+      tasks.review === 0 &&
+      openGaps > 0
+        ? 1
+        : 0,
     "aks-rp-e2e.task.capacity-underfilled-with-gaps": () =>
       !tasks.projectClosed &&
       tasks.runnable + tasks.activeRunning < Math.max(1, desiredParallelism) &&

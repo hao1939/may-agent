@@ -118,7 +118,7 @@ const metrics: MetricDef[] = [
     alertOp: ">",
     priority: "P3",
     description:
-      "Compatibility metric id. Planner refill signal: no runnable backlog leaves exist while model path gaps or unverified specs remain, even if one long task is active. P3 keeps this dashboard-only unless it persists with no active/review work.",
+      "Compatibility metric id. Planner refill signal: no runnable backlog leaves exist while model path gaps or unverified specs remain and there is no active/review work already in flight. P3 keeps this dashboard-only unless it persists with no active/review work.",
     config: { alert: { mode: "consecutive_failures", count: 12 } },
   },
   {
@@ -305,13 +305,13 @@ const metrics: MetricDef[] = [
     id: "aks-rp-e2e.run.live-started-24h",
     name: "AKS RP E2E live runs started in 24h",
     type: "gauge",
-    target: 4,
-    threshold: 1,
+    target: 0,
+    threshold: -1,
     unit: "count",
     alertOp: "<",
-    priority: "P1",
+    priority: "P3",
     description:
-      "Activity signal: runnable specs should produce live staging feedback.",
+      "Dashboard activity counter for execute-mode live runs in the last 24h. Not an interrupting alert: this project's automation policy keeps cloud verification event-driven and sparing, so raw daily live-run count should not page the owner during repo-local learning or externally gated periods. Use aks-rp-e2e.run.live-idle-with-runnable-work for the real liveness signal when execute-ready backlog exists but no run starts. Calibrated target 4→0, threshold 1→-1, priority P1→P3 on 2026-06-19 after repo-local evidence confirmed the old daily-pressure shape conflicted with replays/execution/automation.md and produced false alerts during ordinary gate-closed periods.",
   },
   {
     id: "aks-rp-e2e.run.live-succeeded-24h",

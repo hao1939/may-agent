@@ -343,6 +343,57 @@ describe("project metrics", () => {
     ).toBe("0");
   });
 
+  test("suppresses ready-starvation while active or review work is already in flight", async () => {
+    const fixture = await makeFixture();
+    await writeTree(
+      fixture.appDir,
+      { session_id: "s_running" },
+      {
+        "review-task": {
+          id: "review-task",
+          parent_id: "project",
+          state: "review",
+          children: [],
+          goal: "Review accepted row-local evidence.",
+          kind: "domain_leaf",
+        },
+      },
+    );
+    writeSession(fixture.dbPath, {
+      sessionId: "s_running",
+      status: "running",
+      opCount: 1,
+      startedAt: Date.now() - 10_000,
+      lastActivityAt: Date.now(),
+    });
+
+    expect(
+      await metricValue(fixture, "aks-rp-e2e.task.ready-starvation-with-gaps"),
+    ).toBe("0");
+  });
+
+  test("still raises ready-starvation when no runnable, active, or review work exists", async () => {
+    const fixture = await makeFixture();
+    await writeTree(fixture.appDir, { session_id: "s_done" });
+    const treePath = join(fixture.appDir, "tasks", "tree.json");
+    const tree = JSON.parse(await Bun.file(treePath).text());
+    tree.active_task_id = null;
+    tree.active_task_ids = [];
+    tree.tasks.project.state = "backlog";
+    tree.tasks["active-task"].state = "done";
+    await writeFile(treePath, `${JSON.stringify(tree, null, 2)}\n`);
+
+    writeSession(fixture.dbPath, {
+      sessionId: "s_done",
+      status: "done",
+      startedAt: Date.now() - 10_000,
+    });
+
+    expect(
+      await metricValue(fixture, "aks-rp-e2e.task.ready-starvation-with-gaps"),
+    ).toBe("1");
+  });
+
   test("counts execute-mode result files as live runs even when dryRun is absent", async () => {
     const fixture = await makeFixture();
     await writeTree(fixture.appDir, { session_id: "s_running" });
