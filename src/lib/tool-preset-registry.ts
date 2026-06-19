@@ -19,6 +19,7 @@ export const VALID_TOOL_PRESETS = new Set([
   "scrape",
   "finish",
   "checkpoint",
+  "cli-delegation",
   "system-status",
   "system_status",
   "message",
@@ -36,6 +37,7 @@ export const HANDLED_TOOL_PRESETS = new Set([
   "scrape",
   "finish",
   "checkpoint",
+  "cli-delegation",
   "system-status",
   "system_status",
   "message",
@@ -99,7 +101,12 @@ export function findFleetToolPresetIssues(agentsRoot: string): ToolPresetConfigI
       if (!VALID_TOOL_PRESETS.has(preset)) {
         issues.push({ agent, field: "tools", preset, message: `Unknown tool preset "${preset}"` });
       } else if (!HANDLED_TOOL_PRESETS.has(preset)) {
-        issues.push({ agent, field: "tools", preset, message: `Tool preset "${preset}" is valid but not wired at runtime` });
+        issues.push({
+          agent,
+          field: "tools",
+          preset,
+          message: `Tool preset "${preset}" is valid but not wired at runtime`,
+        });
       }
     }
   }

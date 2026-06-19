@@ -10,6 +10,7 @@ import {
 import { createEscalationLifecycleSubscriber } from "../lib/escalation-lifecycle.js";
 import { log } from "../lib/log.js";
 import { runAgentCleanup, setAgentSessionId } from "./agent-loader.js";
+import { attachCliTaskRunner, markOrphanedCliTasks } from "./cli-task-runner.js";
 
 function createEscalationId(): string {
   return `esc_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
@@ -52,6 +53,15 @@ export function attachDaemonEventSubscribers(opts: {
   projectRoot: string;
 }): void {
   const { bus, manager, persistDir, projectRoot } = opts;
+
+  attachCliTaskRunner({ bus, persistDir, projectRoot });
+  const orphanedCliTasks = markOrphanedCliTasks({ bus, persistDir });
+  if (orphanedCliTasks > 0) {
+    bus.emit({
+      type: "info",
+      message: `[cli-task-runner] Marked ${orphanedCliTasks} stale CLI task(s) orphaned after restart`,
+    });
+  }
 
   bus.subscribe(createDigestWriter(persistDir));
   bus.subscribe(createLastSessionWriter(projectRoot));

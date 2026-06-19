@@ -24,6 +24,7 @@ export {
   createQueryDbTool,
   createFinishTool,
   createCheckpointTool,
+  createRunCliAgentTool,
   readCheckpoints,
   readLatestCheckpoint,
   extractHallucinatedRelPath,
@@ -87,18 +88,8 @@ export { spawnDetachedAgent, readIdentity } from "./detached.js";
 export type { InstanceIdentity } from "./detached.js";
 export { sendSocketCommand, waitForSocketEvent } from "./socket-client.js";
 export type { SocketResponse, SocketEvent } from "./socket-client.js";
-export type {
-  SubagentDefinition,
-  ModelWithApiKey,
-  SessionInfo,
-  TaskResult,
-} from "./types.js";
-export type {
-  Registry,
-  PersistedAgentConfig,
-  PersistedSession,
-  SessionKind,
-} from "./persistence.js";
+export type { SubagentDefinition, ModelWithApiKey, SessionInfo, TaskResult } from "./types.js";
+export type { Registry, PersistedAgentConfig, PersistedSession, SessionKind } from "./persistence.js";
 
 export { createQueryService, createUnavailableQueryService } from "./query-service.js";
 export type {
@@ -126,12 +117,7 @@ export {
   workflowRowToExecutionResult,
   workflowToolResultToExecutionResult,
 } from "./execution-result.js";
-export type {
-  ExecutionKind,
-  ExecutionResult,
-  ExecutionStatus,
-  ResumeDiagnostic,
-} from "./execution-result.js";
+export type { ExecutionKind, ExecutionResult, ExecutionStatus, ResumeDiagnostic } from "./execution-result.js";
 
 export type { EventEnvelope, HandlerContext, HandlerModule } from "./handler-context.js";
 // RuntimeCtx is internal — imported directly by workflow-tool.ts and sdk-impl.ts

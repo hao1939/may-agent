@@ -13,6 +13,7 @@ import {
   createQueryDbTool,
   createFinishTool,
   createCheckpointTool,
+  createRunCliAgentTool,
 } from "../../lib/index.js";
 import { createMessageTool } from "../../lib/tools/message-tool.js";
 import { buildRuntimeCtx } from "../../lib/runtime-ctx.js";
@@ -103,7 +104,7 @@ export async function buildTools(config: AgentConfig, opts: ToolsetLoaderOptions
             agentsRoot: messageAgentsRoot,
             persistDir,
             allowedTargets: lazyAllowedTargets,
-            emit: (event) => bus.emit(event as any),
+            emit: (event: { type: string; [key: string]: unknown }) => bus.emit(event as any),
             getCallerSessionId: () => opts.getAgentSessionId(config.name),
             triggerHeartbeat,
           }),
@@ -240,6 +241,19 @@ export async function buildTools(config: AgentConfig, opts: ToolsetLoaderOptions
         break;
       }
 
+      case "cli-delegation": {
+        tools.push(
+          createRunCliAgentTool({
+            agentName: config.name,
+            projectRoot,
+            persistDir,
+            emit: (event) => bus.emit(event as any),
+            getCallerSessionId: () => opts.getAgentSessionId(config.name),
+          }),
+        );
+        break;
+      }
+
       default:
         bus.emit({
           type: "info",
@@ -248,7 +262,7 @@ export async function buildTools(config: AgentConfig, opts: ToolsetLoaderOptions
     }
   }
 
-  tools.push(...await loadLocalTools(config.name, agentDir, opts));
+  tools.push(...(await loadLocalTools(config.name, agentDir, opts)));
   return tools;
 }
 

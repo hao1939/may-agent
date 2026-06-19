@@ -444,6 +444,101 @@ export type SystemEvent =
       };
     }
   | {
+      type: "cli.task.requested";
+      source: string;
+      owner: string;
+      urgency?: EventUrgency;
+      data: {
+        taskId: string;
+        tool: "claude" | "codex";
+        mode: "investigate" | "review" | "patch";
+        cwd: string;
+        promptPath: string;
+        resultPath: string;
+        eventsPath?: string;
+        sandbox?: "read-only" | "workspace-write";
+        effectiveSandbox?: "read-only" | "workspace-write" | "danger-full-access";
+        sandboxFallbackReason?: string;
+        timeoutMs?: number;
+        sourceOwner: string;
+        sourceSessionId?: string;
+        resumeSessionId?: string;
+        files?: string[];
+        worktree?: string;
+      };
+    }
+  | {
+      type: "cli.task.started";
+      source: "cli-task-runner";
+      owner: string;
+      data: {
+        taskId: string;
+        tool: "claude" | "codex";
+        mode: "investigate" | "review" | "patch";
+        cwd: string;
+        promptPath: string;
+        resultPath: string;
+        eventsPath?: string;
+        sourceSessionId?: string;
+        pid?: number;
+        attempt?: number;
+        effectiveSandbox?: "read-only" | "workspace-write" | "danger-full-access";
+        sandboxFallbackReason?: string;
+      };
+    }
+  | {
+      type: "cli.task.completed";
+      source: "cli-task-runner";
+      owner: string;
+      data: {
+        taskId: string;
+        tool: "claude" | "codex";
+        resultPath: string;
+        eventsPath?: string;
+        exitCode: number;
+        summary: string;
+        sourceSessionId?: string;
+        cliSessionId?: string;
+        resumeCommand?: string[];
+        effectiveSandbox?: "read-only" | "workspace-write" | "danger-full-access";
+        sandboxFallbackReason?: string;
+      };
+    }
+  | {
+      type: "cli.task.failed";
+      source: "cli-task-runner";
+      owner: string;
+      data: {
+        taskId: string;
+        tool: "claude" | "codex";
+        resultPath?: string;
+        eventsPath?: string;
+        error: string;
+        exitCode?: number;
+        sourceSessionId?: string;
+        cliSessionId?: string;
+        resumeCommand?: string[];
+        effectiveSandbox?: "read-only" | "workspace-write" | "danger-full-access";
+        sandboxFallbackReason?: string;
+      };
+    }
+  | {
+      type: "cli.task.orphaned";
+      source: "cli-task-runner";
+      owner: string;
+      data: {
+        taskId: string;
+        tool?: "claude" | "codex";
+        pid?: number;
+        reason: string;
+        sourceSessionId?: string;
+        cliSessionId?: string;
+        resumeCommand?: string[];
+        effectiveSandbox?: "read-only" | "workspace-write" | "danger-full-access";
+        sandboxFallbackReason?: string;
+      };
+    }
+  | {
       type: "message.delivery_failed";
       source: string;
       owner: string;
@@ -860,6 +955,7 @@ function hasPairCorrelationKey(event: AgentEvent): boolean {
   if (event.type.startsWith("handler."))
     return hasKey(data.handlerRunId) || hasKey(data.workflowRunId) || hasKey(data.handler);
   if (event.type.startsWith("escalation.")) return hasKey(data.escalationId);
+  if (event.type.startsWith("cli.task.")) return hasKey(data.taskId);
   if (event.type.startsWith("project.task.")) return hasKey(data.taskId);
   return hasKey(data.requestId);
 }
@@ -872,6 +968,8 @@ function isOwnerInboxCandidate(eventType: string): boolean {
   if (eventType === "message.created" || eventType === "learning.feedback") return true;
   if (eventType === "metric.breach" || eventType === "metric.recovered" || eventType === "metric.stalled") return true;
   if (eventType === "escalation.created") return true;
+  if (eventType === "cli.task.completed" || eventType === "cli.task.failed" || eventType === "cli.task.orphaned")
+    return true;
   if (eventType === "project.feedback.created" || eventType === "project.comment.created") return true;
   if (eventType === "project.owner.requested" || eventType === "project.planning.requested") return true;
   return eventType.endsWith(".requested");
