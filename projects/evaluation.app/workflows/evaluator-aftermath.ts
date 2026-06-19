@@ -837,11 +837,7 @@ export function shouldSkipAftermathAmplification(
   // trivially categorizable from metadata — skip LLM evaluation entirely.
   // Falsifier: if >5% of ≤10-op done sessions have errors, threshold needs adjustment.
   // Validated at 0.0% across 1,479 7-day sessions (2026-06-15).
-  if (
-    status === "done" &&
-    !session?.error &&
-    opCount <= 10
-  ) {
+  if (status === "done" && !session?.error && opCount <= 10) {
     return { skip: true, reason: "quick_exit_successful_session" };
   }
 
@@ -885,6 +881,30 @@ function getSessionIdFromTrigger(trigger: any): string | undefined {
 function getModeFromTrigger(trigger: any): string {
   const data = trigger?.data ?? trigger ?? {};
   return typeof data.mode === "string" ? data.mode : "completed";
+}
+
+function backfillCandidateSessionId(ctx: WorkflowContext): string | undefined {
+  const now = Date.now();
+  const graceCutoff = now - 7 * 60_000;
+  const result = ctx.query.sql(
+    `SELECT s.sessionId
+     FROM sessions s
+     WHERE s.agent NOT IN ('evaluator', 'judge')
+       AND s.status IN ('done', 'error', 'interrupted')
+       AND COALESCE(s.endedAt, 0) > 0
+       AND s.endedAt <= ?
+       AND NOT EXISTS (
+         SELECT 1
+         FROM evaluations e
+         WHERE e.sessionId = s.sessionId
+       )
+     ORDER BY s.endedAt ASC
+     LIMIT 1`,
+    [graceCutoff],
+    { limit: 1 },
+  ) as { rows?: Array<{ sessionId?: string }> };
+  const sessionId = result?.rows?.[0]?.sessionId;
+  return typeof sessionId === "string" && sessionId ? sessionId : undefined;
 }
 
 function sessionTranscriptPath(persistDir: string, sessionId: string): string {
@@ -2047,8 +2067,14 @@ export function artifactVerdict(artifactText: string): string | null {
   if (raw.startsWith("needs_improvement")) return "needs_improvement";
   if (raw.startsWith("needs_repair")) return "needs_improvement";
   if (raw.startsWith("low_quality")) return "needs_improvement";
-  if (raw.startsWith("partial_value") || raw.startsWith("partial")) return "acceptable";
-  if (raw.startsWith("mixed_value") || raw.startsWith("mixed_success") || raw.startsWith("mixed")) return "acceptable";
+  if (raw.startsWith("partial_value") || raw.startsWith("partial"))
+    return "acceptable";
+  if (
+    raw.startsWith("mixed_value") ||
+    raw.startsWith("mixed_success") ||
+    raw.startsWith("mixed")
+  )
+    return "acceptable";
   if (raw.startsWith("real_value") || raw.startsWith("valuable")) return "good";
   if (raw.startsWith("good")) return "good";
   if (raw.startsWith("acceptable")) return "acceptable";
@@ -2158,8 +2184,11 @@ export function buildReviewTask(params: {
 
 export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
   const trigger = extractTrigger(String(ctx.task ?? ""));
-  const sessionId = getSessionIdFromTrigger(trigger);
+  const triggerSessionId = getSessionIdFromTrigger(trigger);
   const mode = getModeFromTrigger(trigger);
+  const sessionId =
+    triggerSessionId ??
+    (mode === "completed" ? backfillCandidateSessionId(ctx) : undefined);
 
   if (!sessionId) {
     return ctx.escalate("evaluator-aftermath requires a sessionId", {
@@ -2307,8 +2336,12 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
   const projectAppArtifactPath = `projects/evaluation.app/${artifactRelPath}`;
   const projectAppAbsPath = join(projectRoot, projectAppArtifactPath);
   const globalAbsPath = join(projectRoot, artifactRelPath);
-  const artifactAbsPath = existsSync(projectAppAbsPath) ? projectAppAbsPath : globalAbsPath;
-  const artifactPath = existsSync(projectAppAbsPath) ? projectAppArtifactPath : artifactRelPath;
+  const artifactAbsPath = existsSync(projectAppAbsPath)
+    ? projectAppAbsPath
+    : globalAbsPath;
+  const artifactPath = existsSync(projectAppAbsPath)
+    ? projectAppArtifactPath
+    : artifactRelPath;
 
   if (!shouldRefreshEvaluation(evaluation, heuristic)) {
     return ctx.done(
@@ -2414,9 +2447,15 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     );
   }
 
-  mkdirSync(join(projectRoot, "projects/evaluation.app/agents/evaluator/workspace/aftermath"), {
-    recursive: true,
-  });
+  mkdirSync(
+    join(
+      projectRoot,
+      "projects/evaluation.app/agents/evaluator/workspace/aftermath",
+    ),
+    {
+      recursive: true,
+    },
+  );
 
   const reviewTask = buildReviewTask({
     sessionId,
@@ -2441,8 +2480,12 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
   // artifact, so existsSync is always false and falls back to the global path.
   // But the evaluator agent is registered at projects/evaluation.app/agents/evaluator/
   // and writes there.  Re-check now that the file should actually exist.
-  const postReviewArtifactAbsPath = existsSync(projectAppAbsPath) ? projectAppAbsPath : artifactAbsPath;
-  const postReviewArtifactPath = existsSync(projectAppAbsPath) ? projectAppArtifactPath : artifactPath;
+  const postReviewArtifactAbsPath = existsSync(projectAppAbsPath)
+    ? projectAppAbsPath
+    : artifactAbsPath;
+  const postReviewArtifactPath = existsSync(projectAppAbsPath)
+    ? projectAppArtifactPath
+    : artifactPath;
 
   const artifactText = readArtifact(postReviewArtifactAbsPath);
   const reviewedVerdict = artifactVerdict(artifactText);
