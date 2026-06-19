@@ -32,6 +32,7 @@ export function extractHallucinatedRelPath(path: string): string | null {
  * start the agent runtime.
  */
 export function isMetaRecursionCommand(command: string): boolean {
+  if (/\bsupervisorctl\s+start\s+may-agent-restarter\b/.test(command)) return false;
   const patterns = [
     /\bmay-agent\b/,
     /\bnode\s+.*dist\/cli/,
@@ -39,7 +40,7 @@ export function isMetaRecursionCommand(command: string): boolean {
     /\bts-node\s+.*src\/cli/,
     /\btsx\s+.*src\/cli/,
     /\bbun\s+src\/app\/(may|launcher)\.ts\b/,
-    /\bsupervisorctl\b/,  // kills/restarts the agent process — use the restart socket command instead
+    /\bsupervisorctl\b/, // process control belongs to runtime.restart.requested / may-agent-restarter
   ];
   return patterns.some((p) => p.test(command));
 }
