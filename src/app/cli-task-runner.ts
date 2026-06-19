@@ -184,23 +184,6 @@ function resumeCommand(record: CliTaskRecord, sessionId: string): string[] {
   return ["claude", "-p", "<prompt>", "--output-format", "stream-json", "--verbose", "--resume", sessionId];
 }
 
-function shouldRetryCodexWithSandboxFallback(record: CliTaskRecord, output: string, code: number): boolean {
-  if (code === 0) return false;
-  if (record.tool !== "codex") return false;
-  if (record.sandbox !== "read-only") return false;
-  if (record.effectiveSandbox !== "read-only") return false;
-  if (record.mode !== "investigate" && record.mode !== "review") return false;
-
-  const text = output.toLowerCase();
-  return (
-    text.includes("bwrap") ||
-    text.includes("bubblewrap") ||
-    text.includes("user namespace") ||
-    text.includes("unprivileged namespace") ||
-    text.includes("operation not permitted")
-  );
-}
-
 function sandboxMode(value: unknown): SandboxMode {
   if (value === "workspace-write" || value === "danger-full-access") return value;
   return "read-only";
@@ -280,6 +263,7 @@ async function runCliAttempt(opts: {
         exitCode: exitCode(code, signal),
         stdout: stdoutChunks.join(""),
         stderr: stderrChunks.join(""),
+        error: signal === "SIGTERM" ? `CLI task was terminated, likely after timeout ${record.timeoutMs}ms` : undefined,
       });
     });
     child.on("error", (err) => {
@@ -409,9 +393,11 @@ export function attachCliTaskRunner(opts: CliTaskRunnerOptions): () => void {
 
     queueMicrotask(() => {
       running.add(taskId);
-      void runCliTask({ bus: opts.bus, spawnCommand, persistDir: opts.persistDir, record, recordPath, now }).finally(() => {
-        running.delete(taskId);
-      });
+      void runCliTask({ bus: opts.bus, spawnCommand, persistDir: opts.persistDir, record, recordPath, now }).finally(
+        () => {
+          running.delete(taskId);
+        },
+      );
     });
 
     return {
@@ -439,24 +425,7 @@ async function runCliTask(opts: {
     record.startedAt = iso(now);
     writeRecord(recordPath, record);
 
-    let attempt = await runCliAttempt({ bus, spawnCommand, persistDir, record, recordPath, prompt, now, attempt: 1 });
-    if (shouldRetryCodexWithSandboxFallback(record, `${attempt.stdout}\n${attempt.stderr}`, attempt.exitCode)) {
-      record.effectiveSandbox = "danger-full-access";
-      record.sandboxFallbackReason =
-        "Codex read-only sandbox failed to start in this container; retried once with recorded compatibility fallback for read-only review/investigation.";
-      writeRecord(recordPath, record);
-      appendFile(
-        record.eventsPath ?? record.resultPath,
-        `${JSON.stringify({
-          type: "runner.sandbox_fallback",
-          tool: record.tool,
-          requestedSandbox: record.sandbox,
-          effectiveSandbox: record.effectiveSandbox,
-          reason: record.sandboxFallbackReason,
-        })}\n`,
-      );
-      attempt = await runCliAttempt({ bus, spawnCommand, persistDir, record, recordPath, prompt, now, attempt: 2 });
-    }
+    const attempt = await runCliAttempt({ bus, spawnCommand, persistDir, record, recordPath, prompt, now, attempt: 1 });
 
     record.exitCode = attempt.exitCode;
     record.finishedAt = iso(now);

@@ -126,6 +126,9 @@ export async function prepareDaemonAgents(opts: {
   const projectAppOpts = {
     projectsRoot: opts.projectsRoot,
     projectRoot: opts.projectRoot,
+    persistDir: opts.persistDir,
+    agentsRoot: opts.agentsRoot,
+    sharedRoot: opts.sharedRoot,
     manager: opts.manager,
     bus: opts.bus,
     agentCrons: getAgentCrons(),

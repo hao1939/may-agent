@@ -85,7 +85,7 @@ describe("CLI task runner", () => {
       const completed = events.find((event) => event.type === "cli.task.completed") as any;
       expect(completed?.data?.cliSessionId).toBe("codex-session-1");
       expect(completed?.data?.resumeCommand).toContain("resume");
-      expect(completed?.data?.effectiveSandbox).toBe("danger-full-access");
+      expect(completed?.data?.effectiveSandbox).toBe("read-only");
       expect(completed?.data?.sandboxFallbackReason).toBeUndefined();
       const steer = events.find((event) => event.type === "session.steer.requested") as any;
       expect(steer?.data?.sessionId).toBe("chat-1");
@@ -102,7 +102,7 @@ describe("CLI task runner", () => {
     }
   });
 
-  it("retries Codex read-only sandbox startup failure with a recorded fallback", async () => {
+  it("fails Codex read-only sandbox startup failures without privilege fallback", async () => {
     const root = mkdtempSync(join(tmpdir(), "may-cli-fallback-"));
     const persistDir = join(root, ".state");
     mkdirSync(persistDir, { recursive: true });
@@ -136,7 +136,7 @@ describe("CLI task runner", () => {
           });
           return child;
         }
-        return fakeSpawn(_command, args);
+        throw new Error("read-only failures must not be retried with elevated sandbox");
       }) as any,
     });
 
@@ -155,14 +155,14 @@ describe("CLI task runner", () => {
         cwd: root,
         sandbox: "read-only",
       });
-      await waitFor(() => events.some((event) => event.type === "cli.task.completed"));
+      await waitFor(() => events.some((event) => event.type === "cli.task.failed"));
 
-      expect(spawnedArgs).toHaveLength(2);
+      expect(spawnedArgs).toHaveLength(1);
       expect(spawnedArgs[0]).toContain("read-only");
-      expect(spawnedArgs[1]).toContain("danger-full-access");
-      const completed = events.find((event) => event.type === "cli.task.completed") as any;
-      expect(completed?.data?.effectiveSandbox).toBe("danger-full-access");
-      expect(completed?.data?.sandboxFallbackReason).toContain("read-only sandbox failed");
+      expect(spawnedArgs[0]).not.toContain("danger-full-access");
+      const failed = events.find((event) => event.type === "cli.task.failed") as any;
+      expect(failed?.data?.effectiveSandbox).toBe("read-only");
+      expect(failed?.data?.sandboxFallbackReason).toBeUndefined();
     } finally {
       rmSync(root, { recursive: true, force: true });
     }
