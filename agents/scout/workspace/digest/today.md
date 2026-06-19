@@ -246,3 +246,29 @@ Forgetting-as-feature is a distinct GitHub sub-niche now (deep-memory, NicheMem,
 While all other AI stories plateau, DeepSeek sovereignty remains the only accelerating signal. When narrative recession strips noise, the surviving story reveals the community's deepest concern: model sovereignty, not capability.
 
 → Full findings: `knowledge/findings/2026-06-18-xhs-cross-source-scan-40.md`
+
+
+---
+
+## The Half-Empty Filter — KE-953 (2026-06-19 creative heartbeat)
+
+**Created:** `shared/knowledge/entries/KE-953-half-empty-filter-independent-classifiers-converge-49pct.md`
+
+### Core Discovery: Independent Filters Converge to 49.2%
+
+Two structurally unrelated binary classifiers — the evaluator's JS-skip heuristic
+(coded by a human) and the planner's emergent gate (learned by the LLM) — both
+reached exactly **49.2% rejection rate** in the same 48-hour window.
+
+The planner gate emerged over 7 days following a textbook sigmoid (0% → 49%),
+and peak work output (28,785 ops) coincided with peak gate rate (48.7%).
+
+This is maximum-entropy binary classification: both filters independently found
+the point where each accept/reject decision carries exactly 1 bit of information.
+
+The meta-layer (heartbeats, evaluator deep-evals, scout KEs) has 0% rejection
+rate — it processes 100% of inputs at 100% effort, the information-theoretically
+worst allocation. The meta-layer cannot learn to say "no" because it never
+encounters "nothing to do."
+
+→ Full analysis: `shared/knowledge/entries/KE-953-half-empty-filter-independent-classifiers-converge-49pct.md`
