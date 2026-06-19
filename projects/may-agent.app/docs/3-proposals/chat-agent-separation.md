@@ -29,38 +29,103 @@ These don't need to share `manager.run()`, the same prompt builder, or
 the same tool set. They share only the underlying `Agent` class from
 pi-agent-core.
 
-## Agent Directory Split
+## Agent Directory Model
 
-**`agents/` = chat agents (human-facing)**
+### `agents/` — the chat agent only
 
-Only May lives here. May is the human's deputy — she answers questions,
-takes actions, delegates to task agents, reports back.
+One agent: May. The human's deputy. She oversees the whole system,
+handles escalations, talks to the human. She does not own any project
+directly — each project has its own owner agent.
 
 ```
 agents/
-  may/              ← the chat agent
+  may/              ← the only root agent
     AGENTS.md       ← identity: "you are Hao's deputy"
     context.md      ← learned preferences, system knowledge
-    heartbeat.md    ← periodic self-check guidance
 ```
 
-**`projects/*.app/agents/` = task agents (project-facing)**
+### `projects/*.app/agents/` — task agents
 
-Each task agent is owned by a project-app. The app assigns work through
-the task tree. The agent does bounded tasks and reports back.
+Each app declares the agents it needs. An app can have multiple agents
+with different models for different roles — the planner dispatches to the
+right agent based on what the task needs.
 
 ```
 projects/
   may-agent.app/agents/
-    dev/            ← platform implementation
-    arc/            ← system analysis, KE entries
+    platform-owner/   ← opus — deep platform reasoning, project ownership
+    platform-dev/     ← sonnet — fast implementation work
   evaluation.app/agents/
-    evaluator/      ← session evaluation
+    evaluator/        ← gpt-5.4 — evaluation scoring
   aks-rp-e2e.app/agents/
-    aks-explorer/   ← AKS test execution
+    aks-explorer/     ← opus — spec/replay design and execution
   scout-knowledge-lib.app/agents/
-    scout/          ← research and knowledge
+    scout/            ← opus — research and knowledge synthesis
 ```
+
+An app chooses how many agents it needs and which models they use. Deep
+reasoning tasks go to opus. Fast bulk work goes to sonnet. Adversarial
+review goes to a different model for independent perspective. This is a
+project-local decision — infra just runs whatever agent the app declares.
+
+### What about dev, arc, and others?
+
+The current `agents/` directory has many standalone agents (dev, arc, amy,
+bob, coach, judge, master, optimizer, qa, tech-lead). These should be
+assessed:
+
+- **Active and project-useful** → move to the app that uses them
+  (e.g., dev → may-agent.app/agents/platform-dev/)
+- **Retired / inactive** → archive or remove
+- **Shared utility** → if genuinely needed by multiple apps, the app that
+  dispatches can call any registered agent by name. The agent identity
+  can live in whichever app most often uses it.
+
+The goal: `agents/` contains only May. Everything else is project-local.
+
+## May's Two Roles
+
+May is the human's deputy — responsible for the whole system, not one
+project. She serves two roles through separate sessions:
+
+```
+Chat-May     ← persistent REPL, always responsive to human
+Deputy-May   ← system-wide judgment via infra handlers (escalation,
+               metric triage, ops health)
+```
+
+Same agent identity, same AGENTS.md. Different sessions that never block
+each other.
+
+**May does not own any project.** Each project has its own domain-specific
+owner agent. may-agent.app's owner is `platform-owner`, not May. May is
+everyone's boss — she oversees, steers, escalates, and talks to the human.
+
+**May's background work is system-level, not project-level.** Escalation
+handling, metric triage, and ops health reviews run through infra handlers
+(metric-alert-reactor, escalation, session-recovery) because they're
+system-wide responsibilities. They don't need to route through
+may-agent.app workflows — they're the default owner path in the
+ownership chain.
+
+### Escalation chain
+
+```
+Worker can't resolve
+  → problem-solver investigates (project-local)
+  → planner judges (project owner agent)
+  → planner can't resolve
+  → escalates to May (infra escalation handler)
+  → Deputy-May reviews, judges, acts (job session)
+  → Deputy-May can't resolve
+  → surfaces in chat as notification / proactive mention
+  → human decides via Chat-May
+  → decision flows back down
+```
+
+**Nothing blocks the chat session except the human's own conversation.**
+Escalations and ops signals run as Deputy-May job sessions dispatched by
+infra handlers — completely separate from the chat REPL.
 
 ## Chat Session Design
 
@@ -73,7 +138,7 @@ class ChatSession {
   constructor() {
     this.agent = new Agent({
       initialState: { systemPrompt, model, tools },
-      // compaction via transformContext
+      transformContext,  // compaction when context grows
     });
   }
 
@@ -84,15 +149,15 @@ class ChatSession {
 ```
 
 **System prompt** — built for human conversation:
-- Who May is (identity)
-- What the human cares about (from context.md)
+- Who May is (identity from agents/may/AGENTS.md)
+- What the human cares about (from agents/may/context.md)
 - Current system state summary (projects, metrics, alerts)
-- NOT the full task-tree packet — that's for job sessions
+- NOT task-tree packets — that's for job sessions
 
 **Tools** — for human interaction:
 - System status (agents, sessions, metrics, projects)
 - Trigger actions (start spec run, advance project, escalate)
-- Delegate to task agents (fork/call)
+- Delegate to task agents (fork/call any registered agent)
 - Read project state (task trees, evidence, knowledge)
 - NOT `finish()` — chat doesn't finish
 
@@ -100,8 +165,8 @@ class ChatSession {
 - Task trees record decisions
 - Project.json records status
 - Metrics record measurements
-- The conversation transcript is temporary — important decisions flow into
-  the system through normal channels (task updates, events, config changes)
+- The conversation transcript is temporary — important decisions flow
+  into the system through normal channels (task updates, events, config)
 - Compaction summarizes old turns when context fills
 
 **Continuity across restarts** — when the daemon restarts:
@@ -110,68 +175,14 @@ class ChatSession {
 - Inject fresh system state summary (new)
 - The conversation continues with warm context
 
-## Migration: dev and arc → may-agent.app
-
-`dev` and `arc` currently live in `agents/` with heartbeats. They should
-move to `may-agent.app/agents/` as task agents:
-
-1. Create `projects/may-agent.app/agents/dev/` and `agents/arc/`
-2. Move agent.json, AGENTS.md, context.md, workflows/
-3. Add to may-agent.app schedules or let planner dispatch them
-4. Disable heartbeat-dev and heartbeat-arc cron entries
-5. Remove `agents/dev/` and `agents/arc/` (keep last-eval.md stubs)
-
-After migration, `agents/` contains only `may/` — the one chat agent.
-
-## Ownership and Escalation
-
-May serves two roles through separate sessions:
-
-```
-Chat-May  ← persistent REPL, always responsive to human
-Job-May   ← background work via may-agent.app workflows
-```
-
-Same agent identity, same AGENTS.md, same context.md. Different sessions.
-They never block each other.
-
-**Escalation chain:**
-
-```
-Worker can't resolve
-  → problem-solver investigates
-  → planner judges (project owner)
-  → planner can't resolve
-  → escalates to May (job session via may-agent.app)
-  → Job-May reviews, judges, acts
-  → Job-May can't resolve
-  → writes finding to task tree / emits escalation for human
-  → Chat-May surfaces it when human asks or proactively mentions it
-  → human decides via chat
-  → decision flows back down
-```
-
-**Nothing blocks the chat session except the human's own conversation.**
-Escalations, platform reviews, metric judgments, and ops health reviews
-all run as may-agent.app job sessions. The chat REPL stays idle and
-responsive.
-
-The chat session is the **top of the escalation chain** — where
-unresolvable issues land and human decisions enter the system. There is
-only one chat agent because there is one human at the top.
-
-**may-agent.app stays as-is** — it owns May's background work through
-schedules and workflow handlers (platform-review, ops-health-review,
-metric-alert-triage). The only change is the chat session is separated
-out as its own lifecycle, not another `manager.run()` call.
-
 ## What This Is Not
 
 - Not building a new chat framework — reusing pi-agent-core Agent as-is
 - Not replacing the manager — job sessions still use `manager.run()`
-- Not removing may-agent.app — it still owns May's background job work
 - Not adding memory infrastructure — system state is the memory
 - Not changing the agent model — still LLM + tools + context
+- Not removing may-agent.app — it still exists as the platform project,
+  just with its own owner agent instead of May
 
 ## Implementation Order
 
@@ -179,6 +190,11 @@ out as its own lifecycle, not another `manager.run()` call.
 2. Build chat-specific system prompt (situational, not task-oriented)
 3. Build chat-specific tool set (status, steering, delegation)
 4. Add compaction support (via pi-agent-core `transformContext`)
-5. Migrate dev and arc to may-agent.app/agents/
-6. Remove heartbeat-dev and heartbeat-arc
-7. Clean `agents/` to contain only `may/`
+5. Create `platform-owner` agent in may-agent.app, transfer ownership
+6. Migrate dev/arc to may-agent.app or assess for retirement
+7. Disable heartbeat-dev and heartbeat-arc
+8. Move Deputy-May background work from may-agent.app workflows to
+   infra escalation/ops handlers
+9. Assess remaining `agents/` (amy, bob, coach, etc.) for migration
+   or retirement
+10. Clean `agents/` to contain only `may/`
