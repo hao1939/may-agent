@@ -76,4 +76,4 @@ new files under `agents/arc/workspace/analysis/` and `agents/arc/workspace/propo
 - **In-place Updates**: When new information arrives on an existing topic, edit the existing entry rather than creating `_v2` or date-stamped duplicates. One file per topic = single source of truth.
 - **Source-Grounded Claims**: When writing or reviewing knowledge entries, major claims/trends/patterns must include a source reference (URL, repo link, post ID). Unsourced synthesis compounds hallucinations across sessions.
 
-- Convention: All fork/call delegations must follow contracts/delegation-memo-convention.md (goal, context_files, success_criteria, scope_boundary required).
+
