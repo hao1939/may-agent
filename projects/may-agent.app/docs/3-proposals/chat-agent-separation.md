@@ -212,7 +212,45 @@ class ChatSession {
   of truth
 - Important decisions flow into the system through normal channels (task
   updates, events, config, project comments)
-- Compaction summarizes old turns when context fills
+- Compaction summarizes old turns when context fills (see below)
+
+**Compaction** — the chat transcript grows with every turn. Without
+compaction, it eventually exceeds the model's context window and the model
+returns empty responses, killing the session.
+
+Current implementation status:
+- ✅ Empty response detection and retry (one attempt)
+- ✅ Trim the empty assistant message before retry
+- ✅ Stay idle on retryable failure (don't kill session)
+- ❌ `transformContext` not wired — retry sends the same oversized context
+- ❌ No proactive compaction — context grows until it breaks
+
+The fix is `transformContext` on the chat Agent. It runs before every LLM
+call:
+
+```typescript
+const agent = new Agent({
+  transformContext: async (messages) => {
+    const tokenEstimate = estimateTokens(messages);
+    if (tokenEstimate < MODEL_CONTEXT_LIMIT * 0.8) return messages;
+    // Compact: summarize oldest turns, keep recent turns intact
+    return compactTranscript(messages, MODEL_CONTEXT_LIMIT * 0.6);
+  },
+});
+```
+
+Rules:
+- Compact only when needed — if the transcript fits, don't touch it
+- Compress the oldest turns first — the human expects recent context intact
+- Summarize, don't delete — "Earlier we discussed X, decided Y, you asked Z"
+- The retry doesn't need special compaction — `transformContext` runs before
+  the retry's LLM call automatically
+- One mechanism, runs every turn, no aggressive trimming
+
+This is the single missing piece between the current implementation and a
+working long-lived chat session. Without it, every conversation that exceeds
+~70 messages (280KB) enters an unrecoverable error loop: empty response →
+retry with same oversized context → same empty response → session dies.
 
 **Continuity across restarts** — when the daemon restarts:
 - Transcript is persisted to JSONL (existing mechanism)
