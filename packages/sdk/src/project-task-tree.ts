@@ -140,7 +140,18 @@ export type TaskTreeCompactResult = {
   archived: number;
   protected: number;
   archivePath?: string;
+  archivePaths?: string[];
   remainingTotal: number;
+  parentId?: string;
+  archivedTaskIds?: string[];
+};
+
+export type RollupParentInput = {
+  parentId: string;
+  summary: string;
+  taskIds?: string[];
+  limit?: number;
+  reason?: string;
 };
 
 export type CreateTaskInput = {
@@ -452,8 +463,220 @@ export function repairTaskTreeRollups(config: ToolConfig): TaskTreeRepairResult 
   });
 }
 
-function compactArchiveName(): string {
-  return `done-leaves-${new Date().toISOString().replace(/\D/g, "").slice(0, 14)}.json`;
+function compactArchiveStamp(): string {
+  return new Date().toISOString().replace(/\D/g, "").slice(0, 17);
+}
+
+function contextObject(task: TaskNode): Record<string, unknown> {
+  return task.context && typeof task.context === "object" && !Array.isArray(task.context) ? task.context : {};
+}
+
+function dependencyReferences(tree: TaskTree): Set<string> {
+  return new Set(Object.values(tree.tasks).flatMap((task) => normalizeStringArray(task.depends_on)));
+}
+
+function taskDepth(tree: TaskTree, task: TaskNode): number {
+  let depth = 0;
+  let current: TaskNode | undefined = task;
+  const seen = new Set<string>();
+  while (current?.parent_id && tree.tasks[current.parent_id] && !seen.has(current.id)) {
+    seen.add(current.id);
+    depth++;
+    current = tree.tasks[current.parent_id];
+  }
+  return depth;
+}
+
+function isSafeDoneLeaf(tree: TaskTree, task: TaskNode | undefined, dependencyRefs: Set<string>): task is TaskNode {
+  return Boolean(
+    task && task.id !== tree.root_task_id && isLeaf(task) && task.status === "done" && !dependencyRefs.has(task.id),
+  );
+}
+
+function writeCompactArchive(input: {
+  config: ToolConfig;
+  reason: string;
+  tasks: TaskNode[];
+  parentId?: string;
+  summary?: string;
+}): string {
+  const archiveDir = join(input.config.appDir, "tasks", "archive");
+  const archiveStamp = compactArchiveStamp();
+  let archiveRelPath = join("tasks", "archive", `done-leaves-${archiveStamp}.json`);
+  let archivePath = join(input.config.appDir, archiveRelPath);
+  let attempt = 1;
+  while (existsSync(archivePath)) {
+    archiveRelPath = join("tasks", "archive", `done-leaves-${archiveStamp}-${attempt}.json`);
+    archivePath = join(input.config.appDir, archiveRelPath);
+    attempt++;
+  }
+  mkdirSync(archiveDir, { recursive: true });
+  writeFileSync(
+    archivePath,
+    `${JSON.stringify(
+      {
+        version: 1,
+        generated_at: new Date().toISOString(),
+        reason: input.reason,
+        parent_id: input.parentId,
+        summary: input.summary,
+        archived: input.tasks.length,
+        tasks: input.tasks,
+      },
+      null,
+      2,
+    )}\n`,
+    "utf-8",
+  );
+  return archiveRelPath;
+}
+
+function recordParentArchive(input: {
+  parent: TaskNode;
+  archiveRelPath: string;
+  count: number;
+  summary?: string;
+  reason?: string;
+  taskIds?: string[];
+  now: string;
+}): void {
+  const context = contextObject(input.parent);
+  const existingCount = typeof context.archived_done_leaf_count === "number" ? context.archived_done_leaf_count : 0;
+  const existingArchives = Array.isArray(context.rollup_archives) ? context.rollup_archives : [];
+  input.parent.context = {
+    ...context,
+    ...(input.summary ? { rollup_summary: input.summary } : {}),
+    archived_done_leaf_count: existingCount + input.count,
+    rollup_archives: [
+      {
+        archive: input.archiveRelPath,
+        archived: input.count,
+        at: input.now,
+        ...(input.summary ? { summary: input.summary } : {}),
+        ...(input.reason ? { reason: input.reason } : {}),
+        ...(input.taskIds ? { task_ids: input.taskIds } : {}),
+      },
+      ...existingArchives,
+    ].slice(0, 5),
+  };
+  input.parent.trace = {
+    ...(input.parent.trace ?? {}),
+    rolled_up_at: input.now,
+    rolled_up_by: "task-tree-tool",
+  };
+}
+
+export function rollupParent(config: ToolConfig, input: RollupParentInput): TaskTreeCompactResult {
+  const summary = input.summary.trim();
+  if (!summary) throw new Error("Rollup summary cannot be empty");
+  return withTreeLock(config, () => {
+    const tree = readTaskTree(config);
+    const parent = tree.tasks[input.parentId];
+    if (!parent) throw new Error(`Parent task not found: ${input.parentId}`);
+
+    const childIds = normalizeStringArray(parent.children);
+    const dependencyRefs = dependencyReferences(tree);
+    const requestedIds = [...new Set(input.taskIds ?? [])];
+    const selectedIds = requestedIds.length
+      ? requestedIds
+      : childIds
+          .filter((childId) => {
+            const task = tree.tasks[childId];
+            return task && isLeaf(task) && task.status === "done" && !dependencyRefs.has(task.id);
+          })
+          .slice(0, Math.max(0, input.limit ?? 200));
+
+    const selected: TaskNode[] = [];
+    const protectedCount = childIds.filter((childId) => {
+      const task = tree.tasks[childId];
+      return task && isLeaf(task) && task.status === "done" && dependencyRefs.has(task.id);
+    }).length;
+
+    for (const taskId of selectedIds) {
+      const task = tree.tasks[taskId];
+      if (!task) throw new Error(`Task not found: ${taskId}`);
+      if (task.parent_id !== parent.id) throw new Error(`Task ${taskId} is not a child of ${parent.id}`);
+      if (!isLeaf(task)) throw new Error(`Task ${taskId} is not a leaf`);
+      if (task.status !== "done") throw new Error(`Task ${taskId} is ${task.status}, not done`);
+      if (dependencyRefs.has(task.id)) throw new Error(`Task ${taskId} is still referenced by a dependency`);
+      selected.push(task);
+    }
+
+    if (selected.length === 0) {
+      const now = new Date().toISOString();
+      const context = contextObject(parent);
+      parent.context = {
+        ...context,
+        rollup_summary: summary,
+      };
+      parent.trace = {
+        ...(parent.trace ?? {}),
+        rolled_up_at: now,
+        rolled_up_by: "task-tree-tool",
+      };
+      saveTaskTreeWithKanbanSnapshot(config, tree);
+      appendToolJournal(config, {
+        kind: "task_tree_parent_rolled_up",
+        parent_id: parent.id,
+        archived: 0,
+        summary,
+        reason: input.reason,
+      });
+      return {
+        changed: true,
+        archived: 0,
+        protected: protectedCount,
+        parentId: parent.id,
+        archivedTaskIds: [],
+        remainingTotal: Object.keys(tree.tasks).length,
+      };
+    }
+
+    const archiveRelPath = writeCompactArchive({
+      config,
+      reason: input.reason ?? "owner rolled up completed child tasks",
+      parentId: parent.id,
+      summary,
+      tasks: selected,
+    });
+    const selectedIdSet = new Set(selected.map((task) => task.id));
+    parent.children = childIds.filter((childId) => !selectedIdSet.has(childId));
+    for (const task of selected) delete tree.tasks[task.id];
+
+    const now = new Date().toISOString();
+    recordParentArchive({
+      parent,
+      archiveRelPath,
+      count: selected.length,
+      summary,
+      reason: input.reason,
+      taskIds: selected.map((task) => task.id),
+      now,
+    });
+
+    const repair = applyTaskTreeRollups(tree);
+    saveTaskTreeWithKanbanSnapshot(config, tree);
+    appendToolJournal(config, {
+      kind: "task_tree_parent_rolled_up",
+      parent_id: parent.id,
+      archive: archiveRelPath,
+      archived: selected.length,
+      protected: protectedCount,
+      archived_task_ids: selected.map((task) => task.id),
+      repaired: repair.repaired,
+      summary,
+      reason: input.reason,
+    });
+    return {
+      changed: true,
+      archived: selected.length,
+      protected: protectedCount,
+      parentId: parent.id,
+      archivedTaskIds: selected.map((task) => task.id),
+      archivePath: archiveRelPath,
+      remainingTotal: Object.keys(tree.tasks).length,
+    };
+  });
 }
 
 export function compactDoneLeaves(
@@ -462,18 +685,82 @@ export function compactDoneLeaves(
 ): TaskTreeCompactResult {
   return withTreeLock(config, () => {
     const tree = readTaskTree(config);
-    const dependencyRefs = new Set(Object.values(tree.tasks).flatMap((task) => normalizeStringArray(task.depends_on)));
-    const candidates = Object.values(tree.tasks)
-      .filter(
+    const limit = Math.max(0, input.limit ?? 200);
+    const archivedTaskIds: string[] = [];
+    const archivePaths: string[] = [];
+    let protectedCount = 0;
+    let preferredNextTaskId: string | undefined;
+
+    while (archivedTaskIds.length < limit) {
+      const dependencyRefs = dependencyReferences(tree);
+      const candidates = Object.values(tree.tasks).filter((task) => isSafeDoneLeaf(tree, task, dependencyRefs));
+      protectedCount = Object.values(tree.tasks).filter(
         (task) =>
-          task.id !== tree.root_task_id && isLeaf(task) && task.status === "done" && !dependencyRefs.has(task.id),
-      )
-      .sort(taskSort);
-    const protectedCount = Object.values(tree.tasks).filter(
-      (task) => task.id !== tree.root_task_id && isLeaf(task) && task.status === "done" && dependencyRefs.has(task.id),
-    ).length;
-    const selected = candidates.slice(0, Math.max(0, input.limit ?? 200));
-    if (selected.length === 0) {
+          task.id !== tree.root_task_id && isLeaf(task) && task.status === "done" && dependencyRefs.has(task.id),
+      ).length;
+
+      if (candidates.length === 0) break;
+
+      const preferred = isSafeDoneLeaf(tree, tree.tasks[preferredNextTaskId ?? ""], dependencyRefs)
+        ? tree.tasks[preferredNextTaskId ?? ""]
+        : undefined;
+      const chosen =
+        preferred ?? candidates.sort((a, b) => taskDepth(tree, b) - taskDepth(tree, a) || taskSort(a, b))[0];
+      const chosenDepth = taskDepth(tree, chosen);
+      const selected = preferred
+        ? [preferred]
+        : candidates
+            .filter((task) => task.parent_id === chosen.parent_id && taskDepth(tree, task) === chosenDepth)
+            .sort(taskSort)
+            .slice(0, limit - archivedTaskIds.length);
+      if (selected.length === 0) break;
+
+      const archiveRelPath = writeCompactArchive({
+        config,
+        reason: input.reason ?? "compact done task leaves",
+        parentId: selected.every((task) => task.parent_id === selected[0]?.parent_id)
+          ? (selected[0]?.parent_id ?? undefined)
+          : undefined,
+        tasks: selected,
+      });
+      archivePaths.push(archiveRelPath);
+
+      const parentCounts = new Map<string, number>();
+      const parentTaskIds = new Map<string, string[]>();
+      for (const task of selected) {
+        const parentId = task.parent_id ?? "";
+        const parent = parentId ? tree.tasks[parentId] : undefined;
+        if (parent) {
+          parent.children = normalizeStringArray(parent.children).filter((childId) => childId !== task.id);
+          parentCounts.set(parent.id, (parentCounts.get(parent.id) ?? 0) + 1);
+          parentTaskIds.set(parent.id, [...(parentTaskIds.get(parent.id) ?? []), task.id]);
+        }
+        delete tree.tasks[task.id];
+        archivedTaskIds.push(task.id);
+      }
+
+      const now = new Date().toISOString();
+      for (const [parentId, count] of parentCounts) {
+        const parent = tree.tasks[parentId];
+        if (!parent) continue;
+        recordParentArchive({
+          parent,
+          archiveRelPath,
+          count,
+          reason: input.reason,
+          taskIds: parentTaskIds.get(parentId),
+          now,
+        });
+      }
+
+      applyTaskTreeRollups(tree);
+      const parentId = selected.length > 0 ? selected[0].parent_id : undefined;
+      const parent = parentId ? tree.tasks[parentId] : undefined;
+      const nextDependencyRefs = dependencyReferences(tree);
+      preferredNextTaskId = isSafeDoneLeaf(tree, parent, nextDependencyRefs) ? parent.id : undefined;
+    }
+
+    if (archivedTaskIds.length === 0) {
       return {
         changed: false,
         archived: 0,
@@ -482,72 +769,24 @@ export function compactDoneLeaves(
       };
     }
 
-    const archiveRelPath = join("tasks", "archive", compactArchiveName());
-    const archivePath = join(config.appDir, archiveRelPath);
-    mkdirSync(dirname(archivePath), { recursive: true });
-    writeFileSync(
-      archivePath,
-      `${JSON.stringify(
-        {
-          version: 1,
-          generated_at: new Date().toISOString(),
-          reason: input.reason ?? "compact done task leaves",
-          archived: selected.length,
-          tasks: selected,
-        },
-        null,
-        2,
-      )}\n`,
-      "utf-8",
-    );
-
-    const parentCounts = new Map<string, number>();
-    for (const task of selected) {
-      const parentId = task.parent_id ?? "";
-      const parent = parentId ? tree.tasks[parentId] : undefined;
-      if (parent) {
-        parent.children = normalizeStringArray(parent.children).filter((childId) => childId !== task.id);
-        parentCounts.set(parent.id, (parentCounts.get(parent.id) ?? 0) + 1);
-      }
-      delete tree.tasks[task.id];
-    }
-
-    for (const [parentId, count] of parentCounts) {
-      const parent = tree.tasks[parentId];
-      if (!parent) continue;
-      const context =
-        parent.context && typeof parent.context === "object" && !Array.isArray(parent.context) ? parent.context : {};
-      const existingCount = typeof context.archived_done_leaf_count === "number" ? context.archived_done_leaf_count : 0;
-      const existingArchives = Array.isArray(context.rollup_archives) ? context.rollup_archives : [];
-      parent.context = {
-        ...context,
-        archived_done_leaf_count: existingCount + count,
-        rollup_archives: [
-          {
-            archive: archiveRelPath,
-            archived: count,
-            at: new Date().toISOString(),
-          },
-          ...existingArchives,
-        ].slice(0, 5),
-      };
-    }
-
     const repair = applyTaskTreeRollups(tree);
     saveTaskTreeWithKanbanSnapshot(config, tree);
     appendToolJournal(config, {
       kind: "task_tree_done_leaves_compacted",
-      archive: archiveRelPath,
-      archived: selected.length,
+      archive: archivePaths[archivePaths.length - 1],
+      archives: archivePaths,
+      archived: archivedTaskIds.length,
       protected: protectedCount,
       repaired: repair.repaired,
       reason: input.reason,
     });
     return {
       changed: true,
-      archived: selected.length,
+      archived: archivedTaskIds.length,
       protected: protectedCount,
-      archivePath: archiveRelPath,
+      archivedTaskIds,
+      archivePath: archivePaths[archivePaths.length - 1],
+      archivePaths,
       remainingTotal: Object.keys(tree.tasks).length,
     };
   });
