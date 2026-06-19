@@ -216,6 +216,119 @@ When a parent becomes `done`, it must carry a useful summary of what the branch
 proved or learned. Do not hide useful milestones. Archive only low-value
 mechanical detail after the parent summary preserves the understanding.
 
+## Live Tree Hygiene
+
+The live task tree should stay focused and readable. It is the project owner's
+current thinking surface, not a permanent transcript of every retry, repair,
+rerun, and intermediate note. Full execution history belongs in runtime traces,
+journals, archives, and domain evidence files.
+
+Large projects should periodically tidy the tree during normal owner rollup:
+
+1. Review completed child work.
+2. Summarize durable understanding on the parent.
+3. Keep useful milestone children visible.
+4. Archive low-value done leaves that are fully represented by the parent
+   summary and evidence links.
+5. Continue planning from the cleaner tree.
+
+This is an owner decision. The task-tree tool provides safe mechanics and
+integrity checks, but it must not decide which project facts matter.
+
+### What Stays Live
+
+Keep these nodes in the live tree:
+
+- active work
+- backlog work
+- review work awaiting owner judgment
+- blocked work with an exact blocker and resume condition
+- done milestone tasks that carry durable knowledge
+- branch parents that summarize completed work and remaining gaps
+- done leaves referenced by active dependencies
+
+### What Can Be Archived
+
+After parent rollup preserves the useful meaning, archive low-value done leaves
+such as:
+
+- duplicate retry leaves
+- superseded attempts
+- mechanical "write note" or "rerun after repair" leaves
+- repeated source-narrowing or cleanup steps whose final conclusion is already
+  captured on the parent
+- transient worker process detail that is already available in session/runtime
+  traces
+
+Archiving is not deletion of knowledge. The archive must keep the original task
+records recoverable, and the parent must link to the archive path and record how
+many children were folded away.
+
+### Rollup Summary Contract
+
+Before archiving completed child leaves under a parent, the owner should make
+the parent summary answer:
+
+- what was proven or learned
+- which evidence files or model/spec/replay artifacts now carry the durable
+  result
+- which gaps remain open
+- which blockers remain, with exact resume condition
+- what the next useful action is
+
+This summary is what future planner and worker sessions should read first. They
+should not need to rediscover the same context by scanning dozens of historical
+children.
+
+### Tool Contract
+
+The task-tree tool may provide branch-aware hygiene operations such as:
+
+```typescript
+tree.rollup(parentId, summary);
+tree.compactDone(parentId, { archiveDoneChildren: true });
+```
+
+The tool should enforce only structural safety:
+
+- never archive active, review, backlog, or blocked leaves
+- never archive a done leaf that is still referenced by a dependency unless the
+  dependency is first rewritten by the owner
+- never archive children unless the parent keeps a summary and archive link
+- preserve parent/child integrity, root integrity, and kanban projections
+- write an audit journal entry with archive path, count, parent id, and reason
+
+The tool should not inspect domain content to decide whether a child is
+important. If the owner has not provided a useful parent summary, the tool should
+refuse the archive operation.
+
+### Planner Behavior
+
+Planner wakes should keep the packet small enough for reliable reasoning. The
+planner workflow may run cheap structural repair before building the packet. If
+the tree is too large, done-leaf count is high, or the planner recently timed
+out, the owner should be asked to do a bounded hygiene pass before deeper
+planning.
+
+The hygiene pass is still project work:
+
+- it should be visible as owner rollup, not hidden background deletion
+- it should prefer branch-by-branch compaction over arbitrary global pruning
+- it should leave the live tree more focused on current goals and blockers
+- it should not block urgent active worker completions or human steering
+
+Useful metrics for triggering hygiene:
+
+- total task count
+- done leaf count
+- archived done leaf count
+- planning packet size
+- planner timeout count
+
+These metrics are signals. A breach should wake the owner with a compact
+request such as: "tidy the task tree before continuing planning." The owner
+still decides the actual rollup.
+
 ## Human Steering
 
 Human feedback should attach to the closest relevant task node and wake the
