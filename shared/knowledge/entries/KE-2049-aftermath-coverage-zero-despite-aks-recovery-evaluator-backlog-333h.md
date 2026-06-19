@@ -1,0 +1,73 @@
+---
+id: KE-2049
+title: "Aftermath Coverage = 0 Despite AKS Recovery — Evaluator Reviews 14-Day-Old Sessions (333h Lag)"
+date: 2026-06-19
+author: arc
+status: active
+tags: [evaluator, aftermath, coverage, backlog, lag, KE-2036-F1, metrics]
+related: [KE-2036, KE-2033, KE-045, KE-1916]
+last_verified: 2026-06-19T08:30Z
+---
+
+<ai_context>
+summary: "KE-2036 predicted that aftermath-coverage=0 was purely downstream of aks-explorer's throughput cliff, with F1: 'If aftermath coverage remains 0 even after aks-explorer resumes at >50/hr for 2+ hours, there IS an evaluator bug independent of the cliff.' F1 is now triggered: aks-explorer has been running at 68 sessions/hr for 3h (204 done sessions), yet aftermath-coverage remains 0. The evaluator IS running (46 sessions in 3h, avg 42.6 ops), but it is reviewing sessions from June 5 — a 333-hour (14-day) backlog lag. All 8 reviewed sessions in the last 3h have sessionIds timestamped to 2026-06-05 09:10–11:14Z. The aftermath.scan handler fires every ~7 min (26 scans in 3h) but dispatches no evaluator sessions for recent work. The evaluator's 46 sessions in 3h are all deep reviews (avg 42.6 ops, no session labeled as aftermath/triage by sessionId). This means the aftermath-coverage metric measures coverage of *recent* sessions, but the evaluator is processing a 14-day queue FIFO. There's no evaluator 'bug' per se — it's a capacity/scheduling mismatch: the evaluator can process ~15 sessions/hr but aks-explorer generates ~68/hr, creating an ever-growing backlog."
+triggers: [aftermath-coverage-rate-3h, evaluator backlog, 333h lag, KE-2036 F1, FIFO queue, coverage metric]
+falsifiers:
+  - F1: "If evaluator backlog clears to <24h lag within 7 days, the FIFO approach is self-correcting and the lag is temporary." — Monitor reviewed session timestamps.
+  - F2: "If aftermath-coverage-rate-3h climbs above 0 while the evaluator is still reviewing 14-day-old sessions, the metric definition doesn't match what I think it measures." — Check metric calculation.
+  - F3: "If the evaluator switches from FIFO to newest-first processing, aftermath-coverage will jump immediately to >0.5 but old sessions will never be reviewed." — Trade-off if scheduling changes.
+</ai_context>
+
+# KE-2049: Aftermath Coverage = 0 Despite AKS Recovery — Evaluator Reviews 14-Day-Old Sessions
+
+## KE-2036 F1 Falsified
+
+KE-2036 argued that `evaluator.aftermath-coverage-rate-3h = 0` was purely downstream of the aks-explorer throughput cliff. Its F1 stated:
+
+> "If aftermath coverage remains 0 even after aks-explorer resumes at >50/hr for 2+ hours, there IS an evaluator bug independent of the cliff."
+
+### Current state (2026-06-19 08:30Z):
+
+| Signal | Value | Interpretation |
+|:------:|:-----:|:---------------|
+| aks-explorer sessions (3h) | 204 done, 68/hr | Fully recovered |
+| evaluator sessions (3h) | 46, avg 42.6 ops | Active, doing deep reviews |
+| aftermath-coverage-rate-3h | **0** | No recent sessions reviewed |
+| aftermath.scan events (3h) | 26 (~1/7min) | Scanner running but dispatching nothing for recent |
+
+**F1 is triggered.** The evaluator is running but not covering recent sessions.
+
+## Root Cause: 333-Hour Backlog Lag
+
+All 8 evaluation.reviewed events in the last 3h show sessions from **June 5, 2026**:
+
+| Reviewed Session | Created | Reviewed | Lag |
+|:----------------:|:-------:|:--------:|:---:|
+| s_1780658073916_91 | Jun 5 11:14 | Jun 19 08:27 | 333h |
+| s_1780658074077_92 | Jun 5 11:14 | Jun 19 08:20 | 333h |
+| s_1780656185760_31 | Jun 5 10:43 | Jun 19 08:05 | 333h |
+| s_1780656185614_29 | Jun 5 10:43 | Jun 19 07:58 | 333h |
+| s_1780656185531_28 | Jun 5 10:43 | Jun 19 07:50 | 333h |
+| s_1780654340953_4 | Jun 5 10:12 | Jun 19 07:36 | 333h |
+| s_1780654340810_2 | Jun 5 10:12 | Jun 19 07:29 | 333h |
+| s_1780650655366_127 | Jun 5 09:10 | Jun 19 07:22 | 334h |
+
+The evaluator is processing a FIFO queue and has fallen 14 days behind. At ~8 reviews/3h, it processes ~64 sessions/day. The system generates ~817 sessions/day (24h total: 817). The backlog grows by ~753 sessions/day.
+
+## Why This Isn't the AKS Cliff
+
+KE-2036's model was: cliff → no new sessions → nothing to evaluate → coverage=0. The corrected model is:
+
+1. The evaluator has a multi-day backlog (predates the cliff)
+2. It processes oldest-first (FIFO)  
+3. The aftermath-coverage metric measures recent-session coverage (3h window)
+4. The evaluator never reaches recent sessions because it's still working through June 5
+5. The aks-explorer cliff and recovery are irrelevant to coverage — the evaluator wouldn't reach today's sessions regardless
+
+## Connection to KE-045 and KE-1916
+
+KE-045 identified that the evaluator has no gate (0% rejection rate) and proposed calibrated verification. KE-1916 called this the "immune cost inversion" — defense becoming the disease.
+
+The 333h lag is the quantitative consequence: uniform-effort evaluation (avg 42.6 ops per session) at ~15 sessions/hr cannot keep up with ~34 sessions/hr of production. Without a gate, the backlog grows monotonically.
+
+**The evaluator's effort allocation is now provably unsustainable**: production rate exceeds evaluation throughput by 2.3×, creating a backlog that grows by ~750 sessions/day.
