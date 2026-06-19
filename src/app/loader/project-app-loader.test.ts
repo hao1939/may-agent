@@ -5,6 +5,7 @@ import { join } from "node:path";
 
 import { Cron } from "../cron.ts";
 import { EventBus } from "../event-bus.ts";
+import { closeDb, getDb } from "../../lib/requests.ts";
 import {
   inferProjectAppOwner,
   installProjectApps,
@@ -38,8 +39,23 @@ function writeApp(appDir: string, body: string): void {
   writeFileSync(join(appDir, "app.ts"), `export default ${body};\n`);
 }
 
+function writeWorkflow(appDir: string, name: string, body: string): void {
+  const workflowDir = join(appDir, "workflows");
+  mkdirSync(workflowDir, { recursive: true });
+  writeFileSync(join(workflowDir, `${name}.ts`), body);
+}
+
 function waitForMicrotasks(): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, 0));
+}
+
+async function waitUntil(predicate: () => boolean, timeoutMs = 1000): Promise<void> {
+  const start = Date.now();
+  while (Date.now() - start < timeoutMs) {
+    if (predicate()) return;
+    await new Promise((resolve) => setTimeout(resolve, 10));
+  }
+  throw new Error("timed out waiting for condition");
 }
 
 describe("project app loader", () => {
@@ -515,6 +531,99 @@ describe("project app loader", () => {
 
       expect(fired).toEqual(["sample-planner"]);
     } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it("runs project app workflow handlers through the workflow runtime", async () => {
+    const root = tempRoot();
+    const persistDir = join(root, ".state");
+    let cron: Cron | undefined;
+    try {
+      const projectsRoot = join(root, "projects");
+      const appDir = join(projectsRoot, "sample.app");
+      writeAgent(appDir, "owner", "sample-owner");
+      writeApp(
+        appDir,
+        `{
+        id: "sample",
+        workflowHandlers: [{
+          name: "sample-worker",
+          enabled: true,
+          on: ["project.work"],
+          handler: { workflow: "worker", task: "work", includeEvent: true }
+        }]
+      }`,
+      );
+      writeWorkflow(
+        appDir,
+        "worker",
+        `export const name = "worker";
+export async function execute(ctx: any) {
+  ctx.dispatchEvent("test.workflow.executed", { task: ctx.task });
+  return ctx.done("workflow module executed");
+}
+`,
+      );
+
+      const events: any[] = [];
+      const bus = new EventBus();
+      bus.subscribe((event) => {
+        events.push(event);
+      });
+      const agentCrons = new Map<string, Cron>();
+      const manager = {
+        hasAgent: () => true,
+        runAgent: () => {
+          throw new Error("raw agent session should not be used for workflow handler dispatch");
+        },
+      } as any;
+
+      await installProjectApps({
+        projectsRoot,
+        projectRoot: root,
+        persistDir,
+        agentsRoot: join(root, "agents"),
+        sharedRoot: join(root, "shared"),
+        manager,
+        bus,
+        agentCrons,
+      });
+
+      cron = agentCrons.get("sample-owner")!;
+      cron.subscribeToBus(bus);
+      cron.start();
+
+      bus.emit({
+        type: "project.work",
+        source: "test",
+        owner: "human:test",
+        data: { project: "sample" },
+      } as any);
+
+      await waitUntil(() =>
+        events.some(
+          (event) =>
+            event.type === "handler.workflow_dispatched" &&
+            event.data?.workflow === "worker" &&
+            event.data?.status === "done",
+        ),
+      );
+
+      const row = getDb(persistDir)
+        .prepare(
+          "SELECT workflow, projectId, status, result_summary, task FROM workflow_runs ORDER BY startedAt DESC LIMIT 1",
+        )
+        .get() as { workflow: string; projectId: string; status: string; result_summary: string; task: string };
+      expect(row.workflow).toBe("worker");
+      expect(row.projectId).toBe("sample");
+      expect(row.status).toBe("done");
+      expect(row.result_summary).toBe("workflow module executed");
+      expect(row.task).toContain('"type": "project.work"');
+      expect(events.some((event) => event.type === "test.workflow.executed")).toBe(true);
+    } finally {
+      cron?.stop();
+      closeDb(persistDir);
       rmSync(root, { recursive: true, force: true });
     }
   });

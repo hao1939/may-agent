@@ -91,7 +91,11 @@ export function createDaemonLifecycle(opts: {
     }
 
     setTimeout(() => {
-      try { opts.closeAllDbs(); } catch { /* best-effort */ }
+      try {
+        opts.closeAllDbs();
+      } catch {
+        /* best-effort */
+      }
       process.exit(0);
     }, 2000);
     setTimeout(() => process.kill(process.pid, "SIGKILL"), 5000).unref();
@@ -111,14 +115,15 @@ export function createDaemonLifecycle(opts: {
       appResult = await installProjectApps({
         projectsRoot: opts.loaderOpts.projectsRoot,
         projectRoot: opts.loaderOpts.projectRoot,
+        persistDir: opts.loaderOpts.persistDir,
+        agentsRoot: opts.loaderOpts.agentsRoot,
+        sharedRoot: opts.loaderOpts.sharedRoot,
         manager: opts.loaderOpts.manager,
         bus: opts.loaderOpts.bus,
         agentCrons: getAgentCrons(),
       });
     } catch (err) {
-      result.errors.push(
-        `[project-app] ${err instanceof Error ? err.message : String(err)}`,
-      );
+      result.errors.push(`[project-app] ${err instanceof Error ? err.message : String(err)}`);
     }
     let summary: string;
     if (result.errors.length > 0) {
@@ -132,9 +137,10 @@ export function createDaemonLifecycle(opts: {
       }
       summary = `[reload] ${parts.join(", ")}`;
     } else {
-      summary = appResult && appResult.installed.length > 0
-        ? `[reload] ${appResult.installed.length} project app(s), ${appResult.entries} trigger(s)`
-        : "[reload] No changes";
+      summary =
+        appResult && appResult.installed.length > 0
+          ? `[reload] ${appResult.installed.length} project app(s), ${appResult.entries} trigger(s)`
+          : "[reload] No changes";
     }
     // info events are forwarded to stdout by attachConsoleUI (chat/console
     // mode) or attachDaemonInfoLog (default daemon mode). See
@@ -154,15 +160,23 @@ export function createDaemonLifecycle(opts: {
       opts.bus.emit({ type: "info", message: "[signal] SIGHUP received (ignoring)" });
     });
     process.on("uncaughtException", (err) => {
-      try { console.error(`[fatal] Uncaught exception: ${err.message}\n${err.stack}`); } catch {}
-      try { opts.closeAllDbs(); } catch {}
+      try {
+        console.error(`[fatal] Uncaught exception: ${err.message}\n${err.stack}`);
+      } catch {}
+      try {
+        opts.closeAllDbs();
+      } catch {}
       process.exit(1);
     });
     process.on("unhandledRejection", (reason) => {
-      try { console.error(`[fatal] Unhandled rejection: ${reason}`); } catch {}
+      try {
+        console.error(`[fatal] Unhandled rejection: ${reason}`);
+      } catch {}
     });
     process.on("exit", (code) => {
-      try { opts.closeAllDbs(); } catch {}
+      try {
+        opts.closeAllDbs();
+      } catch {}
       try {
         opts.writeIdentity({
           status: code === 0 ? "done" : "error",

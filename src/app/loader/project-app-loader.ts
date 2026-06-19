@@ -4,7 +4,9 @@ import { basename, join, resolve } from "node:path";
 import type { SubagentManager } from "../../lib/index.js";
 import type { CronEntry } from "../../lib/cron-tool.js";
 import type { EventEnvelope } from "../../lib/handler-context.js";
+import { buildRuntimeCtx } from "../../lib/runtime-ctx.js";
 import { importRuntimeModule } from "../../lib/runtime-import.js";
+import { runWorkflowDirect } from "../../lib/workflow-tool.js";
 import { Cron } from "../cron.js";
 import type { AgentEvent, DeliveryResult, EventBus } from "../event-bus.js";
 
@@ -73,6 +75,9 @@ export interface ProjectAppDescriptor {
 export interface ProjectAppLoaderOptions {
   projectsRoot: string;
   projectRoot: string;
+  persistDir?: string;
+  agentsRoot?: string;
+  sharedRoot?: string;
   manager: SubagentManager;
   bus: EventBus;
   agentCrons: Map<string, Cron>;
@@ -117,6 +122,11 @@ function localAgents(appDir: string): Array<{ dirName: string; name: string }> {
     if (name) agents.push({ dirName: entry.name, name });
   }
   return agents;
+}
+
+function localAgentDir(appDir: string, agentName: string): string | undefined {
+  const match = localAgents(appDir).find((agent) => agent.name === agentName);
+  return match ? join(appDir, "agents", match.dirName) : undefined;
 }
 
 export function inferProjectAppOwner(appDir: string): string {
@@ -188,6 +198,43 @@ function normalizeEvent(event: Record<string, unknown>, defaults: { source: stri
         ),
       );
   return { type, source, owner, timestamp, data };
+}
+
+function requireWorkflowRuntimeOptions(opts: ProjectAppLoaderOptions): {
+  persistDir: string;
+  agentsRoot: string;
+  sharedRoot: string;
+} {
+  if (!opts.persistDir || !opts.agentsRoot || !opts.sharedRoot) {
+    throw new Error("Project app workflow handlers require persistDir, agentsRoot, and sharedRoot");
+  }
+  return {
+    persistDir: opts.persistDir,
+    agentsRoot: opts.agentsRoot,
+    sharedRoot: opts.sharedRoot,
+  };
+}
+
+function appWorkflowRuntimePaths(
+  opts: ProjectAppLoaderOptions,
+  descriptor: ProjectAppDescriptor,
+  agentName: string,
+): {
+  workflowDir: string;
+  projectWorkflowDir: string;
+  guardsDir: string;
+  sharedGuardsDir: string;
+} {
+  const runtime = requireWorkflowRuntimeOptions(opts);
+  const appAgentDir = localAgentDir(descriptor.appDir, agentName);
+  const globalAgentDir = join(runtime.agentsRoot, agentName);
+  const agentDir = appAgentDir ?? globalAgentDir;
+  return {
+    workflowDir: join(agentDir, "workflows"),
+    projectWorkflowDir: join(descriptor.appDir, "workflows"),
+    guardsDir: join(agentDir, "guards"),
+    sharedGuardsDir: join(runtime.sharedRoot, "guards"),
+  };
 }
 
 function flattenEvent(event: AgentEvent): Record<string, unknown> {
@@ -412,14 +459,46 @@ function installWorkflowHandlers(opts: ProjectAppLoaderOptions, cron: Cron, desc
     const includeEvent = workflow.includeEvent;
     const handlerName = handler.name;
     cron.registerHandler(handlerName, async (event?: EventEnvelope) => {
-      const task = includeEvent && event
-        ? `${taskText}\n\n## Trigger Event\n\`\`\`json\n${JSON.stringify(event, null, 2)}\n\`\`\``
-        : taskText;
-      const runId = `wr_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`;
-      const sessionId = opts.manager.runAgent(agentName, task, {
-        source: `workflow:${workflowName}`,
+      const runtime = requireWorkflowRuntimeOptions(opts);
+      const paths = appWorkflowRuntimePaths(opts, descriptor, agentName);
+      const task =
+        includeEvent && event
+          ? `${taskText}\n\n## Trigger Event\n\`\`\`json\n${JSON.stringify(event, null, 2)}\n\`\`\``
+          : taskText;
+      opts.bus.emit({
+        type: "handler.workflow_dispatched",
+        source: `agent:${agentName}`,
+        owner: `agent:${agentName}`,
+        data: {
+          handler: handlerName,
+          workflow: workflowName,
+          source: agentName,
+          projectId,
+          workflowRunId: null,
+          status: "started",
+        },
+      } as AgentEvent);
+      const runtimeCtx = buildRuntimeCtx({
+        bus: opts.bus,
+        persistDir: runtime.persistDir,
+        projectRoot: opts.projectRoot,
+        agentsRoot: runtime.agentsRoot,
+        sharedRoot: runtime.sharedRoot,
+        projectsRoot: opts.projectsRoot,
+        agentName,
+      });
+      const { result, runId } = await runWorkflowDirect({
+        workflowName,
+        task,
+        manager: opts.manager,
+        runtimeCtx,
+        agentName,
+        persistDir: runtime.persistDir,
+        workflowDir: paths.workflowDir,
+        projectWorkflowDir: paths.projectWorkflowDir,
+        guardsDir: paths.guardsDir,
+        sharedGuardsDir: paths.sharedGuardsDir,
         projectId,
-        workflowRunId: runId,
       });
       opts.bus.emit({
         type: "handler.workflow_dispatched",
@@ -431,8 +510,9 @@ function installWorkflowHandlers(opts: ProjectAppLoaderOptions, cron: Cron, desc
           source: agentName,
           projectId,
           workflowRunId: runId,
-          sessionId,
-          status: "dispatched",
+          status: result.type === "done" ? "done" : "blocked",
+          summary: result.type === "done" ? result.summary : undefined,
+          reason: result.type === "blocked" ? result.reason : undefined,
         },
       } as AgentEvent);
     });
