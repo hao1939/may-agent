@@ -341,6 +341,13 @@ CLI tasks are tracked like any other work:
   installed under `.state/.codex/skills` are available to May's delegated Codex
   workers. An explicit service-level `CODEX_HOME` may override this when a
   deployment wants a different skill home.
+- May can reuse one native CLI session per tool when it wants continuity. The
+  first version intentionally stays simple: `reuseSession: true` stores and
+  resumes `claude` and `codex` session ids in
+  `.state/cli-sessions/may.json`. Explicit `resumeSessionId` still wins for a
+  single request. Reuse helps the CLI worker retain May-agent conventions and
+  prior diagnostics, but every turn still needs a sharp task packet and a
+  concrete expected artifact.
 - Visible in a CLI task read model and linked from sessions/tasks/UI
 - Duration, terminal state, stdout/stderr tail, and structured result recorded
 - Pair tracker detects orphans (started but never completed)
@@ -370,6 +377,26 @@ Claude patch-mode worker jobs in this trusted container, the runner uses
 `bypassPermissions`/`--dangerously-skip-permissions`; otherwise Claude can stop
 on write approval and leave the async job stuck.
 
+May should not require users to know the exact tool call. Natural steering is
+enough. Phrases such as "ask Codex", "ask Claude", "get a second opinion",
+"compare Claude and Codex", "delegate this investigation", "use a CLI worker",
+"have Codex review this", or "let Claude propose the patch" should make May
+consider `run_cli_agent`. May still owns the decision: if the request is quick
+or already answerable from current context, May can answer directly and explain
+that no worker was needed. If the request benefits from longer independent
+analysis, May should create a focused packet and delegate it.
+
+Default routing:
+
+| User intent | May behavior |
+|-------------|--------------|
+| "ask Claude/Codex ..." | Use that tool with `reuseSession: true` unless the user asks for a fresh session |
+| "second opinion" | Use one CLI worker, usually the one best suited to the task |
+| "compare Claude and Codex" | Launch one bounded task for each tool, then May compares the artifacts |
+| "deep dive/investigate" | Use a CLI worker only after narrowing the question and expected artifact |
+| "review this code/design" | Use read-only review mode |
+| "propose/try a patch" | Use patch mode, preferably in an isolated worktree |
+
 ### Tool shape
 
 ```typescript
@@ -388,6 +415,7 @@ on write approval and leave the async job stuck.
     outputSchema?: string,   // JSON schema path/name for structured result
     worktree?: string,       // required or auto-created for patch mode
     resumeSessionId?: string // optional native Claude/Codex session id
+    reuseSession?: boolean   // resume/store May's default session for this tool
   }
 }
 ```

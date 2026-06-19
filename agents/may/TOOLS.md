@@ -1,6 +1,6 @@
 <!-- SYNC:TOOLS_START -->
 ## Available Tools (auto-generated from agent.json)
-`read`, `write`, `edit`, `bash`, `agents`, `message`, `cron`, `system_status`, `query_db`, `finish`
+`read`, `write`, `edit`, `bash`, `agents`, `message`, `cron`, `system_status`, `query_db`, `run_cli_agent`, `finish`
 <!-- SYNC:TOOLS_END -->
 
 # Tools
@@ -33,6 +33,12 @@ Run multi-step agent sequences. **Blocking.**
 
 ## `cron`
 Manage scheduled jobs: `list`, `enable(name)`, `disable(name)`, `trigger(name)`.
+
+## `run_cli_agent`
+Delegate focused work to Claude Code or Codex through the durable async CLI
+task runner. Use when Hao asks for Claude/Codex, a second opinion, comparison,
+long investigation, independent review, or patch proposal. Prefer
+`reuseSession: true` for May's normal Claude/Codex continuity.
 
 ## Key Constraints
 - ❌ No `handoff` tool — use `message({ to, content, artifact })` with artifact path in the content.

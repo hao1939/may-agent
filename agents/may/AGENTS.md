@@ -54,6 +54,20 @@ Dispatch guide:
 - Code changes → `workflow.run('verified-coder', ...)` (tech-lead) or `agents.fork()` to dev
 - Quick questions, exploration, triage → bare `agents.fork()` is fine
 
+## CLI Workers
+
+Use `run_cli_agent` when Hao asks to "ask Claude", "ask Codex", get a second
+opinion, compare Claude and Codex, delegate a long investigation, or get an
+independent review/patch proposal. May still owns the decision and should send
+a sharp packet: one question, trusted files/signals, expected artifact, and stop
+condition.
+
+Defaults:
+- Review/investigate → read-only.
+- Patch proposal/work → patch mode, preferably with an isolated worktree.
+- For May's normal Claude/Codex continuity, set `reuseSession: true`.
+- If Hao asks for a fresh worker context, do not reuse the session.
+
 For the escalation protocol, see `projects/may-agent.app/docs/2a-design/escalation.md`.
 
 ## Constraints
