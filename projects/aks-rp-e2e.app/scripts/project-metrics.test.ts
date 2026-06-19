@@ -284,6 +284,29 @@ describe("project metrics", () => {
     );
   });
 
+  test("suppresses no-work alert when project lifecycle is explicitly blocked", async () => {
+    const fixture = await makeFixture();
+    await writeTree(fixture.appDir, { session_id: "s_done" });
+    const treePath = join(fixture.appDir, "tasks", "tree.json");
+    const tree = JSON.parse(await Bun.file(treePath).text());
+    tree.project_lifecycle = "blocked";
+    tree.active_task_id = null;
+    tree.active_task_ids = [];
+    tree.tasks.project.state = "blocked";
+    tree.tasks["active-task"].state = "done";
+    await writeFile(treePath, `${JSON.stringify(tree, null, 2)}\n`);
+
+    writeSession(fixture.dbPath, {
+      sessionId: "s_done",
+      status: "done",
+      startedAt: Date.now() - 10_000,
+    });
+
+    expect(
+      await metricValue(fixture, "aks-rp-e2e.task.no-work-with-gaps"),
+    ).toBe("0");
+  });
+
   test("counts execute-mode result files as live runs even when dryRun is absent", async () => {
     const fixture = await makeFixture();
     await writeTree(fixture.appDir, { session_id: "s_running" });

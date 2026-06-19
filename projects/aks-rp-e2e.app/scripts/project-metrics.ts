@@ -245,9 +245,11 @@ function taskCounts() {
     projectClosed:
       tree.project_lifecycle === "closed" ||
       tree.project_lifecycle === "review" ||
-      // Suppress capacity/starvation alerts when project root is accepted/reviewed
+      tree.project_lifecycle === "blocked" ||
+      // Suppress no-work/capacity alerts when the whole project is explicitly
+      // non-executable (closed/reviewed/blocked) at the root.
       (tree.tasks?.project != null &&
-        ["review", "done", "accepted"].includes(
+        ["review", "done", "accepted", "blocked"].includes(
           tree.tasks.project.state ?? tree.tasks.project.status ?? "",
         )),
   };
