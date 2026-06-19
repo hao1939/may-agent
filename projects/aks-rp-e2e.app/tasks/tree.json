@@ -1,7 +1,7 @@
 {
   "version": 2,
   "project": "aks-rp-e2e",
-  "updated_at": "2026-06-18T12:18:59.422Z",
+  "updated_at": "2026-06-19T05:56:04.248Z",
   "project_lifecycle": "active",
   "root_task_id": "project",
   "active_task_id": "rp-nodepool-trio-output-ownership-attach-and-checkpoint-20260618",
@@ -16,7 +16,8 @@
         "planner-context-quality",
         "go-e2ev3-total-coverage-closure-20260617",
         "vm-agentpool-pipeline-replacement-focus-refresh-20260617",
-        "vm-prerelease-feature-set-replacement-20260617"
+        "vm-prerelease-feature-set-replacement-20260617",
+        "problem-result-escalation-leak"
       ],
       "parent_id": null,
       "priority": "P1",
@@ -120489,7 +120490,7 @@
     "vm-prerelease-autoscaling-row127-agentpool-ops-canonical-branch-scout-20260618": {
       "id": "vm-prerelease-autoscaling-row127-agentpool-ops-canonical-branch-scout-20260618",
       "parent_id": "feature-knowledge-and-specs",
-      "state": "backlog",
+      "state": "active",
       "kind": "domain_leaf",
       "priority": "P2",
       "owner": "aks-explorer",
@@ -120509,13 +120510,24 @@
       "depends_on": [],
       "trace": {
         "created_at": "2026-06-18T12:18:59.092Z",
-        "created_by": "task-tree-tool"
-      }
+        "created_by": "task-tree-tool",
+        "promoted_at": "2026-06-19T05:55:06.078Z",
+        "promoted_by": "task-tree-tool",
+        "current_attempt_id": "a_vm-prerelease-autoscaling-row127-agentpool-ops-canonical-branch-scout-20260618_20260619055603",
+        "assigned_at": "2026-06-19T05:56:03.836Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vm-prerelease-autoscaling-row127-agentpool-ops-canonical-branch-scout-20260618"
+      },
+      "session_id": "s_task_vm-prerelease-autoscaling-row127-agentpool-ops-canonical-branch-scout-20260618",
+      "session_history": [
+        "s_task_vm-prerelease-autoscaling-row127-agentpool-ops-canonical-branch-scout-20260618"
+      ]
     },
     "vm-prerelease-autoscaling-row128-defaulting-canonical-branch-scout-20260618": {
       "id": "vm-prerelease-autoscaling-row128-defaulting-canonical-branch-scout-20260618",
       "parent_id": "feature-knowledge-and-specs",
-      "state": "backlog",
+      "state": "active",
       "kind": "domain_leaf",
       "priority": "P2",
       "owner": "aks-explorer",
@@ -120535,13 +120547,24 @@
       "depends_on": [],
       "trace": {
         "created_at": "2026-06-18T12:18:59.253Z",
-        "created_by": "task-tree-tool"
-      }
+        "created_by": "task-tree-tool",
+        "promoted_at": "2026-06-19T05:55:06.078Z",
+        "promoted_by": "task-tree-tool",
+        "current_attempt_id": "a_vm-prerelease-autoscaling-row128-defaulting-canonical-branch-scout-20260618_20260619055604",
+        "assigned_at": "2026-06-19T05:56:04.045Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vm-prerelease-autoscaling-row128-defaulting-canonical-branch-scout-20260618"
+      },
+      "session_id": "s_task_vm-prerelease-autoscaling-row128-defaulting-canonical-branch-scout-20260618",
+      "session_history": [
+        "s_task_vm-prerelease-autoscaling-row128-defaulting-canonical-branch-scout-20260618"
+      ]
     },
     "vm-prerelease-autoscaling-row129-resetting-canonical-branch-scout-20260618": {
       "id": "vm-prerelease-autoscaling-row129-resetting-canonical-branch-scout-20260618",
       "parent_id": "feature-knowledge-and-specs",
-      "state": "backlog",
+      "state": "active",
       "kind": "domain_leaf",
       "priority": "P2",
       "owner": "aks-explorer",
@@ -120561,13 +120584,49 @@
       "depends_on": [],
       "trace": {
         "created_at": "2026-06-18T12:18:59.416Z",
-        "created_by": "task-tree-tool"
-      }
+        "created_by": "task-tree-tool",
+        "promoted_at": "2026-06-19T05:55:06.078Z",
+        "promoted_by": "task-tree-tool",
+        "current_attempt_id": "a_vm-prerelease-autoscaling-row129-resetting-canonical-branch-scout-20260618_20260619055604",
+        "assigned_at": "2026-06-19T05:56:04.242Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vm-prerelease-autoscaling-row129-resetting-canonical-branch-scout-20260618"
+      },
+      "session_id": "s_task_vm-prerelease-autoscaling-row129-resetting-canonical-branch-scout-20260618",
+      "session_history": [
+        "s_task_vm-prerelease-autoscaling-row129-resetting-canonical-branch-scout-20260618"
+      ]
+    },
+    "problem-result-escalation-leak": {
+      "id": "problem-result-escalation-leak",
+      "parent_id": "project",
+      "state": "backlog",
+      "kind": "work",
+      "priority": "P1",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Problem-solver results (resolved/escalated/unknown) should be consumed by the planner in the owner workflow, not leak out as top-level escalation events. The planner should reconcile them into the task tree — retry, accept, block, or supersede the affected task branch.",
+      "context": {
+        "problem": "19 of 33 pending escalations were actually successful work results from the problem-solver. They reported as escalation.created because project.problem.unknown/escalated events bypass the planner and leak to the escalation handler.",
+        "escalation_chain": "worker → problem-solver → planner → may → human. Each level handles what it can. Currently the planner doesn't consume problem results, so they skip straight to may/human escalation.",
+        "fix_direction": "The app's event routing (app.ts onEvent or a workflowHandler) should handle project.problem.resolved/escalated/unknown by waking the planner with the result context. The planner reconciles: retry affected tasks (resolved), mark blocker (escalated), or investigate (unknown). Only if the planner can't resolve should it escalate further.",
+        "evidence": "triage-2026-06-19: 19 of 33 pending escalations were aks-explorer work results (wrote evidence/archive/...) not real human-needing emergencies."
+      },
+      "acceptance": [
+        "project.problem.resolved/escalated/unknown events are consumed by the planner workflow",
+        "Planner reconciles problem results into the task tree (retry, block, supersede)",
+        "Only genuinely unresolvable problems reach may or human as escalations",
+        "Escalation.pending-count stays near zero during normal operation"
+      ]
     }
   },
   "active_task_ids": [
     "rp-nodepool-trio-output-ownership-attach-and-checkpoint-20260618",
-    "vm-prerelease-autoscaling-row125-service-principal-contradiction-reconcile-20260618"
+    "vm-prerelease-autoscaling-row125-service-principal-contradiction-reconcile-20260618",
+    "vm-prerelease-autoscaling-row127-agentpool-ops-canonical-branch-scout-20260618",
+    "vm-prerelease-autoscaling-row128-defaulting-canonical-branch-scout-20260618",
+    "vm-prerelease-autoscaling-row129-resetting-canonical-branch-scout-20260618"
   ],
   "archive": {
     "kms-v2-managed-hsm-staging-20260611": {
