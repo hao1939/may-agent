@@ -822,21 +822,29 @@ export class EventBus {
     this.deliveryRecorder = fn;
   }
 
-  /** Emit an event. Runs "first" subscribers (persistence) before "normal" (handlers/UI). */
+  /** Emit an event. Runs "first" subscribers (persistence) before "normal" (handlers/UI).
+   *
+   *  IMPORTANT: All subscribers are always invoked regardless of delivery status.
+   *  The delivery result records which subscriber "claimed" the event for persistence
+   *  tracking, but does NOT gate execution of subsequent subscribers. Multiple cron
+   *  instances (e.g. May's session-recovery + evaluator's evaluation-aftermath) must
+   *  all see bus events even when one claims delivery first. */
   emit(event: AgentEvent): void {
     this.emitDepth++;
     let delivery: DeliveryResult | undefined;
     try {
       for (const fn of this.firstSubscribers) {
         try {
-          delivery ??= normalizeDeliveryResult(fn(event));
+          const result = normalizeDeliveryResult(fn(event));
+          delivery ??= result;
         } catch (err) {
           this.reportSubscriberFailure(event, "first", err);
         }
       }
       for (const fn of this.normalSubscribers) {
         try {
-          delivery ??= normalizeDeliveryResult(fn(event));
+          const result = normalizeDeliveryResult(fn(event));
+          delivery ??= result;
         } catch (err) {
           /* subscriber errors never break the bus */
           this.reportSubscriberFailure(event, "normal", err);
