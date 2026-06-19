@@ -125,6 +125,22 @@ export interface ClosedLoopStewardContext {
   recentStewardRuns: Record<string, unknown>[];
 }
 
+export interface EventDeliveryHealthQuery {
+  now?: number;
+  lookbackMs?: number;
+  limit?: number;
+}
+
+export interface EventDeliveryHealth {
+  now: number;
+  since: number;
+  ownerInboxOpenCount: number;
+  unhandledEvents: Record<string, unknown>[];
+  overduePendingEvents: Record<string, unknown>[];
+  orphanPairs: Record<string, unknown>[];
+  overdueOpenPairs: Record<string, unknown>[];
+}
+
 export interface HeartbeatContextQuery {
   agent: string;
   now?: number;
@@ -175,15 +191,23 @@ export interface QueryAPI {
   metricAlertContext(filter: MetricAlertContextQuery): MetricAlertContext;
   metricAlertReactorState(filter: MetricAlertReactorStateQuery): MetricAlertReactorState;
   closedLoopStewardContext(filter?: ClosedLoopStewardContextQuery): ClosedLoopStewardContext;
+  eventDeliveryHealth(filter?: EventDeliveryHealthQuery): EventDeliveryHealth;
   heartbeatContext(filter: HeartbeatContextQuery): HeartbeatContext;
   evaluatorDeepEvalScan(filter?: EvaluatorDeepEvalScanQuery): EvaluatorDeepEvalScanContext;
   evaluatorAftermathContext(filter: EvaluatorAftermathContextQuery): EvaluatorAftermathContext;
   sql(sql: string, params?: unknown[], opts?: QueryOptions): QueryResult;
 
   /**
-   * Mark inbox message events as handled after a heartbeat/session consumes them.
-   * Transitions events from status='pending' to status='handled'.
+   * Record that an owner review acted on inbox-routed events.
+   * Emits follow-up events and closes owner-inbox pairs. During migration it
+   * also marks legacy status='pending' rows as handled.
    * Returns the number of rows updated.
+   */
+  reviewInboxEvents(eventIds: number[], reviewedBy?: string): number;
+
+  /**
+   * Compatibility alias for reviewInboxEvents().
+   * New code should prefer reviewInboxEvents().
    */
   markInboxHandled(eventIds: number[], handledBy?: string): number;
 
@@ -220,6 +244,77 @@ function normalizeSql(input: string): string {
   if (sql.endsWith(";")) sql = sql.slice(0, -1).trim();
   if (sql.includes(";")) throw new Error("query.sql accepts one statement at a time");
   return sql;
+}
+
+function reviewedEventType(openEventType: unknown): string {
+  if (openEventType === "message.created") return "message.reviewed";
+  if (openEventType === "project.feedback.created") return "project.feedback.reviewed";
+  if (openEventType === "project.owner.requested" || openEventType === "project.planning.requested") return "project.owner.reviewed";
+  return "owner.inbox.reviewed";
+}
+
+function reviewInboxRows(db: SqliteDb, eventIds: number[], reviewedBy?: string): number {
+  if (!eventIds.length) return 0;
+  const now = Date.now();
+  const agent = reviewedBy ?? "system";
+  let updated = 0;
+  const rows = eventIds.map((id) => db.prepare(
+    `SELECT id, event_type, owner, data
+     FROM events
+     WHERE id = ?`,
+  ).get(id) as { id: number; event_type: string; owner: string | null; data: string | null } | null);
+  // Keep legacy status in sync while the runtime migrates to delivery fields
+  // and follow-up events.
+  const stmt = db.prepare(
+    `UPDATE events SET status = 'handled', handled_by = ?, result = 'consumed'
+     WHERE id = ? AND status = 'pending'`,
+  );
+  for (const id of eventIds) {
+    const info = stmt.run(agent, id) as { changes?: number };
+    updated += info.changes ?? 0;
+  }
+  const insertFollowup = db.prepare(
+    `INSERT INTO events
+     (event_type, source, owner, data, timestamp, urgency, delivery_status, accepted_by, accepted_at, delivery_route, delivery_note)
+     VALUES (?, ?, ?, ?, ?, 'normal', 'accepted', ?, ?, 'direct', ?)`,
+  );
+  const closePair = db.prepare(
+    `UPDATE event_pair_runs
+     SET status = 'closed',
+         close_event_id = ?,
+         closed_at = ?,
+         note = COALESCE(note, 'closed by inbox review')
+     WHERE open_event_id = ?
+       AND status = 'open'`,
+  );
+  const existingFollowup = db.prepare(
+    `SELECT id
+     FROM events
+     WHERE json_extract(data, '$.openEventId') = ?
+     LIMIT 1`,
+  );
+  for (const row of rows) {
+    if (!row?.id || existingFollowup.get(row.id)) continue;
+    const type = reviewedEventType(row.event_type);
+    const payload = JSON.stringify({
+      openEventId: row.id,
+      openEventType: row.event_type,
+      reviewedBy: agent,
+    });
+    const info = insertFollowup.run(
+      type,
+      `inbox:${agent}`,
+      row.owner,
+      payload,
+      now,
+      `inbox:${agent}`,
+      now,
+      `reviewInboxEvents emitted ${type}`,
+    ) as { lastInsertRowid?: number | bigint };
+    const closeEventId = Number(info.lastInsertRowid);
+    if (Number.isFinite(closeEventId) && closeEventId > 0) closePair.run(closeEventId, now, row.id);
+  }
+  return updated;
 }
 
 function assertReadOnlySql(sql: string): void {
@@ -262,6 +357,11 @@ function normalizeValue(value: unknown): unknown {
   if (typeof value === "bigint") return value.toString();
   if (value instanceof Uint8Array) return `<blob:${value.byteLength}>`;
   return value;
+}
+
+function numberValue(value: unknown): number {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : 0;
 }
 
 function normalizeRows(rows: Record<string, unknown>[]): Record<string, unknown>[] {
@@ -318,6 +418,9 @@ const CLOSED_LOOP_SCHEMA_TABLES = ["sessions", "events", "metrics", "metric_aler
 const CLOSED_LOOP_DEFAULT_LOOKBACK_MS = 6 * 60 * 60_000;
 const CLOSED_LOOP_DEFAULT_ALERT_LIMIT = 12;
 const CLOSED_LOOP_DEFAULT_DELIVERY_FAILURE_LIMIT = 12;
+const EVENT_DELIVERY_DEFAULT_LOOKBACK_MS = 6 * 60 * 60_000;
+const EVENT_DELIVERY_DEFAULT_LIMIT = 25;
+const EVENT_DELIVERY_DEFAULT_PENDING_TTL_MS = 2 * 60_000;
 const HEARTBEAT_DEFAULT_INBOX_LOOKBACK_MS = 2 * 60 * 60_000;
 const HEARTBEAT_DEFAULT_METRIC_LIMIT = 200;
 const HEARTBEAT_DEFAULT_METRIC_SNAPSHOT_LIMIT = 10;
@@ -462,14 +565,24 @@ export function createQueryService(opts: QueryServiceOptions): QueryAPI {
 
       const inboxOwner = ownerForAgent(filter.agent);
       const inbox = normalizeRows(db.prepare(
-        `SELECT id, event_type as eventType, data, urgency, timestamp
-         FROM events
-         WHERE owner = ?
-           AND status = 'pending'
-           AND timestamp > ?
-           AND (ttl_ms IS NULL OR timestamp + ttl_ms > ?)
-         ORDER BY CASE WHEN urgency = 'immediate' THEN 0 ELSE 1 END,
-           timestamp DESC, id DESC
+        `SELECT e.id, e.event_type as eventType, e.data, e.urgency, e.timestamp
+         FROM events e
+         WHERE e.owner = ?
+           AND (
+             (e.delivery_status = 'accepted' AND e.delivery_route = 'owner_inbox')
+             OR (e.delivery_route IS NULL AND e.status = 'pending')
+           )
+           AND e.timestamp > ?
+           AND (e.ttl_ms IS NULL OR e.timestamp + e.ttl_ms > ?)
+           AND NOT EXISTS (
+             SELECT 1
+             FROM event_pair_runs p
+             WHERE p.open_event_id = e.id
+               AND p.pair_name = 'owner_inbox'
+               AND p.status IN ('closed', 'orphan')
+           )
+         ORDER BY CASE WHEN e.urgency = 'immediate' THEN 0 ELSE 1 END,
+           e.timestamp DESC, e.id DESC
          LIMIT ?`,
       ).all(inboxOwner, now - inboxLookbackMs, now, inboxLimit + 1) as Record<string, unknown>[]).slice(0, inboxLimit);
 
@@ -834,6 +947,87 @@ export function createQueryService(opts: QueryServiceOptions): QueryAPI {
       };
     },
 
+    eventDeliveryHealth(filter = {}) {
+      const db = opts.getDb();
+      const now = typeof filter.now === "number" ? filter.now : Date.now();
+      const lookbackMs = typeof filter.lookbackMs === "number"
+        ? Math.max(1, filter.lookbackMs)
+        : EVENT_DELIVERY_DEFAULT_LOOKBACK_MS;
+      const since = now - lookbackMs;
+      const limit = clampLimit(filter.limit, EVENT_DELIVERY_DEFAULT_LIMIT, maxLimit);
+
+      const eventColumns =
+        `id, event_type as eventType, source, owner, timestamp, ttl_ms as ttlMs,
+         delivery_status as deliveryStatus, accepted_by as acceptedBy,
+         accepted_at as acceptedAt, delivery_route as deliveryRoute,
+         delivery_note as deliveryNote, data`;
+
+      const unhandledEvents = db.prepare(
+        `SELECT ${eventColumns}
+         FROM events
+         WHERE delivery_status = 'unhandled'
+           AND timestamp >= ?
+         ORDER BY timestamp DESC, id DESC
+         LIMIT ?`,
+      ).all(since, limit) as Record<string, unknown>[];
+
+      const overduePendingEvents = db.prepare(
+        `SELECT ${eventColumns}
+         FROM events
+         WHERE delivery_status = 'pending'
+           AND timestamp >= ?
+           AND timestamp + COALESCE(ttl_ms, ?) < ?
+         ORDER BY timestamp DESC, id DESC
+         LIMIT ?`,
+      ).all(since, EVENT_DELIVERY_DEFAULT_PENDING_TTL_MS, now, limit) as Record<string, unknown>[];
+
+      const pairColumns =
+        `p.id, p.pair_name as pairName, p.correlation_key as correlationKey,
+         p.open_event_id as openEventId, p.close_event_id as closeEventId,
+         p.owner, p.status, p.opened_at as openedAt,
+         p.expected_close_at as expectedCloseAt, p.closed_at as closedAt,
+         p.note, e.event_type as openEventType, e.source as openEventSource,
+         e.data as openEventData`;
+
+      const orphanPairs = db.prepare(
+        `SELECT ${pairColumns}
+         FROM event_pair_runs p
+         LEFT JOIN events e ON e.id = p.open_event_id
+         WHERE p.status = 'orphan'
+           AND p.opened_at >= ?
+         ORDER BY p.expected_close_at ASC, p.id ASC
+         LIMIT ?`,
+      ).all(since, limit) as Record<string, unknown>[];
+
+      const overdueOpenPairs = db.prepare(
+        `SELECT ${pairColumns}
+         FROM event_pair_runs p
+         LEFT JOIN events e ON e.id = p.open_event_id
+         WHERE p.status = 'open'
+           AND p.opened_at >= ?
+           AND p.expected_close_at < ?
+         ORDER BY p.expected_close_at ASC, p.id ASC
+         LIMIT ?`,
+      ).all(since, now, limit) as Record<string, unknown>[];
+
+      const ownerInboxCount = db.prepare(
+        `SELECT COUNT(*) as count
+         FROM event_pair_runs
+         WHERE pair_name = 'owner_inbox'
+           AND status = 'open'`,
+      ).get() as Record<string, unknown> | null;
+
+      return {
+        now,
+        since,
+        ownerInboxOpenCount: numberValue(ownerInboxCount?.count),
+        unhandledEvents: normalizeRows(unhandledEvents),
+        overduePendingEvents: normalizeRows(overduePendingEvents),
+        orphanPairs: normalizeRows(orphanPairs),
+        overdueOpenPairs: normalizeRows(overdueOpenPairs),
+      };
+    },
+
     sql(input, params = [], queryOpts = {}) {
       const sql = normalizeSql(input);
       assertReadOnlySql(sql);
@@ -845,22 +1039,12 @@ export function createQueryService(opts: QueryServiceOptions): QueryAPI {
       return result(rows, limit);
     },
 
+    reviewInboxEvents(eventIds, reviewedBy) {
+      return reviewInboxRows(opts.getDb(), eventIds, reviewedBy);
+    },
+
     markInboxHandled(eventIds, handledBy) {
-      if (!eventIds.length) return 0;
-      const db = opts.getDb();
-      const now = Date.now();
-      const agent = handledBy ?? "system";
-      let updated = 0;
-      // Use individual updates to avoid SQL injection from dynamic IN clauses
-      const stmt = db.prepare(
-        `UPDATE events SET status = 'handled', handled_by = ?, result = 'consumed'
-         WHERE id = ? AND status = 'pending'`,
-      );
-      for (const id of eventIds) {
-        const info = stmt.run(agent, id) as { changes?: number };
-        updated += info.changes ?? 0;
-      }
-      return updated;
+      return reviewInboxRows(opts.getDb(), eventIds, handledBy);
     },
 
     expireStaleMessages(olderThanMs) {
@@ -880,11 +1064,14 @@ export function createQueryService(opts: QueryServiceOptions): QueryAPI {
       const cutoff = Date.now() - olderThanMs;
       const signalTypes = [
         'session.resume_failed',
+        'session.recovery_failed',
         'metric.breach',
         'metric.recovered',
         'metric.stalled',
         'handler.failed',
         'agent.config_invalid',
+        'message.delivery_failed',
+        'subscriber.failed',
       ];
       const placeholders = signalTypes.map(() => '?').join(', ');
       const info = db.prepare(
@@ -914,6 +1101,9 @@ export function createUnavailableQueryService(reason: string): QueryAPI {
   const failHeartbeatContext = (): HeartbeatContext => {
     throw new Error(reason);
   };
+  const failEventDeliveryHealth = (): EventDeliveryHealth => {
+    throw new Error(reason);
+  };
   const failEvaluatorDeepEvalScan = (): EvaluatorDeepEvalScanContext => {
     throw new Error(reason);
   };
@@ -930,10 +1120,12 @@ export function createUnavailableQueryService(reason: string): QueryAPI {
     metricAlertContext: failContext,
     metricAlertReactorState: failReactorState,
     closedLoopStewardContext: failClosedLoopStewardContext,
+    eventDeliveryHealth: failEventDeliveryHealth,
     heartbeatContext: failHeartbeatContext,
     evaluatorDeepEvalScan: failEvaluatorDeepEvalScan,
     evaluatorAftermathContext: failEvaluatorAftermathContext,
     sql: fail,
+    reviewInboxEvents: () => { throw new Error(reason); },
     markInboxHandled: () => { throw new Error(reason); },
     expireStaleMessages: () => { throw new Error(reason); },
     expireStaleSignalEvents: () => { throw new Error(reason); },

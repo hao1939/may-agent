@@ -1,14 +1,11 @@
-// Shared project Kanban projection for Project App V2 task trees.
+// Shared project Kanban projection for Project App V3 task trees.
 
 const TASK_LANES = [
-  { id: "planning", label: "Planning" },
   { id: "backlog", label: "Backlog" },
-  { id: "ready", label: "Ready" },
   { id: "active", label: "In Progress" },
   { id: "review", label: "Review" },
   { id: "blocked", label: "Blocked" },
   { id: "done", label: "Done" },
-  { id: "archive", label: "Archive" },
 ];
 
 const SERIALIZED_KINDS = new Set([
@@ -40,63 +37,60 @@ function isLeafTask(task) {
   return taskChildren(task).length === 0;
 }
 
+function taskState(task) {
+  return task.state || task.status || "unknown";
+}
+
 function isPlanningTask(task) {
   return ["frontier_replan", "domain_planner", "loop_task"].includes(task.kind);
 }
 
 function taskLane(task) {
   if (!isLeafTask(task)) return null;
-  if (task.status === "superseded") return "archive";
-  if (task.status === "accepted") return "done";
-  if (task.status === "blocked") return "blocked";
-  if (task.status === "claimed_done" || task.status === "rejected") return "review";
-  if (isPlanningTask(task) && ["proposed", "ready", "active"].includes(task.status)) return "planning";
-  if (task.status === "proposed") return "backlog";
-  if (task.status === "ready") return "ready";
-  if (task.status === "active") return "active";
+  const state = taskState(task);
+  if (isPlanningTask(task) && ["backlog", "active"].includes(state)) return "backlog";
+  if (["backlog", "active", "review", "blocked", "done"].includes(state)) return state;
   return null;
 }
 
 function taskStatusCounts(tree, taskId, acc) {
   const task = tree.tasks?.[taskId];
   if (!task) return acc;
-  const status = task.status || "unknown";
+  const status = taskState(task);
   acc[status] = (acc[status] || 0) + 1;
   for (const childId of taskChildren(task)) taskStatusCounts(tree, childId, acc);
   return acc;
 }
 
 function summarizeCounts(counts) {
-  const order = ["ready", "active", "claimed_done", "rejected", "blocked", "accepted", "proposed", "superseded", "decomposed"];
+  const order = ["active", "review", "blocked", "backlog", "done", "unknown"];
   return order.filter(k => counts[k]).map(k => `${k} ${counts[k]}`).join(" · ");
 }
 
 function taskSchedulerReason(task, tree) {
-  if (task.status === "ready") {
+  const state = taskState(task);
+  if (state === "backlog") {
     if ((task.gates || []).length && task.gate_status !== "satisfied") return "waiting: closed gate";
     const maxConcurrent = Number.isFinite(Number(tree.max_concurrent)) ? Number(tree.max_concurrent) : 3;
     if ((tree.active_task_ids || []).length >= maxConcurrent) return "waiting: max concurrent full";
-    if (SERIALIZED_KINDS.has(task.kind)) return "dispatchable as serialized work";
-    return "dispatchable on next worker pickup";
+    if (SERIALIZED_KINDS.has(task.kind)) return "backlog serialized work";
+    return "backlog";
   }
-  if (task.status === "active") return task.lease_expires_at ? `leased until ${new Date(task.lease_expires_at).toISOString().slice(11, 19)}Z` : "active without lease";
-  if (task.status === "proposed") {
-    if ((task.gates || []).length && task.gate_status !== "satisfied") return "waiting: closed gate";
-    return "waiting: backlog promotion";
-  }
-  if (task.status === "blocked") return task.blocker || "blocked";
-  if (task.status === "accepted") return task.verification?.verdict ? `verified: ${task.verification.verdict}` : "accepted";
-  if (task.status === "rejected") return task.verification?.reason || "needs rework";
-  return task.status || "unknown";
+  if (state === "active") return task.lease_expires_at ? `leased until ${new Date(task.lease_expires_at).toISOString().slice(11, 19)}Z` : "active";
+  if (state === "review") return task.verification?.reason || task.result || "ready for owner review";
+  if (state === "blocked") return typeof task.blocker === "string" ? task.blocker : task.blocker?.condition || "blocked";
+  if (state === "done") return task.verification?.verdict ? `verified: ${task.verification.verdict}` : task.resolution || "done";
+  return state;
 }
 
 function taskCard(task, tree) {
   const output = (task.outputs || [])[0];
   const hasGate = (task.gates || []).length > 0 && task.gate_status !== "satisfied";
+  const state = taskState(task);
   return `<button class="kanban-card" onclick="showTaskDetail(${jsStringAttr(task.id)})">
     <span class="kanban-card-top">
       <span class="task-priority">${esc(task.priority || "P?")}</span>
-      <span class="task-status">${esc(task.status || "unknown")}</span>
+      <span class="task-status">${esc(state)}</span>
       ${hasGate ? '<span class="task-gate">gate</span>' : ''}
     </span>
     <span class="task-id">${esc(task.id)}</span>
@@ -119,7 +113,7 @@ function renderTaskTreeNode(tree, taskId, depth) {
     <button class="tree-task-main" onclick="showTaskDetail(${jsStringAttr(task.id)});event.stopPropagation()">
       <span class="task-priority">${esc(task.priority || "P?")}</span>
       <span class="tree-task-id">${esc(task.id)}</span>
-      <span class="task-status">${esc(task.status || "unknown")}</span>
+      <span class="task-status">${esc(taskState(task))}</span>
       ${summary ? `<span class="tree-counts">${esc(summary)}</span>` : ''}
     </button>
   </div>`;
@@ -132,15 +126,15 @@ function renderTaskTreeNode(tree, taskId, depth) {
 
 function projectCurrentState(tree) {
   const tasks = Object.values(tree.tasks || {});
-  const active = tasks.filter(t => isLeafTask(t) && t.status === "active").sort((a, b) => taskPriorityRank(a) - taskPriorityRank(b));
-  const ready = tasks.filter(t => isLeafTask(t) && t.status === "ready").sort((a, b) => taskPriorityRank(a) - taskPriorityRank(b));
-  const review = tasks.filter(t => isLeafTask(t) && ["claimed_done", "rejected"].includes(t.status));
-  const blocked = tasks.filter(t => isLeafTask(t) && t.status === "blocked");
+  const active = tasks.filter(t => isLeafTask(t) && taskState(t) === "active").sort((a, b) => taskPriorityRank(a) - taskPriorityRank(b));
+  const backlog = tasks.filter(t => isLeafTask(t) && taskState(t) === "backlog").sort((a, b) => taskPriorityRank(a) - taskPriorityRank(b));
+  const review = tasks.filter(t => isLeafTask(t) && taskState(t) === "review");
+  const blocked = tasks.filter(t => isLeafTask(t) && taskState(t) === "blocked");
   if (active.length) return { label: "working", text: `${active.length} active: ${active.slice(0, 3).map(t => t.id).join(", ")}` };
-  if (ready.length) return { label: "ready", text: `${ready.length} ready: ${ready.slice(0, 3).map(t => t.id).join(", ")}` };
+  if (backlog.length) return { label: "backlog", text: `${backlog.length} backlog leaf task(s): ${backlog.slice(0, 3).map(t => t.id).join(", ")}` };
   if (review.length) return { label: "review", text: `${review.length} task(s) need verification or rework.` };
   if (blocked.length) return { label: "blocked", text: `${blocked.length} blocked leaf task(s).` };
-  return { label: "settled", text: "No active, ready, review, or blocked leaves." };
+  return { label: "settled", text: "No active, backlog, review, or blocked leaves." };
 }
 
 async function renderProjectKanban(el) {
@@ -156,17 +150,27 @@ async function renderProjectKanban(el) {
     return;
   }
   if (!data.available) {
-    el.innerHTML = `<div class="empty-state">This project has no <code>tasks/tree.json</code> yet. V2 projects expose a task tree for shared Kanban and task audit.</div>`;
+    const details = (data.errors || []).length ? `<pre>${esc((data.errors || []).join("\n"))}</pre>` : "";
+    el.innerHTML = `<div class="empty-state">${esc(data.reason || "This project has no tasks/tree.json yet.")}${details}</div>`;
     return;
   }
 
   window._currentProjectTaskTree = data;
   const tasks = Object.values(data.tasks || {});
   const current = projectCurrentState(data);
+  const countSummary = TASK_LANES
+    .map(lane => `${lane.label.toLowerCase()} ${data.statusCounts?.[lane.id] || 0}`)
+    .join(" · ");
   const laneHtml = TASK_LANES.map(lane => {
     const laneTasks = tasks
       .filter(t => taskLane(t) === lane.id)
       .sort((a, b) => taskPriorityRank(a) - taskPriorityRank(b) || String(a.id).localeCompare(String(b.id)));
+    if (lane.id === "done") {
+      return `<details class="kanban-lane done-lane">
+        <summary><span>${esc(lane.label)}</span><b>${laneTasks.length}</b></summary>
+        <div class="kanban-lane-body">${laneTasks.length ? laneTasks.map(t => taskCard(t, data)).join("") : '<div class="lane-empty">empty</div>'}</div>
+      </details>`;
+    }
     return `<section class="kanban-lane">
       <header><span>${esc(lane.label)}</span><b>${laneTasks.length}</b></header>
       <div class="kanban-lane-body">${laneTasks.length ? laneTasks.map(t => taskCard(t, data)).join("") : '<div class="lane-empty">empty</div>'}</div>
@@ -184,6 +188,7 @@ async function renderProjectKanban(el) {
       <div class="banner-meta">
         <span>updated ${esc(data.updated_at || "unknown")}</span>
         <span>${Object.keys(data.tasks || {}).length} tasks</span>
+        <span>${esc(countSummary)}</span>
         <span>max ${esc(data.max_concurrent || 3)} workers</span>
       </div>
     </div>
@@ -207,7 +212,7 @@ function showTaskDetail(taskId) {
   drawer.innerHTML = `<div class="task-detail-head">
     <div>
       <div class="task-detail-id">${esc(task.id)}</div>
-      <div class="task-detail-meta">${esc(task.priority || "P?")} · ${esc(task.status || "unknown")} · ${esc(task.kind || "work")}</div>
+      <div class="task-detail-meta">${esc(task.priority || "P?")} · ${esc(taskState(task))} · ${esc(task.kind || "work")}</div>
     </div>
     <button onclick="document.getElementById('task-detail-drawer').classList.add('hidden')">Close</button>
   </div>
