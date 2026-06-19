@@ -16,7 +16,7 @@ changing, finish with concise evidence instead of padding a heartbeat log. There
 is no mandatory write/edit count or tool-call quota.
 
 ## Resources
-- Knowledge base: `shared/knowledge/entries/` (read ALL of these)
+- Knowledge base: `shared/knowledge/entries/` (1600+ entries; scan recent via `ls -lt | head` and grep for relevant topics)
 - Design docs: `projects/may-agent.app/docs/2a-design/` (the system's architecture)
 - Core principles: `projects/may-agent.app/docs/1-principles/core-principles.md`
 - Common sense: `shared/common-sense.md`
