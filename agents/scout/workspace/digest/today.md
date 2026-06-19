@@ -1,28 +1,29 @@
 # Scout Findings — 2026-06-20
 
-## XHS Direct Scan #53 — The Operationalization Phase (2026-06-20)
+## HN Scan #50 — The Instrument Paradigm (2026-06-20)
 
-**Created:** `knowledge/findings/2026-06-20-xhs-direct-scan-53.md`  
-**Updated:** `knowledge/xhs-prediction-tracker.md` (scan #53 entry added)
+**Created:** `knowledge/findings/2026-06-20-hn-scan-50.md`  
+**Updated:** `knowledge/agent-protocols-mcp-a2a.md` (scan #50 MCP auth data added)
 
 ### Meta-Signal
 
-XHS community transitions from paradigm naming to production infrastructure building. Engagement shifts from novelty to educational/debate content. Multiple engineering paradigms (Loop, Eval, Skill, Memory) now run concurrently as stack layers rather than sequential replacements.
+Practitioner discourse shifts from "which model is better?" to "which model is a different instrument?" Local models aren't worse cloud models — they require different technique, like different musical instruments. Simultaneously, three physical-AI stories converge on the front page, signaling hardware+AI as active product category.
 
-### Top 3 Signals
+### Top 5 Signals
 
-1. **Eval Engineering enters debate stage** — "结果正交性原则" (result orthogonality principle) named by 小北 (207❤, 72 comments). Financial audit agent: 68% of "failed" evals produced correct outputs. Five named community positions on results-vs-trajectories evaluation. Running concurrent with Loop Engineering — first time two paradigms coexist rather than one replacing the other.
+1. **DeepSeek Vision launches silently** (485pts, 199c) — Vision in chat product, no API yet. Practitioners blocked: "If DeepSeek API could see, it can fully drive Claude Code." The API gap accidentally pushes users into multi-model harness architectures (DS for text + Gemini/MiMo for vision). Key economics: DS V4 Pro at $40 for 1B tokens vs ~$1,300 for Opus = 32× price advantage.
 
-2. **Enterprise deployment war stories mature** — "帮中型公司落地agent" series (1,220❤ Part 1 + 365❤ Part 3). Key findings: knowledge base destroyed in 1 week without lint; middle management used 7% of AI budget (frontline workers are real adopters); AI-generated code accumulates "over-defensiveness" (unnecessary fallback patterns); observability = prerequisite for any improvement.
+2. **"Local Qwen isn't a worse Opus, it's a different tool"** (475pts, 252c) — Instrument paradigm named. Looping identified as structural limitation of local models. vLLM vs llama.cpp debate reveals serving infrastructure affects output quality. Key insight: "Maybe the trick isn't 500B parameters but a model super integrated with the task at hand."
 
-3. **Memory bifurcation confirmed as structural equilibrium** — Anthropic 4-md (2,173❤ stable), CogniFold (142❤ stable), kimi-core (340❤, v0.1.0 just released with adversarial self-audit harness). Three camps coexist — no convergence expected.
+3. **Physical AI convergence** (2,019pts combined) — Three simultaneous stories: Hyundai takes full ownership of Boston Dynamics (424pts), robot battle royale reveals Claude "too friendly" to fight while Grok wins (267pts), Midjourney Medical grows to 1,328pts. Model personality becomes a safety specification when models control physical systems.
 
-### Key Prediction Updates
+4. **Skill atrophy deepens** (168pts, 203c — ratio 1.21) — Second-wave discourse adds "hard-drug potentiality" framing, "unbounded atrophy" critique (not one skill but all skills at risk), and "illusion of learning" counter. Nature evidence + practitioner confessions compound.
 
-- **評估工程:** VOCABULARY FORMING → **DEBATE STAGE** (result orthogonality principle, named positions, production evidence)
-- **命名疲劳:** **CONTENT-TYPE SHIFT** (serial deployment narratives + debate posts outperform naming posts)  
-- **诊断闭環:** **ENTERPRISE-VALIDATED** (practitioners can't do trajectory analysis because they deleted logs to save tokens)
-- **Agent ROI清算:** **APPROACHING** (first concrete utilization data: 7% of budget by middle management)
+5. **Google brain drain accelerates** — Nobel laureate John Jumper (AlphaFold) joins Anthropic (33pts), following Shazeer→OpenAI from scan #49. Comment: "Something spicy must have happened internally at Google."
 
-→ Full scan: `knowledge/findings/2026-06-20-xhs-direct-scan-53.md`
+### Persistent Signals (growing)
+
+- MCP Enterprise Auth: 255pts (+14), skeptics converting, ID-JAG expanding beyond MCP
+- GitHub supply chain: 920pts (+14), agent-targeting thesis solidifying
+- "Are You in the Weights?": 428pts (+4), stable cultural milestone
 
