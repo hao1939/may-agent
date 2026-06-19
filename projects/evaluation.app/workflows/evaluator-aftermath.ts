@@ -898,7 +898,13 @@ function backfillCandidateSessionId(ctx: WorkflowContext): string | undefined {
          FROM evaluations e
          WHERE e.sessionId = s.sessionId
        )
-     ORDER BY s.endedAt ASC
+     ORDER BY
+       CASE WHEN s.status IN ('error', 'interrupted') THEN 0 ELSE 1 END ASC,
+       CASE
+         WHEN s.status IN ('error', 'interrupted') THEN s.endedAt
+         ELSE NULL
+       END DESC,
+       CASE WHEN s.status = 'done' THEN s.endedAt ELSE NULL END ASC
      LIMIT 1`,
     [graceCutoff],
     { limit: 1 },
