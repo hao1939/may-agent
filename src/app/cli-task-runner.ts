@@ -23,6 +23,7 @@ type CliTaskRecord = {
   sourceOwner: string;
   sourceSessionId?: string;
   resumeSessionId?: string;
+  reuseSession?: boolean;
   cliSessionId?: string;
   resumeCommand?: string[];
   status: "requested" | "running" | "completed" | "failed" | "orphaned";
@@ -57,6 +58,27 @@ function taskRecordPath(persistDir: string, taskId: string): string {
   return join(taskDir(persistDir, taskId), "task.json");
 }
 
+type CliSessionStore = Partial<
+  Record<
+    CliTool,
+    {
+      cliSessionId: string;
+      resumeCommand?: string[];
+      updatedAt: string;
+      taskId?: string;
+    }
+  >
+>;
+
+function ownerSessionName(owner: string): string {
+  const clean = owner.replace(/^agent:/, "").replace(/[^a-zA-Z0-9_.-]+/g, "-");
+  return clean || "may";
+}
+
+function sessionStorePath(persistDir: string, owner: string): string {
+  return join(persistDir, "cli-sessions", `${ownerSessionName(owner)}.json`);
+}
+
 function safeTaskId(value: unknown, now: () => number): string {
   if (typeof value === "string" && /^[a-zA-Z0-9_.:-]+$/.test(value)) return value;
   return `cli_${now()}_${Math.random().toString(36).slice(2, 8)}`;
@@ -73,6 +95,37 @@ function readRecord(path: string): CliTaskRecord | null {
 function writeRecord(path: string, record: CliTaskRecord): void {
   mkdirSync(dirname(path), { recursive: true });
   writeFileSync(path, `${JSON.stringify(record, null, 2)}\n`);
+}
+
+function readSessionStore(persistDir: string, owner: string): CliSessionStore {
+  try {
+    return JSON.parse(readFileSync(sessionStorePath(persistDir, owner), "utf8")) as CliSessionStore;
+  } catch {
+    return {};
+  }
+}
+
+function writeSessionStore(persistDir: string, owner: string, store: CliSessionStore): void {
+  const path = sessionStorePath(persistDir, owner);
+  mkdirSync(dirname(path), { recursive: true });
+  writeFileSync(path, `${JSON.stringify(store, null, 2)}\n`);
+}
+
+function reusableSessionId(persistDir: string, record: CliTaskRecord): string | undefined {
+  if (!record.reuseSession || record.resumeSessionId) return undefined;
+  return readSessionStore(persistDir, record.sourceOwner)[record.tool]?.cliSessionId;
+}
+
+function rememberReusableSession(persistDir: string, record: CliTaskRecord, now: () => number): void {
+  if (!record.reuseSession || !record.cliSessionId) return;
+  const store = readSessionStore(persistDir, record.sourceOwner);
+  store[record.tool] = {
+    cliSessionId: record.cliSessionId,
+    resumeCommand: record.resumeCommand,
+    updatedAt: iso(now),
+    taskId: record.taskId,
+  };
+  writeSessionStore(persistDir, record.sourceOwner, store);
 }
 
 function appendFile(path: string, text: string): void {
@@ -243,6 +296,7 @@ async function runCliAttempt(opts: {
       attempt,
       effectiveSandbox: record.effectiveSandbox,
       sandboxFallbackReason: record.sandboxFallbackReason,
+      reuseSession: record.reuseSession,
     },
   } as any);
 
@@ -334,6 +388,7 @@ export function markOrphanedCliTasks(opts: { bus: EventBus; persistDir: string; 
         resumeCommand: record.resumeCommand,
         effectiveSandbox: record.effectiveSandbox,
         sandboxFallbackReason: record.sandboxFallbackReason,
+        reuseSession: record.reuseSession,
       },
     } as any);
     emitSourceSessionUpdate(opts.bus, record, "orphaned");
@@ -386,9 +441,11 @@ export function attachCliTaskRunner(opts: CliTaskRunnerOptions): () => void {
       sourceOwner,
       sourceSessionId: typeof data.sourceSessionId === "string" ? data.sourceSessionId : undefined,
       resumeSessionId: typeof data.resumeSessionId === "string" ? data.resumeSessionId : undefined,
+      reuseSession: data.reuseSession === true,
       status: "requested",
       requestedAt: iso(now),
     };
+    record.resumeSessionId ??= reusableSessionId(opts.persistDir, record);
     writeRecord(recordPath, record);
 
     queueMicrotask(() => {
@@ -420,6 +477,7 @@ async function runCliTask(opts: {
   const { bus, spawnCommand, persistDir, record, recordPath, now } = opts;
   try {
     const prompt = readFileSync(record.promptPath, "utf8");
+    record.resumeSessionId ??= reusableSessionId(persistDir, record);
     record.effectiveSandbox = record.sandbox;
     record.status = "running";
     record.startedAt = iso(now);
@@ -437,6 +495,7 @@ async function runCliTask(opts: {
     if (cliSessionId) {
       record.cliSessionId = cliSessionId;
       record.resumeCommand = resumeCommand(record, cliSessionId);
+      rememberReusableSession(persistDir, record, now);
       writeFileSync(
         join(dirname(recordPath), "session.json"),
         `${JSON.stringify(
@@ -447,6 +506,7 @@ async function runCliTask(opts: {
             resumeCommand: record.resumeCommand,
             effectiveSandbox: record.effectiveSandbox,
             sandboxFallbackReason: record.sandboxFallbackReason,
+            reuseSession: record.reuseSession,
             recordedAt: iso(now),
           },
           null,
@@ -475,6 +535,7 @@ async function runCliTask(opts: {
           resumeCommand: record.resumeCommand,
           effectiveSandbox: record.effectiveSandbox,
           sandboxFallbackReason: record.sandboxFallbackReason,
+          reuseSession: record.reuseSession,
         },
       } as any);
       emitSourceSessionUpdate(bus, record, "completed");
@@ -498,6 +559,7 @@ async function runCliTask(opts: {
           resumeCommand: record.resumeCommand,
           effectiveSandbox: record.effectiveSandbox,
           sandboxFallbackReason: record.sandboxFallbackReason,
+          reuseSession: record.reuseSession,
         },
       } as any);
       emitSourceSessionUpdate(bus, record, "failed");
@@ -523,6 +585,7 @@ async function runCliTask(opts: {
         resumeCommand: record.resumeCommand,
         effectiveSandbox: record.effectiveSandbox,
         sandboxFallbackReason: record.sandboxFallbackReason,
+        reuseSession: record.reuseSession,
       },
     } as any);
     emitSourceSessionUpdate(bus, record, "failed");
