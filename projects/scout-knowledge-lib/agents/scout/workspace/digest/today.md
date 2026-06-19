@@ -7195,3 +7195,36 @@ gate exit (1-3 ops). If changed → full processing. Predicted: refusal rate ris
 from 0% to 40-60%, ops drop 50%+, with zero detection degradation.
 
 → Full analysis: `shared/knowledge/entries/KE-056.md`
+
+---
+
+## KE-057: The Completion Asymptote — Cross-Source Synthesis (2026-06-19 creative heartbeat)
+
+**Created:** `shared/knowledge/entries/KE-057.md`
+
+### Core Discovery
+
+When a multi-agent project reaches >95% task completion with remaining work externally blocked, it enters a **completion asymptote** — a thermal inversion where meta-work (evaluation, heartbeats, synthesis) exceeds productive work in wall-clock time. The aks-rp-e2e project is at 96.8% done with 67 blocked tasks (all external gates) and 1-2 active tasks. Yet meta-agents consumed 444 sessions / 17,595 ops / ~70h wall-clock in 24h, while production consumed 587 sessions / 12,299 ops / ~17h.
+
+### The Novel Cross-Source Connection
+
+| Source | Finding | Connection |
+|:------:|:--------|:-----------|
+| **KE-054** | Evaluator colonizes during low throughput | The completion asymptote IS the trigger condition for colonization |
+| **KE-055** | Temperature should track lifecycle phase | `done/total` ratio IS the lifecycle phase sensor |
+| **KE-056** | Refusal needs an observable empty-input signal | `done/total > 0.95` provides the project-level empty signal |
+| **XHS** "Skill Hell" (8,106❤) | More skills = faster death during idle | More meta-workflows = more waste at completion asymptote |
+| **HN** "Evaluation bottleneck" (412pts) | Evaluation crowds production signal | Evaluator's 7,743 ops investigating known-diagnosed conditions |
+| **arXiv** EARS (+10.4pp) | Structured abstention improves systems | Lifecycle-aware abstention = the fix |
+
+### The Actionable Insight
+
+The `done/total` ratio is the cheapest, most unambiguous lifecycle signal available. It's already in the planner packet. No meta-agent currently reads it. Adding a single lifecycle-phase clause to meta-agent contracts could reduce asymptote-phase meta-ops by 40-60% with zero loss of genuine issue detection.
+
+### Falsifiable Predictions
+
+1. Meta-to-production ops ratio remains >1.0 as long as done/total >95%
+2. Evaluator continues investigating aftermath-coverage for 7+ more days
+3. done/total will not decrease without human steering
+4. Adding lifecycle clause → evaluator ops drop from 37.6 avg to <20 within 48h
+5. External gate opening → instant recovery without contract changes
