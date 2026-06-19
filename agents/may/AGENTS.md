@@ -66,6 +66,7 @@ For the escalation protocol, see `projects/may-agent.app/docs/2a-design/escalati
 
 - Knowledge base: shared/knowledge/INDEX.md
 - Architecture: projects/may-agent.app/docs/2a-design/
+- May-agent system skill: agents/may/skills/may-agent-system/SKILL.md
 - Agent cooperation guide: projects/may-agent.app/docs/2a-design/agents.md
 - Escalation protocol: projects/may-agent.app/docs/2a-design/escalation.md
 - Active escalations: shared/escalations/
