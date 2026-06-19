@@ -64,9 +64,10 @@ Root (May heartbeat)
 **Linking note:** Despite the diagram, `call` sessions (via `ctx.runAgent()` inside
 workflows) do NOT populate `parentSessionId` — they share a `workflowRunId` instead.
 `parentSessionId` is only populated by `agents.fork()` (kind=`job`) sessions.
-Verified structurally: no `call` session has ever had a non-null
-`parentSessionId`; all sessions with `parentSessionId` are `job` or `chat` kind.
-(Last census: 0/15,952 call sessions, 18 total with parentSessionId — 10 job, 8 chat.)
+Verified structurally: almost no `call` session has a non-null
+`parentSessionId`; sessions with `parentSessionId` are overwhelmingly `job` or `chat` kind.
+(Census 2026-06-19: 1/22,866 call sessions has parentSessionId — likely an edge case;
+17 total with parentSessionId — 9 job, 8 chat.)
 
 ## Persistence
 
@@ -77,6 +78,18 @@ Sessions persist to:
 The DB is the queryable index. Disk is the source of truth for message history.
 
 ## Known Issues
+
+### `status` column can contain non-canonical values (KE-2062)
+
+Three `may` chat sessions have `status = 'Agent ended with an empty assistant
+turn'` instead of the canonical `'error'`. The error message string leaked
+into the status column — likely during a bulk-close of stale chat sessions
+(all three share `endedAt` within 3ms). Their `outcome` column correctly
+reads `'error'`, so `WHERE outcome = 'error'` catches them but
+`WHERE status = 'error'` does not. Census 2026-06-19: 3/16,256 sessions
+(0.02%) have non-canonical status values — all are this same error string.
+Use `outcome = 'error'` when error completeness matters; `status = 'error'`
+for the common case but accept it may undercount chat failures.
 
 ### `error` column is almost always NULL in practice (KE-1558, updated KE-1985)
 
