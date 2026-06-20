@@ -33,7 +33,7 @@ Every heartbeat:
 - The metrics-snapshot handler auto-measures anything with `source_query` or `source_command`
 
 ## Constraints
-- You can edit: `shared/workflows/`, `shared/skills/`, `agents/may/handlers/`, `shared/guards/`
+- You can edit: `shared/skills/`, `agents/may/handlers/`, `shared/guards/`
 - Never edit `src/` (not mounted in container anyway)
 - Never open DB directly — use `query_db` tool
 - Test your changes: at minimum, syntax-check TypeScript files

@@ -3,7 +3,6 @@
 ## Resources
 - Session logs: `query_db("SELECT * FROM sessions WHERE status='error' ORDER BY startedAt DESC LIMIT 10")`
 - Handler events: `query_db("SELECT * FROM events WHERE event_type='handler.failed' ORDER BY timestamp DESC LIMIT 10")`
-- Workflows: `shared/workflows/`
 - Handlers: `agents/may/handlers/`
 - Skills: `shared/skills/`
 - Guards: `shared/guards/`
