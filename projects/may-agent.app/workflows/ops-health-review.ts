@@ -279,6 +279,10 @@ function buildPacket(ctx: WorkflowContext): { packet: Row; signals: Signal[] } {
     ),
   );
 
+  // Only count blocked workflows owned by this platform project.
+  // evaluation.app blocked runs (evaluator-aftermath, evaluator-heartbeat)
+  // and other project-owned workflows are not platform-actionable —
+  // they should be surfaced by their own project's ops-health observer.
   const staleBlockedWorkflowRuns = queryRows(ctx, () =>
     ctx.query.sql(
       `SELECT workflow,
@@ -291,6 +295,7 @@ function buildPacket(ctx: WorkflowContext): { packet: Row; signals: Signal[] } {
         WHERE status IN ('blocked', 'escalated')
           AND COALESCE(endedAt, startedAt) < ?
           AND COALESCE(endedAt, startedAt) >= ?
+          AND (projectId = 'may-agent' OR projectId IS NULL)
         GROUP BY workflow, status, COALESCE(result_reason, result_summary, '')
         ORDER BY count DESC, newestAt DESC`,
       [staleEscalationCutoff, chronicallyStaleFloor],
@@ -309,6 +314,7 @@ function buildPacket(ctx: WorkflowContext): { packet: Row; signals: Signal[] } {
          FROM workflow_runs
         WHERE status IN ('blocked', 'escalated')
           AND COALESCE(endedAt, startedAt) < ?
+          AND (projectId = 'may-agent' OR projectId IS NULL)
         GROUP BY workflow, status, COALESCE(result_reason, result_summary, '')
         ORDER BY count DESC, newestAt DESC`,
       [chronicallyStaleFloor],
@@ -391,14 +397,31 @@ function buildPacket(ctx: WorkflowContext): { packet: Row; signals: Signal[] } {
       },
     });
   }
-  if (orphanPairs.length > 0 || overdueOpenPairs.length > 0) {
+  // Only generate wake signals for platform-owned orphan pairs.
+  // Cross-project pairs (owner = 'agent:aks-explorer', etc.) are owned
+  // by their respective project apps and should not wake the platform owner.
+  const platformOrphanPairs = orphanPairs.filter(
+    (row) =>
+      !stringValue(row.owner) ||
+      stringValue(row.owner) === ownerEventOwner ||
+      stringValue(row.owner) === "agent:may" ||
+      stringValue(row.owner) === "may",
+  );
+  const platformOverduePairs = overdueOpenPairs.filter(
+    (row) =>
+      !stringValue(row.owner) ||
+      stringValue(row.owner) === ownerEventOwner ||
+      stringValue(row.owner) === "agent:may" ||
+      stringValue(row.owner) === "may",
+  );
+  if (platformOrphanPairs.length > 0 || platformOverduePairs.length > 0) {
     signals.push({
       kind: "event-pair-unclosed",
       severity: "P1",
-      reason: `${orphanPairs.length} orphan and ${overdueOpenPairs.length} overdue open event pair(s) in the last hour.`,
+      reason: `${platformOrphanPairs.length} orphan and ${platformOverduePairs.length} overdue open platform-owned event pair(s) in the last hour.`,
       evidence: {
-        orphan: compactRows(orphanPairs, 5),
-        overdue_open: compactRows(overdueOpenPairs, 5),
+        orphan: compactRows(platformOrphanPairs, 5),
+        overdue_open: compactRows(platformOverduePairs, 5),
       },
     });
   }
