@@ -141,7 +141,15 @@ export function parseDeepEvaluationArtifact(
 }
 
 function artifactDir(root: string): string {
-  return join(root, "agents", "evaluator", "workspace", "deep-evals");
+  return join(
+    root,
+    "projects",
+    "evaluation.app",
+    "agents",
+    "evaluator",
+    "workspace",
+    "deep-evals",
+  );
 }
 
 function artifactPath(root: string, sessionId: string): string {

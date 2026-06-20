@@ -26,6 +26,8 @@ describe("eval-llm-scan handler", () => {
     const runWorkflow = vi.fn(async (_workflow: string, _task: string) => {
       const artifactDir = join(
         root,
+        "projects",
+        "evaluation.app",
         "agents",
         "evaluator",
         "workspace",
@@ -70,7 +72,7 @@ describe("eval-llm-scan handler", () => {
   }
 
   it("dispatches deep evaluator work through workflow and records validated artifact on the next scan", async () => {
-    const { db, ctx, runWorkflow } = harness();
+    const { root, db, ctx, runWorkflow } = harness();
     const endedAt = Date.now() - 60_000;
     db.run(
       "INSERT INTO sessions (sessionId, agent, task, status, source, startedAt, endedAt, opCount) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
@@ -103,6 +105,18 @@ describe("eval-llm-scan handler", () => {
       expect.stringContaining("[deep-eval] Evaluate session s_candidate"),
       { source: "evaluator", projectId: "evaluation" },
     );
+    expect(runWorkflow.mock.calls[0]?.[1]).toContain(
+      join(
+        root,
+        "projects",
+        "evaluation.app",
+        "agents",
+        "evaluator",
+        "workspace",
+        "deep-evals",
+        "s_candidate.json",
+      ),
+    );
     expect(ctx.sdk.runAgent).not.toHaveBeenCalled();
     expect(ctx.sdk.emit).toHaveBeenCalledWith(
       "handler.workflow_dispatched",
@@ -130,6 +144,8 @@ describe("eval-llm-scan handler", () => {
       existsSync(
         join(
           ctx.sdk.paths.root,
+          "projects",
+          "evaluation.app",
           "agents",
           "evaluator",
           "workspace",

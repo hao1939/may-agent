@@ -22,9 +22,16 @@ describe("eval-llm-scan", () => {
     const persist = join(root, ".state");
     const agentsRoot = join(root, "agents");
     tempDirs.push(root);
-    mkdirSync(join(agentsRoot, "evaluator", "workspace", "deep-evals"), {
-      recursive: true,
-    });
+    const deepEvalDir = join(
+      root,
+      "projects",
+      "evaluation.app",
+      "agents",
+      "evaluator",
+      "workspace",
+      "deep-evals",
+    );
+    mkdirSync(deepEvalDir, { recursive: true });
     mkdirSync(persist, { recursive: true });
 
     const runtime = createTestRuntime({ root, persist, agents: agentsRoot });
@@ -59,14 +66,7 @@ describe("eval-llm-scan", () => {
           });
           const sessionId =
             task.match(/Evaluate session (s_[^ ]+)/)?.[1] ?? "s_target";
-          const artifactPath = join(
-            root,
-            "agents",
-            "evaluator",
-            "workspace",
-            "deep-evals",
-            `${sessionId}.json`,
-          );
+          const artifactPath = join(deepEvalDir, `${sessionId}.json`);
           writeFileSync(
             artifactPath,
             JSON.stringify({
