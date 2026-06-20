@@ -1,12 +1,12 @@
 {
   "version": 2,
   "project": "may-agent",
-  "updated_at": "2026-06-20T11:35:00.000Z",
+  "updated_at": "2026-06-20T12:00:00.000Z",
   "project_lifecycle": "active",
   "root_task_id": "project",
   "active_task_id": null,
   "active_task_ids": [],
-  "note": "64 done, 8 backlog, 0 active (72 total). Schedule over-fire stabilized — all 4 timers at correct intervals, 0 runtime failures in 1h. 7 open alerts: 1 transient platform (session.first-turn-error-count-1h=21, auto-resolving as 1h window ages out), 6 aks-rp-e2e-owned. No task-tree changes needed.",
+  "note": "64 done, 8 backlog, 0 active (72 total). handler.heartbeat-coverage added to DEFERRED_METRICS to stop breach→wake loop (4+ duplicate owner sessions in 1h). 5 open alerts: 2 platform (heartbeat-coverage, first-turn-error-count — both now deferred), 3 aks-rp-e2e-owned. 0 handler.failed, 0 session.resume_failed. No task-tree changes needed — 8 backlog tasks are all P2 design/documentation/tooling work.",
   "max_concurrent": 3,
   "tasks": {
     "project": {
