@@ -1,11 +1,14 @@
 # Heartbeat System
 
-> **Status (2026-06-18):** App-owned agents now run heartbeats through their
+> **Status (2026-06-20):** App-owned agents now run heartbeats through their
 > project-app schedules (`app.ts`), not the global cron auto-generator.
 > Scout (47/day) and evaluator (286/day) heartbeats are active via
 > `workflow:scout-heartbeat` and `workflow:evaluator-heartbeat` respectively,
-> dispatched by their apps. May's heartbeat is disabled — may runs through
-> event-driven workflows (steward, alert-triage, owner-review) instead.
+> dispatched by their apps. May's **cron-scheduled** heartbeat is disabled
+> (`enabled: false` since 2026-06-15), but the event-reactive trigger path
+> (`on: ["heartbeat.trigger"]` + `force: true` in `cron.ts subscribeToBus()`)
+> still fires sporadically (~1-2x/day). May's primary work loop is the
+> `platform-owner-review` workflow (4h schedule via may-agent.app).
 > `dev` and `arc` still use the global heartbeat auto-generator (no app yet).
 > The design below applies to all heartbeat implementations regardless of
 > dispatch source. For app-owned scheduling details, see
