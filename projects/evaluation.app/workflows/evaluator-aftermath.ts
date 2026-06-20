@@ -2334,20 +2334,11 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     transcript,
     heuristic,
   );
-  // The evaluator agent is registered at projects/evaluation.app/agents/evaluator/,
-  // so the review session writes artifacts relative to that dir.  We must read
-  // from the same location.  Fall back to the legacy global path if the
-  // project-app path doesn't exist (covers pre-migration artifacts).
   const artifactRelPath = `agents/evaluator/workspace/aftermath/${sessionId}.md`;
   const projectAppArtifactPath = `projects/evaluation.app/${artifactRelPath}`;
   const projectAppAbsPath = join(projectRoot, projectAppArtifactPath);
-  const globalAbsPath = join(projectRoot, artifactRelPath);
-  const artifactAbsPath = existsSync(projectAppAbsPath)
-    ? projectAppAbsPath
-    : globalAbsPath;
-  const artifactPath = existsSync(projectAppAbsPath)
-    ? projectAppArtifactPath
-    : artifactRelPath;
+  const artifactAbsPath = projectAppAbsPath;
+  const artifactPath = projectAppArtifactPath;
 
   if (!shouldRefreshEvaluation(evaluation, heuristic)) {
     return ctx.done(
@@ -2481,17 +2472,8 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     });
   }
 
-  // Re-resolve artifact path AFTER the review session completes.
-  // The initial resolution (lines 2289-2294) runs BEFORE the review writes the
-  // artifact, so existsSync is always false and falls back to the global path.
-  // But the evaluator agent is registered at projects/evaluation.app/agents/evaluator/
-  // and writes there.  Re-check now that the file should actually exist.
-  const postReviewArtifactAbsPath = existsSync(projectAppAbsPath)
-    ? projectAppAbsPath
-    : artifactAbsPath;
-  const postReviewArtifactPath = existsSync(projectAppAbsPath)
-    ? projectAppArtifactPath
-    : artifactPath;
+  const postReviewArtifactAbsPath = artifactAbsPath;
+  const postReviewArtifactPath = artifactPath;
 
   const artifactText = readArtifact(postReviewArtifactAbsPath);
   const reviewedVerdict = artifactVerdict(artifactText);

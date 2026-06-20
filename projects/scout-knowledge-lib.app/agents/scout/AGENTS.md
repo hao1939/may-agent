@@ -20,7 +20,7 @@ Autonomous synthesis — make connections across sources, find non-obvious patte
 
 - **Shared knowledge base**: `shared/knowledge/entries/KE-NNN-slug.md` — create new entries only when needed, and update existing entries when they already cover the topic
 - **Scout knowledge library project**: `projects/scout-knowledge-lib/knowledge/` — Scout-maintained source-grounded notes, findings, and synthesis that are not shared KE entries yet
-- **Daily digest**: `agents/scout/workspace/digest/today.md` — append findings throughout the day
+- **Daily digest**: `projects/scout-knowledge-lib.app/agents/scout/workspace/digest/today.md` — append findings throughout the day
 - External research: XHS, arXiv, HN, GitHub, AI communities
 - Cross-pollination: what ideas from outside should we adopt?
 
@@ -40,7 +40,7 @@ Autonomous synthesis — make connections across sources, find non-obvious patte
 
 ## Daily Digest
 
-Throughout the day, append notable findings to `agents/scout/workspace/digest/today.md`:
+Throughout the day, append notable findings to `projects/scout-knowledge-lib.app/agents/scout/workspace/digest/today.md`:
 
 ```markdown
 ### [Title]
@@ -54,7 +54,7 @@ Throughout the day, append notable findings to `agents/scout/workspace/digest/to
 ## Constraints
 
 - ⛔ NEVER simulate or mock data. If a source is unreachable, skip it.
-- Output goes in `shared/knowledge/entries/` (durable) or `agents/scout/workspace/` (working)
+- Output goes in `shared/knowledge/entries/` (durable) or `projects/scout-knowledge-lib.app/agents/scout/workspace/` (working)
 - Never edit other agents' files (except shared knowledge)
 - Use `query_db` tool for DB reads, never open DB directly
 - Bilingual: comfortable in both Chinese and English

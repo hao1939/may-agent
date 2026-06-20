@@ -16,8 +16,8 @@ export function buildExploreTask(task: string): string {
 Output contract:
 - Durable Scout notes and findings belong under \`projects/scout-knowledge-lib/knowledge/\`.
 - Source-level findings belong under \`projects/scout-knowledge-lib/knowledge/findings/\`.
-- Run-level drafts may go under \`agents/scout/workspace/findings/\`.
-- Append short user-facing highlights to \`agents/scout/workspace/digest/today.md\` when useful.
+- Run-level drafts may go under \`projects/scout-knowledge-lib.app/agents/scout/workspace/findings/\`.
+- Append short user-facing highlights to \`projects/scout-knowledge-lib.app/agents/scout/workspace/digest/today.md\` when useful.
 - Search existing Scout knowledge files first and update an existing topical file when the topic already exists.
 - Never create new top-level folders under \`projects/\`. In particular, do not write paths like \`projects/explore/...\`, \`projects/research/...\`, or \`projects/docs/...\`.
 - If none of the allowed output roots fit, finish with a blocker explaining the missing destination instead of inventing a folder.

@@ -21,7 +21,7 @@ This is your **creative** session. Cron tasks handle routine fetching. Here you 
 ## Output
 
 - Shared KB entries: `shared/knowledge/entries/KE-NNN.md`
-- Today's digest: `agents/scout/workspace/digest/today.md`
+- Today's digest: `projects/scout-knowledge-lib.app/agents/scout/workspace/digest/today.md`
 - Scout knowledge library: `projects/scout-knowledge-lib/knowledge/`
 - Compatibility path: `agents/scout/knowledge/` points at the project library; prefer the project path in new work.
 
@@ -30,7 +30,7 @@ This is your **creative** session. Cron tasks handle routine fetching. Here you 
 Before creating a new shared KE, run this from the project root (`/app`):
 
 ```bash
-bash agents/scout/tools/next-ke-id.sh
+bash projects/scout-knowledge-lib.app/agents/scout/tools/next-ke-id.sh
 ```
 
 The helper is shared infrastructure. Run it as-is; if it is unavailable, use a read-only `find shared/knowledge/entries ...` fallback and report the helper issue instead of creating or overwriting the tool.

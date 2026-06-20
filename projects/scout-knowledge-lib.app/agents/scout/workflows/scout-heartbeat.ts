@@ -53,7 +53,7 @@ This session is for **creative, autonomous work** — things nobody asked you to
 - Make connections between disparate research areas
 - Identify emerging trends before they're obvious
 - Update or create shared knowledge entries (shared/knowledge/entries/KE-NNN.md)
-- Append any notable insights to agents/scout/workspace/digest/today.md
+- Append any notable insights to projects/scout-knowledge-lib.app/agents/scout/workspace/digest/today.md
 
 ${metricsBlock}
 

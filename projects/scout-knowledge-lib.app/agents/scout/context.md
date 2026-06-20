@@ -11,10 +11,10 @@
   - Hacker News API: `curl -s 'https://hn.algolia.com/api/v1/search?query=...'`
   - GitHub API: `curl -s 'https://api.github.com/search/repositories?q=...'`
   - Reddit JSON: `curl -s 'https://www.reddit.com/r/MachineLearning/.json?limit=10'`
-- **XHS (小红书)**: Use `node agents/scout/tools/xhs-browse.mjs <command>`:
+- **XHS (xiaohongshu)**: Use `node projects/scout-knowledge-lib.app/agents/scout/tools/xhs-browse.mjs <command>`:
   - Before first use, ensure an XHS tab exists: `curl -s -X PUT 'http://localhost:9222/json/new?https://www.xiaohongshu.com/explore'` then wait 3s
   - Commands: `feed` (explore feed), `search <keyword>` (search notes), `read <url>` (read a note), `scroll` (load more)
-  - Example: `node agents/scout/tools/xhs-browse.mjs search "AI agent 智能体"`
+  - Example: `node projects/scout-knowledge-lib.app/agents/scout/tools/xhs-browse.mjs search "AI agent 智能体"`
 - ⛔ **NEVER simulate or mock data**. If you can't reach a source, skip it and use sources you CAN reach. Every finding must be based on real data from a real API call.
 - ✅ **ALWAYS include a `Source:` line** with the URL in every knowledge file you create or update. Example: `Source: https://arxiv.org/abs/2405.12345`. This is required for the sourced-artifacts metric.
 
@@ -58,7 +58,7 @@ BAD (will be flagged):
 
 - **NEVER write() low-numbered KE files** (KE-001 through KE-010). They are canonical shared memory.
 - To add new knowledge, allocate the KE id mechanically from the shared KB, not from memory or today's digest:
-  1. Run `bash agents/scout/tools/next-ke-id.sh` from the project root (`/app`).
+  1. Run `bash projects/scout-knowledge-lib.app/agents/scout/tools/next-ke-id.sh` from the project root (`/app`).
   2. Use the printed `KE-NNNN` id exactly once with a descriptive slug.
   3. Before writing, verify no collision with `ls shared/knowledge/entries/KE-NNNN-* shared/knowledge/entries/KE-NNNN.md 2>/dev/null`.
 - The KE allocation helper is shared infrastructure. Run it as-is; if it is unavailable, use a read-only directory scan fallback and report the helper issue instead of creating or overwriting the tool from a heartbeat.
@@ -68,18 +68,18 @@ BAD (will be flagged):
 
 ## How to Discover Work
 
-1. Read `agents/scout/heartbeat.md` for current priorities
+1. Read `projects/scout-knowledge-lib.app/agents/scout/heartbeat.md` for current priorities
 2. Check if any of your findings are stale (>7 days)
 3. Look at system problems (metrics, events) for research topics
 4. Browse XHS for trending AI agent discussions
 
 ## Output Locations
 
-- Findings: `agents/scout/workspace/findings/`
-- Posts: `agents/scout/workspace/posts/`
+- Findings: `projects/scout-knowledge-lib.app/agents/scout/workspace/findings/`
+- Posts: `projects/scout-knowledge-lib.app/agents/scout/workspace/posts/`
 - Scout knowledge library: `projects/scout-knowledge-lib/knowledge/`
 - Compatibility path: `agents/scout/knowledge/` points at the project library; prefer the project path in new work.
-- Before appending to `agents/scout/workspace/digest/today.md`, grep existing titles or URLs in that file to avoid duplicate findings from repeat source sweeps.
+- Before appending to `projects/scout-knowledge-lib.app/agents/scout/workspace/digest/today.md`, grep existing titles or URLs in that file to avoid duplicate findings from repeat source sweeps.
 - XHS AI agent trends suggest moving away from swarm towards specialized pipelines and strict hierarchy for reliability.
 
 ## Scout Second Brain Practices (adopted from scout-second-brain-learning)
