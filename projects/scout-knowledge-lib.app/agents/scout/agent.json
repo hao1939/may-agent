@@ -3,6 +3,7 @@
   "description": "Research & content explorer \u2014 discovers AI trends, produces findings. Owned by scout-knowledge-lib.app.",
   "domain": "research, content, XHS, AI community trends",
   "model": "opus",
+  "heartbeat": false,
   "tools": [
     "coding",
     "query_db",
