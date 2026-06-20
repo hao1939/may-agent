@@ -18,7 +18,8 @@
         "criteria-and-calibration",
         "drift-detection",
         "system-integrity",
-        "strategy-learning"
+        "strategy-learning",
+        "replace-heartbeat-with-owner-planner"
       ],
       "created_at": "2026-06-14T00:00:00Z",
       "updated_at": "2026-06-18T10:35:00Z",
@@ -251,6 +252,28 @@
         }
       },
       "updated_at": "2026-06-19T15:23:00Z"
+    },
+    "replace-heartbeat-with-owner-planner": {
+      "id": "replace-heartbeat-with-owner-planner",
+      "parent_id": "evaluation-system",
+      "state": "backlog",
+      "kind": "work",
+      "priority": "P1",
+      "owner": "evaluator",
+      "children": [],
+      "goal": "Replace genericHeartbeat with a bounded owner-planner workflow that reads the task tree and acts within it. The current heartbeat creates standalone projects (20+ deleted manually). Metric breaches should become task-tree entries, not new projects.",
+      "context": {
+        "current_problem": "evaluator-heartbeat.ts uses genericHeartbeat which gives full creative freedom. The evaluator discovers metric issues and creates projects/evaluator-*/project.md files instead of updating evaluation.app/tasks/tree.json.",
+        "fix_direction": "Replace genericHeartbeat with a workflow like aks-rp-e2e's project-planner: read task tree packet, review completions, create tasks for new findings, assign runnable work. Same pattern, evaluation domain.",
+        "disabled": "evaluation-pipeline-review schedule (5min) disabled until this migration is done. drift-detection (1h) and integrity-patrol (6h) still run genericHeartbeat but at lower frequency.",
+        "reference": "projects/aks-rp-e2e.app/workflows/project-planner.ts for the pattern"
+      },
+      "acceptance": [
+        "No more standalone evaluator-* projects created",
+        "Metric findings become task tree entries under appropriate lanes",
+        "Owner wake reads task tree packet, reviews state, creates/assigns work",
+        "evaluation-pipeline-review re-enabled with bounded planner workflow"
+      ]
     }
   }
 }

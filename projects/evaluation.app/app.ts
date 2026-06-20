@@ -110,7 +110,7 @@ export default defineProjectApp({
   schedules: [
     {
       id: "evaluation-pipeline-review",
-      enabled: true,
+      enabled: false, // disabled 2026-06-20: genericHeartbeat creates standalone projects instead of using task tree. Replace with bounded owner-planner that works within evaluation.app/tasks/tree.json.
       intervalMs: 300_000,
       event: {
         type: "evaluation.tick",
