@@ -628,6 +628,74 @@ export async function execute(ctx: any) {
     }
   });
 
+  it("passes app-local agentsRoot into project app workflows", async () => {
+    const root = tempRoot();
+    const persistDir = join(root, ".state");
+    let cron: Cron | undefined;
+    try {
+      const projectsRoot = join(root, "projects");
+      const appDir = join(projectsRoot, "sample.app");
+      writeAgent(appDir, "owner", "sample-owner");
+      writeApp(
+        appDir,
+        `{
+        id: "sample",
+        workflowHandlers: [{
+          name: "sample-worker",
+          enabled: true,
+          on: ["project.work"],
+          handler: { workflow: "worker", agent: "sample-owner", task: "work" }
+        }]
+      }`,
+      );
+      writeWorkflow(
+        appDir,
+        "worker",
+        `export async function execute(ctx: any) {
+  ctx.dispatchEvent("test.workflow.agentsRoot", { agentsRoot: ctx.agentsRoot });
+  return ctx.done("ok");
+}
+`,
+      );
+
+      const events: any[] = [];
+      const bus = new EventBus();
+      bus.subscribe((event) => events.push(event));
+      const agentCrons = new Map<string, Cron>();
+
+      await installProjectApps({
+        projectsRoot,
+        projectRoot: root,
+        persistDir,
+        agentsRoot: join(root, "agents"),
+        sharedRoot: join(root, "shared"),
+        manager: { hasAgent: () => true } as any,
+        bus,
+        agentCrons,
+      });
+
+      cron = agentCrons.get("sample-owner")!;
+      cron.subscribeToBus(bus);
+      cron.start();
+
+      bus.emit({
+        type: "project.work",
+        source: "test",
+        owner: "human:test",
+        data: { project: "sample" },
+      } as any);
+
+      await waitUntil(() => events.some((event) => event.type === "test.workflow.agentsRoot"));
+
+      const event = events.find((item) => item.type === "test.workflow.agentsRoot");
+      expect(event?.data?.agentsRoot).toBe(join(appDir, "agents"));
+    } finally {
+      cron?.stop();
+      closeDb(persistDir);
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
   it("reinstalls project app handlers and router state on reload", async () => {
     const root = tempRoot();
     try {
