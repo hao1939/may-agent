@@ -20,9 +20,11 @@ function listAgentDirectoriesInRoot(
     if (!entry.isDirectory()) continue;
     if (entry.name === "shared" || entry.name === "gym") continue;
     if (entry.name.startsWith("_") || entry.name.startsWith(".")) continue;
+    const dir = resolve(agentsRoot, entry.name);
+    if (!existsSync(resolve(dir, "agent.json"))) continue;
     agents.push({
       name: entry.name,
-      dir: resolve(agentsRoot, entry.name),
+      dir,
       agentsRoot: resolve(agentsRoot),
       projectId: project?.projectId,
       projectDir: project?.projectDir,

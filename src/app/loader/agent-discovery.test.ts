@@ -3,7 +3,7 @@ import { mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
-import { agentProjectRoot, agentRelativeDir, listProjectAgentDirectories, resolveRuntimeAgentDirectory } from "./agent-discovery.ts";
+import { agentProjectRoot, agentRelativeDir, listAgentDirectories, listProjectAgentDirectories, resolveRuntimeAgentDirectory } from "./agent-discovery.ts";
 
 function tempRoot(): string {
   const root = join(tmpdir(), `agent-discovery-${Date.now()}-${Math.random().toString(36).slice(2)}`);
@@ -12,6 +12,20 @@ function tempRoot(): string {
 }
 
 describe("project-local agent discovery", () => {
+  it("ignores runtime workspace directories without agent.json", () => {
+    const root = tempRoot();
+    try {
+      const agentsRoot = join(root, "agents");
+      mkdirSync(join(agentsRoot, "scout", "workspace", "digest"), { recursive: true });
+      mkdirSync(join(agentsRoot, "may"), { recursive: true });
+      writeFileSync(join(agentsRoot, "may", "agent.json"), JSON.stringify({ name: "may", model: "test", tools: [] }));
+
+      expect(listAgentDirectories(agentsRoot).map((agent) => agent.name)).toEqual(["may"]);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
   it("discovers legacy embedded project-app agents under .app/agents", () => {
     const root = tempRoot();
     try {
