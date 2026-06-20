@@ -405,6 +405,182 @@ describe("project task tree SDK", () => {
     expect(packet.frontier.active).toEqual(["active-leaf"]);
   });
 
+  test("planningPacket exposes structural compaction candidates for owner judgment", async () => {
+    const appDir = await makeApp();
+    await writeTree(appDir, {
+      root_task_id: "project",
+      active_task_id: null,
+      active_task_ids: [],
+      tasks: {
+        project: {
+          id: "project",
+          state: "active",
+          children: ["lane"],
+          goal: "project root",
+          outputs: ["tasks/tree.json"],
+          acceptance: ["complete"],
+        },
+        lane: {
+          id: "lane",
+          parent_id: "project",
+          state: "active",
+          children: ["done-a", "done-b", "protected-done", "open-leaf"],
+          goal: "durable lane",
+          outputs: ["lane"],
+          acceptance: ["children complete"],
+          context: {
+            archived_done_leaf_count: 3,
+            rollup_summary: "Already summarized historical work.",
+          },
+        },
+        "done-a": {
+          id: "done-a",
+          parent_id: "lane",
+          state: "done",
+          children: [],
+          goal: "mechanical completed detail A",
+          outputs: ["a"],
+          acceptance: ["done"],
+        },
+        "done-b": {
+          id: "done-b",
+          parent_id: "lane",
+          state: "done",
+          children: [],
+          goal: "mechanical completed detail B",
+          outputs: ["b"],
+          acceptance: ["done"],
+        },
+        "protected-done": {
+          id: "protected-done",
+          parent_id: "lane",
+          state: "done",
+          children: [],
+          goal: "dependency still needed",
+          outputs: ["needed"],
+          acceptance: ["done"],
+        },
+        "open-leaf": {
+          id: "open-leaf",
+          parent_id: "lane",
+          state: "backlog",
+          children: [],
+          goal: "open work depending on protected done",
+          outputs: ["open"],
+          acceptance: ["done"],
+          depends_on: ["protected-done"],
+        },
+      },
+    });
+
+    const packet = planningPacket(config(appDir));
+
+    expect(packet.task_tree_hygiene).toMatchObject({
+      safe_done_leaf_count: 2,
+      protected_done_leaf_count: 1,
+      compaction_candidates: [
+        {
+          parent_id: "lane",
+          child_count: 4,
+          open_child_count: 1,
+          done_child_count: 3,
+          safe_done_leaf_count: 2,
+          archived_done_leaf_count: 3,
+          rollup_summary: "Already summarized historical work.",
+          sample_done_leaf_ids: ["done-a", "done-b"],
+        },
+      ],
+    });
+  });
+
+  test("planningPacket exposes blocked frontier groups beyond capped samples", async () => {
+    const appDir = await makeApp();
+    const blockedTasks = Object.fromEntries(
+      Array.from({ length: 12 }, (_, index) => {
+        const id = `blocked-${index + 1}`;
+        const parentId = index < 9 ? "large-blocked-family" : "small-blocked-family";
+        return [
+          id,
+          {
+            id,
+            parent_id: parentId,
+            state: "blocked",
+            children: [],
+            goal: `blocked leaf ${index + 1}`,
+            outputs: [`evidence/${id}.md`],
+            acceptance: ["resume when external proof returns"],
+            blocker:
+              index < 6
+                ? "External source-holder proof required before bounded retry."
+                : `Specific blocker ${index + 1}`,
+          },
+        ];
+      }),
+    );
+    await writeTree(appDir, {
+      root_task_id: "project",
+      active_task_id: null,
+      active_task_ids: [],
+      tasks: {
+        project: {
+          id: "project",
+          state: "active",
+          children: ["large-blocked-family", "small-blocked-family"],
+          goal: "project root",
+          outputs: ["tasks/tree.json"],
+          acceptance: ["complete"],
+        },
+        "large-blocked-family": {
+          id: "large-blocked-family",
+          parent_id: "project",
+          state: "blocked",
+          children: Array.from({ length: 9 }, (_, index) => `blocked-${index + 1}`),
+          goal: "large blocked family",
+          outputs: ["large"],
+          acceptance: ["unblocked"],
+        },
+        "small-blocked-family": {
+          id: "small-blocked-family",
+          parent_id: "project",
+          state: "blocked",
+          children: ["blocked-10", "blocked-11", "blocked-12"],
+          goal: "small blocked family",
+          outputs: ["small"],
+          acceptance: ["unblocked"],
+        },
+        ...blockedTasks,
+      },
+    });
+
+    const packet = planningPacket(config(appDir));
+
+    expect(packet.frontier_details.blocked).toHaveLength(8);
+    expect(packet.blocked_frontier_summary).toMatchObject({
+      blocked_leaf_count: 12,
+      parent_groups: [
+        {
+          parent_id: "large-blocked-family",
+          blocked_leaf_count: 9,
+          total_child_count: 9,
+          open_child_count: 9,
+        },
+        {
+          parent_id: "small-blocked-family",
+          blocked_leaf_count: 3,
+          total_child_count: 3,
+          open_child_count: 3,
+        },
+      ],
+      repeated_blocker_groups: [
+        {
+          blocked_leaf_count: 6,
+          parent_ids: ["large-blocked-family"],
+        },
+      ],
+    });
+    expect(packet.blocked_frontier_summary?.parent_groups[0].sample_blocked_leaf_ids).toContain("blocked-1");
+  });
+
   test("confirmRunnableBacklogLeaves honors active conflict_scope overlap like assignTask", async () => {
     const appDir = await makeApp();
     await writeTree(appDir, {
@@ -531,6 +707,16 @@ describe("project task tree SDK", () => {
     });
 
     expect(listRunnableBacklogTaskIds(config(appDir), 10)).toEqual(["runnable-leaf"]);
+
+    const packet = planningPacket(config(appDir));
+    expect(packet.frontier.runnable).toEqual(["runnable-leaf"]);
+    expect(packet.frontier.waiting).toEqual(["waiting-leaf"]);
+    expect(packet.frontier_details.waiting).toMatchObject([
+      {
+        id: "waiting-leaf",
+        readiness_reasons: ["depends_on 'wait-node' is blocked, not done"],
+      },
+    ]);
 
     const tree = readTaskTree(config(appDir));
     expect(tree.tasks["runnable-leaf"].trace?.promoted_at).toBeUndefined();
