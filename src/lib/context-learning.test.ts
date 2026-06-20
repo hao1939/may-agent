@@ -3,7 +3,7 @@ import { mkdirSync, writeFileSync, readFileSync, existsSync, rmSync } from "node
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { randomBytes } from "node:crypto";
-import { createContextUpdater } from "./session-subscribers.js";
+import { createContextUpdater, createLastSessionWriter } from "./session-subscribers.js";
 import { getModel } from "@earendil-works/pi-ai";
 
 let tmpDir: string;
@@ -110,5 +110,43 @@ describe("Context Learning", () => {
     const content = readFileSync(contextPath, "utf-8");
     const matches = content.match(/Existing fact/g);
     expect(matches?.length).toBe(1);
+  });
+
+  it("writes context updates to an app-local agent when registered there", () => {
+    const appAgentDir = join(tmpDir, "projects", "may-agent.app", "agents", "arc");
+    const appContextPath = join(appAgentDir, "context.md");
+    mkdirSync(appAgentDir, { recursive: true });
+    writeFileSync(join(tmpDir, "projects", "may-agent.app", "app.ts"), "export default {};\n");
+    writeFileSync(join(appAgentDir, "agent.json"), JSON.stringify({ name: "arc", model: "test", tools: [] }));
+
+    applyContextUpdates(tmpDir, "arc", [{ action: "add", content: "Arc is app-local" }]);
+
+    expect(existsSync(appContextPath)).toBe(true);
+    expect(existsSync(join(tmpDir, "agents", "arc", "context.md"))).toBe(false);
+    expect(readFileSync(appContextPath, "utf-8")).toContain("- Arc is app-local");
+  });
+
+  it("writes last-session handoff to an app-local agent when registered there", () => {
+    const appAgentDir = join(tmpDir, "projects", "may-agent.app", "agents", "arc");
+    const lastSessionPath = join(appAgentDir, "last-session.md");
+    mkdirSync(appAgentDir, { recursive: true });
+    writeFileSync(join(tmpDir, "projects", "may-agent.app", "app.ts"), "export default {};\n");
+    writeFileSync(join(appAgentDir, "agent.json"), JSON.stringify({ name: "arc", model: "test", tools: [] }));
+
+    createLastSessionWriter(tmpDir)({
+      type: "session.end",
+      source: "runtime",
+      owner: "agent:arc",
+      data: {
+        sessionId: "s_test",
+        agent: "arc",
+        outcome: "Reviewed app-local migration",
+        status: "done",
+      },
+    } as any);
+
+    expect(existsSync(lastSessionPath)).toBe(true);
+    expect(existsSync(join(tmpDir, "agents", "arc", "last-session.md"))).toBe(false);
+    expect(readFileSync(lastSessionPath, "utf-8")).toContain("Reviewed app-local migration");
   });
 });
