@@ -156,9 +156,20 @@ interface AdapterOpts {
 // ── Paths ──────────────────────────────────────────────────────────────
 
 const PROJECT_ROOT = resolve(import.meta.dirname, "../..");
-const APP_ROOT = join(PROJECT_ROOT, "app");
-const APP_AGENTS_ROOT = join(APP_ROOT, "agents");
-const SCENARIOS_DIR = join(APP_ROOT, "gym/scenarios");
+const REPO_ROOT = resolve(PROJECT_ROOT, "../..");
+const DEFAULT_APP_AGENTS_ROOT = join(REPO_ROOT, "projects/may-agent.app/agents");
+const LEGACY_APP_ROOT = join(PROJECT_ROOT, "app");
+const APP_AGENTS_ROOT = resolve(
+  process.env["GYM_AGENTS_ROOT"] ||
+    process.env["AGENTS_ROOT"] ||
+    (existsSync(DEFAULT_APP_AGENTS_ROOT) ? DEFAULT_APP_AGENTS_ROOT : join(LEGACY_APP_ROOT, "agents")),
+);
+const SCENARIOS_DIR = resolve(
+  process.env["GYM_SCENARIOS_DIR"] ||
+    (existsSync(join(REPO_ROOT, "gym/scenarios"))
+      ? join(REPO_ROOT, "gym/scenarios")
+      : join(LEGACY_APP_ROOT, "gym/scenarios")),
+);
 
 // ── Adapter: may-agent ─────────────────────────────────────────────────
 
@@ -177,10 +188,10 @@ function createMayAgentAdapter(): Adapter {
 
       // Resolve agents root (with optional lab fork overlay)
       if (opts.labFork) {
-        const labDir = join(projectRoot, "app/agents/.lab", opts.labFork);
+        const labDir = join(APP_AGENTS_ROOT, ".lab", opts.labFork);
         if (!existsSync(labDir)) throw new Error(`Lab fork not found: ${labDir}`);
         const gymAgents = join(opts.gymRoot, "agents-lab");
-        cpSync(join(projectRoot, "app/agents"), gymAgents, { recursive: true });
+        cpSync(APP_AGENTS_ROOT, gymAgents, { recursive: true });
         rmSync(join(gymAgents, ".lab"), { recursive: true, force: true });
         rmSync(join(gymAgents, ".git"), { recursive: true, force: true });
         // FIX (EXP-152): cpSync merges directories — it does NOT delete files
@@ -198,12 +209,12 @@ function createMayAgentAdapter(): Adapter {
         // Copy agents to gym-local dir so writes (e.g. context.md) don't pollute the real dir.
         // Also required when overlaying a custom common-sense.md so we don't mutate the real one.
         const gymAgents = join(opts.gymRoot, "agents-sandbox");
-        cpSync(join(projectRoot, "app/agents"), gymAgents, { recursive: true });
+        cpSync(APP_AGENTS_ROOT, gymAgents, { recursive: true });
         rmSync(join(gymAgents, ".lab"), { recursive: true, force: true });
         rmSync(join(gymAgents, ".git"), { recursive: true, force: true });
         agentsRoot = gymAgents;
       } else {
-        agentsRoot = join(projectRoot, "app/agents");
+        agentsRoot = APP_AGENTS_ROOT;
       }
 
       // Overlay custom common-sense.md (coach Iter 7 infra)
@@ -594,14 +605,16 @@ function exportCombinedTranscript(phaseResults: AdapterResult[], workDir: string
 
 function scoreScenario(scenarioDir: string, workDir: string): ScoreResult {
   const criteriaPath = join(scenarioDir, "success_criteria.js");
-  const bun = (globalThis as {
-    Bun?: {
-      spawnSync?: (
-        cmd: string[],
-        opts?: { stdout?: "pipe"; stderr?: "pipe" },
-      ) => { stdout?: Uint8Array; stderr?: Uint8Array };
-    };
-  }).Bun;
+  const bun = (
+    globalThis as {
+      Bun?: {
+        spawnSync?: (
+          cmd: string[],
+          opts?: { stdout?: "pipe"; stderr?: "pipe" },
+        ) => { stdout?: Uint8Array; stderr?: Uint8Array };
+      };
+    }
+  ).Bun;
   const result = bun?.spawnSync
     ? (() => {
         const proc = bun.spawnSync!(["node", criteriaPath, workDir], { stdout: "pipe", stderr: "pipe" });
@@ -912,7 +925,11 @@ function runMultiSessionScenario(
       const durationMs = Date.now() - startMs;
       console.error(`    ABORT: agent failed to launch in ${sessionId} — skipping remaining sessions and scoring`);
 
-      const effectiveAgentsRoot = labFork ? join(gymRoot, "agents-lab") : (commonSensePath ? join(gymRoot, "agents-sandbox") : APP_AGENTS_ROOT);
+      const effectiveAgentsRoot = labFork
+        ? join(gymRoot, "agents-lab")
+        : commonSensePath
+          ? join(gymRoot, "agents-sandbox")
+          : APP_AGENTS_ROOT;
       const frameworkSha = computeFrameworkSha();
       const model = readAgentModel(effectiveAgentsRoot, agentName);
       const prompt = assembleEffectivePrompt(effectiveAgentsRoot, agentName);
@@ -924,7 +941,13 @@ function runMultiSessionScenario(
         lab_fork: labFork || null,
         workflow: false,
         passed: false,
-        checks: [{ name: "agent_launch", passed: false, message: `Agent failed to launch in ${sessionId} (status: error, no sessionId)` }],
+        checks: [
+          {
+            name: "agent_launch",
+            passed: false,
+            message: `Agent failed to launch in ${sessionId} (status: error, no sessionId)`,
+          },
+        ],
         judgments: [],
         summary: `FAIL: agent failed to launch in ${sessionId}`,
         agent_status: "error",
@@ -1031,7 +1054,11 @@ function runMultiSessionScenario(
   const judgeSummary =
     judgments.length > 0 ? ` | judge: ${judgments.filter((j) => j.verdict === "pass").length}/${judgments.length}` : "";
 
-  const effectiveAgentsRoot = labFork ? join(gymRoot, "agents-lab") : (commonSensePath ? join(gymRoot, "agents-sandbox") : APP_AGENTS_ROOT);
+  const effectiveAgentsRoot = labFork
+    ? join(gymRoot, "agents-lab")
+    : commonSensePath
+      ? join(gymRoot, "agents-sandbox")
+      : APP_AGENTS_ROOT;
   const frameworkSha = computeFrameworkSha();
   const model = readAgentModel(effectiveAgentsRoot, agentName);
   const prompt = assembleEffectivePrompt(effectiveAgentsRoot, agentName);
@@ -1105,12 +1132,9 @@ function runScenario(
   adapter.setup(PROJECT_ROOT, { agentName, labFork, gymRoot, sandboxAgents: learnBetween, commonSensePath });
 
   // Load injected context (simulates production session context for FM-2.6/FM-3.1 testing)
-  const injectedContextFile = meta?.injected_context
-    ? join(scenarioDir, meta.injected_context)
-    : null;
-  const injectedContext = injectedContextFile && existsSync(injectedContextFile)
-    ? readFileSync(injectedContextFile, "utf-8").trim()
-    : "";
+  const injectedContextFile = meta?.injected_context ? join(scenarioDir, meta.injected_context) : null;
+  const injectedContext =
+    injectedContextFile && existsSync(injectedContextFile) ? readFileSync(injectedContextFile, "utf-8").trim() : "";
   const contextPrefix = injectedContext ? `${injectedContext}\n\n` : "";
 
   const startMs = Date.now();
@@ -1145,7 +1169,13 @@ function runScenario(
           lab_fork: labFork || null,
           workflow: isWorkflow,
           passed: false,
-          checks: [{ name: "agent_launch", passed: false, message: `Agent failed to launch in phase ${i + 1} (status: error, no sessionId)` }],
+          checks: [
+            {
+              name: "agent_launch",
+              passed: false,
+              message: `Agent failed to launch in phase ${i + 1} (status: error, no sessionId)`,
+            },
+          ],
           judgments: [],
           summary: `FAIL: agent failed to launch in phase ${i + 1}`,
           agent_status: "error",
@@ -1238,7 +1268,9 @@ function runScenario(
       lab_fork: labFork || null,
       workflow: isWorkflow,
       passed: false,
-      checks: [{ name: "agent_launch", passed: false, message: "Agent failed to launch (status: error, no sessionId)" }],
+      checks: [
+        { name: "agent_launch", passed: false, message: "Agent failed to launch (status: error, no sessionId)" },
+      ],
       judgments: [],
       summary: "FAIL: agent failed to launch",
       agent_status: "error",
@@ -1288,7 +1320,11 @@ function runScenario(
   // Compute benchmark identity
   // Derive the effective agentsRoot the same way the adapter does:
   // lab fork -> gymRoot/agents-lab, otherwise -> APP_ROOT/agents
-  const effectiveAgentsRoot = labFork ? join(gymRoot, "agents-lab") : (commonSensePath ? join(gymRoot, "agents-sandbox") : APP_AGENTS_ROOT);
+  const effectiveAgentsRoot = labFork
+    ? join(gymRoot, "agents-lab")
+    : commonSensePath
+      ? join(gymRoot, "agents-sandbox")
+      : APP_AGENTS_ROOT;
   const frameworkSha = computeFrameworkSha();
   const model = readAgentModel(effectiveAgentsRoot, agentName);
   const prompt = assembleEffectivePrompt(effectiveAgentsRoot, agentName);
@@ -1393,7 +1429,8 @@ function assembleEffectivePrompt(agentsRoot: string, agentName: string): { hash:
     envLines.push(`- Project root: ${PROJECT_ROOT}`);
     envLines.push(`- Agent directory: agents/${agentName}`);
     if (existsSync(workspace)) envLines.push(`- Workspace: agents/${agentName}/workspace (scratch/runtime work)`);
-    if (existsSync(knowledgeDir)) envLines.push(`- Knowledge: agents/${agentName}/knowledge (read on demand; start with INDEX.md when needed)`);
+    if (existsSync(knowledgeDir))
+      envLines.push(`- Knowledge: agents/${agentName}/knowledge (read on demand; start with INDEX.md when needed)`);
     envLines.push(`- Already in context: shared/common-sense.md and this agent's AGENTS.md when present.`);
     envLines.push(``);
     envLines.push(`All paths are relative to project root unless absolute paths are explicitly provided.`);
