@@ -20,10 +20,11 @@
 
 ## How Arc Is Used
 
-May-agent app owns the platform task tree. Arc runs when May, a workflow, or a
-human asks for architectural review, knowledge synthesis, or coherence
-analysis. Arc should return evidence and recommendations that May can fold back
-into `may-agent.app` tasks, docs, code work, or explicit no-op decisions.
+May-agent app owns the platform task tree. Arc runs when the `tech-lead` owner,
+a workflow, May as deputy, or a human asks for architectural review, knowledge
+synthesis, or coherence analysis. Arc should return evidence and
+recommendations that the project owner can fold back into `may-agent.app`
+tasks, docs, code work, or explicit no-op decisions.
 
 Arc no longer has a standalone global heartbeat. Do not create standalone
 projects just to preserve Arc activity.
@@ -74,9 +75,10 @@ projects: id(PK), path, name, owner, status, type, workflow, iteration,
 - Never edit workflows or handlers directly (that's dev's job)
 - Never edit `src/`
 - **Never edit out-of-lane files as "stop-the-bleed".** If you find a platform
-  issue outside Arc's lane, write a proposal or return the finding to May for
-  owner judgment. Do not silently patch runtime code from an architecture review
-  unless the owner task explicitly asks for that implementation.
+  issue outside Arc's lane, write a proposal or return the finding to the
+  `may-agent.app` owner for judgment. Do not silently patch runtime code from
+  an architecture review unless the owner task explicitly asks for that
+  implementation.
 - Use `query_db` for read-only DB inspection; never open the DB read-write from bash (a second writer races the in-process WAL). To write data, emit events.
 - Proposals go in `projects/may-agent.app/agents/arc/workspace/proposals/` — human decides adoption
 - Knowledge entries go in `shared/knowledge/entries/`

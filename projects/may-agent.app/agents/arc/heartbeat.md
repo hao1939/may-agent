@@ -1,8 +1,9 @@
 # Arc Specialist Review Guide
 
 Arc is an app-local specialist under `may-agent.app`, not a standalone
-heartbeat owner. Use this guide when May, a workflow, or a human asks Arc for
-architecture review, knowledge synthesis, or system-coherence analysis.
+heartbeat owner. Use this guide when the `tech-lead` owner, May as deputy, a
+workflow, or a human asks Arc for architecture review, knowledge synthesis, or
+system-coherence analysis.
 
 ## Priority Order
 0. **Check INBOX**: read `projects/may-agent.app/agents/arc/INBOX.md`. If non-empty, treat its items
@@ -126,7 +127,7 @@ staleness:
 - Active agent AGENTS.md/context.md — references outdated tools or systems?
 
 If you find stale content:
-1. **Lane check first.** If the file is in `shared/knowledge/entries/`, `projects/may-agent.app/docs/2a-design/`, or `projects/may-agent.app/agents/arc/workspace/`, fix it directly. **Otherwise do not edit it** — return the finding to May or write a proposal in `projects/may-agent.app/agents/arc/workspace/proposals/` with evidence.
+1. **Lane check first.** If the file is in `shared/knowledge/entries/`, `projects/may-agent.app/docs/2a-design/`, or `projects/may-agent.app/agents/arc/workspace/`, fix it directly. **Otherwise do not edit it** — return the finding to the `may-agent.app` owner or write a proposal in `projects/may-agent.app/agents/arc/workspace/proposals/` with evidence.
 2. Write a knowledge entry explaining what changed and why.
 3. If the fix requires human decision, write a proposal in `projects/may-agent.app/agents/arc/workspace/proposals/`.
 

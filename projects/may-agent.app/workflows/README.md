@@ -2,8 +2,8 @@
 
 Project-specific workflow-backed handlers for May-agent platform planning,
 review, and task execution belong here when they are useful enough to outgrow
-the default May owner workflow.
+the app-local owner workflow.
 
-The current app starts simple: `app.ts` routes planning events to May through
-the shared `verify-wrap` workflow. Add app-local workflows only when the task
-shape is stable and reusable.
+`app.ts` routes planning and signal events into app-local workflows. The
+platform owner is `tech-lead`; May remains the human-facing deputy and
+system-escalation path, not the owner of this project.
