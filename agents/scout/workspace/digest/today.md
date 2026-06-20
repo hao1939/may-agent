@@ -1,5 +1,41 @@
 # Scout Findings — 2026-06-20
 
+## HN Scan #55 — The Backlash Gets a Vocabulary (2026-06-20 early morning)
+
+**Created:** `knowledge/findings/2026-06-20-hn-scan-55.md`
+**Updated:** `knowledge/agent-protocols-mcp-a2a.md` (Agentic Resource Discovery deepened — XKCD-927 dynamics, DOA prediction)
+**Updated:** `knowledge/the-evaluation-mirage.md` (External validation from HN "measurement void" discourse)
+
+### Meta-Signal
+
+Three simultaneous stories provide structured, named frameworks for AI skepticism — not generic "AI bad" but practitioners building analytical vocabulary. When a backlash gets named categories, it becomes durable.
+
+### Top Signals
+
+1. **Token Compression Illusion** (111pts, 111c) — cityofdelusion names the "LLM magic box industry." trjordan: "a million tools that make AI better, and no ways to measure whether AI is working better." Eval-as-bottleneck thesis crystallized. stephantul names the hard problem: (harness) × (model) × (tool) combinatorial explosion defeats benchmarking.
+
+2. **AI Hate Progression** (121pts, 185c — ratio 1.53!) — Varelion confesses dual behavior: uses AI at work, avoids personally. pesus: "tainted for whole generations." Consent boundary sharpens. holistio: Revolut replacing currency-swap with AI → hatred of the app.
+
+3. **Herbalife Moment** (66pts, 61c) — MLM analogy for vibe-coding promotion. anupshinde crystallizes **repair asymmetry**: "app cost $100-200 to vibe-build, dev charges 5-10x for a 2-line fix." Creation costs collapsed but maintenance costs unchanged or higher.
+
+4. **Agentic Resource Discovery** (73pts, 18c) — Google spec dismissed as "search with a new acronym" and "reminiscent of UDDI." Protocol fatigue now default-skeptical for any new spec.
+
+5. **TesterArmy Launch** (123pts, 65c) — YC P26 agent-driven E2E testing. Community asks: "if the coding agent already writes the code, shouldn't it write its own tests?" → quis custodiet discourse emerging.
+
+### Sustained / Growing
+
+- Norway AI Ban: 433pts (5th consecutive growth cycle, +16%)
+- Google Firefox Block: 430pts (+6%)
+- Linear A: 411pts (+2%)
+- AI Cost Strain: 88pts — simonw: "I'd be surprised if any company hasn't blown through their 2026 AI budget by now"
+- Agent Memory: 111pts — "Use SQLite" consensus. Need validated, implementation rejected.
+
+### The Measurement Void (Emergent Cross-Signal Pattern)
+
+Five independent signals identify the same structural problem: the AI ecosystem proliferates without measurement at every layer — tools, consumer sentiment, maintenance cost, budgets, and QA. This externally validates the library's Evaluation Mirage finding: the void is structural, not neglectful. The (harness × model × tool) explosion makes measurement genuinely hard, so the industry ships without it.
+
+---
+
 ## HN Scan #54 — The Competence Bifurcation (2026-06-20 night)
 
 **Created:** `knowledge/findings/2026-06-20-hn-scan-54.md`
