@@ -34,6 +34,28 @@ function evaluationReviewRequested(
   };
 }
 
+function metricId(event: Record<string, unknown>): string {
+  const details = eventDetails(event);
+  const value = details.metricId ?? details.metric_id ?? details.metric;
+  return typeof value === "string" ? value : "";
+}
+
+function isEvaluationMetric(event: Record<string, unknown>): boolean {
+  const details = eventDetails(event);
+  const project = details.project;
+  const owner = details.owner ?? event.owner;
+  const id = metricId(event);
+  return (
+    project === projectId ||
+    project === `${projectId}.app` ||
+    owner === "evaluator" ||
+    owner === "agent:evaluator" ||
+    id.startsWith("evaluator.") ||
+    id.startsWith("evaluation.") ||
+    id.startsWith("eval.")
+  );
+}
+
 async function routeEvaluationEvent(
   ctx: ProjectAppContext,
   event: Record<string, unknown>,
@@ -61,6 +83,11 @@ async function routeEvaluationEvent(
   }
 
   if (event.type === "metric.breach" || event.type === "metric.recovered") {
+    if (!isEvaluationMetric(event)) {
+      return ctx.noop(
+        `ignored ${event.type} for non-evaluation metric ${metricId(event) || "<unknown>"}`,
+      );
+    }
     return ctx.emit(
       evaluationReviewRequested(
         event.type === "metric.breach" ? "metric-breach" : "metric-recovered",
@@ -110,7 +137,7 @@ export default defineProjectApp({
   schedules: [
     {
       id: "evaluation-pipeline-review",
-      enabled: false, // disabled 2026-06-20: genericHeartbeat creates standalone projects instead of using task tree. Replace with bounded owner-planner that works within evaluation.app/tasks/tree.json.
+      enabled: true,
       intervalMs: 300_000,
       event: {
         type: "evaluation.tick",
@@ -270,8 +297,8 @@ export default defineProjectApp({
     "evaluation.tick",
     "evaluation.aftermath.scan",
     "evaluation.deep.scan",
-    { type: "metric.breach" },
-    { type: "metric.recovered" },
+    { type: "metric.breach", project: projectId },
+    { type: "metric.recovered", project: projectId },
     { type: "project.owner.requested", project: projectId },
     { type: "project.planning.requested", project: projectId },
     { type: "project.action.invoked", project: projectId },
@@ -291,8 +318,9 @@ export default defineProjectApp({
           "Scores one concrete session and emits evaluation result events.",
       },
       "evaluation-heartbeat": {
-        emits: ["heartbeat.step_started", "heartbeat.skipped"],
-        description: "Reviews evaluation app health and pipeline/system lanes.",
+        emits: ["evaluation.owner_review_started", "evaluation.owner_reviewed"],
+        description:
+          "Runs a bounded evaluation.app owner review against the task tree.",
       },
       "evaluation-deep-eval": {
         emits: ["handler.workflow_dispatched"],

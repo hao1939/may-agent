@@ -1,12 +1,9 @@
 {
   "version": 2,
   "project": "evaluation",
-  "updated_at": "2026-06-18T10:35:00Z",
+  "updated_at": "2026-06-20T11:25:00Z",
   "root_task_id": "evaluation-system",
-  "active_task_ids": [
-    "aftermath-trigger-leak-audit",
-    "aftermath-reviewed-delivery-gap"
-  ],
+  "active_task_ids": ["aftermath-trigger-leak-audit"],
   "max_concurrent": 2,
   "tasks": {
     "evaluation-system": {
@@ -22,8 +19,8 @@
         "replace-heartbeat-with-owner-planner"
       ],
       "created_at": "2026-06-14T00:00:00Z",
-      "updated_at": "2026-06-18T10:35:00Z",
-      "summary": "Project-app evaluation system with five lanes. Current owner focus is split between the older aftermath trigger-leak audit and a fresh aftermath liveness gap: the live 3h metric alert is now at 0, and the current window shows no evaluation.routed / evaluation.reviewed / evaluation.skipped activity despite ongoing session completions. Keep pipeline-health active on trigger/dispatch liveness first, then resume secondary lanes once the zero-activity window is explained or repaired.",
+      "updated_at": "2026-06-20T11:25:00Z",
+      "summary": "Project-app evaluation system with five lanes. The owner heartbeat has been replaced with a bounded evaluation.app owner review workflow that reads the task tree/runtime packet, filters foreign metric noise, updates tasks or discussion, and does not create standalone evaluator projects. Active owner focus remains the still-open pipeline-health aftermath routing work.",
       "state": "active"
     },
     "pipeline-health": {
@@ -36,8 +33,8 @@
         "aftermath-reviewed-delivery-gap"
       ],
       "created_at": "2026-06-14T00:00:00Z",
-      "updated_at": "2026-06-18T10:35:00Z",
-      "summary": "Pipeline-health now has two active signals. Historical evidence still points at missing-sessionId routing leakage, but the current live breach has shifted again: metric evaluator.aftermath-coverage-rate-3h is now 0, and the measured 3h window shows zero evaluation.routed / evaluation.reviewed / evaluation.skipped events even though 29 sessions completed in that same window. That means the immediate issue is broader aftermath trigger/dispatch liveness, not just post-review delivery matching.",
+      "updated_at": "2026-06-20T11:10:00Z",
+      "summary": "Pipeline-health no longer shows the earlier total evaluator-aftermath blackout in the current runtime packet: `evaluator.aftermath-coverage-rate-3h` is back to 1 and recent evaluator-aftermath runs are emitting routed/reviewed/skipped events again. Keep the missing-sessionId trigger-leak audit active and leave the broader liveness investigation parked unless coverage regresses again or runtime-owner evidence reopens the dispatch path question.",
       "state": "active"
     },
     "aftermath-trigger-leak-audit": {
@@ -63,9 +60,7 @@
         "Identifies the exact upstream emitter or dispatch path responsible for the leak.",
         "Packages the next action as either a local implementation task or a concrete escalation with evidence."
       ],
-      "conflict_scope": [
-        "evaluation-pipeline-routing"
-      ],
+      "conflict_scope": ["evaluation-pipeline-routing"],
       "state": "active",
       "context": {
         "migrated_from_ready_state": true,
@@ -106,9 +101,7 @@
         "Separates evaluator-owned prompt/workflow fixes from runtime-owner issues.",
         "Leaves a concrete repair or escalation task instead of a generic complaint."
       ],
-      "conflict_scope": [
-        "evaluation-review-runtime"
-      ],
+      "conflict_scope": ["evaluation-review-runtime"],
       "state": "backlog",
       "context": {
         "migrated_from_ready_state": true,
@@ -126,9 +119,7 @@
       "id": "criteria-and-calibration",
       "goal": "Maintain scoring criteria, calibrate against human reviews, version criteria changes",
       "parent_id": "evaluation-system",
-      "children": [
-        "seed-fresh-calibration-batch"
-      ],
+      "children": ["seed-fresh-calibration-batch"],
       "created_at": "2026-06-14T00:00:00Z",
       "updated_at": "2026-06-14T14:05:17Z",
       "summary": "Criteria at v1. Calibration scaffolding exists but criteria/calibration is empty and the prior summary references only 2026-04-29 placeholder stubs. A fresh 2026-06 disagreement sample is needed before criteria changes are credible.",
@@ -157,9 +148,7 @@
         "Records at least one real calibration artifact under criteria/calibration or explains why a different durable location is better.",
         "Updates task-tree context with what the new sample says about criteria drift."
       ],
-      "conflict_scope": [
-        "evaluation-calibration"
-      ],
+      "conflict_scope": ["evaluation-calibration"],
       "state": "backlog",
       "context": {
         "migrated_from_ready_state": true
@@ -225,38 +214,30 @@
         "Explains whether the zero-coverage gap is upstream trigger loss, handler dispatch failure, or evaluator workflow inactivity.",
         "Leaves either a local repair task or a concrete escalation with named timestamps/session samples and evidence."
       ],
-      "conflict_scope": [
-        "evaluation-reviewed-delivery"
-      ],
-      "state": "active",
+      "conflict_scope": ["evaluation-reviewed-delivery"],
+      "state": "backlog",
       "context": {
         "latest_evidence": {
-          "observed_at": "2026-06-19T15:23:00Z",
-          "metric_id": "session.failed-triage-rate-3h",
-          "metric_current": 0.4444,
-          "metric_threshold": 0.8,
-          "measured_at_ms": 1781882630207,
-          "window_ms": 10800000,
-          "failed_sessions_last_3h": 18,
-          "triaged_sessions_last_3h": 8,
-          "direct_failed_join_count": 20,
-          "direct_failed_join_triaged": 10,
-          "session_completed_events_last_3h": 271,
-          "evaluation_routed_last_3h": 4,
-          "evaluation_reviewed_last_3h": 4,
-          "evaluation_skipped_last_3h": 5,
-          "direct_trigger_runs_last_3h": 0,
-          "session_completed_accepted_by": "cron:1",
-          "scan_events_accepted_by": "cron:1",
-          "signal": "The live breach is no longer a total evaluator outage, but direct session.completed -> evaluator-aftermath dispatch still appears absent. In the measured 3h window, 271 session.completed events were accepted by cron:1, no direct-trigger evaluator-aftermath runs started, and only thin scan/backfill activity produced 4 routed / 4 reviewed / 5 skipped outcomes. Checked-in platform code now shows project-app workflow-handler pre-registration in project-app-loader.ts, so the active problem is a runtime deployment/loader contradiction or another dispatch bypass, not just stale task context about reviewed-event matching."
+          "observed_at": "2026-06-20T11:10:00Z",
+          "metric_id": "evaluator.aftermath-coverage-rate-3h",
+          "metric_current": 1,
+          "metric_threshold": 0.2,
+          "recent_routed_event_id": 1645970,
+          "recent_reviewed_event_id": 1646017,
+          "recent_skipped_event_id": 1646005,
+          "recent_done_examples": [
+            "Evaluated s_1781953640534_1: good (success_candidate). Review session: s_1781953725964_3.",
+            "Skipped aftermath for s_project_planner_event_review_20260620110908_7igr5u: quick_exit_successful_session."
+          ],
+          "signal": "The specific live zero-activity/liveness breach is not present in the current owner packet. Recent evaluator-aftermath runs are completing normally and emitting evaluation.routed, evaluation.reviewed, and evaluation.skipped events again, so this lane should stay parked unless the 3h coverage metric regresses or runtime-owner evidence reopens the direct-dispatch question."
         }
       },
-      "updated_at": "2026-06-19T15:23:00Z"
+      "updated_at": "2026-06-20T11:10:00Z"
     },
     "replace-heartbeat-with-owner-planner": {
       "id": "replace-heartbeat-with-owner-planner",
       "parent_id": "evaluation-system",
-      "state": "backlog",
+      "state": "done",
       "kind": "work",
       "priority": "P1",
       "owner": "evaluator",
@@ -265,15 +246,45 @@
       "context": {
         "current_problem": "evaluator-heartbeat.ts uses genericHeartbeat which gives full creative freedom. The evaluator discovers metric issues and creates projects/evaluator-*/project.md files instead of updating evaluation.app/tasks/tree.json.",
         "fix_direction": "Replace genericHeartbeat with a workflow like aks-rp-e2e's project-planner: read task tree packet, review completions, create tasks for new findings, assign runnable work. Same pattern, evaluation domain.",
-        "disabled": "evaluation-pipeline-review schedule (5min) disabled until this migration is done. drift-detection (1h) and integrity-patrol (6h) still run genericHeartbeat but at lower frequency.",
-        "reference": "projects/aks-rp-e2e.app/workflows/project-planner.ts for the pattern"
+        "disabled": "Resolved 2026-06-20: evaluation-pipeline-review schedule re-enabled against bounded evaluator-heartbeat owner review.",
+        "reference": "projects/aks-rp-e2e.app/workflows/project-planner.ts for the pattern",
+        "implemented": {
+          "workflow": "projects/evaluation.app/workflows/evaluator-heartbeat.ts",
+          "schedule": "evaluation-pipeline-review",
+          "metric_filter": "app.ts ignores non-evaluation metric.breach/recovered signals and only project-scoped or evaluator-owned metrics can become owner-review ticks; evaluator-heartbeat runtime packets also filter metric events to evaluation/evaluator-owned metrics",
+          "owner_packet": [
+            "trigger event",
+            "tasks/tree.json compact active/backlog/blocked packet",
+            "evaluator-owned metrics",
+            "recent evaluator workflow runs",
+            "recent evaluation/session/metric events"
+          ]
+        },
+        "latest_evidence": {
+          "observed_at": "2026-06-20T11:13:00Z",
+          "owner_packet_trigger_type": "evaluation.tick",
+          "foreign_metric_project": "aks-rp-e2e",
+          "foreign_metric_owner": "agent:aks-explorer",
+          "owner_packet_has_sessionId": false,
+          "evaluation_aftermath_coverage_rate_3h": 1,
+          "evaluation_stale_running_session_count": 0,
+          "recent_evaluation_event_ids": {
+            "routed": 1646103,
+            "reviewed": 1646130,
+            "skipped": 1646144
+          },
+          "signal": "The current scheduled owner packet is still a foreign-wake control-plane check, not new evaluation-local work: it carries no sessionId, evaluation-local pipeline health is green, and existing active task replace-heartbeat-with-owner-planner already covers the repeated misrouting of foreign aks-rp-e2e metric feedback into the evaluation owner loop."
+        }
       },
       "acceptance": [
         "No more standalone evaluator-* projects created",
         "Metric findings become task tree entries under appropriate lanes",
         "Owner wake reads task tree packet, reviews state, creates/assigns work",
-        "evaluation-pipeline-review re-enabled with bounded planner workflow"
-      ]
+        "evaluation-pipeline-review re-enabled with bounded planner workflow",
+        "Foreign-app metric breaches are ignored or rerouted; they do not create evaluation work or wake the evaluation owner loop as actionable local tasks"
+      ],
+      "summary": "Implemented bounded evaluation owner review, re-enabled the 5 minute pipeline review schedule, filtered foreign-app metric feedback, and kept runtime metric context scoped to evaluation-owned signals. Future evaluation ticks should update tasks/tree.json or discussion.md instead of creating standalone evaluator projects.",
+      "updated_at": "2026-06-20T11:25:00Z"
     }
   }
 }
