@@ -441,10 +441,6 @@ function sessionRestartReasonFromRow(
   if (row.outcome === "error" || row.outcome === "interrupted")
     return `session-${row.outcome}`;
 
-  const opCount =
-    typeof row.opCount === "number" && Number.isFinite(row.opCount)
-      ? row.opCount
-      : null;
   const startedAt =
     typeof row.startedAt === "number" && Number.isFinite(row.startedAt)
       ? row.startedAt
@@ -456,7 +452,6 @@ function sessionRestartReasonFromRow(
       : startedAt;
   const staleSince = lastActivityAt ?? startedAt;
   if (
-    opCount === 0 &&
     staleSince !== null &&
     Date.now() - staleSince > staleActiveNoActivityMs
   ) {

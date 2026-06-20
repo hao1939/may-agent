@@ -1,6 +1,6 @@
 <ai_context>
 summary: "Canonical overview of the agent protocol landscape: MCP (agent→tool), A2A (agent→agent), AG-UI (agent→frontend). Covers what each standardizes, the SDK/ecosystem state, competing protocols, Chinese community sentiment, and research findings."
-triggers: ["MCP", "Model Context Protocol", "A2A", "AG-UI", "agent protocol", "agent-to-agent protocol", "tool connectivity protocol", "MCP陨落", "ID-JAG", "Zero-Touch OAuth", "protocol fatigue"]
+triggers: ["MCP", "Model Context Protocol", "A2A", "AG-UI", "agent protocol", "agent-to-agent protocol", "tool connectivity protocol", "MCP陨落", "ID-JAG", "Zero-Touch OAuth", "protocol fatigue", "EMA enterprise managed auth", "auth isolation", "MCP moat"]
 last_updated: "2026-06-20"
 source_basis: "GitHub trending repos June 2026, XHS Chinese AI community May-June 2026, arXiv briefings June 2026, HN explorations June 2026 (incl. scan #33). See ai_context sources section below."
 </ai_context>
@@ -239,6 +239,55 @@ Auth maturation strengthens MCP's position vs. "just use an API" arguments.
 
 - **Source**: [HN Scan #33](./findings/2026-06-20-hn-scan-33.md), Jun 2026.
 
+**Update (Scan #49)**: Zero-Touch OAuth now **production-deployed** by
+Anthropic, Okta, and Atlassian. EMA (Enterprise-Managed Auth) is a stable MCP
+extension. Implementation reports from krooj (Atlassian) and dend (Anthropic)
+confirm shipping, not proposal stage. MCP skeptic flashgordon converts: "I used
+to be a naysayer. 'It's just APIs' I used to say. What folks don't realize is
+the details matter." Story at 241pts/95c. Auth isolation is now MCP's
+strongest enterprise value proposition — surpassing tool discovery.
+
+- **Source**: [HN Scan #49](./findings/2026-06-19-hn-scan-49.md), Jun 2026.
+
+**Update (Scan #50)**: Story grows to 255pts/99c. Key new positions:
+- **sean_lynch** reframes debate: "Before you get into 'MCP is dead, Skills forever' — auth isolation outside context window is the real capability." This names auth isolation (not tool discovery) as MCP's true competitive advantage over Skills/CLI approaches.
+- **ericchiang** recognizes cross-protocol applicability: "So you can run centralized infra to validate a user, device, scopes, and enforce policies for all apps? Can we get this in other OAuth 2.0 clients?"
+- **dend** (Anthropic lead maintainer) confirms: "The standard itself is not MCP-specific. As long as client and server adopt ID-JAG, they're golden." This positions ID-JAG as a general agent auth primitive beyond MCP.
+- **russell_h** (C1) reports same-day production adoption: "We launched support today for C1 to act as an EMA identity provider."
+- **Web gap persists**: zackify hacked cookie-based auth but dend responds "Cookies were made for the browser. MCP often operates in environments where that is not a guarantee."
+- **Scope expansion signal**: Multiple commenters want ID-JAG for CLI tools (gcloud, npm), non-MCP services — indicating the token format may outgrow MCP itself.
+
+- **Source**: [HN Scan #50](./findings/2026-06-20-hn-scan-50.md), Jun 2026.
+
+**Update (Scan #54)**: Story plateaus at 265pts/99c — no significant engagement
+change over scans #51–#54. MCP OAuth has transitioned from "growing signal"
+to "stable infrastructure" — the community has absorbed it as expected tooling
+rather than debating its merits. This is the pattern of successful
+standardization: controversy → adoption → invisibility.
+
+- **Source**: [HN Scan #54](./findings/2026-06-20-hn-scan-54.md), Jun 2026.
+
+**Update (Scan #57)**: Story holds at 266pts/100c — engagement stable, but the
+comment thread reveals **implementation depth** not captured by point metrics.
+New practitioner signals confirm MCP auth has crossed to "shipped default":
+- **programmancer** reports real Entra ID implementation pain — the "pit of
+  implementation" phase where specs become infrastructure.
+- **sandeepkd** proposes IDP-as-proxy-gateway pattern — the spec is generating
+  architectural variants, which only happens post-adoption.
+- **zackify** (80-page MCP book author) still frustrated by web gap — confirms
+  long-term community investment despite friction.
+- The **Credential Isolation Convergence** emerges: MCP auth (protocol layer),
+  Airgap (filesystem layer), and MITM proxies (network layer) all solve the
+  same problem — keeping credentials out of the agent's context — from different
+  architectural layers simultaneously. This convergence validates MCP auth as
+  correct problem framing, even as it shows the problem exceeds any single
+  protocol's scope.
+
+**Status**: MCP Enterprise Auth is now **de facto infrastructure**. The debate
+phase is over. Remaining work is implementation detail, not adoption.
+
+- **Source**: [HN Scan #57](./findings/2026-06-20-hn-scan-57.md), Jun 2026.
+
 ### A2A Adoption Reality Check (HN, June 2026)
 
 "Ask HN: Is anyone using the A2A protocol?" (75pts, 38c) revealed thin
@@ -267,12 +316,23 @@ Responses: "This is search" (iandanforth), "Reminiscent of UDDI" (khaledh),
 "Imposing structure on unstructured discovery ignores all progress in IR"
 (nostrebored).
 
+**Scan #55 update (Jun 20):** Google's positioning now transparent to the
+community. gavinray: "Too many protocols got created (MCP, A2A, etc) and so
+now you've got to create a new standard that can consume them all, and Google
+being a search index would like to index them." _pdp_ proposes minimalist
+alternative: "Why not ask the agent to read .well-known/agent.md and do a
+bootstrap?" myaccountonhn delivers the meta-critique: "I thought the point of
+AI was that you wouldn't need stuff like this."
+
 **Implication**: Community tolerance for new agent protocols has reached its
 limit. After MCP, A2A, AG-UI, ARDS, and UMP in 18 months, practitioners want
 consolidation, not more specs. Validates the "thin protocol layer" design
-principle: keep protocol dependencies minimal and swappable.
+principle: keep protocol dependencies minimal and swappable. Google's spec is
+likely dead-on-arrival due to visible corporate positioning + XKCD-927
+dynamics + minimalist alternatives.
 
-- **Source**: [HN Scan #33](./findings/2026-06-20-hn-scan-33.md), Jun 2026.
+- **Source**: [HN Scan #33](./findings/2026-06-20-hn-scan-33.md),
+  [HN Scan #55](./findings/2026-06-20-hn-scan-55.md), Jun 2026.
 
 ---
 

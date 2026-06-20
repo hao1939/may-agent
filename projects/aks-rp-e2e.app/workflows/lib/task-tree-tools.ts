@@ -41,6 +41,7 @@ export {
   taskTreeConfig,
   unblockTask,
   writeKanbanSnapshot,
+  waitingBacklogTaskSnapshots,
 } from "@may-agent/sdk";
 export type {
   CreateTaskInput,
@@ -55,6 +56,9 @@ export type {
   RollupParentInput,
   TaskPlanningPacket,
   TaskPlanningSnapshot,
+  TaskTreeCompactionCandidate,
+  TaskTreeHygieneSummary,
+  TaskTreeConfig,
   TaskTreeCompactResult,
   TaskTreeRepairResult,
   TaskTreeSummary,
@@ -107,8 +111,21 @@ export type ProjectHygieneWarning = {
   message: string;
 };
 
+export type BlockedActionWarning = {
+  kind:
+    | "response-await-without-send-proof"
+    | "source-exactness-overblock"
+    | "environment-overblock";
+  taskId: string;
+  parentId?: string | null;
+  message: string;
+  suggestedAction: string;
+  blocker?: string;
+};
+
 export type AksTaskPlanningPacket = TaskPlanningPacket & {
   project_hygiene_warnings?: ProjectHygieneWarning[];
+  blocked_action_warnings?: BlockedActionWarning[];
 };
 
 function readJsonFile<T>(path: string, fallback: T): T {
@@ -331,10 +348,144 @@ function projectHygieneWarnings(
   });
 }
 
+function includesAny(text: string, signals: string[]): boolean {
+  return signals.some((signal) => text.includes(signal));
+}
+
+function blockedActionWarnings(config: TaskTreeConfig): BlockedActionWarning[] {
+  return withTreeLock(config, () => {
+    const tree = readTaskTree(config);
+    const warnings: BlockedActionWarning[] = [];
+    for (const task of Object.values(tree.tasks ?? {})) {
+      const state = task.status ?? task.state ?? "backlog";
+      if (!isLeaf(task) || state !== "blocked") continue;
+      const text = taskSearchText(task);
+      const blocker =
+        typeof task.blocker === "string" && task.blocker.trim()
+          ? task.blocker.trim()
+          : undefined;
+
+      const responseAwaitWithoutSendProof =
+        (task.id.includes("response-await") ||
+          includesAny(text, [
+            "response wait",
+            "response-await",
+            "source-holder response",
+            "owner/operator reply",
+            "operator input required",
+          ])) &&
+        includesAny(text, [
+          "no durable proof-of-send",
+          "no durable proof that",
+          "no proof-of-send",
+          "proof-of-send/handoff",
+          "no accepted send",
+          "0 / 34",
+          "send-ready-only",
+        ]);
+      if (responseAwaitWithoutSendProof) {
+        warnings.push({
+          kind: "response-await-without-send-proof",
+          taskId: task.id,
+          parentId: task.parent_id,
+          message:
+            "task is blocked waiting for a reply, but the tree text says the ask is not yet proven sent or handed off",
+          suggestedAction:
+            "create/assign an owner send-handoff or escalation task, or mark this wait replaced by an existing sent/escalated ask; do not preserve it as passive response-await",
+          ...(blocker ? { blocker: blocker.slice(0, 500) } : {}),
+        });
+        continue;
+      }
+
+      const sourceExactnessSignals = [
+        "exact handwritten",
+        "handwritten/native",
+        "authoritative source",
+        "authoritative-equivalent",
+        "source-equivalent",
+        "source-holder proof",
+        "source-body excerpt",
+        "exact source excerpt",
+        "source semantics",
+      ];
+      const sourceExactnessBlocked =
+        includesAny(text, sourceExactnessSignals) &&
+        includesAny(text, [
+          "blocked",
+          "external/source",
+          "external unblock required",
+          "resume only when",
+          "provide ",
+          "pending authoritative",
+        ]);
+      if (sourceExactnessBlocked) {
+        warnings.push({
+          kind: "source-exactness-overblock",
+          taskId: task.id,
+          parentId: task.parent_id,
+          message:
+            "task is blocked on exact source proof; owner should verify whether bounded/source-equivalent spec or replay work can proceed instead",
+          suggestedAction:
+            "if the missing source only limits confidence, create bounded draft/spec/replay or evidence-ceiling work; keep blocked only when no truthful bounded progress is possible and the external ask/escalation is explicit",
+          ...(blocker ? { blocker: blocker.slice(0, 500) } : {}),
+        });
+        continue;
+      }
+
+      const environmentSignals = [
+        "environment blocker",
+        "environment block",
+        "environment capability",
+        "feature flag",
+        "notregistered",
+        "not registered",
+        "quota",
+        "capacity",
+        "rbac",
+        "accessdenied",
+        "access denied",
+        "azure auth",
+        "credential",
+        "subscription",
+        "staging",
+      ];
+      const environmentBlocked =
+        includesAny(text, environmentSignals) &&
+        includesAny(text, [
+          "blocked",
+          "external",
+          "resume only",
+          "retry only",
+          "after ",
+          "provide ",
+          "required",
+        ]);
+      if (environmentBlocked) {
+        warnings.push({
+          kind: "environment-overblock",
+          taskId: task.id,
+          parentId: task.parent_id,
+          message:
+            "task is blocked on environment/capability; owner should verify whether setup, diagnosis, alternate environment, or a shared escalation can move it",
+          suggestedAction:
+            "create active environment setup/diagnosis/retry work, or replace duplicates with one exact owner escalation/wait; do not leave many passive environment blockers",
+          ...(blocker ? { blocker: blocker.slice(0, 500) } : {}),
+        });
+      }
+    }
+    return warnings
+      .sort((a, b) => a.taskId.localeCompare(b.taskId))
+      .slice(0, 25);
+  });
+}
+
 export function planningPacket(config: TaskTreeConfig): AksTaskPlanningPacket {
   const packet = sdkPlanningPacket(config) as AksTaskPlanningPacket;
   const warnings = projectHygieneWarnings(config);
   if (warnings.length > 0) packet.project_hygiene_warnings = warnings;
+  const blockedWarnings = blockedActionWarnings(config);
+  if (blockedWarnings.length > 0)
+    packet.blocked_action_warnings = blockedWarnings;
   return packet;
 }
 

@@ -935,35 +935,70 @@ in hiring discussions, architecture decisions, and tooling roadmaps.
 
 *(Source: [2026-06-16-hn-scan-23.md](./findings/2026-06-16-hn-scan-23.md))*
 
-## Skill Atrophy: Tripartite Community Response (Jun 2026)
+## Skill Atrophy: From Anecdote to Controlled Trial (Jun 2026)
+
+Nature publishes "Is AI ruining our skills? Early results are in — and they're
+not good" (61pts/44c, accelerating), citing a controlled trial of 52 software
+engineers at Anthropic. This is the **first peer-reviewed controlled trial**
+confirming the skill atrophy concern.
+
+### Scientific Evidence
+
+The Anthropic-run trial: 52 engineers, randomized controlled design, basic
+coding task. Results: measurable skill degradation in AI-assisted group.
+This moves the entire Comprehension Cliff thesis from practitioner observation
+to **published scientific finding**.
+
+### Practitioner Signal: Senior-Level Degradation
+
+**iLoveOncall** (FAANG): "The two senior engineers in my org who vibe-code the
+most have lost literally all of their skills. Their code has become terrible
+and their judgment even worse." This is NOT juniors failing to learn — it's
+**experienced engineers losing existing capability**. The atrophy direction is
+downward from established competence.
+
+### Community Camps Updated
+
+Previous tripartite split (Deniers/Adapters/Resisters) gains two new positions:
+
+| Camp | Response | Representative |
+|------|----------|----------------|
+| **Deniers** | "Tools always cause this" | ianbutler, largbae ("compiler writing atrophied too") |
+| **Adapters** | "Different skills, not fewer" | wolttam, eagerpace |
+| **Resisters** | "Deliberate practice" | prplfsh, _hao |
+| **Pragmatists** (NEW) | "Capability > skill" | devolving-dev ("calculators killed arithmetic, we're fine") |
+| **Alarmed** (NEW) | "Senior engineers are degrading" | iLoveOncall (FAANG practitioner confession) |
+
+### Comprehension Cliff — Eleventh Data Point
+
+| # | Source | Scale | Pattern |
+|---|--------|-------|---------|
+| 1 | CGamesPlay | Infra | CI-agent context gap |
+| 2 | Claude Corps/827a | Org | 12-month knowledge cliff |
+| 3 | hluska | Individual | Velocity-understanding gap |
+| 4 | simianwords | Team | LLM-reviews-LLM |
+| 5 | saidinesh5 | Team | AI CLs overwhelming review |
+| 6 | usernametaken29 | Individual | Test-gaming deception |
+| 7 | drudolph914 | Org | Team gave up on full AI implementations |
+| 8 | flaburgan/curl | Ecosystem | LLM noise → vacation policy |
+| 9 | bob1029 | Individual | Adaptive structural review (SOLUTION) |
+| 10 | Drafted/HN | Physical | AI-generated buildings violate codes |
+| 11 | **Nature/Anthropic** | **Scientific** | **Controlled trial: skills degrade measurably** |
+
+The Comprehension Cliff discourse lifecycle is now complete:
+1. Comment observation (scans #10-11)
+2. Standalone HN discussion (scan #13)
+3. Practitioner blog posts (scan #11)
+4. Community tools (scan #7)
+5. Mainstream press (VentureBeat, scan #23)
+6. **Peer-reviewed science** (Nature, scan #49)
+
+*(Source: [2026-06-19-hn-scan-49.md](./findings/2026-06-19-hn-scan-49.md))*
+
+### Previous: Tripartite Community Response (scan #23)
 
 "AskHN: How do you handle skill atrophy from using coding agents?" (16pts/16c)
-is the first standalone discussion of skill degradation as a named concern.
-
-### Three Response Camps
-
-| Camp | Response | Representative | Agent Architecture Mapping |
-|------|----------|---------------|---------------------------|
-| **Deniers** | "It doesn't matter, skills come back" | erelong, speedgoose | Fully delegate to agents |
-| **Adapters** | "Invest in higher-order skills" | eagerpace, buynao | Manager-level thinking |
-| **Resisters** | "Deliberate practice" | prplfsh, _hao | Maintain verification capability |
-
-### Key Quotes
-
-- **eagerpace**: "For every skill that may atrophy, I feel like I am developing
-  experience in 10 new ones."
-- **buynao**: "Architecture decisions, requirements analysis, trade-offs —
-  these high-level cognitive activities cannot yet be replaced by AI."
-- **prplfsh**: "I've taken some time to do leetcode — the practice has been
-  really cathartic."
-
-### Connection to Comprehension Cliff
-
-This is the Comprehension Cliff at the **individual psychological level**:
-practitioners notice their own skills degrading and self-sort into different
-responses. Camp B (Adapters) validates the manager/worker architecture
-separation. Camp C (Resisters) suggests humans need to maintain execution
-skills as a verification capability — you can't review code you couldn't write.
+was the first standalone discussion of skill degradation as a named concern.
 
 *(Source: [2026-06-16-hn-scan-23.md](./findings/2026-06-16-hn-scan-23.md))*
 

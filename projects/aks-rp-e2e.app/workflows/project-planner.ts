@@ -2,8 +2,8 @@
  * project-planner — refill/review loop for aks-rp-e2e.
  *
  * The planner workflow is not the project brain. It wakes the project owner
- * agent with task-tree tools, then emits task assignment events explicitly
- * requested by that planner session.
+ * agent with task-tree tools, then emits task assignment events from owner
+ * assignments or already-clear backlog dispatch.
  */
 
 import type { WorkflowContext, WorkflowResult } from "@may-agent/sdk";
@@ -14,8 +14,6 @@ import {
   planningPacket,
   readTask,
   repairTaskTreeRollups,
-  requeueStaleActiveTasks,
-  seedModelGapBacklog,
   taskTreeConfig,
   type TaskAssignment,
   type TaskPlanningPacket,
@@ -194,15 +192,34 @@ Core operating model:
   auth, not one duplicate blocker task per affected replay. Use the stable
   problemKey from project.problem.* events when present.
 - Periodic blocked-frontier review is owner work. If the wake reason is
-  scheduled-blocked-frontier-review or blocked-frontier-review, sample blocked
-  and dependency-waiting leaves, recheck whether resume conditions changed,
-  and push each sampled blocker toward final state. Create/link problem-solving
-  work for locally fixable blockers, convert proven terminal/product/environment
-  dispositions to done with evidence and retest condition, unblock/rework stale
-  blockers, or create the external ask/escalation/response-await path needed to
-  close the blocker. Leave a task blocked only when the owner, exact resume
-  condition, and next review trigger are explicit. Never retry a blocked leaf
+  scheduled-blocked-frontier-review, blocked-frontier-review, or
+  watchdog-blocked-frontier-review, use blocked_frontier_summary to choose
+  whole blocker families, not only the first visible blocked leaves. The goal
+  is burn-down: reduce duplicate/noisy blocked leaves or advance the family to
+  one clearer next owner action. Recheck whether resume conditions changed,
+  create/link problem-solving work for locally fixable blockers, convert proven
+  terminal/product/environment dispositions to done with evidence and retest
+  condition, unblock/rework stale blockers, or create the external
+  ask/escalation/response-await path needed to close the blocker. If several
+  leaves share one real external wait, keep one family-level wait carrying the
+  owner, exact resume condition, next review trigger, and affected task ids;
+  mark duplicate/stale child waits done with --resolution replaced only after
+  that meaning is preserved. Leave a task blocked only when it is the single
+  useful live representation of a true wait. Never retry a blocked leaf
   unchanged.
+- Treat blocked_action_warnings as direct owner-review hints. They do not decide
+  the domain truth, but they flag blocked leaves whose shape is suspicious.
+  A response-await task is not a real blocker when the ask has not been proven
+  sent or handed off; create/assign the owner send-handoff/escalation work, or
+  mark the passive wait replaced by the task that actually sends it. An exact
+  source blocker is valid only when no truthful bounded/source-equivalent spec,
+  replay, evidence-ceiling, public-doc check, or draft follow-up can progress.
+  Missing perfect handwritten source should not freeze the project by itself:
+  first try local artifacts, checked-in specs/replays, accepted source-equivalent
+  evidence, public docs, and bounded "best known equivalent" specs. Environment
+  blockers are also work, not a parking lot: create setup/diagnosis/retry or a
+  single exact owner escalation/wait for the shared environment cause, then move
+  unrelated work forward.
 - When project.problem.resolved, project.problem.escalated, or
   project.problem.unknown wakes you, reconcile the solver result into the
   affected task branch: retry or supersede affected tasks when resolved; mark
@@ -223,6 +240,18 @@ Core operating model:
   investigation: mark verified review work done, create retry/follow-up leaves for
   resolved blockers, link unresolved blockers to one visible problem task, and
   assign clear runnable leaves. Do not spend the whole wake rediscovering context.
+- If blocked_frontier_summary.blocked_leaf_count is high, do not stop after one
+  small blocker update. Pick at least one largest parent group or repeated
+  blocker group and make the tree more readable: consolidate, close replaced
+  leaves, or create the one missing owner/problem follow-up that lets future
+  reviews finish that family.
+- If blocked_action_warnings is non-empty, handle at least one warning family
+  before routine refill. Prefer batch repair: convert no-send-proof waits into
+  one active send/escalation task, and convert source-exactness waits into
+  bounded authoring/evidence-ceiling/public-doc work unless the tree proves no
+  bounded progress is possible. Convert repeated environment blockers into one
+  active setup/diagnosis/escalation family instead of many passive blocked
+  leaves.
 - For project.problem.* events, trust the solver summary as new evidence. If an
   escalated event summary says the local cause was fixed and verified, treat it
   as resolved-but-misclassified, record that in the affected branch, and create
@@ -236,6 +265,12 @@ Core operating model:
 - Stop once the next useful project action is clear and recorded, or once you
   have assigned enough runnable work for this wake.
   Do not stop merely because one rollup or one new leaf was created.
+- Tree hygiene is owner judgment. If task_tree_hygiene shows many safe done
+  leaves under a parent, decide whether their durable meaning is already
+  summarized on that parent or in linked evidence. When it is, use
+  rollup-parent with your summary to archive the low-value completed children.
+  Do not compact open leaves, milestone children, or done leaves whose meaning
+  is not yet represented by parent context/evidence.
 - If the frontier is empty, do not stop at analysis. Add concrete work under one
   of the durable value-loop lanes according to the task-tree context, unless
   that context and current evidence show an exact external blocker.
@@ -257,6 +292,9 @@ Use these commands from the app directory:
 - bun run task-tree confirm-runnable --limit 10
 - bun run task-tree add <task-id> --parent <lane-id> --goal "..." --output <path> --acceptance "..." --conflict-scope <scope> [--state backlog|blocked]
 - bun run task-tree mark-done <task-id> --summary "why the review is accepted"
+- bun run task-tree mark-done <task-id> --resolution replaced --summary "why this blocked leaf is replaced by the family-level wait"
+- bun run task-tree rollup-parent <parent-id> --summary "what this branch now knows and what remains" [--archive-done <child-id> ...] [--limit 50]
+- bun run task-tree compact-done --limit 50  # recovery only; prefer rollup-parent after owner summary
 - bun run task-tree assign <task-id> [--worker ${input.agent}]
 - bun run task-tree update-text <task-id> [--goal "..."] [--acceptance "..."] [--acceptance "..."] [--blocker "..."] [--clear-blocker]
 - bun run task-tree show <task-id>
@@ -324,6 +362,10 @@ Focus:
   retry affected work, or mark an escalation?
 - Is there stale active work, misleading completion, real blocker, human
   steering, metric breach, or normal refill?
+- If this is blocked-frontier review, which parent group or repeated blocker
+  group from blocked_frontier_summary should the owner burn down first?
+- Did blocked_action_warnings flag passive response-await or source-exactness
+  overblocking? If yes, which warning family should planning repair first?
 - What specific task-tree updates should the next step consider?
 - If pending high-priority human steering identifies a missing root task/lane,
   call that out as a required planning decision.
@@ -386,46 +428,16 @@ function dispatchAssignedTasks(
   }
 }
 
-function frontierUnderfilled(
-  packet: TaskPlanningPacket,
-  maxConcurrentTasks: number,
-): boolean {
-  return (
-    packet.frontier.runnable.length === 0 &&
-    packet.active_task_ids.length < maxConcurrentTasks
-  );
-}
-
-function frontierNeedsBacklogDepth(packet: TaskPlanningPacket): boolean {
-  return packet.frontier.runnable.length === 0;
-}
-
 function routineRefillReason(rawTask: string): string | null {
   const reason = triggerValue(parseTriggerEvent(rawTask), "reason");
   if (typeof reason !== "string") return null;
   return [
-    "watchdog-open-work-reconcile",
-    "watchdog-capacity-underfilled",
     "watchdog-runnable-backlog",
     // Compatibility for events emitted before the task-state cleanup.
     "watchdog-ready-work",
-    "watchdog-settled-active-project-refill",
   ].includes(reason)
     ? reason
     : null;
-}
-
-function canUseDeterministicRefill(input: {
-  rawTask: string;
-  packet: TaskPlanningPacket;
-  humanSteering: Record<string, unknown>[];
-  maxConcurrentTasks: number;
-}): boolean {
-  if (!routineRefillReason(input.rawTask)) return false;
-  if (input.humanSteering.length > 0) return false;
-  if (input.packet.frontier.review.length > 0) return false;
-  if (input.packet.frontier.blocked.length > 0) return false;
-  return frontierUnderfilled(input.packet, input.maxConcurrentTasks);
 }
 
 function completedTaskIdFromTrigger(rawTask: string): string {
@@ -450,36 +462,44 @@ function settledActiveNoopResult(input: {
   rawTask: string;
   packet: TaskPlanningPacket;
   humanSteering: Record<string, unknown>[];
-  requeuedStaleTaskIds: string[];
 }): string | null {
   const reason = triggerValue(parseTriggerEvent(input.rawTask), "reason");
-  const noHumanOrRequeueWork =
-    input.humanSteering.length === 0 && input.requeuedStaleTaskIds.length === 0;
+  const noHumanSteering = input.humanSteering.length === 0;
   const noRunnableOrReviewFrontier =
     input.packet.frontier.runnable.length === 0 &&
-    input.packet.frontier.review.length === 0;
+    input.packet.frontier.review.length === 0 &&
+    (input.packet.frontier.waiting ?? []).length === 0;
   const hasActiveOrBlockedFrontier =
     input.packet.active_task_ids.length > 0 ||
     input.packet.frontier.blocked.length > 0;
   const settledAfterCompletion =
     reason === "task-completed" &&
-    noHumanOrRequeueWork &&
+    noHumanSteering &&
     noRunnableOrReviewFrontier &&
     hasActiveOrBlockedFrontier &&
     taskCompletedWakeAlreadySettled(input.config, input.rawTask);
   const hasOnlyActiveFrontier =
     input.packet.active_task_ids.length > 0 && noRunnableOrReviewFrontier;
+  const citedStaleActiveIds = staleActiveTaskIds(input.rawTask);
+  const liveActiveIds = new Set([
+    ...input.packet.active_task_ids,
+    ...input.packet.frontier.active,
+  ]);
+  const citedStillActive = citedStaleActiveIds.filter((taskId) =>
+    liveActiveIds.has(taskId),
+  );
   const settledWithActiveWork =
-    noHumanOrRequeueWork &&
+    noHumanSteering &&
     hasOnlyActiveFrontier &&
     input.packet.frontier.blocked.length === 0;
   if (
     reason === "watchdog-stale-active-review" &&
-    staleActiveTaskIds(input.rawTask).length > 0 &&
-    noHumanOrRequeueWork &&
+    citedStaleActiveIds.length > 0 &&
+    citedStillActive.length === 0 &&
+    noHumanSteering &&
     hasOnlyActiveFrontier
   ) {
-    return "Watchdog stale-active review was a false positive: no listed task was requeued, active work is still running, and every cited stale-active task is already settled/non-active after live-tree revalidation.";
+    return "Watchdog stale-active review was a false positive: active work is still running, and every cited stale-active task is already settled/non-active after live-tree revalidation.";
   }
   if (settledAfterCompletion) {
     return "Task-completed wake is already settled in the task tree: the completed task no longer exists in the live tree, no review task remains, and no runnable frontier needs owner judgment.";
@@ -489,17 +509,6 @@ function settledActiveNoopResult(input: {
     return "Task-completed wake is already settled in the task tree: no review task remains, active work is still running, and no runnable/blocked frontier needs owner judgment.";
   }
   return null;
-}
-
-function resultLooksInterrupted(result: unknown): boolean {
-  const text = resultText(result).toLowerCase();
-  const status = (result as { status?: unknown })?.status;
-  return (
-    status === "error" ||
-    status === "interrupted" ||
-    text.includes("timed out") ||
-    text.includes("interrupted")
-  );
 }
 
 function staleActiveTaskIds(rawTask: string): string[] {
@@ -544,17 +553,16 @@ function staleRunnableBacklogNoopResult(input: {
   packet: TaskPlanningPacket;
   humanSteering: Record<string, unknown>[];
   quickAssignments: TaskAssignment[];
-  requeuedStaleTaskIds: string[];
 }): string | null {
   if (routineRefillReason(input.rawTask) !== "watchdog-runnable-backlog")
     return null;
   if (input.humanSteering.length > 0) return null;
   if (input.quickAssignments.length > 0) return null;
-  if (input.requeuedStaleTaskIds.length > 0) return null;
 
   const triggerIds = triggerRunnableBacklogTaskIds(input.rawTask);
   if (triggerIds.length === 0) return null;
   if (input.packet.frontier.runnable.length > 0) return null;
+  if ((input.packet.frontier.waiting ?? []).length > 0) return null;
 
   const liveRunnable = new Set(input.packet.frontier.runnable);
   const liveReview = new Set(input.packet.frontier.review);
@@ -599,7 +607,6 @@ function appendNoopPlannerRun(input: {
   steps: string[];
   packet: TaskPlanningPacket;
   initialRepair: ReturnType<typeof repairTaskTreeRollups>;
-  requeuedStaleTaskIds: string[];
 }): void {
   appendPlannerRun(input.appDir, {
     kind: "planner_wake",
@@ -608,9 +615,6 @@ function appendNoopPlannerRun(input: {
     steps: input.steps,
     assigned_task_ids: [],
     repaired_rollups: input.initialRepair.repaired,
-    requeued_stale_task_ids: input.requeuedStaleTaskIds,
-    seeded_task_ids: [],
-    seed_skipped: [],
     active_task_ids: input.packet.active_task_ids,
     result: input.result,
   });
@@ -633,10 +637,6 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
 
   let humanSteering = recentHumanSteering(ctx);
   const initialRepair = repairTaskTreeRollups(config);
-  const requeuedStaleTaskIds = requeueStaleActiveTasks(config, {
-    taskIds: staleActiveTaskIds(ctx.task),
-    reason: "watchdog-stale-active-review",
-  });
   assignRunnableBacklogTasks(config, { worker });
   const quickAssignments = drainTaskAssignments(config);
   dispatchAssignedTasks(ctx, quickAssignments);
@@ -647,7 +647,6 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     rawTask: ctx.task,
     packet,
     humanSteering,
-    requeuedStaleTaskIds,
   });
   if (noopResult) {
     appendNoopPlannerRun({
@@ -656,7 +655,6 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
       steps: ["settled-active-noop"],
       packet,
       initialRepair,
-      requeuedStaleTaskIds,
     });
     return ctx.done(noopResult);
   }
@@ -666,7 +664,6 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     packet,
     humanSteering,
     quickAssignments,
-    requeuedStaleTaskIds,
   });
   if (staleRunnableNoop) {
     appendNoopPlannerRun({
@@ -675,7 +672,6 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
       steps: ["stale-runnable-backlog-noop"],
       packet,
       initialRepair,
-      requeuedStaleTaskIds,
     });
     return ctx.done(staleRunnableNoop);
   }
@@ -695,7 +691,6 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
         (assignment) => assignment.taskId,
       ),
       repaired_rollups: initialRepair.repaired,
-      requeued_stale_task_ids: requeuedStaleTaskIds,
       active_task_ids: packet.active_task_ids,
       result:
         "Quick refill assigned runnable backlog tasks up to worker capacity; skipped owner-agent planning for this routine wake.",
@@ -705,77 +700,6 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
         .map((assignment) => assignment.taskId)
         .slice(0, 8)
         .join(", ")}.`,
-    );
-  }
-
-  if (
-    canUseDeterministicRefill({
-      rawTask: ctx.task,
-      packet,
-      humanSteering,
-      maxConcurrentTasks: config.maxConcurrent,
-    })
-  ) {
-    const reason = routineRefillReason(ctx.task);
-    const openSlots = Math.max(
-      0,
-      config.maxConcurrent -
-        packet.active_task_ids.length -
-        packet.frontier.runnable.length,
-    );
-    const seedReason = `routine-refill:${reason}`;
-    const seedResult = seedModelGapBacklog(config, {
-      limit: Math.min(2, openSlots),
-      reason: seedReason,
-    });
-    if (seedResult.created.length > 0) {
-      assignRunnableBacklogTasks(config, { worker });
-      const seededAssignments = drainTaskAssignments(config);
-      dispatchAssignedTasks(ctx, seededAssignments);
-      packet = planningPacket(config);
-      appendPlannerRun(appDir, {
-        kind: "planner_wake",
-        status: seededAssignments.length ? "assigned" : "seeded",
-        ran_agent: false,
-        steps: ["deterministic-refill"],
-        assigned_task_ids: seededAssignments.map(
-          (assignment) => assignment.taskId,
-        ),
-        repaired_rollups: initialRepair.repaired,
-        requeued_stale_task_ids: requeuedStaleTaskIds,
-        seeded_task_ids: seedResult.created,
-        seed_reason: seedReason,
-        seed_skipped: seedResult.skipped.slice(0, 12),
-        active_task_ids: packet.active_task_ids,
-        result:
-          "Routine watchdog refill seeded model-gap work without owner-agent planning.",
-      });
-      return ctx.done(
-        `Planner deterministic-refill seeded ${seedResult.created.length} task(s) and assigned ${seededAssignments.length}: ${seedResult.created
-          .slice(0, 8)
-          .join(", ")}.`,
-      );
-    }
-
-    // Deterministic refill found no model gaps — all work is done.
-    // Short-circuit instead of falling through to an expensive agent session.
-    appendPlannerRun(appDir, {
-      kind: "planner_wake",
-      status: "idle",
-      ran_agent: false,
-      steps: ["deterministic-refill-exhausted"],
-      assigned_task_ids: [],
-      repaired_rollups: initialRepair.repaired,
-      requeued_stale_task_ids: requeuedStaleTaskIds,
-      seeded_task_ids: [],
-      seed_reason: seedReason,
-      seed_skipped: seedResult.skipped.slice(0, 12),
-      active_task_ids: packet.active_task_ids,
-      result:
-        "Routine watchdog refill found no model gaps and no open frontier. Skipping agent session.",
-    });
-    return ctx.done(
-      "Planner deterministic-refill exhausted: no model gaps remain and no open frontier work. Skipping agent session.",
     );
   }
 
@@ -831,67 +755,16 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
   packet = planningPacket(config);
 
   let ownerAssignments = drainTaskAssignments(config);
-  let seedResult: ReturnType<typeof seedModelGapBacklog> | undefined =
-    undefined;
-  let seedReason: string | undefined;
-  if (
-    ownerAssignments.length === 0 &&
-    frontierUnderfilled(packet, config.maxConcurrent)
-  ) {
-    const openSlots = Math.max(
-      0,
-      config.maxConcurrent -
-        packet.active_task_ids.length -
-        packet.frontier.runnable.length,
-    );
-    seedReason = resultLooksInterrupted(plannerResult)
-      ? "planner-timeout-underfilled-frontier"
-      : "planner-left-underfilled-frontier";
-    seedResult = seedModelGapBacklog(config, {
-      limit: Math.min(2, openSlots),
-      reason: seedReason,
-    });
-    if (seedResult.created.length > 0) {
-      assignRunnableBacklogTasks(config, { worker });
-      ownerAssignments = drainTaskAssignments(config);
-      dispatchAssignedTasks(ctx, ownerAssignments);
-      packet = planningPacket(config);
-    }
-  } else if (
-    ownerAssignments.length === 0 &&
-    frontierNeedsBacklogDepth(packet)
-  ) {
-    seedReason = resultLooksInterrupted(plannerResult)
-      ? "planner-timeout-execution-full-backlog-empty"
-      : "planner-left-execution-full-backlog-empty";
-    seedResult = seedModelGapBacklog(config, {
-      limit: 2,
-      reason: seedReason,
-      prefer: "source-spec",
-    });
-    if (seedResult.created.length > 0) {
-      packet = planningPacket(config);
-    }
-  } else {
-    dispatchAssignedTasks(ctx, ownerAssignments);
-  }
+  dispatchAssignedTasks(ctx, ownerAssignments);
   const assignments = [...quickAssignments, ...ownerAssignments];
-  const runStatus = assignments.length
-    ? "assigned"
-    : seedResult?.created.length
-      ? "seeded"
-      : "settled";
+  const runStatus = assignments.length ? "assigned" : "settled";
   appendPlannerRun(appDir, {
     kind: "planner_wake",
     status: runStatus,
     ran_agent: true,
     steps: ["event-review", "planning-update"],
     assigned_task_ids: assignments.map((assignment) => assignment.taskId),
-    requeued_stale_task_ids: requeuedStaleTaskIds,
     repaired_rollups: [...initialRepair.repaired, ...finalRepair.repaired],
-    seeded_task_ids: seedResult?.created ?? [],
-    seed_reason: seedResult?.created.length ? seedReason : undefined,
-    seed_skipped: seedResult?.skipped?.slice(0, 12) ?? [],
     active_task_ids: packet.active_task_ids,
     event_review: resultText(eventReviewResult).slice(0, 2000),
     result: resultText(plannerResult).slice(0, 4000),
@@ -902,11 +775,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
         .map((assignment) => assignment.taskId)
         .slice(0, 8)
         .join(", ")}. Agent result: ${resultText(plannerResult)}`
-    : seedResult?.created.length
-      ? `Planner seeded ${seedResult.created.length} backlog task(s): ${seedResult.created
-          .slice(0, 8)
-          .join(", ")}. Agent result: ${resultText(plannerResult)}`
-      : `Planner assigned no tasks. Agent ran event-review and planning-update. Result: ${resultText(plannerResult)}`;
+    : `Planner assigned no tasks. Agent ran event-review and planning-update. Result: ${resultText(plannerResult)}`;
   if ((plannerResult as { status?: string }).status === "escalated")
     return ctx.escalate(plannerMessage);
   return ctx.done(plannerMessage);

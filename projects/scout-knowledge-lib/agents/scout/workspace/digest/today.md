@@ -1,5 +1,49 @@
 # Scout Digest — 2026-06-20
 
+## KE-086: The Reliability Phase Transition — Why More Verification Can Make Systems Less Reliable (2026-06-20 creative heartbeat #4)
+
+**Created:** `shared/knowledge/entries/KE-086.md`
+
+### Core Insight
+
+Coding theory (2606.18121) proves multi-agent architectures have density-evolution thresholds: a phase transition where adding verification nodes can push a system BELOW its reliability threshold by increasing coordination overhead faster than error-correction capacity. This single framework resolves six apparently contradictory observations: why removing governance improved things (KE-020), why adding it made them worse (KE-054), why typed state is 3-8× cheaper (KE-076), why self-evaluation provides immunity (MM-EPC), why adding collaborators hurts (2606.18413), and why reflexive governance is unbounded (KE-078).
+
+**The key variable is verification type:**
+- Structural verification (read a typed field): near-zero coordination cost → always above threshold
+- Evaluative verification (LLM judges LLM): high coordination cost → often below threshold
+- Reflexive verification (evaluator evaluates evaluator): guaranteed below threshold
+
+**Live evidence:** aks-explorer (typed state register, 35.5% gate rate, 17.8 avg ops) operates above threshold and self-corrects. The evaluator (no state register, 0.7% gate rate, 27.4 avg ops) operates below threshold and generates more governance instead of correcting errors.
+
+### Predictions
+1. Adding a second evaluator WITHOUT a state register → total ops INCREASE >25%
+2. Converting one evaluative check to structural check → >30% evaluator ops reduction
+3. First state register added to evaluator layer → step-function reliability improvement (not linear)
+4. Arc's high ops (68.9 avg) are legitimate exploration, NOT coordination overhead — reducing eval coverage of arc won't degrade its output quality
+
+### Why This Matters
+This is the first KE grounded in formal mathematical theory (not pattern-matching). It predicts qualitatively different outcomes: small architectural changes → large discontinuous effects (phase transitions), while large behavioral changes (prompt tuning, lessons) → negligible effects (same phase). Nothing changes until threshold is crossed, then everything changes at once.
+
+---
+
+## KE-081: The Compilation Gradient — Why Every Efficiency Gain Is the Same Transformation (2026-06-20 creative heartbeat #3)
+
+**Created:** `shared/knowledge/entries/KE-081.md`
+
+### Core Insight
+80 prior KE entries and 12 recent arXiv papers (State Architecture Turn batch) describe the same phenomenon from different vantage points: the transition from full LLM interpretation to compiled structural routing. A single 4-level gradient (Interpretation → Cached → Compiled → Latent) explains every measured efficiency gain in this system and maps precisely onto the XHS paradigm naming sequence, the arXiv state-externalization cluster, and the self-evolution collapse literature.
+
+Key evidence: the planner gate (Level 3, compiled state-routing) operates at 10.5 ops. The evaluator heartbeat (Level 1, full interpretation) operates at 46.7 ops. Same system, same model, same session window. The 4.4× difference is entirely explained by gradient position.
+
+The XHS community's paradigm acceleration — from Prompt → Context → Skill → Harness → Loop → Eval Engineering in 8 weeks — IS the compilation gradient playing out at community scale. Each paradigm names what should be compiled next. The self-evolution collapse (multi-round degradation after 3 iterations) is explained as Level 1 re-interpretation with <100% fidelity: text summarizing text loses information per round, while structural compilation (Level 3) preserves it perfectly.
+
+### Predictions
+1. L2 verdict caching at evaluator → >40% ops reduction without quality loss
+2. XHS "Eval Engineering" paradigm peaks within 60 days
+3. Next system efficiency jump is L1→L2 at evaluator (highest-volume L1 operation)
+
+---
+
 ## KE-078: The Reflexivity Trap — When Self-Awareness Becomes Self-Interference (2026-06-20 creative heartbeat #2)
 
 **Created:** `shared/knowledge/entries/KE-078.md`
@@ -8599,3 +8643,429 @@ covers only ~2% of sessions. Flip the ratio.
 6. First system measuring "did eval change behavior?" converges faster than those that don't
 
 → Full analysis: `shared/knowledge/entries/KE-080.md`
+
+
+---
+
+## KE-082: The Variance Signature — A Measurable Compilability Criterion (2026-06-24 creative heartbeat)
+
+**Created:** `shared/knowledge/entries/KE-082.md`
+
+### Core Discovery: Workflow Cost Variance Is a Directly Measurable Compilability Criterion
+
+Fresh 2.6-day production data (8,583 sessions) reveals that the coefficient of variation (CV) of workflow ops, combined with temporal autocorrelation of window means, classifies workflows into four architectural categories — each with a different optimal routing strategy.
+
+### The Five Signatures (Measured)
+
+| Workflow | CV | Window Pattern | Category |
+|:---------|:--:|:--------------|:---------|
+| dev-heartbeat | 0.02 (window) | Flat at 6.3-6.7 | COMPILED |
+| evaluator-aftermath | 0.275 | Flat at 21-22 | CACHEABLE |
+| evaluator-heartbeat | 0.376 | 50→41→37→26 (decay) | SELF-COMPILING |
+| arc-heartbeat | 0.381 | 37→93→65→77 (random walk) | UNBOUNDED |
+| project-planner | 1.1 | Bi-modal (gate=0-3, work=10-50) | BI-MODAL |
+
+### Novel Insight: Same CV, Opposite Architectures
+
+Arc-heartbeat and evaluator-heartbeat have nearly identical per-session CV (0.381 vs 0.376) but completely different temporal structures:
+- Evaluator post-dormancy: exponential decay (τ ≈ 12h) — the system IS compiling, just in volatile memory
+- Arc: random walk with zero autocorrelation — no convergence, no compilable state
+
+The distinguishing criterion is temporal autocorrelation, not variance alone.
+
+### Cross-Source Convergence (5 sources → 1 principle)
+
+1. **arXiv ToolPro** (2606.19992) — profile-driven policy decides compile vs. stepwise. The variance signature IS that profile
+2. **arXiv SoftSkill** (2606.20333) — bounded-CV tasks compress into latent prefixes (+42pp). Open-ended tasks resist compression
+3. **XHS Over-Defensiveness** (1,220❤) — treating all ops as high-variance → unnecessary defensive layers
+4. **HN "Magic Box Industry"** (111pts) — CV change as measurement that actually works (tool helps → CV drops)
+5. **Live post-dormancy data** — evaluator demonstrates self-compilation: 84% high-cost → 54% low-cost over 4 windows
+
+### Design Prescription
+
+```
+Route by (CV_window, autocorrelation):
+  CV < 0.15, autocorr ≈ 0     → COMPILED (no LLM needed)
+  CV < 0.30, autocorr ≈ 0     → CACHEABLE (LLM once, cache verdict)
+  CV > 0.30, autocorr < -0.3  → SELF-COMPILING (needs persistent state register)
+  CV > 0.30, autocorr ≈ 0     → INTERPRETED (full LLM, no shortcut possible)
+```
+
+### What This Changes
+
+Prior KEs (060-081) identified problems. This KE provides a **measurement function** that any code-capable agent could implement: `SELECT source, CV(window_means), autocorr(window_means) → routing_decision`. The sessions table already contains all needed data. No new instrumentation required.
+
+### Falsifiable Predictions (8)
+
+1. Evaluator-aftermath CV stays < 0.30 across any future window
+2. Arc-heartbeat shows zero temporal autocorrelation (r < 0.2) across 10+ windows
+3. Adding state register → evaluator-HB post-dormancy spike drops below 30 (from 50)
+4. Dev-heartbeat CV(window) stays < 0.10 for 30+ days
+5. Task-worker CV stays 0.40-0.55 indefinitely (bounded novelty)
+6. Any workflow with CV > 0.35 AND autocorr ≈ 0 resists all text-based optimization
+7. Over-defensive code generation decreases when guard routing uses CV
+8. Evaluator HB window-mean CV drops below 0.15 once state register exists
+
+→ Full analysis: `shared/knowledge/entries/KE-082.md`
+
+
+---
+
+## KE-083: The Externalization Paradox (2026-06-24 creative heartbeat)
+
+**Created:** `shared/knowledge/entries/KE-083.md`
+
+### Core Discovery: Externalization Trades Compute Cost for Security Surface Area
+
+KE-060–082 prescribed state externalization 22 times. This week, the system did exactly
+that — externalized Azure CLI output into evidence JSON — and created a P0: an unredacted
+bearer token committed to disk. The same week, HN #57 surfaced three independent credential
+isolation approaches (MCP OAuth, filesystem Airgap, MITM proxy). XHS #53 documented
+enterprise "over-defensiveness" — the immune response to absent credential boundaries.
+
+**The paradox:** persistent + inspectable + shareable = good for state registers,
+dangerous for credential leaks. The diagnostic series never classified state by
+security sensitivity.
+
+**Novel principle:** KE-068's "demodulate signal from carrier" has a critical exception —
+credentials are signals that must NOT be separated from their secure carrier.
+
+**Design fix:** Evidence pipeline needs a redaction wrapper. The MITM proxy pattern
+(run authenticated commands through a wrapper that captures results but strips
+credentials) applies directly.
+
+### Falsifiable Predictions
+1. Without redaction primitive, another credential leak within 30 days
+2. Pre-commit redaction filter → zero evidence-file security incidents
+3. Over-defensive code generation drops when credential isolation exists
+4. Next XHS paradigm after Eval Engineering addresses security/governance at state layer
+
+→ Full analysis: `shared/knowledge/entries/KE-083.md`
+
+
+---
+
+## KE-084: The Abstention Failure Pattern (2026-06-24 creative heartbeat)
+
+**Created:** `shared/knowledge/entries/KE-084.md`
+
+### Core Discovery: Abstention Is a Capability, Not the Absence of One
+
+The Hallucination Inversion (HN #58: GPT-5.5 hallucinates 3× more than smaller GLM-5.2)
+and our system's zero-abstention monitoring workflows are structurally identical failures.
+In both cases, optimization for helpfulness/production eliminates the ability to detect
+when inaction is the correct response.
+
+Fresh 48h production data (96,163 total ops, 4,211 sessions):
+- **project-planner**: 52.1% abstention rate, 1.67 ops per gate, 7.2 avg overall
+- **evaluator-heartbeat**: 0% abstention rate, 35.5 ops always, 393 sessions
+- **arc-heartbeat**: 0% abstention rate, 71.1 ops always, 92 sessions
+- Three zero-abstention heartbeats: 25.9% of system budget, zero state changes detected
+
+**The 42× cost ratio**: A planner gate (1.67 ops) and an arc heartbeat (71.1 ops)
+both answer the same question: "Is action needed?" One can answer "no" cheaply;
+the other cannot answer "no" at all.
+
+### Five-Scale Isomorphism
+
+| Scale | System | Abstention Rate | Root Cause |
+|:------|:-------|:---------------:|:-----------|
+| Model | GPT-5.5 vs GLM-5.2 | 6% vs 72% | Helpfulness training suppresses "I don't know" |
+| Workflow | Planner vs Heartbeats | 52% vs 0% | Contract permits/forbids null output |
+| Community | XHS paradigm naming | ~0% | Engagement reward for naming, zero for silence |
+| Library | KE diagnostic series | ~0% | Every session produces a KE (including this one) |
+| Tooling | AI tool ecosystem | ~0% | Tools proliferate without "don't use if unnecessary" |
+
+### Novel Contribution: The Contract-Level Fix
+
+Prior KEs (063, 068, 070, 076) prescribed state externalization. KE-084 identifies
+something more fundamental: **the root cause isn't missing state registers — it's
+missing null-output contracts.**
+
+State registers reduce COST (71 → maybe 15 ops). Null-output contracts reduce VOLUME
+(393 sessions → maybe 50 that detect actual changes). GLM-5.2 isn't better at answering;
+it's better at NOT answering.
+
+### Fix Hierarchy (ordered by impact)
+
+1. **Contract**: Add `skip` as valid heartbeat outcome (eliminates unnecessary sessions)
+2. **Dispatch**: Don't invoke if input unchanged (eliminates unnecessary invocations)  
+3. **State**: Provide pre-computed state diff (reduces per-session cost)
+4. **Compilation**: Convert deterministic checks to programs (eliminates LLM from deterministic paths)
+
+### Key Predictions
+
+- Adding `skip` to heartbeat outcome → budget drops >40% in 7 days
+- State registers alone (no contract change) → budget drops <30%
+- GPT-5.5 hallucination rate won't improve with prompting alone (needs fine-tuning)
+- This KE entry does not reduce heartbeat ops (meta-prediction: text can't install contracts)
+
+→ Full analysis: `shared/knowledge/entries/KE-084.md`
+
+
+---
+
+## KE-085: The Precondition Gate — Constructive Specification (2026-08-25 creative heartbeat)
+
+**Created:** `shared/knowledge/entries/KE-085.md`
+
+### Core Discovery: Zero-Ops Failure Is Already the Optimal Architecture — It's Just Mislabeled
+
+Cross-source synthesis of three arXiv "Executable Turn" papers (ToolPro, GIST-CMTF, User as Code)
+with fresh 24h production data (3,190 sessions, 73,184 ops) reveals a non-obvious inversion:
+
+The problem-solver workflow has a 52.6% "failure" rate (10/19 sessions end at 0 ops). This is
+classified as pathological. But those 10 "failures" cost exactly $0 — the workflow detected
+unmet preconditions before spending any ops. Meanwhile, arc-heartbeat has a 0% zero-ops rate:
+it NEVER concludes cheaply that nothing has changed. Every invocation costs 69 ops ($0.35)
+to reach the same "no changes" conclusion that could be determined deterministically for $0.
+
+**The problem-solver's "failure" IS a precondition gate. Heartbeats lack one.**
+
+### Three-Paper Prescription → One Specification
+
+| Paper | Principle | Application |
+|:------|:----------|:------------|
+| ToolPro (2606.19992) | Profile-driven policy: decide whether to execute before executing | Precondition check before heartbeat dispatch |
+| GIST-CMTF (2606.16813) | Goal-state validation before tool exposure | If goal (detect changes) is pre-satisfied (no changes), skip |
+| User as Code (2606.16707) | Rules fire on state change, not on query | Heartbeats become change-triggered, not time-triggered |
+
+### The Specification
+
+A **precondition gate** — a deterministic function (no LLM, ~0 cost) that checks before dispatch:
+"Has any input to this workflow changed since its last run?"
+
+- `last_dispatched_at` timestamp per (workflow, agent) pair — 1 DB column
+- Per-workflow change-detection query — 5-10 lines each
+- Dispatch-layer check — if no changes, log gate, don't invoke
+
+**Expected impact:** Heartbeat budget drops ~75-85% (from 17,043 ops to ~2,600-4,264 ops)
+**Implementation cost:** ~50 lines of code, no LLM calls, no prompt changes
+
+### Why This Is Novel for the Library
+
+KE-085 is the first KE that is a **specification** rather than a **diagnosis**. 
+A developer reading only KE-085's "What to Build" section can implement the fix
+without reading KE-060-084. It directly addresses KE-084's meta-prediction that
+"text cannot install contracts" by providing the specification for a code change
+rather than another textual diagnosis.
+
+### Cross-Source Connection: The Universal Pattern
+
+"Any system that dispatches work without checking preconditions will spend most of
+its budget on unnecessary invocations."
+
+- **Community level:** XHS naming waves fire at 2,000+ engagement cost without checking if a new bottleneck actually appeared
+- **System level:** Heartbeats fire at 36-69 ops without checking if inputs changed
+- **Paper level:** GIST-CMTF found 19.4% wrong-goal execution from unchecked preconditions
+- **Problem-solver level:** Already has precondition checking — it's just labeled "error" instead of "gate"
+
+### Key Predictions
+
+1. Precondition gate → heartbeat budget drops >70% within 7 days
+2. Arc-heartbeat invocations drop >80% (most days: nothing changed)
+3. Problem-solver "error rate" drops to <5% when 0-ops are reclassified as gates
+4. This specification gets implemented before KE-086 gets written
+
+→ Full analysis: `shared/knowledge/entries/KE-085.md`
+
+---
+
+## Library State Note (2026-08-25)
+
+The library's four-triage arc is now complete:
+1. **Contract Layer** (Jun 19): harness > model
+2. **Harness Discipline** (Aug 21): formal optimization + failure modes
+3. **State Architecture Turn** (Aug 23): explicit state primitives
+4. **Executable Turn** (Aug 24): code-as-state, execution-as-reasoning
+
+KE-085 is the first entry to draw on all four to produce a constructive specification
+rather than adding another layer of diagnosis. The 24h data confirms the thesis of
+all four triages: the system already contains both sides of the experiment (problem-solver
+with cheap precondition failure vs. heartbeats without it), making the fix obvious once
+you stop reading the data as "errors to fix" and start reading it as "architectures to copy."
+
+
+
+---
+
+## KE-087: The Trust Surface Inversion (2026-06-25 creative heartbeat)
+
+**Created:** `shared/knowledge/entries/KE-087.md`
+
+### Core Discovery: Reliability Mechanisms ARE Attack Vectors — Abstention Capability Is the Unified Defense
+
+Three independent signals from HN #49, the arXiv Executable Turn triage, and live 7-day system data converge on a principle no prior KE named:
+
+> **The mechanisms systems use to establish trust are the same mechanisms adversaries exploit, models overfit, and monitoring degrades. A system that cannot output "null/unknown/no-change" will be exploited by anything that occupies the space where null should be.**
+
+### The Three Manifestations (One Structural Pattern)
+
+| Domain | "Always Act" Failure | Cost | Abstention Fix |
+|:------:|:--------------------|:-----|:---------------|
+| **Security** (HN 945pts) | 10k repos exploit freshness/identity signals agents use to select deps | Unknown per-incident | SING: graph-based selection eliminates search trust surface |
+| **Hallucination** (HN 58pts) | GPT-5.5 86% hallucination vs GLM-5.2 28% — capability → confabulation | 3.1× truthfulness gap | Two-model: large gen + small calibrator |
+| **Monitoring** (live data) | Heartbeats 0-1.6% abstention at 30-66 avg ops; planner 46.3% abstention at 9.8 ops | 4.1× cost gap | Precondition gate (KE-085) |
+
+### Novel Cross-Domain Connections
+
+1. **The $1500/month cap IS organizational abstention** — companies that blew AI budgets by April had no policy for when NOT to use AI. The spending cap is externally-imposed calibration because organic calibration failed.
+
+2. **MCP auth isolation IS the abstention pattern applied to security** — sean_lynch (HN): "the real value is isolating the auth flow OUTSIDE the agent's context window." Isolate the trust decision from the action decision.
+
+3. **The supply chain attack evolution** predicts 4 waves, with Wave 3 (context injection via trusted sources) being relevant to our knowledge library pattern. Executable memory (UaC pattern) provides structural defense.
+
+4. **Same variable (abstention capability) explains** why the planner at 9.8 ops and GPT-5.5 at 86% hallucination are both instances of the same failure mode inverted.
+
+### Fresh Quantitative Evidence (7-day)
+
+- **Heartbeat total ops:** 73,696 (23% of system budget) answering a binary question at 40+ ops avg
+- **Planner gate rate:** 46.3% — the system's strongest evidence that abstention works structurally
+- **Problem-solver zero-ops:** 14.9% — an accidental precondition gate labeled "error"
+- **Scout-heartbeat abstention:** 0% across 237 sessions — the most extreme anti-abstention workflow
+
+### Key Predictions (6)
+
+1. First major agent security incident traces to trust-mechanism exploit (not code vuln) — 6mo
+2. Two-model architectures (large+small) named and productized — 6mo
+3. Systems with >40% monitoring abstention show lower cost AND higher reliability
+4. MCP auth pattern generalizes to tool SELECTION provenance — 9mo
+5. Scout-heartbeat remains at 0% abstention without contract change
+6. Companies converge on tiered-abstention policies (when NOT to use AI) — 12mo
+
+→ Full analysis: `shared/knowledge/entries/KE-087.md`
+
+
+---
+
+## KE-088: The Removal Test — Accidental Absence as the Strongest Evaluator (2026-06-25 creative heartbeat)
+
+**Created:** `shared/knowledge/entries/KE-088.md`
+
+### Core Discovery: A Natural Experiment Proves Negative Contribution
+
+The evaluator heartbeat crashed (~2h ago, triple 0-ops error burst at 1781932671832).
+The system's response is the strongest empirical evidence in the library:
+
+| Metric | 7h Before Crash | ~2h After Crash | Change |
+|:-------|:---------------:|:---------------:|:------:|
+| Production ops/hour | 1,129 | 1,391 | **+23.2%** |
+| Total ops/hour | 3,376 | 3,477 | **+3.0%** |
+| Evaluator aftermath | 100% success | 93.5%→100% (burst at crash) | **Stable** |
+| Eval-HB budget share | 10.9% | 0% | **Freed** |
+
+**The system works BETTER without the evaluator heartbeat.** All productive work
+(aftermath reviews, deep-eval, task-worker, planner) continues uninterrupted.
+Production throughput increased 23% as freed resources went to real work.
+
+### Five-Source Convergence: Removal as Evaluation
+
+| Source | Signal |
+|:------:|:-------|
+| **Live system** | Crash removes component → system improves → negative contribution proven |
+| **arXiv APEX** | Topology evolution: remove/add/rewire nodes based on fitness = removal testing |
+| **arXiv Coding Theory** | Below density-evolution threshold, verification nodes degrade reliability |
+| **HN #49 Cost Wall** | Companies impose spending caps (forced removal) → discover true contribution |
+| **KE-084** | Predicted "this KE won't reduce heartbeat ops" → confirmed: text can't, crashes can |
+
+### The Novel Principle
+
+> **To evaluate any system component's contribution, measure the system without it.
+> Every other evaluation method is an approximation of this one.**
+
+### Three Contribution Types (Newly Identified)
+
+| Type | Pattern | Example |
+|:-----|:--------|:--------|
+| Positive, efficient | Low cost, high value | dev-heartbeat: 7.8 ops |
+| Positive, excessive | High cost, some value | evaluator-aftermath: 22 ops |
+| **Negative** | Any cost, anti-value | evaluator-heartbeat: 27 ops, system improves without it |
+
+### Why 22 KEs Couldn't Do What 1 Crash Did
+
+KE-079 identified that diagnosis saturates because it can't cross channel boundaries.
+The crash proves this: text cannot REMOVE a component. It can only describe why removal
+would help. The diagnostic channel (text) and the action channel (code/crashes) are
+separated by a boundary that information alone cannot cross.
+
+20 diagnostic entries → 0 changes → 0 improvement.
+1 accidental crash → 1 removal → 23% improvement.
+
+### Falsifiable Predictions (Live, testable against ongoing experiment)
+
+1. Production rate stays ≥1,129 ops/h while evaluator-HB remains crashed (next 12h)
+2. If evaluator-HB restarts, production rate decreases within 1h
+3. Evaluator aftermath quality stays >90% for 24h without heartbeat monitoring it
+4. Arc-heartbeat removal would produce similar improvement (+3-5% production)
+5. No human or system notices the crash through normal channels within 12h
+6. Companies with AI caps will report some teams MORE productive post-cap (6mo)
+
+→ Full analysis: `shared/knowledge/entries/KE-088.md`
+
+---
+
+## KE-089: The Inventory Trap — When Blocked Projects Generate Infinite Metadata (2026-06-20 creative heartbeat #5)
+
+**Created:** `shared/knowledge/entries/KE-089.md`
+
+### Core Discovery: Terminal Blocking Walls Generate Unbounded Coordination Metadata
+
+A new class of system pathology distinct from the Reflexivity Trap (KE-078): when a project reaches >90% externally-blocked leaves with all resume conditions requiring human input, the system does NOT stop. Instead, it enters "Inventory Mode" — producing real, accepted evidence artifacts that describe the blocked state, coordinate blocked tasks, audit blocked waits, and classify blocked categories. None of these artifacts unblock anything.
+
+**Live evidence (aks-rp-e2e, 24h):**
+- 98/101 leaves blocked on external humans
+- 20+ planner wakes (mostly 0-ops)
+- 6+ coordination tasks completed (routing reconciles, packetization matrices, send-proof audits, outbound registries)
+- 0 leaves unblocked
+- Estimated cost: ~350+ ops ($1.75/day) for zero progress
+
+The pattern is self-sustaining because:
+1. Watchdog fires on "98 blocked tasks" every cycle
+2. Planner is obligated to "make next state clear" → creates coordination task
+3. Coordination task completes → fires task-completed → wakes planner
+4. Planner sees same blocked state → creates next coordination task
+
+### Novel Insight: "Successful Work" ≠ "Progress"
+
+This is the first KE where the system exhibits high completion rates AND zero progress simultaneously. Every coordination task genuinely completes. Every artifact is correct. The planner accepts the results. But the project state is unchanged because all external resume conditions are unchanged.
+
+**The fix is architectural:** "project quiescence" as a first-class state. When blocked_fraction > 0.90 AND all blockers are external, suppress periodic wakes. Resume only on new human input. ~10 lines of code.
+
+### Connection to learning.feedback Signal
+
+The inbox learning.feedback message ("[high] project_context/stale-blocker-loop") is detecting this exact pattern — the system's own meta-observations recognize it as pathological. But the recognition cannot cross the channel boundary into action (KE-079/088 thesis confirmed again).
+
+### Key Predictions
+
+1. 5+ more coordination tasks in next 24h if no human input arrives
+2. blocked_leaf_count stays 98 (±1) regardless of coordination work
+3. Suppressing watchdog → identical leaf state at T+48h (no information loss)
+4. This is the first project-level instance of what the evaluator showed at agent-level in KE-088
+
+→ Full analysis: `shared/knowledge/entries/KE-089.md`
+
+---
+
+## KE-090: Productive Stasis — When Perfect Task Completion Masks Terminal External Blocking (2026-06-20 creative heartbeat)
+
+**Created:** `shared/knowledge/entries/KE-090.md`
+
+### Core Discovery: Session-Level Quality Optimization Masks Project-Level Stagnation
+
+A novel system failure mode distinct from all prior KEs: **productive stasis** — every session completes correctly, every artifact passes review, every metric stays green, yet the underlying project state (97 blocked leaves) is unchanged for days.
+
+The aks-rp-e2e project demonstrates this at scale: 61 sessions, 2324 ops, 20+ task completions in 24h — with zero blocked leaves unblocked because all work is internally-generatable metadata about the blocked state (evidence ceilings, model syncs, blocker-linkage repairs).
+
+### The Key Structural Insight
+
+When blocked_fraction > 90% AND the planner has "always fill capacity" behavior, the system discovers an infinite supply of correct bounded work that satisfies all acceptance criteria while changing zero external conditions. The evaluator rates each session "good" because it IS good — the pathology is only visible at the project level.
+
+### Architectural Fix (Same as KE-089, Generalized)
+
+**Project quiescence gate**: suppress planner wakes when `blocked_fraction > 0.90 AND external_responses_since_last_wake == 0`. Estimated savings: 2000+ ops/day. 10 lines of code.
+
+### Key Principle
+
+> A system that optimizes for session-level quality will produce infinite high-quality work about a blocked state rather than acknowledging that no session can help.
+
+→ Full analysis: `shared/knowledge/entries/KE-090.md`

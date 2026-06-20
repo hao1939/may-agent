@@ -1,16 +1,66 @@
+import { mkdtempSync, mkdirSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { describe, expect, test } from "bun:test";
 import app from "../app.ts";
 
 type EmittedEvent = Record<string, unknown>;
 
-function testContext() {
+function testContext(options?: {
+  liveTasks?: Record<string, Record<string, unknown>>;
+  archives?: Array<{ file: string; body: Record<string, unknown> }>;
+}) {
   const emitted: EmittedEvent[] = [];
   const noops: string[] = [];
+  const tempRoot = mkdtempSync(join(tmpdir(), "aks-rp-e2e-app-event-"));
+  const tasksDir = join(tempRoot, "tasks");
+  const archiveDir = join(tasksDir, "archive");
+  mkdirSync(archiveDir, { recursive: true });
+
+  const tree = {
+    tasks: {
+      "triage-task": { id: "triage-task", state: "blocked" },
+      "secops-identity-role-assignment-validation-live-execute-gate-await-20260620": {
+        id: "secops-identity-role-assignment-validation-live-execute-gate-await-20260620",
+        state: "blocked",
+        blocker:
+          "External execute authorization required: bounded --check evidence in evidence/archive/secops-identity-role-assignment-validation-check-gated-execute-20260620.md and evidence/archive/run_20260620061622467_r0xkqc-secops-identity-role-assignment-validation.json proved the maintained spec/replay pair is ready.",
+      },
+      "live-pass-through-task": { id: "live-pass-through-task", state: "blocked" },
+      ...(options?.liveTasks ?? {}),
+    },
+  };
+
+  const archives =
+    options?.archives ?? [
+      {
+        file: "done-leaves-20260620061901509.json",
+        body: {
+          version: 1,
+          tasks: [
+            {
+              id: "secops-identity-role-assignment-validation-check-gated-execute-20260620",
+              status: "done",
+              resolution: "completed",
+            },
+          ],
+        },
+      },
+    ];
+
+  writeFileSync(join(tasksDir, "tree.json"), JSON.stringify(tree, null, 2));
+  for (const archive of archives) {
+    writeFileSync(
+      join(archiveDir, archive.file),
+      JSON.stringify(archive.body, null, 2),
+    );
+  }
+
   return {
     emitted,
     noops,
     ctx: {
-      projectPath: (path: string) => `/domain/${path}`,
+      projectPath: (path: string) => join(tempRoot, path),
       appPath: (path: string) => `/app/${path}`,
       readJson: async () => ({}),
       importModule: async () => ({}),
@@ -45,8 +95,7 @@ describe("app event contract", () => {
 
   test("manifest schedules periodic blocked-frontier owner review", () => {
     const schedule = app.schedules?.find(
-      (entry: { id?: string }) =>
-        entry.id === "blocked-frontier-owner-review",
+      (entry: { id?: string }) => entry.id === "blocked-frontier-owner-review",
     );
 
     expect(schedule).toMatchObject({
@@ -473,9 +522,107 @@ describe("app event contract", () => {
         problemKey: "aks-rp-e2e:task-problem:triage-me",
         problem: {
           summary: "error",
+          problemKey: "aks-rp-e2e:task-problem:triage-me",
           affectedTasks: ["triage-task"],
+          taskId: undefined,
+          originalProblemKey: "aks-rp-e2e:task-problem:triage-me",
+          originalAffectedTasks: ["triage-task"],
+          normalization: {
+            reason: "live-task-pass-through",
+            disposition: "active",
+          },
         },
       },
+    });
+  });
+
+  test("problem owner routing relinks archived task ids to one explicit live successor", async () => {
+    const { ctx, emitted, noops } = testContext();
+
+    await app.onEvent(ctx, {
+      type: "project.problem.unknown",
+      project: "aks-rp-e2e",
+      problemKey:
+        "aks-rp-e2e:task-problem:secops-identity-role-assignment-validation-check-gated-execute-20260620",
+      taskId:
+        "secops-identity-role-assignment-validation-check-gated-execute-20260620",
+      affectedTasks: [
+        "secops-identity-role-assignment-validation-check-gated-execute-20260620",
+      ],
+      summary: "stale wake",
+    });
+
+    expect(noops).toEqual([]);
+    expect(emitted).toHaveLength(1);
+    expect(emitted[0]).toMatchObject({
+      type: "project.owner.requested",
+      reason: "problem-unknown",
+      params: {
+        problemKey:
+          "aks-rp-e2e:task-problem:secops-identity-role-assignment-validation-live-execute-gate-await-20260620",
+        problem: {
+          problemKey:
+            "aks-rp-e2e:task-problem:secops-identity-role-assignment-validation-live-execute-gate-await-20260620",
+          originalProblemKey:
+            "aks-rp-e2e:task-problem:secops-identity-role-assignment-validation-check-gated-execute-20260620",
+          taskId:
+            "secops-identity-role-assignment-validation-live-execute-gate-await-20260620",
+          affectedTasks: [
+            "secops-identity-role-assignment-validation-live-execute-gate-await-20260620",
+          ],
+          originalTaskId:
+            "secops-identity-role-assignment-validation-check-gated-execute-20260620",
+          originalAffectedTasks: [
+            "secops-identity-role-assignment-validation-check-gated-execute-20260620",
+          ],
+          normalization: {
+            reason: "archived-task-relinked-to-live-successor",
+            archiveTaskId:
+              "secops-identity-role-assignment-validation-check-gated-execute-20260620",
+            liveSuccessorTaskId:
+              "secops-identity-role-assignment-validation-live-execute-gate-await-20260620",
+            disposition: "active",
+          },
+        },
+      },
+    });
+  });
+
+  test("problem owner routing retires archived unknown wakes when no live successor remains", async () => {
+    const archivedTaskId = "archived-no-successor-task";
+    const { ctx, emitted, noops } = testContext({
+      archives: [
+        {
+          file: "done-leaves-test.json",
+          body: {
+            version: 1,
+            tasks: [
+              {
+                id: archivedTaskId,
+                status: "done",
+                resolution: "completed",
+              },
+            ],
+          },
+        },
+      ],
+    });
+
+    const result = await app.onEvent(ctx, {
+      type: "project.problem.unknown",
+      project: "aks-rp-e2e",
+      problemKey: `aks-rp-e2e:task-problem:${archivedTaskId}`,
+      taskId: archivedTaskId,
+      affectedTasks: [archivedTaskId],
+      summary: "stale wake without successor",
+    });
+
+    expect(emitted).toHaveLength(0);
+    expect(noops).toHaveLength(1);
+    expect(noops[0]).toContain("retired stale archived problem wake");
+    expect(result).toMatchObject({
+      type: "noop",
+      reason: expect.stringContaining(archivedTaskId),
     });
   });
 
@@ -564,7 +711,7 @@ describe("app event contract", () => {
     });
   });
 
-  test("no-work metric breach creates human unblock escalation without assigning back to owner", async () => {
+  test("no-work metric breach wakes owner without direct escalation", async () => {
     const { ctx, emitted } = testContext();
 
     await app.onEvent(ctx, {
@@ -580,21 +727,29 @@ describe("app event contract", () => {
 
     expect(emitted).toHaveLength(1);
     expect(emitted[0]).toMatchObject({
-      type: "escalation.created",
-      owner: "human:operator",
+      type: "project.owner.requested",
       project: "aks-rp-e2e",
-      data: {
-        projectId: "aks-rp-e2e",
-        severity: "P0",
-        dedupKey: "aks-rp-e2e:metric:no-work-with-gaps",
+      reason: "metric-breach",
+      urgency: "high",
+      params: {
+        metricId: "aks-rp-e2e.task.no-work-with-gaps",
+        metric: {
+          metricId: "aks-rp-e2e.task.no-work-with-gaps",
+          current: 1,
+          threshold: 0,
+          priority: "P0",
+        },
       },
     });
     expect(
-      emitted.some((event) => event.type === "project.owner.requested"),
-    ).toBe(false);
+      String((emitted[0].params as Record<string, unknown>).instruction),
+    ).toContain("owner-loop reconciliation incident");
+    expect(emitted.some((event) => event.type === "escalation.created")).toBe(
+      false,
+    );
   });
 
-  test("stale-active metric breach creates human unblock escalation without assigning back to owner", async () => {
+  test("stale-active metric breach wakes owner without direct escalation", async () => {
     const { ctx, emitted } = testContext();
 
     await app.onEvent(ctx, {
@@ -610,22 +765,29 @@ describe("app event contract", () => {
 
     expect(emitted).toHaveLength(1);
     expect(emitted[0]).toMatchObject({
-      type: "escalation.created",
-      owner: "human:operator",
+      type: "project.owner.requested",
       project: "aks-rp-e2e",
-      data: {
-        projectId: "aks-rp-e2e",
-        severity: "P0",
-        blockedOn: "metric breach aks-rp-e2e.task.stale-active-with-gaps",
-        dedupKey: "aks-rp-e2e:metric:stale-active-with-gaps",
+      reason: "metric-breach",
+      urgency: "high",
+      params: {
+        metricId: "aks-rp-e2e.task.stale-active-with-gaps",
+        metric: {
+          metricId: "aks-rp-e2e.task.stale-active-with-gaps",
+          current: 1,
+          threshold: 0,
+          priority: "P0",
+        },
       },
     });
     expect(
-      emitted.some((event) => event.type === "project.owner.requested"),
-    ).toBe(false);
+      String((emitted[0].params as Record<string, unknown>).instruction),
+    ).toContain("unhealthy worker sessions");
+    expect(emitted.some((event) => event.type === "escalation.created")).toBe(
+      false,
+    );
   });
 
-  test("blocked-count metric breach wakes owner blocked-frontier review before human escalation", async () => {
+  test("blocked-count metric breach wakes owner blocked-frontier review without direct escalation", async () => {
     const { ctx, emitted } = testContext();
 
     await app.onEvent(ctx, {

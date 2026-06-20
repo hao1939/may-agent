@@ -91,13 +91,13 @@ Every non-done task must either:
 4. be invalid and repaired by owner review.
 ```
 
-| State | Driver |
-| --- | --- |
-| `backlog` | Owner assigns if runnable. If not runnable, owner repairs dependency, splits, asks, or records a terminal `done` disposition. |
-| `active` | Worker emits `project.task.completed`; stale-active watchdog requeues or wakes owner. |
-| `review` | Owner accepts to `done`, rejects to `backlog`, creates follow-up/problem work, or records a precise blocker. |
+| State     | Driver                                                                                                                                 |
+| --------- | -------------------------------------------------------------------------------------------------------------------------------------- |
+| `backlog` | Owner assigns if runnable. If not runnable, owner repairs dependency, splits, asks, or records a terminal `done` disposition.          |
+| `active`  | Worker emits `project.task.completed`; stale-active watchdog requeues or wakes owner.                                                  |
+| `review`  | Owner accepts to `done`, rejects to `backlog`, creates follow-up/problem work, or records a precise blocker.                           |
 | `blocked` | Owner periodically rechecks, unblocks, creates problem-solving work, sends/escalates an ask, or records a terminal `done` disposition. |
-| `done` | Final project knowledge. It may be rolled up or compacted, but not worked again as open work. |
+| `done`    | Final project knowledge. It may be rolled up or compacted, but not worked again as open work.                                          |
 
 Parent nodes use the same five states. A parent with children is not in a
 special "decomposed" state. Its state is the owner's current rollup judgment for
@@ -251,8 +251,20 @@ send the external ask, or accept a terminal/product/environment disposition as
 
 When blocked-task metrics, watchdogs, human steering, or focus reviews show that
 blocked work is dominating the frontier, the project should wake the owner for a
-blocked-frontier review before escalating to a human. The owner reviews a compact
-sample of blocked and dependency-waiting leaves and chooses one of four actions:
+blocked-frontier review before escalating to a human. The task-tree packet should
+include structural blocked-frontier context, not only a capped leaf list:
+
+- total blocked leaf count
+- largest blocked parent groups
+- repeated blocker signatures
+- sample task ids and blocker text for each group
+
+This is still only tool output. It does not decide the blocker semantics. It
+helps the owner see whether the live tree has one real blocker represented by
+many leaves, or many independent waits.
+
+The owner reviews the blocked groups plus dependency-waiting leaves and chooses
+one of these actions:
 
 - create or link one visible problem/unblock task for a local, tooling,
   environment, or runner root cause
@@ -262,6 +274,27 @@ sample of blocked and dependency-waiting leaves and chooses one of four actions:
 - escalate only when another owner or human must provide input or take action
 - keep a true external wait blocked only after making the ask/send-ready state,
   owner, resume condition, and next review trigger explicit
+
+Two common false blockers should be challenged during owner review:
+
+- **Response-await without send proof.** A task cannot passively wait for a
+  reply if the tree also says the ask was not sent, handed off, or escalated.
+  The owner should create the concrete send/handoff/escalation work, or replace
+  the passive wait with the task that performs that action.
+- **Exact-source overblocking.** Missing perfect handwritten source is not
+  automatically a real blocker. If the project can still make truthful bounded
+  progress with source-equivalent evidence, a draft spec, an evidence ceiling,
+  or a replay that clearly marks the uncertainty, the owner should create that
+  work instead of freezing the branch.
+
+Blocked-frontier review should burn down noise, not merely touch one leaf. If
+many leaves share one real external wait, the owner keeps or creates one
+family-level wait that carries the affected task ids, owner, resume condition,
+and next review trigger. Duplicate child waits can then be marked `done` with a
+replacement/cancelled resolution only after the family-level wait preserves their
+meaning. If the wait is locally fixable, the owner creates one problem/unblock
+task instead of keeping many blocked leaves. If the result is terminal, the owner
+marks the leaf done with the evidence and retest condition.
 
 Dependency-waiting backlog is part of the same review. If the dependency is
 missing, already done, stale, or blocked by a locally fixable problem, the owner
@@ -367,6 +400,12 @@ bun run task-tree rollup-parent <parent-id> \
 This command does not decide what matters. The owner agent decides the summary
 and which completed children are low-value enough to fold away. The command only
 performs the safe archive operation.
+
+The planning packet may include structural hygiene data such as safe done leaf
+counts and parent-level compaction candidates. This is not an instruction to
+compact. It is only a visibility aid so the owner can notice a noisy branch and
+decide whether the parent already carries enough durable meaning to fold old
+children away.
 
 For oversized legacy trees, a batch compaction command may exist:
 

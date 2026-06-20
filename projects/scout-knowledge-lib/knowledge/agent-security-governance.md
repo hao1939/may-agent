@@ -2,7 +2,7 @@
 summary: "Canonical note on agent security and governance patterns: attack surfaces, defense architectures, structural governance, state-level access controls (ITAR/Mythos), and supply-chain risks for tool-using AI agents."
 triggers: ["agent security", "agent safety", "agent governance", "prompt injection", "tool sandboxing", "agent trust", "supply chain attack", "agent permissions", "ITAR", "export control", "model access", "infrastructure cost", "trojan repos", "agent targeting", "vendor continuity"]
 last_updated: "2026-06-20"
-source_basis: "arXiv papers (June 2026 inbox provenance, 238+ papers + batch-3/6/7 triage — security was #1 cross-cutting theme), HN practitioner discourse (Jun 2026 — hn-scan-3 agent externality taxonomy, hn-scan-10 LinkedIn mega-narrative + multi-vector DPRK attacks, hn-scan-11 ITAR/Mythos + infrastructure cost squeeze, hn-scan-33 10k trojan repos + SK Telecom/Mythos vendor continuity), XHS Chinese community structural governance signals (May–Jun 2026). Batch 6 sourcing: MemVenom memory poisoning, Semantic Quorum, SciTrace trajectory safety, MAC-Bench Goodhart compliance."
+source_basis: "arXiv papers (June 2026 inbox provenance, 238+ papers + batch-3/6/7 triage — security was #1 cross-cutting theme), HN practitioner discourse (Jun 2026 — hn-scan-3 agent externality taxonomy, hn-scan-10 LinkedIn mega-narrative + multi-vector DPRK attacks, hn-scan-11 ITAR/Mythos + infrastructure cost squeeze, hn-scan-33 10k trojan repos + SK Telecom/Mythos vendor continuity, hn-scan-52 SK Hynix/HBM supply chain retaliation dimension, hn-scan-53 Google Firefox block platform-layer governance + memory shortage as access control), XHS Chinese community structural governance signals (May–Jun 2026). Batch 6 sourcing: MemVenom memory poisoning, Semantic Quorum, SciTrace trajectory safety, MAC-Bench Goodhart compliance."
 </ai_context>
 
 # Agent Security & Governance Patterns
@@ -131,8 +131,16 @@ channels to compromise software supply chains:
   upgraded from speculative signal to community consensus. Additional victim
   reports (Jimmc414, davidcrowe) confirm the attack is active for 4+ months
   with GitHub taking no action to remove reported repos.
+  **Update (Scan #49, Jun 19):** Story peaks at 906pts/238c. The agent-
+  targeting thesis is now established community consensus. Bing search
+  amplification confirmed: StableAlkyne reports Bing returning malicious repo
+  instead of legitimate one for identical search queries — agents using Bing
+  for dependency discovery are especially vulnerable. bananamogul: obvious
+  malware reported 2+ years ago, still live on GitHub. GitHub's enforcement
+  gap is now a structural feature, not a bug — the platform cannot keep up.
   *(HN, Jun 2026; see [2026-06-20-hn-scan-33.md](./findings/2026-06-20-hn-scan-33.md),
-  [2026-06-19-hn-scan-36.md](./findings/2026-06-19-hn-scan-36.md))*
+  [2026-06-19-hn-scan-36.md](./findings/2026-06-19-hn-scan-36.md),
+  [2026-06-19-hn-scan-49.md](./findings/2026-06-19-hn-scan-49.md))*
 
 ### 1.5 Data Agent Attack Surfaces (Interpretation → Execution → Policy)
 
@@ -809,6 +817,61 @@ AI-driven hardware scarcity creates a parallel access barrier:
 price adjustment thread, 357pts/516c; GitHub capacity crunch, 91pts/28c;
 Amazon Missouri DC, 68pts/41c; HN Jun 2026)*
 
+### Platform-Layer Access Control: Browser as Governance Chokepoint (Scan #53)
+
+A new governance dimension emerged: **platform owners using browser
+restrictions as de facto capability gating**.
+
+- **Google Workspace blocks Firefox** (388pts, 128c — Jun 2026): Google
+  displays full-page block to Firefox users citing "security requirements."
+  Blog author (admin) confirms they did NOT configure this restriction — Google
+  imposed it unilaterally on a basic Workspace Business plan.
+- **Internal precedent**: Google already forced all employees off alternate
+  browsers (saagarjha, HN). External customer restriction is the escalation.
+- **Mechanism**: Device Bound Session Credentials (DBSC) as justification
+  for Chrome-only access. "Security" as socially acceptable framing for
+  distribution lock-in.
+- **EU sovereignty acceleration**: j45 notes EU countries already leaving
+  US cloud providers — browser lock-in accelerates this departure.
+
+**Agent implications:**
+- Agents requiring Google Workspace access may be forced into Chrome-based
+  environments, creating a browser monoculture attack surface.
+- Platform companies losing model-layer competition (Google talent drain,
+  open-weight parity) reassert control at the distribution/access layer.
+- When you can't compete on capability, compete on lock-in — the "Browser
+  Moat" pattern mirrors the model-to-platform power migration.
+- Model-agnostic agents also need to be *platform-agnostic* — access-layer
+  diversification is now a governance requirement, not just efficiency.
+
+**Scan #54 update** (2026-06-20 night): Google Firefox block grows to 405pts/135c.
+Blog author RichardoC confirmed in-thread that Context-Aware Access is only
+available on Enterprise tier, not their Workspace Business plan — eliminating
+the "admin misconfiguration" explanation entirely. Community sentiment has
+shifted from "maybe it's misconfigured" to "Google is doing this unilaterally."
+Separately, "Airgap" concept proposed (11pts, low signal) for hiding secrets
+from AI agents during npm install — early seed of agent-aware secret management.
+
+*(Source: [2026-06-20-hn-scan-54.md](./findings/2026-06-20-hn-scan-54.md))*
+
+### Memory Shortage as Governance Lever (Scan #53)
+
+AI-driven memory demand is creating infrastructure-level access control:
+
+- Big tech companies confirm planning 2027 engineering goals specifically
+  to optimize RAM usage in response to AI-driven memory crunch (cornstalks,
+  HN — practitioner at major tech company).
+- Consumer hardware costs rising (Apple memory prices, scan #51).
+- Local model viability (the sovereignty hedge) constrained by hardware costs.
+- The "resource rebound" paradox: AI promised efficiency → AI's own demands
+  raise costs → engineers optimize for pre-AI-level constraints.
+
+This extends the infrastructure cost cascade: scarcity isn't just a market
+force — it differentially impacts actors who lack capital to absorb cost
+increases, functioning as de facto access control for AI workloads.
+
+*(Source: [2026-06-20-hn-scan-53.md](./findings/2026-06-20-hn-scan-53.md))*
+
 ---
 
 ## 5. Open Problems
@@ -1013,6 +1076,164 @@ Amazon Missouri DC, 68pts/41c; HN Jun 2026)*
     restricted. Restriction of one vendor proves political, not security,
     motivation.
     *(HN: TechCrunch + Register, 624pts combined, Jun 2026)*
+
+13. **Sixth dimension — Supply Chain Retaliation (Jun 2026)**:
+    Wired deep dive on SK Telecom/Anthropic (131pts/132c) reveals critical
+    structural entanglement: SK Telecom and SK Hynix belong to the same
+    Chey family conglomerate. SK Hynix is one of three global HBM (High
+    Bandwidth Memory) suppliers for AI training GPUs. htrp names the
+    implication explicitly: "Anthropic may discover a lack of availability
+    for HBM memory in the near future." wood_spirit notes the administration's
+    action is "much more transactional" than the technical justification
+    suggests. easygenes reports the shutdown was "spearheaded by Amazon CEO
+    Andy Jassy," not national security apparatus. jdw64: "Foreign companies
+    probably have to factor in political risk" — governance becomes
+    geopolitical risk modeling. Six dimensions:
+    1. Technical (fixing = exploiting)
+    2. Political (retaliation, not security)
+    3. Strategic (protects government offense — mlhpdx, scan #24)
+    4. Institutional (safety disclosure triggers regulation — smrtinsert)
+    5. Selective (applied to one vendor, not capability-equivalent competitors)
+    6. **Supply chain** (restricted party's conglomerate controls hardware inputs)
+    The supply-chain dimension is the most materially dangerous: export controls
+    applied to an AI lab whose training hardware depends on the restricted
+    party's family conglomerate create a reflexive vulnerability. The governance
+    action damages the governance actor's own infrastructure supply.
+    **Governance implication**: Model-level export controls without hardware
+    supply chain analysis are structurally incomplete. Any restriction must
+    model second-order effects on hardware procurement.
+    *(HN: Wired/SK Telecom, 131pts/132c, Jun 2026)*
+
+14. **Seventh dimension — Vendor Continuity Crisis (Jun 2026, scan #56)**:
+    SK Telecom story grows to 134pts/133c with new framing around vendor
+    continuity as enterprise evaluation criterion. jdw64 crystallizes:
+    "The switch to cut off AI vendors is now outside the realm of model
+    performance specs. When foreign companies integrate AI into their
+    workflows, they probably need to add a category for vendor continuity
+    in their evaluation criteria." OsrsNeedsf2P: "Lesson learned — don't
+    invest in US companies." The Amazon angle deepens: baq connects the
+    Amazon/Altman movie drop (173pts/66c) to the Fable controversy —
+    Amazon simultaneously partners with OpenAI, drops Altman biopic, and
+    allegedly catalyzed the Anthropic model restriction. Seven dimensions:
+    1. Technical (fixing = exploiting)
+    2. Political (retaliation, not security)
+    3. Strategic (protects government offense)
+    4. Institutional (safety disclosure triggers regulation)
+    5. Selective (applied to one vendor, not capability-equivalent competitors)
+    6. Supply chain (restricted party's conglomerate controls hardware inputs)
+    7. **Vendor continuity** (enterprise customers must now model political
+       risk when choosing AI vendors, not just technical capability)
+    **Governance implication**: AI vendor selection is now geopolitical risk
+    management. Any enterprise deeply integrating an AI provider must model
+    the risk of arbitrary access revocation based on political dynamics
+    entirely unrelated to model quality or security.
+    *(HN: Wired/SK Telecom, 134pts/133c; Amazon/Altman, 173pts/66c, Jun 2026)*
+
+15. **Credential Isolation Convergence — Full-Stack Problem Crystallizes
+    (Jun 2026, scan #57)**:
+    Three independent approaches to the same problem — keeping agent
+    credentials out of the agent's own context — appear simultaneously:
+    - **Protocol layer**: MCP Enterprise Auth isolates OAuth flow outside
+      the context window (sean_lynch: "The real valuable capability MCP
+      offers over skills/CLI")
+    - **Filesystem layer**: Airgap (16pts, seed signal) proposes separating
+      credential files from agent-readable environment
+    - **Network layer**: OneCLI/OpenShell MITM proxies inject credentials
+      at the network layer; agent never sees raw tokens
+    - **Hardware layer (UNRELIABLE)**: AMD silently removes memory
+      encryption from consumer CPUs (444pts/209c) — the hardware trust
+      assumption underlying all other layers just became unstable
+    **Governance implication**: Credential isolation for AI agents is now a
+    full-stack architectural problem. No single-layer solution is sufficient.
+    Hardware-layer trust (memory encryption) can be silently revoked.
+    Protocol-layer isolation (MCP auth) only covers MCP-aware tools.
+    Prediction: "credential management for AI agents" becomes a named
+    product category within 6 months.
+    *(HN: MCP OAuth 266pts/100c; Airgap 16pts/1c; AMD SME 444pts/209c, Jun 2026)*
+
+16. **Supply Chain Attacks Go Multi-Ecosystem — "Miasma Worm Campaign"
+    (Jun 2026, scan #58)**:
+    The AUR (Arch User Repository) reports coordinated package takeover
+    attacks identified as part of the same "miasma worm campaign" targeting
+    GitHub (940pts) — revealing a systematic, cross-ecosystem campaign
+    spanning GitHub, AUR, npm, and prior RedHat/xz-style social engineering.
+    cookiengineer: "AUR attacks were part of the larger miasma worm campaign,
+    gradually trying to gain more control through various package ecosystems
+    since the RedHat prototype campaign." AquaWeasel: "An Arch maintainer
+    that I personally know once admitted that he rarely review upstream
+    changes when bumping package versions."
+    For agent systems, the implication is critical: agents that run
+    `npm install`, `pip install`, or pull from any package repository are
+    executing supply chain attacks on behalf of their operators. The attack
+    surface is not GitHub-specific but package-ecosystem-wide:
+    | Ecosystem | Attack Vector | Defense Status |
+    |-----------|--------------|----------------|
+    | GitHub | Trojan repos (10K+) | Detection underway |
+    | AUR | Orphan package takeover | yay v13 time-filter |
+    | npm | Dependency confusion | Known, persistent |
+    | RedHat/xz | Maintainer social engineering | Post-incident only |
+    **Governance implication**: Any agent that installs packages is an
+    amplified supply chain attack vector. "Agent dependency isolation"
+    (constraining what packages agents can install and from which sources)
+    is an emerging requirement with no standardized solution.
+    *(HN: AUR attacks 40pts/32c; GitHub Trojan 940pts/243c, Jun 2026)*
+
+17. **Command Denylist Fragility — 69-98.6% Bypassable (Aug 2026)**:
+    CmdNeedle (2606.15549) systematically characterizes command denylist
+    fragility in terminal AI agents. Applied to 1,709 real-world denylists
+    (13,332 rules) from GitHub: 69-98.6% are fragile. Even Claude Code's
+    built-in denylist can be bypassed. Root causes: command aliasing,
+    multi-utility commands (e.g., `find . -delete` bypasses `rm` ban), and
+    Unix pipe composition. The structural problem: the combinatorial space of
+    Unix command composition makes exhaustive enumeration impossible.
+    Denylists are heuristic hints, not security boundaries. This is the
+    Guard Paradox at the OS level — text-based behavioral controls cannot
+    enforce structural safety properties.
+    **Governance implication**: Agent sandbox security should NOT rely on
+    command denylists as load-bearing safety. The SEB pattern (certificate-
+    bound execution authority, 2606.20520) provides the structural alternative:
+    specify what IS permitted rather than what ISN'T.
+    *(arXiv: CmdNeedle 2606.15549, Jun 2026)*
+
+18. **Memory Trojans via Conversational Interaction (Aug 2026)**:
+    2605.29960 demonstrates stealthy trojan attacks that survive memory
+    extraction filters by crafting information that APPEARS benign during
+    storage but activates malicious behavior when retrieved in specific later
+    contexts. Prior attacks assumed direct injection; this works through
+    normal conversational interaction. The attack surface: semantic
+    composition of individually benign memories into harmful instructions.
+    MemMark (2605.25002) proposes attribution watermarks embedded IN memory
+    content (not metadata) for provenance resilience.
+    **Governance implication**: Memory-backed agents need provenance-aware
+    retrieval — tracking source chains for trust, not just content relevance.
+    For knowledge libraries accumulating multi-source information, individual
+    entry trustworthiness ≠ composed-context trustworthiness.
+    *(arXiv: 2605.29960, 2605.25002, May 2026)*
+
+19. **Agent-Targeted Repository Poisoning — A Named Attack Category (Aug 2026)**:
+    10,000+ GitHub repos discovered distributing trojan malware EXPLICITLY
+    targeting AI agents, not human developers (945pts/243c, HN Jun 2026).
+    Novel attack characteristics:
+    - **Agent-specific freshness gaming**: Repos delete and re-push commits
+      every few hours to appear "recently updated" — the signal agents use
+      to filter for active projects during dependency selection.
+    - **Skill registry identity theft**: Fake entries on MCP tool registries
+      (mcpmarket.com, lobehub.com/skills, hub.decision.ai/skills) attribute
+      malicious tools to legitimate developer identities.
+    - **Human bypass**: The attack chain (attacker → poisoned repo → agent
+      search → automated dependency inclusion → compromised system) may
+      never surface to human review.
+    - **Scale defense impossibility**: 10,000 repos makes manual detection
+      infeasible; only automated scanning + structural defenses apply.
+    **Governance implication**: Agent tool selection must transition from
+    search-based (vulnerable to freshness gaming and SEO-style attacks) to
+    graph-based or certificate-based. The SING pattern (intention-graph tool
+    discovery, 2606.16591) eliminates the search-result attack surface.
+    MCP tool registries need cryptographic provenance (signature chains) to
+    prevent identity theft. Any agent that installs dependencies via search
+    is structurally vulnerable regardless of behavioral safeguards.
+    *(HN: 10k GitHub Trojan repos 945pts/243c, AUR attacks 54pts/37c;
+    connects to CmdNeedle #17 structural inadequacy, MemMark #18 provenance)*
 
 ---
 

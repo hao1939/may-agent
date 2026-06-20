@@ -1,3 +1,4 @@
+import { existsSync, readdirSync, readFileSync } from "node:fs";
 import {
   defineProjectApp,
   eventData,
@@ -35,6 +36,271 @@ function problemKeyForTask(taskId: string): string {
     taskId.replace(/[^A-Za-z0-9_-]+/g, "-").replace(/^-+|-+$/g, "") ||
     "unknown-task";
   return `aks-rp-e2e:task-problem:${safeTaskId}`;
+}
+
+type TaskTreeNode = {
+  id?: string;
+  context?: unknown;
+  acceptance?: unknown;
+  blocker?: unknown;
+  goal?: unknown;
+  inputs?: unknown;
+  outputs?: unknown;
+  state?: unknown;
+  status?: unknown;
+};
+
+type ProblemTaskLinkNormalization = {
+  problemKey?: string;
+  problem_key?: string;
+  taskId?: string;
+  task_id?: string;
+  affectedTasks?: string[];
+  affected_tasks?: string[];
+  originalProblemKey?: string;
+  original_problem_key?: string;
+  originalTaskId?: string;
+  original_task_id?: string;
+  originalAffectedTasks?: string[];
+  original_affected_tasks?: string[];
+  normalization?: {
+    reason:
+      | "live-task-pass-through"
+      | "archived-task-relinked-to-live-successor"
+      | "archived-task-has-no-live-successor";
+    archiveTaskId?: string;
+    archivedTaskIds?: string[];
+    liveSuccessorTaskId?: string;
+    liveSuccessorTaskIds?: string[];
+    disposition?: "active" | "superseded";
+  };
+};
+
+function stringList(value: unknown): string[] {
+  if (Array.isArray(value)) {
+    return value.filter((item): item is string => typeof item === "string");
+  }
+  if (typeof value === "string" && value.trim()) return [value.trim()];
+  return [];
+}
+
+function recordText(value: unknown): string {
+  if (typeof value === "string") return value;
+  if (Array.isArray(value)) return value.map(recordText).join("\n");
+  if (value && typeof value === "object") return JSON.stringify(value);
+  return "";
+}
+
+function taskNodeText(task: TaskTreeNode): string {
+  return [
+    task.id,
+    recordText(task.goal),
+    recordText(task.context),
+    recordText(task.acceptance),
+    recordText(task.blocker),
+    recordText(task.inputs),
+    recordText(task.outputs),
+    recordText(task.state),
+    recordText(task.status),
+  ]
+    .filter(Boolean)
+    .join("\n")
+    .toLowerCase();
+}
+
+function loadTaskTree(projectAppContext: ProjectAppContext): Record<
+  string,
+  TaskTreeNode
+> {
+  const path = projectAppContext.projectPath("tasks/tree.json");
+  const raw = readFileSync(path, "utf8");
+  const parsed = JSON.parse(raw) as {
+    tasks?: Record<string, TaskTreeNode>;
+  };
+  return parsed.tasks ?? {};
+}
+
+function listTaskArchiveFiles(projectAppContext: ProjectAppContext): string[] {
+  const archiveDir = projectAppContext.projectPath("tasks/archive");
+  if (!existsSync(archiveDir)) return [];
+  return readdirSync(archiveDir)
+    .filter((name) => name.endsWith(".json"))
+    .map((name) => `${archiveDir}/${name}`)
+    .sort();
+}
+
+function isArchivedAcceptedTask(
+  archiveTask: Record<string, unknown> | undefined,
+): boolean {
+  if (!archiveTask || typeof archiveTask !== "object") return false;
+  const status = String(archiveTask.status ?? archiveTask.state ?? "").toLowerCase();
+  const resolution = String(archiveTask.resolution ?? "").toLowerCase();
+  const doneByReview =
+    typeof archiveTask.done_at === "string" ||
+    typeof archiveTask.doneAt === "string" ||
+    resolution === "completed";
+  return status === "done" || doneByReview;
+}
+
+function findArchivedTask(
+  projectAppContext: ProjectAppContext,
+  taskId: string,
+): { archivePath: string; task: Record<string, unknown> } | null {
+  for (const archivePath of listTaskArchiveFiles(projectAppContext)) {
+    try {
+      const parsed = JSON.parse(readFileSync(archivePath, "utf8")) as {
+        tasks?: Array<Record<string, unknown>>;
+      };
+      const task = (parsed.tasks ?? []).find((entry) => entry?.id === taskId);
+      if (task && isArchivedAcceptedTask(task)) {
+        return { archivePath, task };
+      }
+    } catch {
+      continue;
+    }
+  }
+  return null;
+}
+
+function findUniqueLiveSuccessorTaskId(
+  liveTasks: Record<string, TaskTreeNode>,
+  archivedTaskId: string,
+): string | null {
+  const archivedEvidence = `evidence/archive/${archivedTaskId}.md`.toLowerCase();
+  const archivedRunStem = archivedTaskId.toLowerCase();
+  const matches = Object.values(liveTasks)
+    .filter((task) => {
+      const candidateId = typeof task.id === "string" ? task.id : "";
+      if (!candidateId || candidateId === archivedTaskId) return false;
+      const text = taskNodeText(task);
+      return (
+        text.includes(archivedTaskId.toLowerCase()) ||
+        text.includes(archivedEvidence) ||
+        text.includes(archivedRunStem)
+      );
+    })
+    .map((task) => task.id)
+    .filter((id): id is string => typeof id === "string");
+  return matches.length === 1 ? matches[0] : null;
+}
+
+function normalizeProblemTaskLinks(
+  projectAppContext: ProjectAppContext,
+  problem: Record<string, unknown>,
+): ProblemTaskLinkNormalization {
+  const liveTasks = loadTaskTree(projectAppContext);
+  const originalProblemKey =
+    eventString(problem, "problemKey") || eventString(problem, "problem_key");
+  const originalTaskId =
+    eventString(problem, "taskId") || eventString(problem, "task_id");
+  const originalAffectedTasks = [
+    ...new Set([
+      ...stringList(problem.affectedTasks),
+      ...stringList(problem.affected_tasks),
+      ...(originalTaskId ? [originalTaskId] : []),
+    ]),
+  ];
+
+  const stillLive = originalAffectedTasks.filter((taskId) => Boolean(liveTasks[taskId]));
+  const archivedRelinks = new Map<string, string>();
+  const archivedWithoutSuccessor: string[] = [];
+
+  for (const taskId of originalAffectedTasks) {
+    if (liveTasks[taskId]) continue;
+    const archived = findArchivedTask(projectAppContext, taskId);
+    if (!archived) continue;
+    const successor = findUniqueLiveSuccessorTaskId(liveTasks, taskId);
+    if (successor) archivedRelinks.set(taskId, successor);
+    else archivedWithoutSuccessor.push(taskId);
+  }
+
+  if (archivedWithoutSuccessor.length > 0 && stillLive.length === 0 && archivedRelinks.size === 0) {
+    return {
+      problemKey: undefined,
+      problem_key: undefined,
+      taskId: undefined,
+      task_id: undefined,
+      affectedTasks: [],
+      affected_tasks: [],
+      originalProblemKey: originalProblemKey || undefined,
+      original_problem_key: originalProblemKey || undefined,
+      originalTaskId: originalTaskId || undefined,
+      original_task_id: originalTaskId || undefined,
+      originalAffectedTasks,
+      original_affected_tasks: originalAffectedTasks,
+      normalization: {
+        reason: "archived-task-has-no-live-successor",
+        archivedTaskIds: archivedWithoutSuccessor,
+        archiveTaskId: archivedWithoutSuccessor[0],
+        disposition: "superseded",
+      },
+    };
+  }
+
+  const normalizedAffectedTasks = [
+    ...new Set([
+      ...stillLive,
+      ...originalAffectedTasks
+        .map((taskId) => archivedRelinks.get(taskId))
+        .filter((taskId): taskId is string => typeof taskId === "string"),
+    ]),
+  ];
+
+  const normalizedTaskId = originalTaskId
+    ? liveTasks[originalTaskId]
+      ? originalTaskId
+      : archivedRelinks.get(originalTaskId)
+    : normalizedAffectedTasks[0];
+
+  if (archivedRelinks.size > 0) {
+    const relinkedTaskId = [...archivedRelinks.keys()][0];
+    const liveSuccessorTaskId = [...archivedRelinks.values()][0];
+    const normalizedProblemKey =
+      originalProblemKey && originalTaskId === relinkedTaskId
+        ? problemKeyForTask(liveSuccessorTaskId)
+        : originalProblemKey || undefined;
+    return {
+      problemKey: normalizedProblemKey,
+      problem_key: normalizedProblemKey,
+      taskId: normalizedTaskId,
+      task_id: normalizedTaskId,
+      affectedTasks: normalizedAffectedTasks,
+      affected_tasks: normalizedAffectedTasks,
+      originalProblemKey: originalProblemKey || undefined,
+      original_problem_key: originalProblemKey || undefined,
+      originalTaskId: originalTaskId || undefined,
+      original_task_id: originalTaskId || undefined,
+      originalAffectedTasks,
+      original_affected_tasks: originalAffectedTasks,
+      normalization: {
+        reason: "archived-task-relinked-to-live-successor",
+        archiveTaskId: relinkedTaskId,
+        archivedTaskIds: [...archivedRelinks.keys()],
+        liveSuccessorTaskId,
+        liveSuccessorTaskIds: [...new Set(archivedRelinks.values())],
+        disposition: "active",
+      },
+    };
+  }
+
+  return {
+    problemKey: originalProblemKey || undefined,
+    problem_key: originalProblemKey || undefined,
+    taskId: originalTaskId || undefined,
+    task_id: originalTaskId || undefined,
+    affectedTasks: originalAffectedTasks,
+    affected_tasks: originalAffectedTasks,
+    originalProblemKey: originalProblemKey || undefined,
+    original_problem_key: originalProblemKey || undefined,
+    originalTaskId: originalTaskId || undefined,
+    original_task_id: originalTaskId || undefined,
+    originalAffectedTasks,
+    original_affected_tasks: originalAffectedTasks,
+    normalization: {
+      reason: "live-task-pass-through",
+      disposition: "active",
+    },
+  };
 }
 
 function isProblemClaim(event: Record<string, unknown>): boolean {
@@ -223,54 +489,6 @@ function isAksProjectMetric(event: Record<string, unknown>): boolean {
   return metricId(event).startsWith("aks-rp-e2e.");
 }
 
-function humanUnblockEscalation(
-  event: Record<string, unknown>,
-): Record<string, unknown> {
-  const data = eventDetails(event);
-  const idValue = metricId(event);
-  const staleActive = idValue === "aks-rp-e2e.task.stale-active-with-gaps";
-  const blockedCount = idValue === "aks-rp-e2e.task.blocked-count";
-  const id = `esc_aks_rp_e2e_metric_${Date.now()}`;
-  return {
-    type: "escalation.created",
-    source: "project-app:aks-rp-e2e",
-    owner: "human:operator",
-    urgency: "high",
-    project: projectId,
-    data: {
-      escalationId: id,
-      projectId,
-      sourceAgent: "aks-explorer",
-      reason: blockedCount
-        ? "aks-rp-e2e has accumulated too many blocked task-tree leaves. Most blocked leaves need explicit external source input, Azure/auth context, cloud-mutation approval, or a decision to park them while other work continues."
-        : staleActive
-          ? "aks-rp-e2e has active task-tree work whose worker session is not healthy while knowledge-model gaps remain."
-          : "aks-rp-e2e has no runnable backlog, active worker session, or review task while knowledge-model gaps remain.",
-      requestedAction:
-        "Reply with steering, approval, missing context, or an unblock decision so the project owner can repair the task tree and continue.",
-      severity: blockedCount ? "P1" : "P0",
-      blockedOn: `metric breach ${idValue}`,
-      evidence: {
-        metric: data,
-        appTaskTree: "/app/projects/aks-rp-e2e.app/tasks/tree.json",
-        domainStatusCommand:
-          "cd /app/projects/aks-rp-e2e && bun run status -- --gaps",
-        kanban: "/projects/aks-rp-e2e.app/ui/kanban/",
-      },
-      resume: {
-        kind: "project-owner",
-        instruction:
-          "Fold the human reply into the task tree, then wake the project owner.",
-      },
-      dedupKey: blockedCount
-        ? "aks-rp-e2e:metric:blocked-count"
-        : staleActive
-          ? "aks-rp-e2e:metric:stale-active-with-gaps"
-          : "aks-rp-e2e:metric:no-work-with-gaps",
-    },
-  };
-}
-
 function blockedFrontierReviewEvent(
   event: Record<string, unknown>,
 ): Record<string, unknown> {
@@ -290,6 +508,29 @@ function blockedFrontierReviewEvent(
       ],
     }),
     urgency: "high",
+  };
+}
+
+function metricOwnerReviewEvent(
+  event: Record<string, unknown>,
+): Record<string, unknown> {
+  const id = metricId(event);
+  const staleActive = id === "aks-rp-e2e.task.stale-active-with-gaps";
+  const noWork = id === "aks-rp-e2e.task.no-work-with-gaps";
+  return {
+    ...projectOwnerEvent("metric-breach", {
+      metricId: id,
+      metric: eventDetails(event),
+      instruction: staleActive
+        ? "Metric breach shows active task-tree work has unhealthy worker sessions while gaps remain. Review the stale active tasks, requeue or split only when needed, create/link problem-solving work for local runtime causes, and keep unrelated runnable work moving."
+        : noWork
+          ? "Metric breach shows no runnable or active project work while gaps remain. Treat this as an owner-loop reconciliation incident: accept/reject review work, unblock or repair stale blockers/dependencies, create concrete next leaves, or escalate only if the next action crosses an ownership boundary."
+          : "Review this project metric breach as owner context. Repair the task tree, create concrete work, calibrate the metric, or escalate only if the issue crosses an ownership boundary.",
+    }),
+    urgency:
+      staleActive || noWork || eventString(event, "priority") === "P0"
+        ? "high"
+        : "normal",
   };
 }
 
@@ -349,8 +590,25 @@ async function routeAksRpE2eEvent(
     event.type === "project.problem.escalated" ||
     event.type === "project.problem.unknown"
   ) {
-    const problemKey =
+    const eventProblemKey =
       eventString(event, "problemKey") || eventString(event, "problem_key");
+    const normalizedProblem = normalizeProblemTaskLinks(ctx, eventDetails(event));
+    const problemKey = normalizedProblem.problemKey ?? eventProblemKey;
+    const problem = {
+      ...eventDetails(event),
+      ...normalizedProblem,
+    };
+
+    if (
+      normalizedProblem.normalization?.reason ===
+        "archived-task-has-no-live-successor" &&
+      event.type === "project.problem.unknown"
+    ) {
+      return ctx.noop(
+        `retired stale archived problem wake for ${problemKey || normalizedProblem.normalization.archiveTaskId || "unknown-problem"}`,
+      );
+    }
+
     return ctx.emit(
       projectOwnerEvent(
         event.type === "project.problem.resolved"
@@ -360,7 +618,7 @@ async function routeAksRpE2eEvent(
             : "problem-unknown",
         {
           problemKey,
-          problem: eventDetails(event),
+          problem,
         },
       ),
     );
@@ -419,14 +677,9 @@ async function routeAksRpE2eEvent(
       id === "aks-rp-e2e.task.no-work-with-gaps" ||
       id === "aks-rp-e2e.task.stale-active-with-gaps"
     ) {
-      return ctx.emit(humanUnblockEscalation(event));
+      return ctx.emit(metricOwnerReviewEvent(event));
     }
-    return ctx.emit(
-      projectOwnerEvent("metric-breach", {
-        metricId: id,
-        metric: eventDetails(event),
-      }),
-    );
+    return ctx.emit(metricOwnerReviewEvent(event));
   }
 
   if (event.type === "metric.recovered" && isAksProjectMetric(event)) {
@@ -684,12 +937,6 @@ export default defineProjectApp({
         description: "Regular learning tick wakes the project owner.",
       },
       {
-        event: "project.owner.requested",
-        emits: ["project.task.assigned"],
-        description:
-          "Scheduled blocked-frontier review wakes the owner directly; the planner decides whether to unblock, create problem-solving work, keep true external waits blocked, or assign unrelated runnable work.",
-      },
-      {
         event: "project.action.invoked",
         emits: ["project.owner.requested"],
         description: "UI or API project action becomes owner context.",
@@ -738,9 +985,9 @@ export default defineProjectApp({
       },
       {
         event: "metric.breach",
-        emits: ["escalation.created", "project.owner.requested"],
+        emits: ["project.owner.requested"],
         description:
-          "Project metric breach wakes the owner unless it crosses an ownership boundary. Blocked-count first wakes owner blocked-frontier review; no-work-with-gaps and stale-active-with-gaps create an escalation because they indicate the owner loop itself may be stuck.",
+          "Project metric breach wakes the owner with metric context. The owner repairs the tree or escalates only when the issue crosses an ownership boundary.",
       },
       {
         event: "metric.recovered",

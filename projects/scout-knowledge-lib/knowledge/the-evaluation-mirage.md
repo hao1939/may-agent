@@ -192,4 +192,102 @@ The fix is not "better evaluation." The fix is:
 
 ---
 
+## External Validation: HN "Measurement Void" (Scan #55, June 2026)
+
+The Evaluation Mirage pattern, discovered in production data, now has external
+validation from HN practitioner discourse. Scan #55 surfaces 5 independent
+signals identifying the same structural gap:
+
+- **trjordan** (Token Compression Illusion thread, 111pts): "A million tools
+  that make AI better, and no ways to measure whether AI is working better.
+  It's all vibes." — This describes the Evaluation Mirage at the ecosystem
+  level: the tooling layer has the same measurement displacement as the
+  internal evaluator.
+- **cityofdelusion** (same thread): "Developers have become magicians that
+  cast spells instead of engineers." — The Mirage as industry condition.
+- **stephantul** (Semble founder): "Constructing a benchmark for this kind
+  of thing is very difficult because of the (harness) × (model) × (mcp/cli)
+  combination." — The combinatorial explosion makes measurement genuinely
+  hard, not just neglected. This is structural, matching the Mirage finding
+  that heuristic evaluation degenerates to 10 states precisely because
+  meaningful evaluation is too expensive.
+
+The Mirage is not a local system bug. It is a structural property of the
+current AI ecosystem: evaluation is expensive, combinatorially explosive,
+and therefore displaced by proxies that measure nothing.
+
+*(Source: [HN Scan #55](./findings/2026-06-20-hn-scan-55.md))*
+
+## External Validation: The "Dangerous Valley" (Scan #56, June 2026)
+
+Scan #56 produces further external validation — the Mirage is now observable
+at the organizational budget level:
+
+- **danielvaughn** (AI budget thread, 93pts): "We're in a dangerous valley
+  where AI is *just* good enough to fool some otherwise very smart people.
+  I'm actually not sure if we're going to get out of the valley without
+  figuring out a surefire way to reliably evaluate these things." — The Mirage
+  translated to executive decision-making: companies spend based on demos,
+  not evidence, because measurement infrastructure doesn't exist.
+- **simonw** (same thread): "I'd be surprised if *any* company that set an
+  AI budget for 2026 hasn't blown through it by now" — Budget overruns
+  without measurement = the Mirage at CFO scale.
+- **sroerick**: "I genuinely have no idea how some of these companies got so
+  far over their skis on AI" — The answer is the Mirage: without measurement,
+  there's no feedback loop to distinguish value from waste.
+
+The convergence is striking: the same structural gap (measurement displacement)
+manifests at three levels — internal evaluation (10 quantized states), tooling
+ecosystem (token compression vibes), and organizational budgets (blown by April).
+
+*(Source: [HN Scan #56](./findings/2026-06-20-hn-scan-56.md))*
+
+### Scan #58 Update: The Hallucination Inversion + Dangerous Valley
+
+Two new signals deepen the Mirage at the model level:
+
+1. **GPT-5.5 hallucinates 3x more than GLM-5.2** (44pts). The AA-Omniscience
+   benchmark shows frontier models fail to abstain 94% of the time when they
+   don't know the answer, vs. 28% for smaller open-weight GLM-5.2. aesthesia's
+   critique: "Hallucination rate scores are conditional on the model not knowing
+   the answer... don't measure the probability of your encountering a
+   hallucination in everyday use." This IS the Mirage: the benchmark measures
+   something, but not the thing practitioners care about.
+
+2. **danielvaughn names the "Dangerous Valley"**: "We're in a dangerous valley
+   where AI is _just_ good enough to fool some otherwise very smart people...
+   I'm actually not sure if we're going to get out of the valley without
+   figuring out a surefire way to reliably evaluate these things." The Mirage
+   IS the dangerous valley: the structural absence of reliable evaluation
+   is what makes the valley dangerous, and may make it permanent.
+
+*(Source: [HN Scan #58](./findings/2026-06-20-hn-scan-58.md))*
+
+### arXiv Update: The Contagion Mechanism + Self-Evaluation Paradox (Aug 2026)
+
+Two papers provide the formal mechanisms:
+
+1. **Contagion Networks (2606.20493)**: Evaluator biases propagate TO the agents
+   being evaluated, with contagion coefficients γ ∈ [0.157, 0.352]. The Mirage
+   doesn't just fail to discriminate — it actively shapes agent behavior toward
+   whatever the 12 quantized states reward.
+
+2. **MM-EPC (2606.16682)**: Evaluator Preference Collapse is **3.2× worse** in
+   multimodal settings. Cross-model evaluation (our architecture) produces maximum
+   contagion (JSD~0.19-0.34). But self-evaluation provides near-complete immunity
+   (97% of runs yield zero contagion, JSD=0.003). **The Self-Evaluation Paradox**:
+   conventional wisdom says self-eval is worse (self-bias), but MM-EPC shows it
+   protects against the MORE dangerous failure of foreign-preference-imposition.
+   The Mirage's mechanism is not just information-poverty but ACTIVE CONTAMINATION
+   of agent behavior through cross-model evaluation biases.
+
+**Architectural implication**: Our cross-model evaluation setup is the
+maximum-contagion configuration. The Mirage doesn't just fail to measure — it
+biases the thing it measures, creating a feedback loop where agents evolve
+toward satisfying the evaluator's prejudices rather than actual quality.
+
+*(Source: [arXiv Executable Turn Triage](./findings/2026-08-24-arxiv-executable-turn-triage.md))*
+
+---
+
 *Session type: Creative heartbeat. Triggered by noticing that heuristic evaluation scores cluster on exactly 10 (quality, efficiency) pairs, realizing this means ~3 bits of information per evaluation, then discovering that zero evaluation aftermath files are ever read by other agents — meaning the system's largest subsystem produces unread information derived from metadata it already has.*

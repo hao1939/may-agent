@@ -39,7 +39,7 @@ function usage(): never {
   bun run task-tree frontier
   bun run task-tree confirm-runnable [--limit N]
   bun run task-tree add <task-id> --parent <task-id> --goal "..." --output <path> --acceptance "..." [--state backlog|blocked]
-  bun run task-tree mark-done <task-id> --summary "review accepted"
+  bun run task-tree mark-done <task-id> --summary "review accepted" [--resolution completed|replaced|cancelled|terminal]
   bun run task-tree assign <task-id> [--worker agent-name]
   bun run task-tree assignments
   bun run task-tree drain-assignments

@@ -458,7 +458,7 @@ describe("project owner workflow", () => {
     expect(plannerRuns).toContain('"ran_agent":false');
   });
 
-  test("deterministically refills routine watchdog gaps without owner session", async () => {
+  test("runs owner review instead of seeding model-gap tasks in workflow code", async () => {
     const { appDir, projectDir } = await makeWorkspace();
     await writeFile(
       join(projectDir, "specs", "feature-a-create.json"),
@@ -503,32 +503,26 @@ describe("project owner workflow", () => {
       runAgent: async () => ({ status: "success" }),
       runAgentSession: async (_agent: string, task: string) => {
         prompts.push(task);
-        return { status: "success", message: "should not run" };
+        return { status: "success", message: "owner reviewed gaps" };
       },
       summarize: () => "",
     } as any);
 
     expect(result.status).toBe("done");
-    expect(result.message).toContain("deterministic-refill seeded 1 task");
-    expect(prompts).toHaveLength(0);
-    expect(dispatched).toHaveLength(1);
-    expect(dispatched[0].type).toBe("project.task.assigned");
-    expect(String(dispatched[0].payload.taskId)).toContain(
-      "feature-a-staging-frontier",
-    );
+    expect(result.message).toContain("Planner assigned no tasks");
+    expect(prompts).toHaveLength(2);
+    expect(dispatched).toHaveLength(0);
 
     const plannerRuns = await readFile(
       join(appDir, ".state", "planner-runs.jsonl"),
       "utf8",
     );
-    expect(plannerRuns).toContain('"steps":["deterministic-refill"]');
-    expect(plannerRuns).toContain('"ran_agent":false');
-    expect(plannerRuns).toContain(
-      '"routine-refill:watchdog-open-work-reconcile"',
-    );
+    expect(plannerRuns).toContain('"steps":["event-review","planning-update"]');
+    expect(plannerRuns).toContain('"ran_agent":true');
+    expect(plannerRuns).not.toContain('"seeded_task_ids"');
   });
 
-  test("requeues watchdog-stale active work before quick refill", async () => {
+  test("wakes owner for watchdog-stale active work without mutating task state", async () => {
     const { appDir, projectDir } = await makeWorkspace();
     await writeFile(
       join(appDir, "tasks", "tree.json"),
@@ -612,34 +606,23 @@ describe("project owner workflow", () => {
     } as any);
 
     expect(result.status).toBe("done");
-    expect(result.message).toContain("quick-refill assigned 1 task");
-    expect(prompts).toHaveLength(0);
-    expect(dispatched).toHaveLength(1);
-    expect(dispatched[0]).toMatchObject({
-      type: "project.task.assigned",
-      payload: {
-        taskId: "stale-task",
-        sessionId: "s_task_stale-task",
-      },
-    });
+    expect(result.message).toContain("Planner assigned no tasks");
+    expect(prompts).toHaveLength(2);
+    expect(prompts.join("\n")).toContain("watchdog-stale-active-review");
+    expect(dispatched).toHaveLength(0);
 
     const updated = JSON.parse(
       await readFile(join(appDir, "tasks", "tree.json"), "utf8"),
     );
     expect(updated.tasks["stale-task"].state).toBe("active");
     expect(updated.tasks["stale-task"].status).toBeUndefined();
-    expect(updated.tasks["stale-task"].trace.stale_active_requeue_reason).toBe(
-      "watchdog-stale-active-review",
-    );
-    expect(updated.tasks["stale-task"].trace.stale_active_fresh_session).toBe(
-      false,
-    );
+    expect(updated.tasks["stale-task"].trace).toBeUndefined();
 
     const plannerRuns = await readFile(
       join(appDir, ".state", "planner-runs.jsonl"),
       "utf8",
     );
-    expect(plannerRuns).toContain('"requeued_stale_task_ids":["stale-task"]');
+    expect(plannerRuns).toContain('"ran_agent":true');
   });
 
   test("skips owner session for false-positive stale-active watchdog review", async () => {
@@ -1381,7 +1364,7 @@ describe("project owner workflow", () => {
     expect(plannerRuns).toContain("completed task no longer exists in the live tree");
   });
 
-  test("seeds executable model-gap backlog when owner review times out under capacity", async () => {
+  test("does not create model-gap tasks in workflow code when owner review times out under capacity", async () => {
     const { appDir, projectDir } = await makeWorkspace();
     await writeFile(
       join(projectDir, "specs", "feature-a-create.json"),
@@ -1462,31 +1445,26 @@ describe("project owner workflow", () => {
     } as any);
 
     expect(result.status).toBe("done");
-    expect(dispatched.length).toBeGreaterThanOrEqual(1);
-    expect(dispatched[0].type).toBe("project.task.assigned");
-    expect(String(dispatched[0].payload.taskId)).toContain(
-      "feature-a-staging-frontier",
-    );
+    expect(result.message).toContain("Planner assigned no tasks");
+    expect(dispatched).toHaveLength(0);
 
     const updated = JSON.parse(
       await readFile(join(appDir, "tasks", "tree.json"), "utf8"),
     );
-    const seededTask = updated.tasks[dispatched[0].payload.taskId as string];
-    expect(seededTask.state).toBe("active");
-    expect(seededTask.status).toBeUndefined();
-    expect(seededTask.parent_id).toBe("spec-runner-and-replays");
-    expect(seededTask.context.model_path_id).toBe("path.feature-a.create");
-    expect(seededTask.context.replay).toBe("replays/feature-a-create.ts");
+    expect(Object.keys(updated.tasks).sort()).toEqual([
+      "project",
+      "spec-runner-and-replays",
+    ]);
 
     const plannerRuns = await readFile(
       join(appDir, ".state", "planner-runs.jsonl"),
       "utf8",
     );
-    expect(plannerRuns).toContain('"seeded_task_ids"');
-    expect(plannerRuns).toContain('"planner-timeout-underfilled-frontier"');
+    expect(plannerRuns).not.toContain('"seeded_task_ids"');
+    expect(plannerRuns).toContain('"ran_agent":true');
   });
 
-  test("seeds source/spec backlog without dispatch when slow execution is already full", async () => {
+  test("does not create source/spec backlog in workflow code when execution is full", async () => {
     const { appDir, projectDir } = await makeWorkspace();
     await writeFile(
       join(projectDir, "specs", "feature-a-create.json"),
@@ -1593,31 +1571,25 @@ describe("project owner workflow", () => {
     } as any);
 
     expect(result.status).toBe("done");
-    expect(result.message).toContain("Planner seeded 1 backlog task");
+    expect(result.message).toContain("Planner assigned no tasks");
     expect(dispatched).toHaveLength(0);
 
     const updated = JSON.parse(
       await readFile(join(appDir, "tasks", "tree.json"), "utf8"),
     );
-    const seeded = Object.values(updated.tasks).find(
-      (task: any) =>
-        task.id !== "slow-execution" &&
-        task.id.includes("feature-a-source-spec-frontier"),
-    ) as any;
-    expect(seeded.state).toBe("backlog");
-    expect(seeded.status).toBeUndefined();
-    expect(seeded.parent_id).toBe("go-e2ev3-source-discovery");
-    expect(seeded.context.seed_preference).toBe("source-spec");
-    expect(seeded.goal).toContain("build up the source-grounded spec/replay");
+    expect(Object.keys(updated.tasks).sort()).toEqual([
+      "go-e2ev3-source-discovery",
+      "project",
+      "slow-execution",
+      "spec-runner-and-replays",
+    ]);
 
     const plannerRuns = await readFile(
       join(appDir, ".state", "planner-runs.jsonl"),
       "utf8",
     );
-    expect(plannerRuns).toContain('"status":"seeded"');
-    expect(plannerRuns).toContain(
-      '"planner-timeout-execution-full-backlog-empty"',
-    );
+    expect(plannerRuns).toContain('"status":"settled"');
+    expect(plannerRuns).not.toContain('"seeded_task_ids"');
   });
 
   test("surfaces high-priority human steering before routine planning", async () => {

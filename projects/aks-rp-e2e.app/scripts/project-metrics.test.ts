@@ -205,6 +205,28 @@ describe("project metrics", () => {
     ).toBe("0");
   });
 
+  test("flags running active task with stale activity even after prior ops", async () => {
+    const fixture = await makeFixture();
+    await writeTree(fixture.appDir, { session_id: "s_stalled_after_ops" });
+    writeSession(fixture.dbPath, {
+      sessionId: "s_stalled_after_ops",
+      status: "running",
+      opCount: 40,
+      startedAt: Date.now() - 10_000,
+      lastActivityAt: Date.now() - 10_000,
+    });
+
+    expect(
+      await metricValue(fixture, "aks-rp-e2e.task.stale-active-count"),
+    ).toBe("1");
+    expect(
+      await metricValue(fixture, "aks-rp-e2e.task.stale-active-with-gaps"),
+    ).toBe("1");
+    expect(
+      await metricValue(fixture, "aks-rp-e2e.task.no-work-with-gaps"),
+    ).toBe("1");
+  });
+
   test("treats synthetic s_task session ids as healthy when a matching worker session is running", async () => {
     const fixture = await makeFixture();
     await writeTree(fixture.appDir, { session_id: "s_task_active-task" });

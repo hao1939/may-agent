@@ -100,6 +100,7 @@ function liveFrontierEvidence(packet: TaskPlanningPacket): {
   activeTaskIds: string[];
   reviewTaskIds: string[];
   runnableTaskIds: string[];
+  waitingTaskIds: string[];
   activeCount: number;
   blockedCount: number;
   backlogCount: number;
@@ -108,6 +109,7 @@ function liveFrontierEvidence(packet: TaskPlanningPacket): {
     activeTaskIds: [...(packet.active_task_ids ?? [])],
     reviewTaskIds: [...(packet.frontier.review ?? [])],
     runnableTaskIds: [...(packet.frontier.runnable ?? [])],
+    waitingTaskIds: [...(packet.frontier.waiting ?? [])],
     activeCount: packetCount(packet, "active"),
     blockedCount: packetCount(packet, "blocked"),
     backlogCount: packetCount(packet, "backlog"),
@@ -121,6 +123,7 @@ function liveFrontierEvidenceText(packet: TaskPlanningPacket): string {
     `active_task_ids=${JSON.stringify(evidence.activeTaskIds)}`,
     `frontier.review=${JSON.stringify(evidence.reviewTaskIds)}`,
     `frontier.runnable=${JSON.stringify(evidence.runnableTaskIds)}`,
+    `frontier.waiting=${JSON.stringify(evidence.waitingTaskIds)}`,
     `counts.blocked=${evidence.blockedCount}`,
     `counts.backlog=${evidence.backlogCount}`,
   ].join(", ");
@@ -132,6 +135,7 @@ function hasNonterminalLiveFrontier(packet: TaskPlanningPacket): boolean {
     evidence.activeTaskIds.length > 0 ||
     evidence.reviewTaskIds.length > 0 ||
     evidence.runnableTaskIds.length > 0 ||
+    evidence.waitingTaskIds.length > 0 ||
     evidence.activeCount > 0 ||
     evidence.blockedCount > 0 ||
     evidence.backlogCount > 0

@@ -15,7 +15,10 @@ import {
   type TaskTreeConfig,
   type TaskTree,
 } from "./lib/task-tree-store.ts";
-import { listRunnableBacklogTaskIds } from "./lib/task-tree-tools.ts";
+import {
+  listRunnableBacklogTaskIds,
+  waitingBacklogTaskSnapshots,
+} from "./lib/task-tree-tools.ts";
 import { field, readJson, resolveAppDir } from "./lib/workflow-input.ts";
 
 export const name = "project-execution-watchdog";
@@ -40,11 +43,21 @@ type ActiveTaskSnapshot = {
   workerStartedAt?: string;
 };
 
+type OpenTaskSnapshot = {
+  taskId: string;
+  updatedAt?: string;
+  blocker?: unknown;
+  reasons?: string[];
+};
+
 type WatchdogTreeSnapshot = {
   runnableBacklogTaskIds: string[];
   runnableBacklogTreeUpdatedAt?: string;
   runnableBacklogSnapshotAt: string;
   activeTasks: ActiveTaskSnapshot[];
+  reviewTasks: OpenTaskSnapshot[];
+  blockedTasks: OpenTaskSnapshot[];
+  waitingBacklogTasks: OpenTaskSnapshot[];
   activeCount: number;
   hasOpenWork: boolean;
   needsRefill: boolean;
@@ -93,6 +106,55 @@ function activeLeaves(tree: TaskTree): Array<TaskTree["tasks"][string]> {
   );
 }
 
+function leafTasksByStatus(
+  tree: TaskTree,
+  state: string,
+): Array<TaskTree["tasks"][string]> {
+  return Object.values(tree.tasks).filter(
+    (task) =>
+      isLeaf(task) && (task.status ?? task.state ?? "backlog") === state,
+  );
+}
+
+function taskUpdatedAt(task: TaskTree["tasks"][string]): string | undefined {
+  const trace = task.trace && typeof task.trace === "object" ? task.trace : {};
+  const candidates = [
+    (task as { updated_at?: string }).updated_at,
+    typeof trace.reviewed_at === "string" ? trace.reviewed_at : undefined,
+    typeof trace.last_worker_completed_at === "string"
+      ? trace.last_worker_completed_at
+      : undefined,
+    typeof trace.blocked_at === "string" ? trace.blocked_at : undefined,
+    typeof trace.created_at === "string" ? trace.created_at : undefined,
+  ];
+  return candidates.find((value): value is string => Boolean(value));
+}
+
+function openTaskSnapshots(
+  tree: TaskTree,
+  state: "review" | "blocked",
+): OpenTaskSnapshot[] {
+  return leafTasksByStatus(tree, state)
+    .map((task) => ({
+      taskId: task.id,
+      ...(taskUpdatedAt(task) ? { updatedAt: taskUpdatedAt(task) } : {}),
+      ...(task.blocker !== undefined ? { blocker: task.blocker } : {}),
+    }))
+    .sort((a, b) => a.taskId.localeCompare(b.taskId));
+}
+
+function waitingBacklogSnapshots(tree: TaskTree): OpenTaskSnapshot[] {
+  return waitingBacklogTaskSnapshots(tree)
+    .map((task) => ({
+      taskId: task.id,
+      ...(task.blocker !== undefined ? { blocker: task.blocker } : {}),
+      ...(task.readiness_reasons?.length
+        ? { reasons: task.readiness_reasons }
+        : {}),
+    }))
+    .sort((a, b) => a.taskId.localeCompare(b.taskId));
+}
+
 function activeTaskSnapshots(tree: TaskTree): ActiveTaskSnapshot[] {
   return activeLeaves(tree)
     .map((task) => ({
@@ -132,10 +194,6 @@ function sessionRestartReasonFromRow(
   if (row.outcome === "error" || row.outcome === "interrupted")
     return `session-${row.outcome}`;
 
-  const opCount =
-    typeof row.opCount === "number" && Number.isFinite(row.opCount)
-      ? row.opCount
-      : null;
   const startedAt =
     typeof row.startedAt === "number" && Number.isFinite(row.startedAt)
       ? row.startedAt
@@ -146,11 +204,7 @@ function sessionRestartReasonFromRow(
       ? row.lastActivityAt
       : startedAt;
   const staleSince = lastActivityAt ?? startedAt;
-  if (
-    opCount === 0 &&
-    staleSince !== null &&
-    Date.now() - staleSince > staleNoActivityMs
-  ) {
+  if (staleSince !== null && Date.now() - staleSince > staleNoActivityMs) {
     return "session-no-activity";
   }
 
@@ -289,6 +343,9 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
       const tree = readTree(config.treePath);
       if (!tree) return null;
       const activeTasks = activeTaskSnapshots(tree);
+      const reviewTasks = openTaskSnapshots(tree, "review");
+      const blockedTasks = openTaskSnapshots(tree, "blocked");
+      const waitingBacklogTasks = waitingBacklogSnapshots(tree);
 
       return {
         runnableBacklogTaskIds,
@@ -296,6 +353,9 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
           typeof tree.updated_at === "string" ? tree.updated_at : undefined,
         runnableBacklogSnapshotAt: new Date().toISOString(),
         activeTasks,
+        reviewTasks,
+        blockedTasks,
+        waitingBacklogTasks,
         activeCount: activeTasks.length,
         hasOpenWork: hasOpenWork(tree),
         needsRefill: activeProjectNeedsRefill(tree),
@@ -318,12 +378,44 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     return ctx.done(`Watchdog emitted project.owner.requested: ${reason}.`);
   }
 
+  if (recovery.reviewTasks.length > 0) {
+    const reason = "watchdog-review-pending";
+    emitOwnerRequested(ctx, config, reason, {
+      reviewTasks: recovery.reviewTasks.slice(0, 20),
+      reviewCount: recovery.reviewTasks.length,
+    });
+    return ctx.done(`Watchdog emitted project.owner.requested: ${reason}.`);
+  }
+
   if (recovery.runnableBacklogTaskIds.length > 0) {
     const reason = "watchdog-runnable-backlog";
     emitOwnerRequested(ctx, config, reason, {
       runnableBacklogTaskIds: recovery.runnableBacklogTaskIds,
       runnableBacklogTreeUpdatedAt: recovery.runnableBacklogTreeUpdatedAt,
       runnableBacklogSnapshotAt: recovery.runnableBacklogSnapshotAt,
+    });
+    return ctx.done(`Watchdog emitted project.owner.requested: ${reason}.`);
+  }
+
+  if (
+    (recovery.blockedTasks.length > 0 ||
+      recovery.waitingBacklogTasks.length > 0) &&
+    recovery.activeCount < config.maxConcurrent
+  ) {
+    const reason = "watchdog-blocked-frontier-review";
+    const waitingBacklogDetails =
+      recovery.waitingBacklogTasks.length > 0
+        ? {
+            waitingBacklogTasks: recovery.waitingBacklogTasks.slice(0, 20),
+            waitingBacklogCount: recovery.waitingBacklogTasks.length,
+          }
+        : {};
+    emitOwnerRequested(ctx, config, reason, {
+      blockedTasks: recovery.blockedTasks.slice(0, 20),
+      blockedCount: recovery.blockedTasks.length,
+      ...waitingBacklogDetails,
+      instruction:
+        "Review blocked and dependency-waiting tasks before treating underfilled capacity as idle. Push sampled blockers toward done, rework, a visible problem task, or an exact external ask/resume condition.",
     });
     return ctx.done(`Watchdog emitted project.owner.requested: ${reason}.`);
   }

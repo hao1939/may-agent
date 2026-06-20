@@ -373,6 +373,90 @@ describe("task tree tools", () => {
     expect(packet.project_hygiene_warnings).toBeUndefined();
   });
 
+  test("planning packet flags passive response waits and source-exactness overblocks", async () => {
+    const projectDir = await makeProject();
+    await writeFile(
+      join(projectDir, "tasks", "tree.json"),
+      `${JSON.stringify(
+        {
+          version: 1,
+          project: "aks-rp-e2e",
+          project_lifecycle: "active",
+          root_task_id: "project",
+          active_task_id: null,
+          active_task_ids: [],
+          tasks: {
+            project: {
+              id: "project",
+              state: "blocked",
+              children: [
+                "ask-response-await",
+                "source-exactness-blocker",
+                "real-env-blocker",
+              ],
+              goal: "project",
+              outputs: ["tasks/tree.json"],
+              acceptance: ["done"],
+            },
+            "ask-response-await": {
+              id: "ask-response-await",
+              parent_id: "project",
+              state: "blocked",
+              children: [],
+              goal: "Wait for source-holder response.",
+              outputs: ["evidence/archive/ask-response.md"],
+              acceptance: ["response is routed"],
+              blocker:
+                "External human/source-holder response required. The packet is send-ready-only and there is still no durable proof-of-send or owner handoff.",
+            },
+            "source-exactness-blocker": {
+              id: "source-exactness-blocker",
+              parent_id: "project",
+              state: "blocked",
+              children: [],
+              goal: "Provide an exact handwritten source excerpt before authoring the replay.",
+              outputs: ["evidence/archive/source.md"],
+              acceptance: ["source semantics are pinned"],
+              blocker:
+                "External/source unblock required: provide an exact handwritten/native source-body excerpt or source-equivalent proof.",
+            },
+            "real-env-blocker": {
+              id: "real-env-blocker",
+              parent_id: "project",
+              state: "blocked",
+              children: [],
+              goal: "Wait for registered preview feature.",
+              outputs: ["evidence/archive/env.md"],
+              acceptance: ["preview feature registered"],
+              blocker:
+                "External environment capability required: retry only after Microsoft.ContainerService/MachinesPreview is Registered.",
+            },
+          },
+        },
+        null,
+        2,
+      )}\n`,
+      "utf8",
+    );
+
+    const packet = planningPacket(config(projectDir));
+
+    expect(packet.blocked_action_warnings).toEqual([
+      expect.objectContaining({
+        kind: "response-await-without-send-proof",
+        taskId: "ask-response-await",
+      }),
+      expect.objectContaining({
+        kind: "environment-overblock",
+        taskId: "real-env-blocker",
+      }),
+      expect.objectContaining({
+        kind: "source-exactness-overblock",
+        taskId: "source-exactness-blocker",
+      }),
+    ]);
+  });
+
   test("repairs parent rollups and lifecycle from active leaves", async () => {
     const projectDir = await makeProject();
     await writeFile(

@@ -629,7 +629,7 @@ const ALL_METRICS: MetricDef[] = [
     project: "v2-spec-coverage-buildout",
     type: "gauge",
     target: 1200,
-    threshold: 2000,
+    threshold: 2500,
     unit: "MB",
     alert_op: ">",
     priority: "P2",

@@ -185,6 +185,22 @@ folder does not keep a parallel task event log.
 - A blocked task is reviewable. If the runnable frontier is empty, create or run
   a blocked-review leaf that classifies the blocker and looks for safe local
   unblock, split, correction, or evidence work.
+- A source wait is not automatically a real block. For AKS feature/spec work,
+  exact handwritten source is required only for verdict-bearing claims that
+  cannot be bounded another way. If pipeline rows, specs, replays, or accepted
+  source-equivalent evidence are enough to make a truthful draft, evidence
+  ceiling, or bounded replay, create that concrete work instead of freezing the
+  branch. Also check public docs or other accessible source-equivalent material
+  before asking a human/source holder.
+- A response-await task is valid only after the ask was actually sent, handed
+  off, or escalated with durable proof. If the tree says the packet is merely
+  send-ready or no proof-of-send exists, the next task is the send/handoff or
+  escalation action, not passive waiting.
+- Environment blockers are project work, not final parking. Create active
+  setup, diagnosis, retry, alternate-environment, or shared escalation work
+  before leaving a task blocked. If many tasks share one environment issue,
+  keep one exact owner wait/escalation with affected task ids and mark duplicate
+  waits replaced only after the shared meaning is preserved.
 - Escalation is a task overlay for confirmed ownership-boundary blockers, not a
   new top-level branch. When a blocked task truly needs another owner or human,
   store `escalation_id` and `escalation` on that task and emit

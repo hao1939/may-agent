@@ -115,6 +115,11 @@ The owner wake should include a compact packet:
 The packet is a starting point. The owner may inspect deeper details with
 project tools.
 
+Routine dispatch may fill worker capacity from already-clear backlog leaves the
+owner previously wrote. That is mechanical scheduling. Workflow code must not
+synthesize domain tasks, requeue stale active work, accept/reject review work,
+or mark blockers resolved. Those are owner judgments.
+
 ## Task State Integrity
 
 Only five persisted task states exist:
@@ -239,6 +244,23 @@ metric.breach
   -> project.owner.requested with metric context
   -> owner repairs task tree, creates work, or escalates
 ```
+
+Watchdogs are the same pattern. They observe the task/session frontier and wake
+the owner with sampled context; they do not repair project meaning themselves.
+For `active` work, silence means no recent recorded session activity, even if
+the session already performed tool calls earlier in the attempt.
+Default wake priority is:
+
+1. stale `active` work whose worker session is missing, errored, or silent
+2. pending `review` work, even when worker capacity is full
+3. runnable `backlog` work
+4. blocked or dependency-waiting backlog when capacity is underfilled
+5. generic capacity/open-work reconciliation
+
+The wake payload should name sampled tasks and the reason they need owner
+judgment. For dependency-waiting backlog, include the missing, stale, non-done,
+or conflicting dependency reason so the owner can repair the tree without
+rediscovering the blocker from scratch.
 
 Human notification is for ownership-boundary blockers or repeated owner-loop
 failure, not for routine project state.

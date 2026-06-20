@@ -12,13 +12,6 @@
 ## Recent Issue Patterns (last 5 evaluations)
 
 - terminal_zero_op_session
-- review override: acceptable
-- review override: needs_improvement
-- Confirmed some facts (typecheck clean, tests green, transient handler failures resolved) but produced no durable action from them.
-- Dismissed a real platform-level security gap: session transcripts can persist secrets, and the session ended with 'no action needed' instead of opening/advancing platform work.
-- Spent much of the 105-call session on repeated path hunting and schema-guessing rather than targeted triage.
-- Several DB queries guessed wrong columns despite explicit schema hints, adding waste without improving the judgment.
-- terminal status: error
 
 ## Action Required
 

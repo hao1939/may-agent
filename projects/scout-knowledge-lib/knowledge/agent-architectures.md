@@ -910,3 +910,48 @@ Production results (33.6 days monitoring, 100K-scale):
   (S₀ at session start; higher = harder stabilization).
 - **Source**: [2606.18065] ADE, arXiv June 2026. Categories: cs.MA.
   Origin: Shanghai Qijing Digital Technology.
+
+### Harness Evolution Paradox — Flat-Updating / Non-Monotonic Benefit (arXiv, May 2026)
+
+Decomposes agent self-evolution into two orthogonal capabilities:
+- **Harness-updating**: producing useful persistent harness updates from traces.
+  **FLAT across model tiers** — even Qwen3.5-9B produces updates comparable to
+  Claude Opus 4.6.
+- **Harness-benefit**: actually improving from updated harnesses.
+  **NON-MONOTONIC** — weak models benefit little, mid-tier benefit most, strong
+  models benefit less than mid-tier.
+
+Weak-tier failure modes: (1) fail to activate relevant harness artifacts;
+(2) activate but fail to follow faithfully.
+
+- **Key implication**: The investment should go into the task-solving agent's
+  instruction-following and harness-activation capabilities, not the evolver's
+  strength. Guidance files help most for "average" sessions and least for the
+  hardest problems. Structured, machine-parseable guidance with explicit
+  activation triggers outperforms prose advice.
+- **Connects to**: Cold Start Tax (guidance helps less when it's needed most),
+  Compilation Gradient (compiled guidance > interpreted guidance), EvoHunt
+  (playbook evolution works regardless of evolver strength), Criterion-Completion
+  Gap (per-criterion ≠ end-to-end).
+- **Source**: [2605.30621] Harness Updating Is Not Harness Benefit, arXiv May 2026.
+
+### False-Success Detection — Lightweight vs LLM Judges (arXiv, June 2026)
+
+**45–48% of agent failures are self-reported successes** where the agent
+confidently claims completion while environment state shows otherwise. LLM
+judges across 5 models × 5 prompt strategies × full task specs: **max AUROC
+0.65** (near random). Judges rely on surface completion proxies (confident
+closing language, action-sequence volume).
+
+Lightweight TF-IDF detectors: **AUROC 0.83–0.95**, recovering 4–8× more
+false successes at the same flag rate with **3,300× lower latency**.
+
+- **Key implication**: LLM-as-judge for success verification is structurally
+  inadequate. The fix is domain-calibrated lightweight detectors as triage
+  signals: verify deliverable existence, file-change consistency, required-field
+  presence BEFORE expensive LLM evaluation. This extends SafeClawBench's
+  "semantic check ≠ actual harm" to the success direction.
+- **Connects to**: Evaluation Mirage (judge-based evaluation misses half the
+  problems), SafeClawBench (semantic layer unreliable), Silent Failures
+  (fail-plausible as failure mode), Externalization Turn (externalize verification).
+- **Source**: [2606.09863] From Confident Closing to Silent Failure, arXiv June 2026.
