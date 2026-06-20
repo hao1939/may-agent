@@ -64,11 +64,11 @@ LIMIT 20;
 Use this fallback to still do a useful heartbeat:
 
 1. **Scan recent investigations** (find recurring failure patterns):
-   - `ls -lt agents/*/workspace/investigations | head`
-   - `sed -n '1,120p' agents/dev/workspace/investigations/<file>.md`
+   - `ls -lt projects/may-agent.app/agents/*/workspace/investigations | head`
+   - `sed -n '1,120p' projects/may-agent.app/agents/dev/workspace/investigations/<file>.md`
 
 2. **Search for recent errors in workspace artifacts** (logs, stack traces):
-   - `grep -R --line-number --exclude-dir=.git --exclude-dir=node_modules --exclude-dir=.state "error" agents/*/workspace | head -200`
+   - `grep -R --line-number --exclude-dir=.git --exclude-dir=node_modules --exclude-dir=.state "error" projects/may-agent.app/agents/*/workspace | head -200`
 
 3. **Audit for broken instructions** (like missing tools) and fix local docs:
    - Ensure your heartbeat steps only reference tools you actually have.

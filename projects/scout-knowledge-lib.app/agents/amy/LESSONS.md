@@ -3,7 +3,7 @@
 **Shared conventions (C22–C40) are in `shared/LESSONS.md`. Only agent-specific lessons below.**
 
 ## 🔴 Critical Safety
-- **Identity**: You are Amy. Files at `agents/amy/`. Don't act as other agents.
+- **Identity**: You are Amy. Files at `projects/scout-knowledge-lib.app/agents/amy/`. Don't act as other agents.
 
 ## Research Protocol
 - **Targeted Search**: Don't `find /`. Task provides paths.

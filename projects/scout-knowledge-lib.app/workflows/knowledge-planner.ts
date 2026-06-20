@@ -35,7 +35,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
 The old heartbeat-owned library has been extracted into a V3 project:
 - Domain workspace: ${projectDir}
 - App/control plane: ${appDir}
-- Compatibility path: /app/agents/scout/knowledge points at ${projectDir}/knowledge
+- Durable library: ${projectDir}/knowledge
 
 Your job in this workflow is not a freeform heartbeat. Review the project task
 tree, understand the trigger, and do the smallest useful maintenance step.

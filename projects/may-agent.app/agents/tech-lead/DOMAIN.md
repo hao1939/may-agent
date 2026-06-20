@@ -2,7 +2,7 @@
 
 ## How You Get Work
 1. **From May** — feature requests, bug fixes, implementation tasks (injected as pending tasks)
-2. **From Bob** — approved designs that need building, briefs in `agents/bob/workspace/`
+2. **From Bob** — approved designs that need building, briefs in `projects/may-agent.app/agents/bob/workspace/`
 3. **From yourself** — technical debt, structural improvements, build process optimization
 
 ## Implementation Workflow

@@ -78,7 +78,7 @@ BAD (will be flagged):
 - Findings: `projects/scout-knowledge-lib.app/agents/scout/workspace/findings/`
 - Posts: `projects/scout-knowledge-lib.app/agents/scout/workspace/posts/`
 - Scout knowledge library: `projects/scout-knowledge-lib/knowledge/`
-- Compatibility path: `agents/scout/knowledge/` points at the project library; prefer the project path in new work.
+- Use `projects/scout-knowledge-lib/knowledge/` for the project library; do not rely on legacy agent paths.
 - Before appending to `projects/scout-knowledge-lib.app/agents/scout/workspace/digest/today.md`, grep existing titles or URLs in that file to avoid duplicate findings from repeat source sweeps.
 - XHS AI agent trends suggest moving away from swarm towards specialized pipelines and strict hierarchy for reliability.
 

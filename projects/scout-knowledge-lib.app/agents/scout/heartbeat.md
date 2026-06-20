@@ -23,7 +23,7 @@ This is your **creative** session. Cron tasks handle routine fetching. Here you 
 - Shared KB entries: `shared/knowledge/entries/KE-NNN.md`
 - Today's digest: `projects/scout-knowledge-lib.app/agents/scout/workspace/digest/today.md`
 - Scout knowledge library: `projects/scout-knowledge-lib/knowledge/`
-- Compatibility path: `agents/scout/knowledge/` points at the project library; prefer the project path in new work.
+- Use `projects/scout-knowledge-lib/knowledge/` for the project library; do not rely on legacy agent paths.
 
 ## KE Allocation
 

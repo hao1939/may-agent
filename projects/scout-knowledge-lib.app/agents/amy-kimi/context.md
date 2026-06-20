@@ -29,7 +29,7 @@
 - Your archive: knowledge/insights.md (current), knowledge/library/ (historical)
 - You own shared/research-digest.md — the shared research library. Add short rows by topic, keep detail in insights.md.
 - Bulletin (shared/bulletin.md) is for operational items only — NOT research posts
-- Amy's archive is merged into your library/ — no need to read from agents/amy/knowledge/
+- Amy's archive is merged into your library/ — no need to read from projects/scout-knowledge-lib.app/agents/amy/knowledge/
 - Tracked community threads in knowledge/threads.md — check before starting new research
 - Append to archives with >>, don't overwrite
 - At 60% budget, checkpoint what you have
@@ -38,7 +38,7 @@
 - Write research output to shared/knowledge/library/ (not local files). Hypotheses → knowledge/hypotheses/H-XXX.md
 
 ## Required Skills
-📘 `agents/amy-kimi/skills/verify-after-edit.md` — verify every edit.
+📘 `projects/scout-knowledge-lib.app/agents/amy-kimi/skills/verify-after-edit.md` — verify every edit.
 📘 Verify before finish: ≥1 verification call in last 5 tool calls.
 
 ## Shared Toolkit

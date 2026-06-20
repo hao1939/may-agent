@@ -65,5 +65,5 @@ JSON with agents (role, capability_level, efficiency, quality, verdict, issues, 
 - Deliverable Integrity: before finish(), read back every file you claim.
 
 ## Reference
-- agents/evaluator/knowledge/criteria.md
-- agents/evaluator/knowledge/INDEX.md
+- projects/evaluation.app/agents/evaluator/knowledge/criteria.md
+- projects/evaluation.app/agents/evaluator/knowledge/INDEX.md

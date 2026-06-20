@@ -11,9 +11,24 @@ import { readdirSync, existsSync, appendFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { Database } from "bun:sqlite";
 
-export const PROJECT_ROOT = resolve(join(import.meta.dirname ?? ".", "../../.."));
-export const AGENTS_ROOT = resolve(process.env["AGENTS_ROOT"] || join(PROJECT_ROOT, "agents"));
-export const SCENARIOS_DIR = join(PROJECT_ROOT, "gym/scenarios");
+export const PROJECT_ROOT = resolve(
+  join(import.meta.dirname ?? ".", "../../.."),
+);
+export const REPO_ROOT = resolve(
+  process.env["PROJECT_ROOT"] || join(PROJECT_ROOT, "../.."),
+);
+export const MAY_AGENT_ROOT = resolve(
+  process.env["MAY_AGENT_ROOT"] || join(PROJECT_ROOT, "../may-agent"),
+);
+export const AGENTS_ROOT = resolve(
+  process.env["APP_AGENTS_ROOT"] || join(PROJECT_ROOT, "agents"),
+);
+export const SCENARIOS_DIR = resolve(
+  process.env["GYM_SCENARIOS_DIR"] ||
+    (existsSync(join(REPO_ROOT, "gym/scenarios"))
+      ? join(REPO_ROOT, "gym/scenarios")
+      : join(MAY_AGENT_ROOT, "app/gym/scenarios")),
+);
 export const LAB_DIR = join(AGENTS_ROOT, ".lab");
 
 export interface GymResult {
@@ -21,7 +36,14 @@ export interface GymResult {
   agent: string;
   lab_fork: string | null;
   passed: boolean;
-  checks: Array<{ name: string; passed: boolean; message?: string; detail?: string; category?: string; code?: string }>;
+  checks: Array<{
+    name: string;
+    passed: boolean;
+    message?: string;
+    detail?: string;
+    category?: string;
+    code?: string;
+  }>;
   summary: string;
   agent_status: string;
   duration: string;
@@ -42,7 +64,16 @@ export interface GymResult {
   transcript?: string;
 }
 
-const KNOWN_AGENTS = ["coder", "tech-lead", "optimizer", "evaluator", "coach", "qa", "may", "amy-kimi"];
+const KNOWN_AGENTS = [
+  "coder",
+  "tech-lead",
+  "optimizer",
+  "evaluator",
+  "coach",
+  "qa",
+  "may",
+  "amy-kimi",
+];
 
 // ── DB Recording ───────────────────────────────────────────────────────
 
@@ -59,7 +90,10 @@ function parseDuration(dur: string): number | null {
 }
 
 function openGymDb(): Database {
-  const dbPath = join(PROJECT_ROOT, ".state", "may.db");
+  const dbPath = join(
+    process.env["STATE_DIR"] || join(REPO_ROOT, ".state"),
+    "may.db",
+  );
   const db = new Database(dbPath);
   db.exec("PRAGMA journal_mode = WAL;");
   db.exec("PRAGMA foreign_keys = ON;");
@@ -149,14 +183,23 @@ export function recordGymResult(
       for (const check of result.checks) {
         // gym-helpers uses 'message', gym-record uses 'detail' — support both
         const detail = check.detail || check.message || null;
-        insertCheck.run(runId, check.name, check.passed ? 1 : 0, detail, check.category || null, check.code || null);
+        insertCheck.run(
+          runId,
+          check.name,
+          check.passed ? 1 : 0,
+          detail,
+          check.category || null,
+          check.code || null,
+        );
       }
     }
 
     return runId;
   } catch (err: any) {
     // Never let DB recording break gym execution
-    console.error(`[gym-helpers] Failed to record gym result: ${err.message || err}`);
+    console.error(
+      `[gym-helpers] Failed to record gym result: ${err.message || err}`,
+    );
     return -1;
   } finally {
     db?.close();
@@ -164,17 +207,28 @@ export function recordGymResult(
 }
 
 /** Run a single gym scenario and parse the JSON result. Auto-records to DB unless skipRecord is true. */
-export function runGym(scenario: string, agent: string, labFork?: string, opts?: { skipRecord?: boolean; batchId?: string; runTag?: string }): GymResult {
+export function runGym(
+  scenario: string,
+  agent: string,
+  labFork?: string,
+  opts?: { skipRecord?: boolean; batchId?: string; runTag?: string },
+): GymResult {
   const args = [scenario, "--agent", agent, "--timeout", "3"];
   if (labFork) args.push("--lab", labFork);
-  const cmd = `test/gym/run-gym.sh ${args.map(a => `'${a}'`).join(" ")}`;
+  const cmd = `test/gym/run-gym.sh ${args.map((a) => `'${a}'`).join(" ")}`;
 
   let result: GymResult;
   try {
     const stdout = execSync(cmd, {
       encoding: "utf-8",
       timeout: 4 * 60 * 1000, // 4 min timeout
-      cwd: PROJECT_ROOT,
+      cwd: MAY_AGENT_ROOT,
+      env: {
+        ...process.env,
+        AGENTS_ROOT,
+        GYM_AGENTS_ROOT: AGENTS_ROOT,
+        GYM_SCENARIOS_DIR: SCENARIOS_DIR,
+      },
       stdio: ["pipe", "pipe", "pipe"],
     });
     result = JSON.parse(stdout.trim());
@@ -217,15 +271,29 @@ export function runGymBatch(
   labFork?: string,
 ): GymResult[] {
   const variants = labFork ? `baseline,${labFork}` : "baseline";
-  const args = scenarios.flatMap(s => ["--scenario", s]);
-  args.push("--agent", agent, "--variants", variants, "--trials", "1", "--json");
-  const cmd = `scripts/gym-batch.sh ${args.map(a => `'${a}'`).join(" ")}`;
+  const args = scenarios.flatMap((s) => ["--scenario", s]);
+  args.push(
+    "--agent",
+    agent,
+    "--variants",
+    variants,
+    "--trials",
+    "1",
+    "--json",
+  );
+  const cmd = `scripts/gym-batch.sh ${args.map((a) => `'${a}'`).join(" ")}`;
 
   try {
     const stdout = execSync(cmd, {
       encoding: "utf-8",
       timeout: scenarios.length * 4 * 60 * 1000, // 4 min per scenario
-      cwd: PROJECT_ROOT,
+      cwd: MAY_AGENT_ROOT,
+      env: {
+        ...process.env,
+        AGENTS_ROOT,
+        GYM_AGENTS_ROOT: AGENTS_ROOT,
+        GYM_SCENARIOS_DIR: SCENARIOS_DIR,
+      },
       stdio: ["pipe", "pipe", "pipe"],
     });
 
@@ -239,7 +307,10 @@ export function runGymBatch(
         const result: GymResult = {
           scenario: parsed._scenario ?? parsed.scenario,
           agent: parsed.agent ?? agent,
-          lab_fork: parsed._variant === "baseline" ? null : (parsed._variant ?? parsed.lab_fork ?? null),
+          lab_fork:
+            parsed._variant === "baseline"
+              ? null
+              : (parsed._variant ?? parsed.lab_fork ?? null),
           passed: parsed.passed ?? false,
           checks: parsed.checks ?? [],
           summary: parsed.summary ?? "",
@@ -265,7 +336,7 @@ export function runGymBatch(
     return results;
   } catch (err: any) {
     // On batch failure, return error results for each scenario
-    return scenarios.map(s => ({
+    return scenarios.map((s) => ({
       scenario: s,
       agent,
       lab_fork: labFork ?? null,
@@ -282,26 +353,31 @@ export function runGymBatch(
 /** List known gym scenario names. */
 export function listScenarios(): string[] {
   try {
-    return readdirSync(SCENARIOS_DIR).filter(d =>
-      existsSync(join(SCENARIOS_DIR, d, "task.md"))
+    return readdirSync(SCENARIOS_DIR).filter((d) =>
+      existsSync(join(SCENARIOS_DIR, d, "task.md")),
     );
-  } catch { return []; }
+  } catch {
+    return [];
+  }
 }
 
 /** Find lab forks currently in .lab/ directory. */
 export function findLabForks(): string[] {
   try {
-    return readdirSync(LAB_DIR).filter(d =>
-      existsSync(join(LAB_DIR, d, "agent.json")) ||
-      existsSync(join(LAB_DIR, d, "SOUL.md"))
+    return readdirSync(LAB_DIR).filter(
+      (d) =>
+        existsSync(join(LAB_DIR, d, "agent.json")) ||
+        existsSync(join(LAB_DIR, d, "SOUL.md")),
     );
-  } catch { return []; }
+  } catch {
+    return [];
+  }
 }
 
 /** Extract scenario names mentioned in text by matching against known scenarios. */
 export function extractScenarios(text: string): string[] {
   const known = listScenarios();
-  return known.filter(s => text.includes(s));
+  return known.filter((s) => text.includes(s));
 }
 
 /** Extract agent name from fork name (e.g., "coder-sprint-1" → "coder"). */
@@ -356,13 +432,19 @@ export function formatGymResults(
   patchedResults: GymResult[],
   forkName: string,
 ): string {
-  const lines: string[] = ["## Gym Test Results (automated — no LLM session)", ""];
+  const lines: string[] = [
+    "## Gym Test Results (automated — no LLM session)",
+    "",
+  ];
   lines.push(`Fork: ${forkName}`);
   lines.push(`Agent: ${agentFromFork(forkName)}`);
   lines.push("");
 
   // Build a map of scenario → { baseline, patched }
-  const byScenario = new Map<string, { baseline?: GymResult; patched?: GymResult }>();
+  const byScenario = new Map<
+    string,
+    { baseline?: GymResult; patched?: GymResult }
+  >();
 
   for (const r of baselineResults) {
     const entry = byScenario.get(r.scenario) ?? {};
@@ -378,14 +460,22 @@ export function formatGymResults(
   for (const [scenario, { baseline, patched }] of byScenario) {
     const bStatus = baseline ? (baseline.passed ? "PASS" : "FAIL") : "N/A";
     const pStatus = patched ? (patched.passed ? "PASS" : "FAIL") : "N/A";
-    const bChecks = baseline ? `${baseline.checks.filter(c => c.passed).length}/${baseline.checks.length}` : "-";
-    const pChecks = patched ? `${patched.checks.filter(c => c.passed).length}/${patched.checks.length}` : "-";
-    lines.push(`- ${scenario}: baseline=${bStatus} (${bChecks}), patched=${pStatus} (${pChecks})`);
+    const bChecks = baseline
+      ? `${baseline.checks.filter((c) => c.passed).length}/${baseline.checks.length}`
+      : "-";
+    const pChecks = patched
+      ? `${patched.checks.filter((c) => c.passed).length}/${patched.checks.length}`
+      : "-";
+    lines.push(
+      `- ${scenario}: baseline=${bStatus} (${bChecks}), patched=${pStatus} (${pChecks})`,
+    );
 
     // Show individual check details for patched
     if (patched) {
       for (const check of patched.checks) {
-        lines.push(`  - [${check.passed ? "✓" : "✗"}] ${check.name}${check.message ? ": " + check.message : ""}`);
+        lines.push(
+          `  - [${check.passed ? "✓" : "✗"}] ${check.name}${check.message ? ": " + check.message : ""}`,
+        );
       }
     }
   }
@@ -393,7 +483,13 @@ export function formatGymResults(
   lines.push("");
   lines.push("### Raw JSON Results");
   lines.push("```json");
-  lines.push(JSON.stringify({ baseline: baselineResults, patched: patchedResults }, null, 2));
+  lines.push(
+    JSON.stringify(
+      { baseline: baselineResults, patched: patchedResults },
+      null,
+      2,
+    ),
+  );
   lines.push("```");
 
   return lines.join("\n");
@@ -410,7 +506,11 @@ export function appendSkipRecord(
     error_pattern: extractFMCode(diagnosisText),
     agent,
     method: extractMethod(diagnosisText),
-    scenarios: scenarios.map(s => ({ name: s, baseline: true, patched: null })),
+    scenarios: scenarios.map((s) => ({
+      name: s,
+      baseline: true,
+      patched: null,
+    })),
     decision: "skipped",
     reason: "ceiling-effect gate: all baseline scenarios pass",
   };

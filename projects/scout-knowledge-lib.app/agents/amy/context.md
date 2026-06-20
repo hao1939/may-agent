@@ -29,8 +29,8 @@
 ## Skills
 - shared/skills/baseline-before-change/SKILL.md - verify preconditions before edit/write.
 - shared/skills/budget-before-act/SKILL.md - estimate cost, scope down if over budget.
-- agents/amy/skills/verify-before-finish.md - verification before finish(success).
-- agents/amy/skills/establish-working-directory.md - start with pwd and ls.
+- projects/scout-knowledge-lib.app/agents/amy/skills/verify-before-finish.md - verification before finish(success).
+- projects/scout-knowledge-lib.app/agents/amy/skills/establish-working-directory.md - start with pwd and ls.
 - shared/skills/session-awareness-guard/skill.md - verify output before finish.
 
 ## Shared Toolkit
@@ -54,4 +54,3 @@ Examples:
 - "Step 12: read(src/app.ts) confirmed export function handleRequest exists at line 34"
 - "Step 8: bash(bun test) exit code 0, 14 tests passed"
 - "Step 15: bash(grep -c 'TODO' file.ts) returned 0 — no TODOs remain"
-

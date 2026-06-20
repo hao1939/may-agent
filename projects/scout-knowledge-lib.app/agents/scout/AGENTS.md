@@ -28,7 +28,7 @@ Autonomous synthesis — make connections across sources, find non-obvious patte
 
 - Durable knowledge → `shared/knowledge/entries/KE-NNN-slug.md`
 - Scout library notes/drafts → `projects/scout-knowledge-lib/knowledge/`
-- `agents/scout/knowledge/` is a compatibility symlink to the project library; prefer the project path in new work
+- Use `projects/scout-knowledge-lib/knowledge/` for the project library; do not rely on legacy agent paths.
 - Search `projects/scout-knowledge-lib/knowledge/` before creating a new knowledge file to avoid duplicates
 - Before creating a new KE, search existing entries: `grep -rl "topic" shared/knowledge/entries/`
 - When you find an existing note on the same topic, update that note in place rather than creating a duplicate

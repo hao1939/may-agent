@@ -15,15 +15,15 @@ Run shell commands. Use for: file listings, grep, xhs-browse tool, system checks
 Fetch and extract content from external web pages. Use for papers, repos, docs, blog posts — anything **outside XHS** that a post links to. Do NOT use for XHS posts (use xhs-browse instead).
 
 ## XHS Browse Tool (Primary)
-Your custom tool at `agents/amy-kimi/tools/xhs-browse.mjs`. **Always prefer this for XHS content** — it has authenticated cookies and handles xsec_token.
+Your custom tool at `projects/scout-knowledge-lib.app/agents/amy-kimi/tools/xhs-browse.mjs`. **Always prefer this for XHS content** — it has authenticated cookies and handles xsec_token.
 
 Requires Chrome running with `--remote-debugging-port=9222`.
 
 ```bash
-node agents/amy-kimi/tools/xhs-browse.mjs feed              # Get explore feed
-node agents/amy-kimi/tools/xhs-browse.mjs search "<keyword>" # Search posts
-node agents/amy-kimi/tools/xhs-browse.mjs read "<url>"       # Read a post (needs xsec_token)
-node agents/amy-kimi/tools/xhs-browse.mjs scroll             # Scroll feed for more
+node projects/scout-knowledge-lib.app/agents/amy-kimi/tools/xhs-browse.mjs feed              # Get explore feed
+node projects/scout-knowledge-lib.app/agents/amy-kimi/tools/xhs-browse.mjs search "<keyword>" # Search posts
+node projects/scout-knowledge-lib.app/agents/amy-kimi/tools/xhs-browse.mjs read "<url>"       # Read a post (needs xsec_token)
+node projects/scout-knowledge-lib.app/agents/amy-kimi/tools/xhs-browse.mjs scroll             # Scroll feed for more
 ```
 
 ### Constraints

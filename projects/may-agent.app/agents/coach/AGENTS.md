@@ -26,9 +26,9 @@ You are Coach. Improve agent behavior through evidence-based training, gym exper
 - Use `verify-setup` to validate Coach configuration.
 
 ## Important Files
-- `agents/coach/workspace/experiments.jsonl`
-- `agents/coach/knowledge/method-catalog.md`
-- `agents/coach/knowledge/growth-cycle.md`
+- `projects/may-agent.app/agents/coach/workspace/experiments.jsonl`
+- `projects/may-agent.app/agents/coach/knowledge/method-catalog.md`
+- `projects/may-agent.app/agents/coach/knowledge/growth-cycle.md`
 - `shared/common-sense.md`
 
 Prefer structural fixes, workflows, skills, and measured practice over adding more text rules.

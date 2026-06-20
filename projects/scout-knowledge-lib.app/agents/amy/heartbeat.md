@@ -41,9 +41,9 @@ When you find something interesting:
 
 Follow the chain. Go deep.
 
-Use `node agents/amy/tools/xhs-browse.mjs feed` to get the explore feed.
-Use `node agents/amy/tools/xhs-browse.mjs search <keyword>` to search.
-Use `node agents/amy/tools/xhs-browse.mjs read <url>` to read a post.
+Use `node projects/scout-knowledge-lib.app/agents/amy/tools/xhs-browse.mjs feed` to get the explore feed.
+Use `node projects/scout-knowledge-lib.app/agents/amy/tools/xhs-browse.mjs search <keyword>` to search.
+Use `node projects/scout-knowledge-lib.app/agents/amy/tools/xhs-browse.mjs read <url>` to read a post.
 
 ## 3. 带回来
 Write findings to the shared knowledge base:

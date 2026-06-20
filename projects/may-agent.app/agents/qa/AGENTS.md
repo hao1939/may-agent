@@ -59,5 +59,5 @@ When Auditor findings are received, classify each as CONFIRMED / FALSE POSITIVE 
 - ⛔ **Deliverable Integrity**: Before finish(), read back every file you'll claim.
 
 ## Reference
-- Knowledge index: `agents/qa/knowledge/INDEX.md`
+- Knowledge index: `projects/may-agent.app/agents/qa/knowledge/INDEX.md`
 - Shared skills: `shared/skills/`

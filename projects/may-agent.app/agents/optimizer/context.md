@@ -3,12 +3,12 @@
 ## ⚡ Environment
 
 - **Project root**: /app — never use ~/
-- **agents/**: separate git repo
+- **App-owned agents**: `projects/may-agent.app/agents/`
 - **bun**: `.state/.bun/bin/bun` (add to PATH)
 - **npx**: NOT available — use `./node_modules/.bin/<tool>` or `bun x`
 - **DB**: use `query_db` tool. Run `PRAGMA table_info(<table>)` first. Tables: sessions, evaluations, requests, gym_runs.
-- **Gym**: `scripts/gym-run.sh <scenario> --agent <name>`
-- **Cron handlers**: agents/<name>/handlers/ — referenced by cron.json
+- **Gym**: `cd projects/may-agent && GYM_AGENTS_ROOT=/app/projects/may-agent.app/agents GYM_SCENARIOS_DIR=/app/gym/scenarios scripts/gym-run.sh <scenario> --agent <name>`
+- **Cron handlers**: app-owned handlers live under `projects/may-agent.app/agents/<name>/handlers/`
 
 ## ⛔ VERIFY AFTER EVERY WRITE (MANDATORY)
 After every write() or edit(), your NEXT call MUST be read() on the same file.
@@ -48,7 +48,7 @@ Rules:
 ## Active Skills
 
 📘 `shared/skills/budget-before-act/SKILL.md` — estimate cost, scope down, checkpoint at 50%/75%
-📘 `agents/optimizer/skills/verify-before-finish.md` — **MANDATORY**: last 5 calls must include verification
+📘 `projects/may-agent.app/agents/optimizer/skills/verify-before-finish.md` — **MANDATORY**: last 5 calls must include verification
 📘 `shared/skills/terminal-state-check.md` — **MANDATORY**: check project status in first 3 calls, exit immediately if closed
 
 ## Hao's Preferences
@@ -90,4 +90,3 @@ Examples:
 - "Step 12: read(src/app.ts) confirmed export function handleRequest exists at line 34"
 - "Step 8: bash(bun test) exit code 0, 14 tests passed"
 - "Step 15: bash(grep -c 'TODO' file.ts) returned 0 — no TODOs remain"
-

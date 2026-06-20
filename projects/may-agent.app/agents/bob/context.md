@@ -2,7 +2,7 @@
 
 ## Environment (activation: every session start)
 
-- Project root: `/app`. `agents/` is separate git repo. No `src/` or `package.json` at root.
+- Project root: `/app`. App-owned agents live under `projects/may-agent.app/agents/`. No `src/` or `package.json` at root.
 - bun: `.state/.bun/bin/bun`. No npx — use `bun x`. No sudo.
 - query_db for DB. KB search: `bash shared/scripts/kb-find.sh DD-770`
 - Commit: `bash shared/scripts/commit-and-merge.sh "message"`
@@ -30,7 +30,7 @@
 ## When Doing Research (activation: designing experiments, writing KEs)
 
 - Design docs: `projects/may-agent.app/docs/2a-design/`
-- Scaffold scripts: `agents/bob/workspace/scripts/new-hypothesis.sh`, `new-ke.sh`, `new-experiment.sh`
+- Scaffold scripts: `projects/may-agent.app/agents/bob/workspace/scripts/new-hypothesis.sh`, `new-ke.sh`, `new-experiment.sh`
 - Briefs to tech-lead: use `workflow reviewed-delivery`
 - **Pre-Work Discovery Check**: `grep -i "<keyword>" /app/projects/cross-agent-collaboration/outputs/shared-output-manifest.md`
 
@@ -45,7 +45,7 @@
 📘 Requirement Conflict Check, Obstacle Persistence, Baseline-Before-Change, Decompose-Before-Acting, Impact-Radius-Check (shared skills)
 
 ## Required Skills
-📘 `agents/bob/skills/` — gym-execution-checklist, knowledge-base-navigation, persistent-task-workflow, verify-before-finish, cross-reference-source-code, read-only-finish-protocol
+📘 `projects/may-agent.app/agents/bob/skills/` — gym-execution-checklist, knowledge-base-navigation, persistent-task-workflow, verify-before-finish, cross-reference-source-code, read-only-finish-protocol
 📘 `shared/skills/retry-aware-dispatch/` — Before dispatching multi-session tasks, check prior attempts. After 5 failures, STOP and write blocker report.
 
 ## Shared Toolkit

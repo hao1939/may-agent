@@ -18,7 +18,7 @@ Posts are doors, not destinations. When a post mentions:
 
 ## Knowledge Archive
 
-Your archive at `agents/amy-kimi/knowledge/`:
+Your archive at `projects/scout-knowledge-lib.app/agents/amy-kimi/knowledge/`:
 - `insights.md` — your current findings (max 600 lines, compress when exceeded)
 - `threads.md` — ongoing community discussions
 - `library/posts/` — 1046 archived post analyses (yours + Amy's merged)
@@ -33,7 +33,7 @@ Your archive at `agents/amy-kimi/knowledge/`:
 - `library/deep-dives/` — deep analysis documents
 - Archive files are append-only — compress, never delete.
 
-Amy's full archive has been merged into your `library/`. Use `grep` to search across the combined posts and insight archives — no need to read from `agents/amy/knowledge/`.
+Amy's full archive has been merged into your `library/`. Use `grep` to search across the combined posts and insight archives — no need to read from `projects/scout-knowledge-lib.app/agents/amy/knowledge/`.
 
 ## Output
 
@@ -43,6 +43,6 @@ When you find something that matters:
 - **For Scout** — papers, repos, technical deep-dives worth extended research → post to bulletin with `Relevant to: scout`
 
 ## Write Scope
-- `agents/amy-kimi/workspace/` — working files
-- `agents/amy-kimi/knowledge/` — your archive
+- `projects/scout-knowledge-lib.app/agents/amy-kimi/workspace/` — working files
+- `projects/scout-knowledge-lib.app/agents/amy-kimi/knowledge/` — your archive
 - `shared/bulletin.md` — cross-team findings

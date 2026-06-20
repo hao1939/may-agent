@@ -8,10 +8,10 @@ Your goal: find the highest-impact problem and fix it.
 All paths are relative to the **project root** (the directory containing `package.json`).
 Your bash tool's working directory is the project root.
 
-- **Your workspace**: `agents/optimizer/workspace/`
+- **Your workspace**: `projects/may-agent.app/agents/optimizer/workspace/`
 - **Evaluations**: `.state/evaluations/` — per-session JSON with agent name, scores, failure chains
 - **Session data: `.state/sessions/<id>/` — session transcripts (JSONL)
-- **Agent configs**: `agents/*/knowledge/` — domain.md, lessons.md per agent
+- **Agent configs**: `projects/may-agent.app/agents/*/knowledge/` — domain.md, lessons.md per agent
 
 To confirm the project root, run `pwd` once. Do not guess or search.
 

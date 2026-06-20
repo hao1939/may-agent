@@ -5,7 +5,7 @@ import {
   promoteAgent,
   discardAgent,
   type GrowthConfig,
-} from "../../../shared/lib/growth.js";
+} from "../../../../../shared/lib/growth.js";
 import {
   runGym,
   findLabForks,
@@ -29,34 +29,35 @@ export const description: string =
 
 export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
   // Step 1: Batch diagnosis — identify multiple experiments to run
-  const plan = await ctx.runAgent("coach",
+  const plan = await ctx.runAgent(
+    "coach",
     `Plan a training sprint — identify multiple experiments to run in batch.\n\n` +
-    `## ⚠️ TURN BUDGET: MAX 30 TOOL CALLS\n` +
-    `This session has a strict budget of 30 tool calls. Plan efficiently.\n` +
-    `If you cannot finish within 30 calls, call finish({status: "partial"}) with what you have.\n\n` +
-    `## Context\n${ctx.task}\n\n` +
-    `## Instructions\n` +
-    `1. Read \`agents/coach/workspace/todo.md\` — find all growth cycle candidates.\n` +
-    `2. Read \`agents/*/ERROR_LOG.jsonl\` — find error patterns worth fixing.\n` +
-    `3. Read \`agents/coach/knowledge/method-catalog.md\` — check for untested methods\n` +
-    `   AND check for "hypothesis" entries (invented methods) that need testing.\n` +
-    `4. Read \`agents/coach/workspace/experiments.jsonl\` — skip patterns already tested.\n` +
-    `   For patterns with 2+ failures: try a DIFFERENT method or an invented one.\n` +
-    `5. **CEILING-EFFECT GATE (MANDATORY):** For each candidate experiment, run baseline:\n` +
-    `   \`test/gym/run-gym.sh <scenario> --agent <agent> --timeout 3\`\n` +
-    `   If baseline PASSES all checks → REMOVE that experiment from the plan.\n` +
-    `   Only keep experiments where baseline FAILS at least one check.\n` +
-    `   If ALL candidates are removed by this gate, your output should be:\n` +
-    `   "GATE: ALL SKIPPED — ceiling effect on all candidates. Need harder scenarios."\n` +
-    `   This gate prevents wasting ~4 LLM sessions per experiment on zero-improvement cycles.\n` +
-    `6. Select 3-5 experiments. For each, specify:\n` +
-    `   - Target agent\n` +
-    `   - Error pattern (FM code) or method to learn\n` +
-    `   - Method to apply (can be a hypothesis from the catalog)\n` +
-    `   - Gym scenario(s) to test against (check \`ls gym/scenarios/\`)\n` +
-    `   - Fork name (e.g., coder-sprint-1, optimizer-sprint-2)\n` +
-    `7. Write the plan to \`agents/coach/workspace/sprint-plan.md\`\n` +
-    `8. Report the full plan.`
+      `## ⚠️ TURN BUDGET: MAX 30 TOOL CALLS\n` +
+      `This session has a strict budget of 30 tool calls. Plan efficiently.\n` +
+      `If you cannot finish within 30 calls, call finish({status: "partial"}) with what you have.\n\n` +
+      `## Context\n${ctx.task}\n\n` +
+      `## Instructions\n` +
+      `1. Read \`projects/may-agent.app/agents/coach/workspace/todo.md\` — find all growth cycle candidates.\n` +
+      `2. Read \`projects/may-agent.app/agents/*/ERROR_LOG.jsonl\` — find error patterns worth fixing.\n` +
+      `3. Read \`projects/may-agent.app/agents/coach/knowledge/method-catalog.md\` — check for untested methods\n` +
+      `   AND check for "hypothesis" entries (invented methods) that need testing.\n` +
+      `4. Read \`projects/may-agent.app/agents/coach/workspace/experiments.jsonl\` — skip patterns already tested.\n` +
+      `   For patterns with 2+ failures: try a DIFFERENT method or an invented one.\n` +
+      `5. **CEILING-EFFECT GATE (MANDATORY):** For each candidate experiment, run baseline:\n` +
+      `   \`cd projects/may-agent && GYM_AGENTS_ROOT=/app/projects/may-agent.app/agents GYM_SCENARIOS_DIR=/app/gym/scenarios test/gym/run-gym.sh <scenario> --agent <agent> --timeout 3\`\n` +
+      `   If baseline PASSES all checks → REMOVE that experiment from the plan.\n` +
+      `   Only keep experiments where baseline FAILS at least one check.\n` +
+      `   If ALL candidates are removed by this gate, your output should be:\n` +
+      `   "GATE: ALL SKIPPED — ceiling effect on all candidates. Need harder scenarios."\n` +
+      `   This gate prevents wasting ~4 LLM sessions per experiment on zero-improvement cycles.\n` +
+      `6. Select 3-5 experiments. For each, specify:\n` +
+      `   - Target agent\n` +
+      `   - Error pattern (FM code) or method to learn\n` +
+      `   - Method to apply (can be a hypothesis from the catalog)\n` +
+      `   - Gym scenario(s) to test against (check \`ls gym/scenarios/\`)\n` +
+      `   - Fork name (e.g., coder-sprint-1, optimizer-sprint-2)\n` +
+      `7. Write the plan to \`projects/may-agent.app/agents/coach/workspace/sprint-plan.md\`\n` +
+      `8. Report the full plan.`,
   );
   if (plan.status === "error") {
     return ctx.escalate("sprint planning failed", { error: plan.error });
@@ -64,7 +65,10 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
 
   // Check if ceiling-effect gate eliminated all experiments
   const planText = (plan.lastAssistantText || "").toUpperCase();
-  if (planText.includes("GATE: ALL SKIPPED") || planText.includes("CEILING EFFECT ON ALL")) {
+  if (
+    planText.includes("GATE: ALL SKIPPED") ||
+    planText.includes("CEILING EFFECT ON ALL")
+  ) {
     // Record skip directly in JS — no LLM session needed for a single JSONL append
     const skipEntry = {
       timestamp: new Date().toISOString(),
@@ -83,38 +87,42 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
 
     return ctx.done(
       `Training sprint SKIPPED (ceiling-effect gate).\n\n` +
-      `## Plan\n${plan.lastAssistantText}\n\n` +
-      `All candidate experiments pass baseline — no room for improvement. ` +
-      `Create harder scenarios before the next sprint.`
+        `## Plan\n${plan.lastAssistantText}\n\n` +
+        `All candidate experiments pass baseline — no room for improvement. ` +
+        `Create harder scenarios before the next sprint.`,
     );
   }
 
   // Verify sprint-plan.md was actually created by Phase 1
-  const sprintPlanPath = join(PROJECT_ROOT, "agents/coach/workspace/sprint-plan.md");
+  const sprintPlanPath = join(
+    PROJECT_ROOT,
+    "agents/coach/workspace/sprint-plan.md",
+  );
   if (!existsSync(sprintPlanPath)) {
     return ctx.escalate(
-      "Sprint plan Phase 1 failed: Coach did not create agents/coach/workspace/sprint-plan.md. " +
-      "Cannot proceed to Phase 2 (fork/patch) without the plan file.",
-      { planOutput: plan.lastAssistantText?.substring(0, 500) }
+      "Sprint plan Phase 1 failed: Coach did not create projects/may-agent.app/agents/coach/workspace/sprint-plan.md. " +
+        "Cannot proceed to Phase 2 (fork/patch) without the plan file.",
+      { planOutput: plan.lastAssistantText?.substring(0, 500) },
     );
   }
 
   // Step 2: Fork and patch all experiments
-  const patch = await ctx.runAgent("coach",
+  const patch = await ctx.runAgent(
+    "coach",
     `Execute all forks and patches from the sprint plan.\n\n` +
-    `## ⚠️ TURN BUDGET: MAX 25 TOOL CALLS\n` +
-    `This session has a strict budget of 25 tool calls. Fork, patch, verify, move on.\n` +
-    `If you cannot finish within 25 calls, call finish({status: "partial"}) with what you have.\n\n` +
-    `## Sprint Plan\n${ctx.summarize(plan)}\n\n` +
-    `## Instructions\n` +
-    `Read \`agents/coach/workspace/sprint-plan.md\` for the full plan.\n\n` +
-    `For EACH experiment in the plan:\n` +
-    `1. Fork: \`fork_agent({ source: "<agent>", dest: "<fork-name>" })\`\n` +
-    `2. Apply ONE method to the fork (SOUL guard, heartbeat step, skill, etc.)\n` +
-    `3. Read back the changed file to confirm\n` +
-    `4. Move to the next experiment\n\n` +
-    `Be efficient — don't over-explain each change. Fork, patch, verify, next.\n` +
-    `Report: list of forks created with what was changed in each.`
+      `## ⚠️ TURN BUDGET: MAX 25 TOOL CALLS\n` +
+      `This session has a strict budget of 25 tool calls. Fork, patch, verify, move on.\n` +
+      `If you cannot finish within 25 calls, call finish({status: "partial"}) with what you have.\n\n` +
+      `## Sprint Plan\n${ctx.summarize(plan)}\n\n` +
+      `## Instructions\n` +
+      `Read \`projects/may-agent.app/agents/coach/workspace/sprint-plan.md\` for the full plan.\n\n` +
+      `For EACH experiment in the plan:\n` +
+      `1. Fork: \`fork_agent({ source: "<agent>", dest: "<fork-name>" })\`\n` +
+      `2. Apply ONE method to the fork (SOUL guard, heartbeat step, skill, etc.)\n` +
+      `3. Read back the changed file to confirm\n` +
+      `4. Move to the next experiment\n\n` +
+      `Be efficient — don't over-explain each change. Fork, patch, verify, next.\n` +
+      `Report: list of forks created with what was changed in each.`,
   );
   if (patch.status === "error") {
     return ctx.escalate("batch forking failed", { error: patch.error });
@@ -140,7 +148,11 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     if (patchText.includes(fork)) {
       const agent = agentFromFork(fork);
       const scenarios = extractScenarios(combinedText);
-      experiments.push({ forkName: fork, agent, scenarios: scenarios.length > 0 ? scenarios : [] });
+      experiments.push({
+        forkName: fork,
+        agent,
+        scenarios: scenarios.length > 0 ? scenarios : [],
+      });
     }
   }
 
@@ -167,7 +179,9 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     delta: number;
   }
   const sprintResults: SprintResult[] = [];
-  const resultLines: string[] = ["# Sprint Gym Test Results (automated — no LLM session)\n"];
+  const resultLines: string[] = [
+    "# Sprint Gym Test Results (automated — no LLM session)\n",
+  ];
 
   for (const exp of experiments) {
     resultLines.push(`## Fork: ${exp.forkName} (agent: ${exp.agent})`);
@@ -178,37 +192,54 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
 
     for (const scenario of exp.scenarios) {
       if (gymSessionCount >= MAX_GYM_SESSIONS) {
-        resultLines.push(`- ${scenario}: SKIPPED (gym session budget exhausted: ${gymSessionCount}/${MAX_GYM_SESSIONS})`);
+        resultLines.push(
+          `- ${scenario}: SKIPPED (gym session budget exhausted: ${gymSessionCount}/${MAX_GYM_SESSIONS})`,
+        );
         continue;
       }
       const baseline = runGym(scenario, exp.agent);
       gymSessionCount++;
       const patched = runGym(scenario, exp.agent, exp.forkName);
       gymSessionCount++;
-      const bPassed = baseline.checks.filter(c => c.passed).length;
-      const pPassed = patched.checks.filter(c => c.passed).length;
+      const bPassed = baseline.checks.filter((c) => c.passed).length;
+      const pPassed = patched.checks.filter((c) => c.passed).length;
       const delta = pPassed - bPassed;
 
-      sprintResults.push({ fork: exp.forkName, scenario, baseline, patched, delta });
+      sprintResults.push({
+        fork: exp.forkName,
+        scenario,
+        baseline,
+        patched,
+        delta,
+      });
 
-      resultLines.push(`- ${scenario}: baseline=${baseline.passed ? "PASS" : "FAIL"} (${bPassed}/${baseline.checks.length}), patched=${patched.passed ? "PASS" : "FAIL"} (${pPassed}/${patched.checks.length}), delta=${delta >= 0 ? "+" : ""}${delta}`);
+      resultLines.push(
+        `- ${scenario}: baseline=${baseline.passed ? "PASS" : "FAIL"} (${bPassed}/${baseline.checks.length}), patched=${patched.passed ? "PASS" : "FAIL"} (${pPassed}/${patched.checks.length}), delta=${delta >= 0 ? "+" : ""}${delta}`,
+      );
     }
     resultLines.push("");
   }
 
   if (gymSessionCount >= MAX_GYM_SESSIONS) {
-    resultLines.push(`\n⚠️ Gym session budget exhausted (${gymSessionCount}/${MAX_GYM_SESSIONS}). Some scenarios were skipped.\n`);
+    resultLines.push(
+      `\n⚠️ Gym session budget exhausted (${gymSessionCount}/${MAX_GYM_SESSIONS}). Some scenarios were skipped.\n`,
+    );
   }
 
   // Write results to file for Step 4 to read
   const resultsText = resultLines.join("\n");
-  writeFileSync(join(PROJECT_ROOT, "agents/coach/workspace/sprint-results.md"), resultsText);
+  writeFileSync(
+    join(PROJECT_ROOT, "agents/coach/workspace/sprint-results.md"),
+    resultsText,
+  );
 
   ctx.emit({ type: "step_done", step: "sprint-gym-tests" } as any);
 
   // Step 4: Record results, promote winners, discard losers (pure JS — no LLM session)
   const growthConfig: GrowthConfig = { agentsRoot: AGENTS_ROOT };
-  const decisionLines: string[] = ["# Sprint Decisions (automated — no LLM session)\n"];
+  const decisionLines: string[] = [
+    "# Sprint Decisions (automated — no LLM session)\n",
+  ];
   let promoted = 0;
   let discarded = 0;
 
@@ -222,10 +253,10 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
 
   for (const exp of experiments) {
     const forkResults = resultsByFork.get(exp.forkName) ?? [];
-    const baselinePassed = forkResults.filter(r => r.baseline.passed).length;
-    const patchedPassed = forkResults.filter(r => r.patched.passed).length;
+    const baselinePassed = forkResults.filter((r) => r.baseline.passed).length;
+    const patchedPassed = forkResults.filter((r) => r.patched.passed).length;
     const improved = patchedPassed > baselinePassed;
-    const decision = improved ? "promote" as const : "discard" as const;
+    const decision = improved ? ("promote" as const) : ("discard" as const);
     const reason = improved
       ? `patched ${patchedPassed}/${forkResults.length} vs baseline ${baselinePassed}/${forkResults.length}`
       : patchedPassed === baselinePassed
@@ -237,7 +268,9 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
       if (decision === "promote") {
         const result = promoteAgent(growthConfig, exp.forkName, exp.agent);
         decisionLines.push(`## ${exp.forkName} → PROMOTED`);
-        decisionLines.push(`Copied: ${result.promoted.join(", ")}. ${reason}\n`);
+        decisionLines.push(
+          `Copied: ${result.promoted.join(", ")}. ${reason}\n`,
+        );
         promoted++;
       } else {
         discardAgent(growthConfig, exp.forkName);
@@ -251,14 +284,14 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     }
 
     // Record to experiments.jsonl
-    const diagText = planText2;  // Use plan text for FM/method extraction
+    const diagText = planText2; // Use plan text for FM/method extraction
     const entry = {
       timestamp: new Date().toISOString(),
       type: "sprint",
       error_pattern: extractFMCode(diagText),
       agent: exp.agent,
       method: extractMethod(diagText),
-      scenarios: forkResults.map(r => ({
+      scenarios: forkResults.map((r) => ({
         name: r.scenario,
         baseline: r.baseline.passed,
         patched: r.patched.passed,
@@ -275,7 +308,9 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
   // Handle experiments with no gym results (no scenarios matched)
   // These weren't processed in the main loop, so discard to clean up
   const processedForks = new Set(
-    experiments.filter(e => (resultsByFork.get(e.forkName)?.length ?? 0) > 0).map(e => e.forkName)
+    experiments
+      .filter((e) => (resultsByFork.get(e.forkName)?.length ?? 0) > 0)
+      .map((e) => e.forkName),
   );
   for (const exp of experiments) {
     if (!processedForks.has(exp.forkName)) {
@@ -293,8 +328,8 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
 
   return ctx.done(
     `Training sprint completed: ${promoted} promoted, ${discarded} discarded.\n\n` +
-    `## Plan\n${plan.lastAssistantText}\n\n` +
-    `## Results\n${resultsText}\n\n` +
-    `## Decisions\n${decisionsText}`
+      `## Plan\n${plan.lastAssistantText}\n\n` +
+      `## Results\n${resultsText}\n\n` +
+      `## Decisions\n${decisionsText}`,
   );
 }

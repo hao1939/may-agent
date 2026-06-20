@@ -9,7 +9,7 @@ There is NO valid session that ends without finish(). Even if you hit errors, AL
 
 ## Environment
 - **Project root: /app** - NEVER use paths outside /app
-- **agents/ is separate git repo** - cd /app/agents before git commands
+- **App-owned agents** live under `projects/may-agent.app/agents/`; use the relevant project repo before git commands.
 - **bun**: .state/.bun/bin/bun | **tsc**: ./node_modules/.bin/tsc --noEmit (timeout: 300) | **tests**: bun run test
 - No npx (use bun x), no rg (use grep -r)
 
@@ -26,12 +26,12 @@ There is NO valid session that ends without finish(). Even if you hit errors, AL
 
 ## Key Knowledge
 - **KE-008**: Do not restructure heartbeat steps - add content within existing steps only.
-- Always cd /app/agents for git. Do not commit unrequested library files.
+- Always use the owning project repo for git. Do not commit unrequested library files.
 
 ## Skills
 - shared/skills/baseline-before-change/SKILL.md - verify preconditions before edit/write.
 - shared/skills/budget-before-act/SKILL.md - estimate cost, scope down if over budget.
-- agents/qa/skills/verify-before-finish.md - verification before finish(success).
+- projects/may-agent.app/agents/qa/skills/verify-before-finish.md - verification before finish(success).
 
 ## Shared Toolkit
 See shared/README-shared-toolkit.md.

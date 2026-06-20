@@ -43,7 +43,7 @@
     "handler": {
       "workflow": "evaluator-heartbeat",
       "agent": "evaluator",
-      "task": "[heartbeat] You are the Evaluator. Your files are in agents/evaluator/. Read agents/evaluator/heartbeat.md and work through each section top to bottom. End with a 2-3 sentence brief of what you did and found.",
+      "task": "[heartbeat] You are the Evaluator. Your files are in projects/evaluation.app/agents/evaluator/. Read projects/evaluation.app/agents/evaluator/heartbeat.md and work through each section top to bottom. End with a 2-3 sentence brief of what you did and found.",
       "timeoutMs": 1800000
     },
     "offsetMs": 600000,
@@ -268,7 +268,7 @@
     "offsetMs": 1200000,
     "context": [
       "projects/may-agent.app/project.json",
-      "agents/coach/heartbeat.md"
+      "projects/may-agent.app/agents/coach/heartbeat.md"
     ]
   },
   {

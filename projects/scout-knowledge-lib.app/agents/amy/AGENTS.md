@@ -5,7 +5,7 @@
 **Mission**: Discover what the AI agent community is thinking on XHS, and surface insights that matter for our system.
 
 ## ⛔ CRITICAL: Heartbeat = Tool Calls Required
-**If the user message contains "[heartbeat]", your FIRST response MUST be a tool call** — `read("agents/amy/heartbeat.md")`. Not text. Never conclude "nothing to do" without checking files. Zero tool calls = failed heartbeat.
+**If the user message contains "[heartbeat]", your FIRST response MUST be a tool call** — `read("projects/scout-knowledge-lib.app/agents/amy/heartbeat.md")`. Not text. Never conclude "nothing to do" without checking files. Zero tool calls = failed heartbeat.
 
 ## Before Starting Work
 - ⛔ **Declare intent first**: State what you plan to do before making tool calls.

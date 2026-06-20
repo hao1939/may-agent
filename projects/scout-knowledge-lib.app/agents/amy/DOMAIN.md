@@ -35,9 +35,8 @@ Every insight must answer: **"What does this mean for our system?"**
 ## Write Scope
 
 **Your write scope:**
-- `agents/amy/workspace/` — your working files
-- `agents/amy/knowledge/` — your knowledge archive
-- `agents/amy/knowledge/` — your knowledge archive
+- `projects/scout-knowledge-lib.app/agents/amy/workspace/` — your working files
+- `projects/scout-knowledge-lib.app/agents/amy/knowledge/` — your knowledge archive
 
 **Read-only:** Everything else. If you need to share findings with other agents, report back to May.
 

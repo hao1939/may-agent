@@ -5,7 +5,7 @@ import {
   promoteAgent,
   discardAgent,
   type GrowthConfig,
-} from "../../../shared/lib/growth.js";
+} from "../../../../../shared/lib/growth.js";
 import {
   runGym,
   runGymBatch,
@@ -28,7 +28,10 @@ import {
 // Replaces LLM session that read, found, and updated a method entry.
 // The catalog has structured entries with **Evidence**: and **Status**: fields.
 
-const METHOD_CATALOG_PATH = join(PROJECT_ROOT, "agents/coach/knowledge/method-catalog.md");
+const METHOD_CATALOG_PATH = join(
+  PROJECT_ROOT,
+  "agents/coach/knowledge/method-catalog.md",
+);
 
 function updateMethodCatalog(
   methodName: string,
@@ -48,7 +51,8 @@ function updateMethodCatalog(
   }
 
   const today = new Date().toISOString().slice(0, 10);
-  const evidenceLine = `${today}: Baseline ${baselinePassed}/${totalScenarios}, ` +
+  const evidenceLine =
+    `${today}: Baseline ${baselinePassed}/${totalScenarios}, ` +
     `Patched ${patchedPassed}/${totalScenarios}. Decision: ${decision} (${reason}).`;
 
   // Find the **Evidence**: line closest to the method name
@@ -64,27 +68,35 @@ function updateMethodCatalog(
   const afterMethod = content.slice(methodIdx);
   const evidenceMatch = afterMethod.match(/(\*\*Evidence\*\*:\s*)(.*)/);
   if (evidenceMatch) {
-    const evidenceOffset = methodIdx + (afterMethod.indexOf(evidenceMatch[0]));
+    const evidenceOffset = methodIdx + afterMethod.indexOf(evidenceMatch[0]);
     const existingEvidence = evidenceMatch[2].trim();
     const newEvidence = existingEvidence
       ? `${evidenceMatch[1]}${existingEvidence} | ${evidenceLine}`
       : `${evidenceMatch[1]}${evidenceLine}`;
-    content = content.slice(0, evidenceOffset) + newEvidence +
+    content =
+      content.slice(0, evidenceOffset) +
+      newEvidence +
       content.slice(evidenceOffset + evidenceMatch[0].length);
   }
 
   // Update **Status**: from untested to tested (only if currently untested)
   const statusMatch = afterMethod.match(/(\*\*Status\*\*:\s*)(.*untested.*)/i);
   if (statusMatch) {
-    const statusOffset = methodIdx + (afterMethod.indexOf(statusMatch[0]));
+    const statusOffset = methodIdx + afterMethod.indexOf(statusMatch[0]);
     const newStatus = `${statusMatch[1]}tested ${today} — ${evidenceLine}`;
-    content = content.slice(0, statusOffset) + newStatus +
+    content =
+      content.slice(0, statusOffset) +
+      newStatus +
       content.slice(statusOffset + statusMatch[0].length);
   }
 
   writeFileSync(METHOD_CATALOG_PATH, content, "utf-8");
-  return `Updated catalog entry for "${methodName}": added evidence (${evidenceLine}), ` +
-    (statusMatch ? `changed status to tested.` : `status unchanged (already tested).`);
+  return (
+    `Updated catalog entry for "${methodName}": added evidence (${evidenceLine}), ` +
+    (statusMatch
+      ? `changed status to tested.`
+      : `status unchanged (already tested).`)
+  );
 }
 
 export const name: string = "growth-cycle";
@@ -102,9 +114,10 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     `## ENVIRONMENT FACTS (do NOT guess paths — use these)\n` +
     `- Working directory: /app\n` +
     `- No npm — use bun or ./node_modules/.bin/\n` +
-    `- Agent files: /app/agents/<name>/\n` +
+    `- App-owned agent files: /app/projects/may-agent.app/agents/<name>/\n` +
     `- Gym scenarios: /app/gym/scenarios/\n` +
-    `- Lab forks: /app/agents/.lab/<fork-name>/\n` +
+    `- Lab forks: /app/projects/may-agent.app/agents/.lab/<fork-name>/\n` +
+    `- May-agent source/scripts: /app/projects/may-agent/\n` +
     `- Scripts: /app/scripts/\n` +
     `- Do NOT use /root/, /home/, /Users/, or ~/ paths\n\n`;
 
@@ -131,12 +144,12 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
       `Study an improvement method you haven't used before.\n\n` +
       `## Method to Learn\n${ctx.task.slice(6).trim()}\n\n` +
       `## Instructions\n` +
-      `1. Read \`agents/coach/knowledge/method-catalog.md\` — find this method's entry.\n` +
+      `1. Read \`projects/may-agent.app/agents/coach/knowledge/method-catalog.md\` — find this method's entry.\n` +
       `2. Read documentation and examples related to this method:\n` +
       `   - For skills: read \`shared/skills/\` for examples\n` +
-      `   - For workflows: read existing workflows in \`agents/*/workflows/\`\n` +
-      `   - For heartbeat steps: read \`agents/*/heartbeat.md\` examples\n` +
-      `   - For knowledge files: read \`agents/*/knowledge/\` examples\n` +
+      `   - For workflows: read existing workflows in \`projects/may-agent.app/agents/*/workflows/\`\n` +
+      `   - For heartbeat steps: read \`projects/may-agent.app/agents/*/heartbeat.md\` examples\n` +
+      `   - For knowledge files: read \`projects/may-agent.app/agents/*/knowledge/\` examples\n` +
       `   - For agent.json: read the agent-loader source for config options\n` +
       `3. Pick a simple gym scenario to test with: \`ls gym/scenarios/\`\n` +
       `4. Pick a target agent (preferably coder — simplest agent).\n` +
@@ -150,8 +163,8 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
       `## Error Pattern\n${ctx.task}\n\n` +
       `## Instructions\n` +
       `1. Read the error examples from the task description above. Identify the behavioral pattern.\n` +
-      `2. Read \`agents/coach/knowledge/method-catalog.md\` — understand available methods.\n` +
-      `3. Read \`agents/coach/workspace/experiments.jsonl\` (if it exists) — check if this pattern was already tested.\n` +
+      `2. Read \`projects/may-agent.app/agents/coach/knowledge/method-catalog.md\` — understand available methods.\n` +
+      `3. Read \`projects/may-agent.app/agents/coach/workspace/experiments.jsonl\` (if it exists) — check if this pattern was already tested.\n` +
       `4. Choose ONE method from the catalog that best fits this error pattern.\n` +
       `   - If the catalog has evidence for this pattern → use the proven method.\n` +
       `   - If no evidence → pick the method you think fits best (you'll test it).\n` +
@@ -193,7 +206,10 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     }
 
     const gateReport = gateResults
-      .map(r => `- ${r.scenario}: ${r.passed ? "PASS" : "FAIL"} (${r.checks.filter(c => c.passed).length}/${r.checks.length})`)
+      .map(
+        (r) =>
+          `- ${r.scenario}: ${r.passed ? "PASS" : "FAIL"} (${r.checks.filter((c) => c.passed).length}/${r.checks.length})`,
+      )
       .join("\n");
 
     ctx.emit({ type: "step_done", step: "ceiling-gate" } as any);
@@ -204,41 +220,41 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
 
       return ctx.done(
         `Growth cycle SKIPPED (ceiling-effect gate).\n\n` +
-        `## Diagnosis\n${diagnosisText}\n\n` +
-        `## Baseline Gate Results\n${gateReport}\n\n` +
-        `All scenarios pass at baseline — no room for improvement. ` +
-        `Create harder scenarios before retrying this pattern.`
+          `## Diagnosis\n${diagnosisText}\n\n` +
+          `## Baseline Gate Results\n${gateReport}\n\n` +
+          `All scenarios pass at baseline — no room for improvement. ` +
+          `Create harder scenarios before retrying this pattern.`,
       );
     }
   }
 
   // Step 2: Fork and apply
-  const patch = await ctx.runAgent("coach",
+  const patch = await ctx.runAgent(
+    "coach",
     ENV_FACTS +
-    HARD_GATE_RULES +
-    `## ⚠️ TURN BUDGET: MAX 20 TOOL CALLS\n` +
-    `Budget 20 tool calls. Fork, patch, verify — be efficient.\n\n` +
-    `Fork the target agent and apply exactly ONE improvement method.\n\n` +
-    `## ${isLearning ? "Study Results" : "Diagnosis"}\n${ctx.summarize(step1)}\n\n` +
-    `## Instructions\n` +
-    `1. Fork the target agent: \`fork_agent({ source: "<agent>", dest: "<agent>-<experiment>" })\`\n` +
-    `2. Apply the selected method to the fork. Be specific and minimal:\n` +
-    `   - SOUL guard → add 5-15 lines max\n` +
-    `   - Heartbeat step → add one numbered step\n` +
-    `   - Skill → create one SKILL.md file\n` +
-    `   - Workflow → create one workflow .ts file\n` +
-    `   - Knowledge → create one .md file\n` +
-    `3. Read back the changed file(s) to confirm the edit worked.\n` +
-    `4. Do NOT apply multiple methods — one method per experiment.\n` +
-    `5. Report: what you changed, the fork name, and the file(s) modified.\n\n` +
-    `IMPORTANT: The fork lives in agents/.lab/<fork-name>/. Verify it exists.\n\n` +
-    `⚠️ Do NOT delete or discard the fork — even if you discover the baseline already passes. ` +
-    `The workflow manages fork lifecycle (promote/discard) automatically after testing.`
+      HARD_GATE_RULES +
+      `## ⚠️ TURN BUDGET: MAX 20 TOOL CALLS\n` +
+      `Budget 20 tool calls. Fork, patch, verify — be efficient.\n\n` +
+      `Fork the target agent and apply exactly ONE improvement method.\n\n` +
+      `## ${isLearning ? "Study Results" : "Diagnosis"}\n${ctx.summarize(step1)}\n\n` +
+      `## Instructions\n` +
+      `1. Fork the target agent: \`fork_agent({ source: "<agent>", dest: "<agent>-<experiment>" })\`\n` +
+      `2. Apply the selected method to the fork. Be specific and minimal:\n` +
+      `   - SOUL guard → add 5-15 lines max\n` +
+      `   - Heartbeat step → add one numbered step\n` +
+      `   - Skill → create one SKILL.md file\n` +
+      `   - Workflow → create one workflow .ts file\n` +
+      `   - Knowledge → create one .md file\n` +
+      `3. Read back the changed file(s) to confirm the edit worked.\n` +
+      `4. Do NOT apply multiple methods — one method per experiment.\n` +
+      `5. Report: what you changed, the fork name, and the file(s) modified.\n\n` +
+      `IMPORTANT: The fork lives in agents/.lab/<fork-name>/. Verify it exists.\n\n` +
+      `⚠️ Do NOT delete or discard the fork — even if you discover the baseline already passes. ` +
+      `The workflow manages fork lifecycle (promote/discard) automatically after testing.`,
   );
   if (patch.status === "error") {
     return ctx.escalate("fork/patch failed", { error: patch.error });
   }
-
 
   // Step 3: Gym test (direct script execution — no LLM session needed)
   ctx.emit({ type: "step_start", step: "gym-test" });
@@ -247,19 +263,21 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
   const forks = findLabForks();
   const patchText = patch.lastAssistantText ?? "";
   // Find the fork that was just created — prefer one mentioned in patch output
-  let forkName = forks.find(f => patchText.includes(f)) ?? forks[0];
+  let forkName = forks.find((f) => patchText.includes(f)) ?? forks[0];
   if (!forkName) {
     // Check if coach found ceiling effect and discarded (common pattern)
     const lowerPatch = patchText.toLowerCase();
-    const ceilingDiscarded = lowerPatch.includes("discard") || lowerPatch.includes("ceiling") ||
-      lowerPatch.includes("baseline") && lowerPatch.includes("pass");
+    const ceilingDiscarded =
+      lowerPatch.includes("discard") ||
+      lowerPatch.includes("ceiling") ||
+      (lowerPatch.includes("baseline") && lowerPatch.includes("pass"));
 
     if (ceilingDiscarded) {
       return ctx.done(
         `Growth cycle ended — coach found ceiling effect during patch step.\n\n` +
-        `## Patch Step Output\n${patchText.slice(0, 1000)}\n\n` +
-        `The baseline already passes. Fork was discarded by coach. ` +
-        `Consider creating harder scenarios for this pattern.`
+          `## Patch Step Output\n${patchText.slice(0, 1000)}\n\n` +
+          `The baseline already passes. Fork was discarded by coach. ` +
+          `Consider creating harder scenarios for this pattern.`,
       );
     }
 
@@ -277,9 +295,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
   // previous bug: LLM outputs sometimes omit the scenario name, causing fallback to
   // alphabetically-first scenarios (which are unrelated to the target).
   const combinedText =
-    ctx.task + "\n" +
-    (step1.lastAssistantText ?? "") + "\n" +
-    patchText;
+    ctx.task + "\n" + (step1.lastAssistantText ?? "") + "\n" + patchText;
   let scenarios = extractScenarios(combinedText);
   if (scenarios.length === 0) {
     // Fallback: use first 3 scenarios to keep runtime reasonable
@@ -290,21 +306,29 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
   const allResults = runGymBatch(scenarios, agentName, forkName);
 
   // Separate results into baseline vs patched by lab_fork field
-  const baselineResults = allResults.filter(r => r.lab_fork === null);
-  const patchedResults = allResults.filter(r => r.lab_fork !== null);
+  const baselineResults = allResults.filter((r) => r.lab_fork === null);
+  const patchedResults = allResults.filter((r) => r.lab_fork !== null);
 
-  const gymResultsText = formatGymResults(baselineResults, patchedResults, forkName);
+  const gymResultsText = formatGymResults(
+    baselineResults,
+    patchedResults,
+    forkName,
+  );
 
   ctx.emit({ type: "step_done", step: "gym-test" });
 
   // Step 4: Record and decide (pure JS — no LLM session needed)
   // Compare pass counts to determine promote/discard
-  const baselinePassed = baselineResults.filter(r => r.passed).length;
-  const patchedPassed = patchedResults.filter(r => r.passed).length;
+  const baselinePassed = baselineResults.filter((r) => r.passed).length;
+  const patchedPassed = patchedResults.filter((r) => r.passed).length;
   const improved = patchedPassed > baselinePassed;
 
   // In learning mode, always discard. In fix mode, promote only if improved.
-  const decision = isLearning ? "discard" as const : (improved ? "promote" as const : "discard" as const);
+  const decision = isLearning
+    ? ("discard" as const)
+    : improved
+      ? ("promote" as const)
+      : ("discard" as const);
   const reason = isLearning
     ? "learning mode — always discard after recording observations"
     : improved
@@ -337,10 +361,14 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
         type: "learn-method",
         method: extractMethod(diagText),
         agent: agentName,
-        scenarios: scenarios.map(s => {
-          const b = baselineResults.find(r => r.scenario === s);
-          const p = patchedResults.find(r => r.scenario === s);
-          return { name: s, baseline: b?.passed ?? false, patched: p?.passed ?? false };
+        scenarios: scenarios.map((s) => {
+          const b = baselineResults.find((r) => r.scenario === s);
+          const p = patchedResults.find((r) => r.scenario === s);
+          return {
+            name: s,
+            baseline: b?.passed ?? false,
+            patched: p?.passed ?? false,
+          };
         }),
         decision,
         reason,
@@ -350,16 +378,23 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
         error_pattern: extractFMCode(diagText),
         agent: agentName,
         method: extractMethod(diagText),
-        scenarios: scenarios.map(s => {
-          const b = baselineResults.find(r => r.scenario === s);
-          const p = patchedResults.find(r => r.scenario === s);
-          return { name: s, baseline: b?.passed ?? false, patched: p?.passed ?? false };
+        scenarios: scenarios.map((s) => {
+          const b = baselineResults.find((r) => r.scenario === s);
+          const p = patchedResults.find((r) => r.scenario === s);
+          return {
+            name: s,
+            baseline: b?.passed ?? false,
+            patched: p?.passed ?? false,
+          };
         }),
         decision,
         reason,
       };
 
-  const experimentsPath = join(PROJECT_ROOT, "agents/coach/workspace/experiments.jsonl");
+  const experimentsPath = join(
+    PROJECT_ROOT,
+    "agents/coach/workspace/experiments.jsonl",
+  );
   appendFileSync(experimentsPath, JSON.stringify(experimentEntry) + "\n");
 
   // For learning mode, update method-catalog.md with test results (pure JS — no LLM needed).
@@ -369,17 +404,20 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
   if (isLearning) {
     catalogUpdate = updateMethodCatalog(
       extractMethod(diagText),
-      baselinePassed, patchedPassed, scenarios.length,
-      decision, reason
+      baselinePassed,
+      patchedPassed,
+      scenarios.length,
+      decision,
+      reason,
     );
   }
 
   return ctx.done(
     `Growth cycle completed (${isLearning ? "learning" : "fix"} mode).\n\n` +
-    `## ${isLearning ? "Study" : "Diagnosis"}\n${step1.lastAssistantText}\n\n` +
-    `## Results\n${gymResultsText}\n\n` +
-    `## Decision (automated)\n${decisionReport}\n` +
-    `Recorded to experiments.jsonl.` +
-    (catalogUpdate ? `\n\n## Catalog Update\n${catalogUpdate}` : "")
+      `## ${isLearning ? "Study" : "Diagnosis"}\n${step1.lastAssistantText}\n\n` +
+      `## Results\n${gymResultsText}\n\n` +
+      `## Decision (automated)\n${decisionReport}\n` +
+      `Recorded to experiments.jsonl.` +
+      (catalogUpdate ? `\n\n## Catalog Update\n${catalogUpdate}` : ""),
   );
 }
