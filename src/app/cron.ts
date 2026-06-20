@@ -730,11 +730,15 @@ export class Cron {
     // valuable for owner-review-style handlers.
     while (queue.length >= maxDepth) {
       const dropped = queue.shift();
-      this.onError?.(`Cron "${entryName}" queue full (${maxDepth}) — dropping oldest event (type=${dropped?.type ?? "unknown"})`);
+      this.onError?.(
+        `Cron "${entryName}" queue full (${maxDepth}) — dropping oldest event (type=${dropped?.type ?? "unknown"})`,
+      );
     }
 
     queue.push(event);
-    this.onError?.(`Cron "${entryName}" event queued — at concurrency capacity (${queue.length} pending, max ${maxDepth})`);
+    this.onError?.(
+      `Cron "${entryName}" event queued — at concurrency capacity (${queue.length} pending, max ${maxDepth})`,
+    );
   }
 
   private drainQueuedEventTrigger(entryName: string): void {
@@ -823,7 +827,11 @@ export class Cron {
   }
 
   /** Get the last fire time for a job (epoch ms).
-   *  Falls back to workflow_runs DB if no in-memory record (e.g. after restart). */
+   *  Falls back to workflow_runs DB if no in-memory record (e.g. after restart).
+   *  For synthetic project-app schedule entries (handler = "__project_app_schedule__"),
+   *  workflow_runs won't have a matching row because the workflow name differs from
+   *  the entry name. In that case, fall back to the events table where
+   *  handler.started records always use the entry name. */
   private getLastFireTime(entryName: string): number | null {
     const mem = this.lastFireTimes.get(entryName);
     if (mem != null) return mem;
@@ -841,6 +849,19 @@ export class Cron {
         // Cache it in memory so we don't query DB again
         this.lastFireTimes.set(entryName, row.startedAt);
         return row.startedAt;
+      }
+
+      // Secondary fallback: handler.started events always record the entry name
+      // in data.handler. This covers synthetic project-app schedule entries whose
+      // handler string ("__project_app_schedule__") doesn't map to a workflow name.
+      const evtRow = db
+        .prepare(
+          `SELECT timestamp FROM events WHERE event_type = 'handler.started' AND json_extract(data, '$.handler') = ? ORDER BY timestamp DESC LIMIT 1`,
+        )
+        .get(entryName) as { timestamp: number } | undefined;
+      if (evtRow?.timestamp) {
+        this.lastFireTimes.set(entryName, evtRow.timestamp);
+        return evtRow.timestamp;
       }
     } catch {
       // DB unavailable — treat as never ran
@@ -861,9 +882,19 @@ export class Cron {
         return;
       }
 
-      // Auto-pause was removed in v0.5 cleanup — agent health is now
-      // observable through metrics + escalations instead of being
-      // enforced at the cron layer.
+      // Cooldown guard: prevent timer-based over-firing when startEntry is
+      // called multiple times (e.g. project-app watcher reinstalls after
+      // app.ts changes). Each call creates a new setTimeout→setInterval
+      // chain; without this guard, multiple chains fire concurrently at
+      // short intervals. Uses 75% of intervalMs as minimum gap, matching
+      // the triggerNow debounce convention.
+      if (entry.intervalMs) {
+        const cooldownMs = Math.max(entry.intervalMs * 0.75, this.defaultCooldownMs);
+        const lastFire = this.lastFireTimes.get(entry.name);
+        if (lastFire && Date.now() - lastFire < cooldownMs) {
+          return; // too soon — skip silently
+        }
+      }
 
       this.fireHandler(entry, {
         type: "timer.tick",

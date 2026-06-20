@@ -1,12 +1,13 @@
 import { createHash } from "node:crypto";
 import { existsSync, mkdirSync, readdirSync, readFileSync } from "node:fs";
-import { basename, join, resolve } from "node:path";
+import { basename, join, relative, resolve } from "node:path";
 import type { SubagentManager } from "../../lib/index.js";
 import type { CronEntry } from "../../lib/cron-tool.js";
 import type { EventEnvelope } from "../../lib/handler-context.js";
 import { buildRuntimeCtx } from "../../lib/runtime-ctx.js";
 import { importRuntimeModule } from "../../lib/runtime-import.js";
 import { runWorkflowDirect } from "../../lib/workflow-tool.js";
+import { getDb } from "../../lib/requests.js";
 import { Cron } from "../cron.js";
 import type { AgentEvent, DeliveryResult, EventBus } from "../event-bus.js";
 
@@ -62,6 +63,16 @@ type ProjectApp = {
   }>;
   events?: EventSelector[];
   onEvent?: (ctx: ProjectAppContext, event: Record<string, unknown>) => Promise<unknown> | unknown;
+};
+
+type ProjectReadModel = {
+  id: string;
+  path: string;
+  name: string;
+  owner: string;
+  status: string;
+  type: string;
+  priority: string | null;
 };
 
 export interface ProjectAppDescriptor {
@@ -183,6 +194,61 @@ function domainProjectDir(projectsRoot: string, appDir: string, appId: string, a
   if (localPath) return resolve(appDir, localPath);
   const sibling = resolve(projectsRoot, appId);
   return existsSync(sibling) ? sibling : appDir;
+}
+
+function readJsonObject(path: string): Record<string, unknown> {
+  if (!existsSync(path)) return {};
+  try {
+    const parsed = JSON.parse(readFileSync(path, "utf-8"));
+    return isRecord(parsed) ? parsed : {};
+  } catch {
+    return {};
+  }
+}
+
+function projectReadModel(projectRoot: string, descriptor: ProjectAppDescriptor): ProjectReadModel {
+  const projectJson = readJsonObject(join(descriptor.appDir, "project.json"));
+  const id = typeof projectJson.id === "string" && projectJson.id.trim() ? projectJson.id.trim() : descriptor.id;
+  const owner =
+    typeof projectJson.owner === "string" && projectJson.owner.trim()
+      ? projectJson.owner.trim().replace(/^agent:/, "")
+      : descriptor.owner;
+  const status =
+    typeof projectJson.status === "string" && projectJson.status.trim() ? projectJson.status.trim() : "active";
+  const type =
+    typeof projectJson.type === "string" && projectJson.type.trim() ? projectJson.type.trim() : "project-app";
+  const priority =
+    typeof projectJson.priority === "string" && projectJson.priority.trim() ? projectJson.priority.trim() : null;
+  const relativePath = relative(projectRoot, descriptor.appDir).replace(/\\/g, "/");
+  return {
+    id,
+    path: relativePath && !relativePath.startsWith("..") ? relativePath : descriptor.appDir,
+    name: id,
+    owner,
+    status,
+    type,
+    priority,
+  };
+}
+
+function syncProjectReadModel(opts: ProjectAppLoaderOptions, descriptor: ProjectAppDescriptor): void {
+  if (!opts.persistDir) return;
+  const model = projectReadModel(opts.projectRoot, descriptor);
+  const db = getDb(opts.persistDir);
+  db.run(
+    `INSERT INTO projects (id, path, name, owner, status, type, workflow, priority, updated_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+     ON CONFLICT(id) DO UPDATE SET
+       path = excluded.path,
+       name = excluded.name,
+       owner = excluded.owner,
+       status = excluded.status,
+       type = excluded.type,
+       workflow = excluded.workflow,
+       priority = COALESCE(excluded.priority, projects.priority),
+       updated_at = excluded.updated_at`,
+    [model.id, model.path, model.name, model.owner, model.status, model.type, "", model.priority, Date.now()],
+  );
 }
 
 function normalizeEvent(event: Record<string, unknown>, defaults: { source: string; owner: string }): EventEnvelope {
@@ -678,6 +744,7 @@ export async function installProjectApps(
         continue;
       }
     }
+    syncProjectReadModel(opts, descriptor);
     const cron = ensureOwnerCron(opts, descriptor);
     const activeAppIds = activeCronAppIds.get(cron) ?? new Set<string>();
     activeAppIds.add(descriptor.id);
