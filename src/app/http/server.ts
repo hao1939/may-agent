@@ -25,6 +25,7 @@ import { normalizeEventOwner } from "../../../packages/control/src/event-envelop
 import { createTerminalManager } from "@may-agent/terminal";
 import { openStateDb, type SqliteDb } from "./read-model/state-db.js";
 import { buildLoopTrace, type LoopTraceTarget } from "./read-model/loop-trace.js";
+import { resolveRuntimeAgentDirectory } from "../loader/agent-discovery.js";
 
 // ── Public API ────────────────────────────────────────────────────────
 
@@ -3504,7 +3505,8 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
    */
   function handleAgentAbout(agentName: string): Response {
     if (!agentName) return json({ error: "agent required" }, 400);
-    const agentDir = join(AGENTS_ROOT, agentName);
+    const agentDir = resolveRuntimeAgentDirectory(AGENTS_ROOT, agentName, PROJECTS_ROOT)?.dir
+      ?? join(AGENTS_ROOT, agentName);
     if (!existsSync(agentDir)) return json({ error: "agent not found" }, 404);
     let agentJson: Record<string, any> | null = null;
     try {

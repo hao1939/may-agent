@@ -10,6 +10,7 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join, dirname } from "node:path";
 import { eventData, type AgentEvent } from "../app/event-bus.js";
+import { resolveRuntimeAgentDirectory } from "../app/loader/agent-discovery.js";
 import { log } from "./log.js";
 import { createStartDigest, createEndDigest, upsertDigest, logShadowComparison } from "./session-digest.js";
 import type { SubagentManager } from "./manager.js";
@@ -289,7 +290,12 @@ export function createDigestWriter(persistDir: string): (event: AgentEvent) => v
 }
 
 // ── Context Updater ─────────────────────────────────────────────────────
-// Applies durable `finish().context_updates` to agents/<name>/context.md.
+// Applies durable `finish().context_updates` to the registered agent's context.md.
+
+function writableAgentDir(projectRoot: string, agent: string): string {
+  return resolveRuntimeAgentDirectory(join(projectRoot, "agents"), agent, join(projectRoot, "projects"))?.dir
+    ?? join(projectRoot, "agents", agent);
+}
 
 export function createContextUpdater(projectRoot: string): (event: AgentEvent) => void {
   return (event: AgentEvent) => {
@@ -299,7 +305,7 @@ export function createContextUpdater(projectRoot: string): (event: AgentEvent) =
     const updates = (info.finishParams as any)?.context_updates;
     if (!Array.isArray(updates) || updates.length === 0) return;
 
-    const agentDir = join(projectRoot, "agents", info.agent);
+    const agentDir = writableAgentDir(projectRoot, info.agent);
     const contextPath = join(agentDir, "context.md");
 
     try {
@@ -380,7 +386,7 @@ export function getFileReadStats(persistDir: string, days = 7): FileReadStat[] {
 }
 
 // ── Last-Session Writer ─────────────────────────────────────────────────
-// Writes agents/<name>/last-session.md at session end so the next session
+// Writes the registered agent's last-session.md at session end so the next session
 // can read a single file instead of querying DB + scanning files.
 // Part of: cold-start-fix milestone 1.
 
@@ -394,7 +400,7 @@ export function createLastSessionWriter(projectRoot: string): (event: AgentEvent
     const summary = finishParams?.summary ?? info.outcome ?? "";
     if (!summary) return;
 
-    const agentDir = join(projectRoot, "agents", info.agent);
+    const agentDir = writableAgentDir(projectRoot, info.agent);
     const status = finishParams?.status ?? info.status ?? "interrupted";
     const filesModified = finishParams?.deliverables?.map((d: any) => d.path).filter(Boolean) ?? info.filesModified ?? [];
     const nextSteps = finishParams?.next_steps ?? null;

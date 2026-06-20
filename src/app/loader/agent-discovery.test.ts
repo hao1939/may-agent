@@ -3,7 +3,7 @@ import { mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
-import { agentProjectRoot, agentRelativeDir, listProjectAgentDirectories } from "./agent-discovery.ts";
+import { agentProjectRoot, agentRelativeDir, listProjectAgentDirectories, resolveRuntimeAgentDirectory } from "./agent-discovery.ts";
 
 function tempRoot(): string {
   const root = join(tmpdir(), `agent-discovery-${Date.now()}-${Math.random().toString(36).slice(2)}`);
@@ -54,6 +54,23 @@ describe("project-local agent discovery", () => {
       expect(agents[0]?.projectId).toBe("aks-rp-e2e");
       expect(agentProjectRoot(agents[0], "fallback")).toBe(domainProject);
       expect(agentRelativeDir(agents[0])).toBe("projects/aks-rp-e2e.app/agents/aks-explorer");
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it("resolves app-local agents ahead of global agents with the same configured name", () => {
+    const root = tempRoot();
+    try {
+      const globalAgentDir = join(root, "agents", "arc");
+      const appAgentDir = join(root, "projects", "may-agent.app", "agents", "arc");
+      mkdirSync(globalAgentDir, { recursive: true });
+      mkdirSync(appAgentDir, { recursive: true });
+      writeFileSync(join(globalAgentDir, "agent.json"), JSON.stringify({ name: "arc", model: "test", tools: [] }));
+      writeFileSync(join(root, "projects", "may-agent.app", "app.ts"), "export default {};\n");
+      writeFileSync(join(appAgentDir, "agent.json"), JSON.stringify({ name: "arc", model: "test", tools: [] }));
+
+      expect(resolveRuntimeAgentDirectory(join(root, "agents"), "arc", join(root, "projects"))?.dir).toBe(appAgentDir);
     } finally {
       rmSync(root, { recursive: true, force: true });
     }

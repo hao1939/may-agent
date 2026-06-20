@@ -102,6 +102,21 @@ export function listConfiguredAgentNames(agentsRoot: string, projectsRoot?: stri
   return [...names].sort();
 }
 
+export function resolveRuntimeAgentDirectory(
+  agentsRoot: string,
+  agentName: string,
+  projectsRoot?: string,
+): AgentDirectory | null {
+  let selected: AgentDirectory | null = null;
+  for (const agentDir of listRuntimeAgentDirectories(agentsRoot, projectsRoot)) {
+    if (configuredNameForDirectory(agentDir) !== agentName) continue;
+    if (!selected || (!selected.projectId && agentDir.projectId)) {
+      selected = agentDir;
+    }
+  }
+  return selected;
+}
+
 export function agentProjectRoot(agentDir: AgentDirectory, fallbackProjectRoot: string): string {
   return agentDir.projectDir ?? fallbackProjectRoot;
 }
