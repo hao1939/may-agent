@@ -36,9 +36,8 @@ OVERLAPPING / UNCLEAR:
   coaching-consumer (6h)       — evaluation domain?
   feedback-echo-sync (60min)   — evaluation domain?
 
-AGENT HEARTBEATS (no app):
-  heartbeat-dev (30min)
-  heartbeat-arc (30min)
+LEGACY AGENT HEARTBEATS (no app):
+  none for may-agent.app; tech-lead/dev/arc are app-local and heartbeat-disabled
 ```
 
 ## What's Missing
@@ -135,8 +134,8 @@ Disable only after the migration gate is proven:
 
 - `daily-alert-review` → replaced by `may-agent.app` `daily-ops-digest`
   schedule. The digest writes a runtime report, notifies the human with
-  context, emits `project.ops_digest.created`, and wakes May when open/noisy
-  conditions need judgment.
+  context, emits `project.ops_digest.created`, and wakes the project owner
+  when open/noisy conditions need judgment.
 - `closed-loop-steward` → candidate replacement is metric-alert-reactor plus
   may-agent.app owner review, but keep enabled until alert-closure judgment
   replays prove no loss.
@@ -234,8 +233,8 @@ Do not add these as permanent metrics yet:
 
 Keep the existing platform-review schedule for design/planning work. Add a
 separate `ops-health-review` schedule that builds a deterministic health packet
-as an observer. It only wakes May, the actor, when there is a meaningful signal
-that needs judgment or closure.
+as an observer. It only wakes the project owner, tech-lead, when there is a
+meaningful signal that needs judgment or closure.
 
 **5. may-agent.app task tree: ops-health branch**
 
@@ -393,7 +392,8 @@ Each scenario that failed during our manual review becomes a test case:
 - `daily-alert-review` is replaced by the project-local `daily-ops-digest`
   schedule. Replay coverage in `workflows/daily-ops-digest.test.ts` proves that
   an open/noisy alert set writes a report, notifies the human with context, and
-  wakes May with the digest signal. The old global May cron entry is disabled.
+  wakes tech-lead with the digest signal. The old global May cron entry is
+  disabled.
 - `closed-loop-steward`, `project-creative-audit`, `coaching-consumer`, and
   `feedback-echo-sync` remain enabled until their replacements pass the same
   migration gate.

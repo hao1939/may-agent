@@ -1,0 +1,9 @@
+{
+  "name": "qa",
+  "description": "Reviews code changes for correctness, quality, and requirement compliance",
+  "domain": "code quality review",
+  "model": "gpt52",
+  "heartbeat": false,
+  "tools": ["coding", "workflow", "checkpoint", "finish"],
+  "context_files": ["context.md", "last-eval.md"]
+}

@@ -1,0 +1,9 @@
+{
+  "name": "master",
+  "description": "Senior engineer who leverages external CLI coding agents (Claude Code, Codex) to solve complex implementation tasks",
+  "domain": "complex implementation via external coding agents",
+  "model": "opus",
+  "heartbeat": false,
+  "tools": ["finish"],
+  "context_files": ["last-eval.md"]
+}

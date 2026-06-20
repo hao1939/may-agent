@@ -4,7 +4,10 @@ import type { WorkflowContext, WorkflowResult } from "@may-agent/sdk";
 
 export const name = "platform-owner-review";
 export const description =
-  "May-agent.app local owner workflow. Builds a platform review packet, then wakes May to judge and advance the platform project.";
+  "May-agent.app local owner workflow. Builds a platform review packet, then wakes tech-lead to judge and advance the platform project.";
+
+const ownerAgent = "tech-lead";
+const ownerEventOwner = `agent:${ownerAgent}`;
 
 type TaskNode = {
   id?: string;
@@ -145,14 +148,14 @@ function recentEvents(
         Record<string, unknown>
       >;
       // Track message.created event IDs so the caller can record owner review.
-      // CRITICAL: only collect IDs where owner is agent:may — otherwise we
-      // steal messages belonging to other agents (aks-explorer, scout, etc.).
+      // CRITICAL: only collect IDs for this app owner — otherwise we steal
+      // messages belonging to other agents (aks-explorer, scout, etc.).
       if (type === "message.created") {
         for (const row of rows) {
           if (
             typeof row.id === "number" &&
             row.status === "pending" &&
-            row.owner === "agent:may"
+            row.owner === ownerEventOwner
           ) {
             consumedMessageIds.push(row.id);
           }
@@ -196,10 +199,14 @@ function buildReviewPacket(
     ctx.query.alerts({ resolved: false, limit: 20 }),
   );
   const ownerSessions = queryRows(ctx, () =>
-    ctx.query.sessions({ agent: "may", projectId: "may-agent", limit: 10 }),
+    ctx.query.sessions({
+      agent: ownerAgent,
+      projectId: "may-agent",
+      limit: 10,
+    }),
   );
-  const activeMaySessions = queryRows(ctx, () =>
-    ctx.query.sessions({ agent: "may", status: "running", limit: 10 }),
+  const activeOwnerSessions = queryRows(ctx, () =>
+    ctx.query.sessions({ agent: ownerAgent, status: "running", limit: 10 }),
   );
 
   const abnormalEvents = recentEvents(ctx, [
@@ -225,7 +232,7 @@ function buildReviewPacket(
     const LIFECYCLE_LOOKBACK_MS = 25 * 60 * 60_000; // 25h — slightly wider than expiry to catch edge cases
     const allPendingMessages = ctx.query.events({
       type: "message.created",
-      owner: "agent:may",
+      owner: ownerEventOwner,
       since: Date.now() - LIFECYCLE_LOOKBACK_MS,
       limit: 200,
     }).rows as Array<Record<string, unknown>>;
@@ -242,17 +249,16 @@ function buildReviewPacket(
     /* best-effort: fall back to recentEvents IDs only */
   }
 
-  // Collect pending escalation.created events owned by agent:may from
+  // Collect pending escalation.created events owned by this app owner from
   // project agents (aks-explorer, evaluator, scout, etc.). These are
   // informational "waiting_with_evidence" escalations that the owner review
-  // consumes by reading the packet. Without draining them, escalation.pending-count
-  // grows unbounded and triggers metric breach alerts.
+  // consumes by reading the packet.
   const pendingEscalationIds: number[] = [];
   try {
     const ESCALATION_LOOKBACK_MS = 48 * 60 * 60_000; // 48h to catch any backlog
     const pendingEscalations = ctx.query.events({
       type: "escalation.created",
-      owner: "agent:may",
+      owner: ownerEventOwner,
       since: Date.now() - ESCALATION_LOOKBACK_MS,
       limit: 200,
     }).rows as Array<Record<string, unknown>>;
@@ -265,7 +271,7 @@ function buildReviewPacket(
     /* best-effort: don't block review if escalation collection fails */
   }
 
-  // Collect pending signal events owned by agent:may.
+  // Collect pending signal events owned by this app owner.
   // These are informational signals that the owner review consumes by including
   // them in the review packet. Without draining them, they accumulate indefinitely
   // (the expireStaleSignalEvents helper only catches events >24h old, so recent
@@ -283,7 +289,7 @@ function buildReviewPacket(
     for (const type of signalTypes) {
       const pendingSignals = ctx.query.events({
         type,
-        owner: "agent:may",
+        owner: ownerEventOwner,
         since: Date.now() - SIGNAL_LOOKBACK_MS,
         limit: 200,
       }).rows as Array<Record<string, unknown>>;
@@ -314,7 +320,7 @@ function buildReviewPacket(
       open_alerts: openAlerts,
       recent_abnormal_events: abnormalEvents.data,
       owner_sessions: compactRows(ownerSessions, 10),
-      active_may_sessions: compactRows(activeMaySessions, 10),
+      active_owner_sessions: compactRows(activeOwnerSessions, 10),
     },
     consumedMessageIds: allPendingMessageIds,
     consumedEscalationIds: pendingEscalationIds,
@@ -404,11 +410,11 @@ function buildPacketSummary(packet: Record<string, unknown>): string {
   }
 
   // Active sessions
-  const activeSessions = Array.isArray(packet.active_may_sessions)
-    ? (packet.active_may_sessions as Array<Record<string, unknown>>)
+  const activeSessions = Array.isArray(packet.active_owner_sessions)
+    ? (packet.active_owner_sessions as Array<Record<string, unknown>>)
     : [];
   if (activeSessions.length) {
-    lines.push(`Active May sessions: ${activeSessions.length}`);
+    lines.push(`Active owner sessions: ${activeSessions.length}`);
   }
 
   return lines.join("\n");
@@ -483,7 +489,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
   // The query layer emits follow-up events and closes owner-inbox pairs; it also
   // updates legacy pending rows during migration.
   try {
-    reviewInboxEvents(ctx, consumedMessageIds, "may");
+    reviewInboxEvents(ctx, consumedMessageIds, ownerAgent);
   } catch {
     /* best-effort: don't block review if marking fails */
   }
@@ -494,7 +500,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
   // the escalation.pending-count metric grows unbounded and triggers alerts.
   try {
     if (consumedEscalationIds.length > 0) {
-      reviewInboxEvents(ctx, consumedEscalationIds, "may");
+      reviewInboxEvents(ctx, consumedEscalationIds, ownerAgent);
       if (consumedEscalationIds.length > 0) {
         ctx.emit({
           type: "escalation.lifecycle",
@@ -514,7 +520,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
   // cycles and trigger cascading metric alerts.
   try {
     if (consumedSignalEventIds.length > 0) {
-      reviewInboxEvents(ctx, consumedSignalEventIds, "may");
+      reviewInboxEvents(ctx, consumedSignalEventIds, ownerAgent);
       ctx.emit({
         type: "signal.lifecycle",
         action: "drain_pending_signals",
@@ -567,12 +573,14 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     triggerBlock(ctx.task),
   ].join("\n");
 
-  const result = await ctx.runAgent("may", prompt, { timeoutMs: 1_800_000 });
+  const result = await ctx.runAgent(ownerAgent, prompt, {
+    timeoutMs: 1_800_000,
+  });
   const summary = resultSummary(result);
   ctx.emit({
     type: "project.reviewed",
     project: "may-agent",
-    owner: "may",
+    owner: ownerAgent,
     summary,
   });
   return ctx.done(summary);

@@ -18,6 +18,7 @@ import {
   readFileSync,
   readSync,
   readdirSync,
+  rmSync,
   statSync,
 } from "node:fs";
 import { basename, join } from "node:path";
@@ -92,7 +93,7 @@ const ALL_METRICS: MetricDef[] = [
   {
     id: "handler.success-rate",
     name: "Handler success rate (6h)",
-    owner: "optimizer",
+    owner: "tech-lead",
     type: "gauge",
     target: 0.95,
     threshold: 0.8,
@@ -405,7 +406,7 @@ const ALL_METRICS: MetricDef[] = [
   {
     id: "handler.p95-duration",
     name: "Handler p95 duration (ms)",
-    owner: "optimizer",
+    owner: "tech-lead",
     type: "gauge",
     target: 120000,
     threshold: 600000,
@@ -2499,6 +2500,52 @@ export const create: HandlerModule["create"] = (
       ctx.sdk.log(
         "info",
         `[metrics-snapshot] Error during snapshot cleanup: ${e}`,
+      );
+    }
+
+    // ── Session history filesystem retention (keep last 14 days) ─────
+    // The DB retains session rows for 14 days, but the filesystem session
+    // transcripts in .state/sessions/history/ accumulated without bound
+    // (100k+ dirs, 19GB observed 2026-06-20). At ~3500 sessions/day and
+    // ~370KB average, this adds ~1.3GB/day. Without pruning, disk fills
+    // in ~2 weeks. This aligns filesystem retention with DB row retention.
+    // Only runs once per hour (gated by modulo check) to avoid unnecessary
+    // filesystem scanning on every 5-minute snapshot cycle.
+    try {
+      const SESSION_HISTORY_RETENTION_MS = 14 * 86400000; // 14 days
+      const minuteOfHour = new Date(now).getMinutes();
+      // Run only during the first 5-minute window of each hour
+      if (minuteOfHour < 5) {
+        const histDir = join(ctx.sdk.paths.persist ?? ctx.sdk.paths.root, "sessions", "history");
+        if (existsSync(histDir)) {
+          const cutoffMs = now - SESSION_HISTORY_RETENTION_MS;
+          const entries = readdirSync(histDir, { withFileTypes: true });
+          let pruned = 0;
+          for (const entry of entries) {
+            if (!entry.isDirectory()) continue;
+            const dirPath = join(histDir, entry.name);
+            try {
+              const stat = statSync(dirPath);
+              if (stat.mtimeMs < cutoffMs) {
+                rmSync(dirPath, { recursive: true, force: true });
+                pruned++;
+              }
+            } catch {
+              // Skip individual dir errors (race with archiver, permission, etc.)
+            }
+          }
+          if (pruned > 0) {
+            ctx.sdk.log(
+              "info",
+              `[metrics-snapshot] Pruned ${pruned} session history dirs older than 14d`,
+            );
+          }
+        }
+      }
+    } catch (e) {
+      ctx.sdk.log(
+        "info",
+        `[metrics-snapshot] Error during session history cleanup: ${e}`,
       );
     }
 

@@ -8,6 +8,7 @@ import {
 } from "@may-agent/sdk";
 
 const projectId = "may-agent";
+const projectOwnerAgent = "tech-lead";
 const appTaskContext =
   "app: /app/projects/may-agent.app\nproject: /app/projects/may-agent";
 
@@ -57,7 +58,7 @@ function appendDiscussionRecord(
   return id;
 }
 
-async function routeMayAgentEvent(
+async function routePlatformEvent(
   ctx: ProjectAppContext,
   event: Record<string, unknown>,
 ): Promise<unknown> {
@@ -94,11 +95,19 @@ async function routeMayAgentEvent(
     event.type === "metric.stalled" ||
     event.type === "metric.recovered"
   ) {
-    // Only wake the platform owner for metrics owned by may (platform metrics).
+    // Only wake the platform owner for platform-owned metrics.
     // Project-specific metrics (e.g. aks-rp-e2e.task.*) are owned by their
     // respective project apps and should not trigger a full platform review.
+    // Accept legacy May-owned platform metrics during migration, but the wake
+    // still routes to this app owner (tech-lead).
     const metricOwner = eventString(event, "owner");
-    if (metricOwner && metricOwner !== "agent:may") {
+    const platformMetricOwners = new Set([
+      projectOwnerAgent,
+      `agent:${projectOwnerAgent}`,
+      "may",
+      "agent:may",
+    ]);
+    if (metricOwner && !platformMetricOwners.has(metricOwner)) {
       return ctx.noop(
         `metric owned by ${metricOwner}, not platform — skipping owner wake`,
       );
@@ -141,10 +150,10 @@ async function routeMayAgentEvent(
       "runtime.project-app-schedule-orphan-count-1h",
       // Category 4: escalation pending count measures a human-action
       // backlog. All pending escalations require human-provided artifacts
-      // (external files, clean git baselines) that May cannot self-service.
-      // Waking May repeatedly to re-inspect escalations it already triaged
-      // is wasteful. The scheduled project.tick (4h) surfaces the count
-      // for awareness; the human gets notified via the daily ops digest.
+      // (external files, clean git baselines) that the owner cannot self-service.
+      // Waking the owner repeatedly to re-inspect escalations it already
+      // triaged is wasteful. The scheduled project.tick (4h) surfaces the
+      // count for awareness; the human gets notified via the daily ops digest.
       "escalation.pending-count",
       // Category 5: stale-active-count spikes transiently after daemon
       // restarts (all metrics appear stale until the first snapshot run).
@@ -186,7 +195,7 @@ async function routeMayAgentEvent(
 export default defineProjectApp({
   id: projectId,
   version: 1,
-  owner: "may",
+  owner: projectOwnerAgent,
   description:
     "May-agent platform app: runtime contracts, event/session/task execution, persistence, SDK, shared web UI, and project-app conventions.",
   workspace: {
@@ -210,6 +219,22 @@ export default defineProjectApp({
         project: projectId,
         lane: "platform-review",
       },
+    },
+    {
+      id: "owner-heartbeat",
+      enabled: true,
+      intervalMs: 14_400_000,
+      event: projectOwnerEvent("owner-heartbeat", {
+        instruction:
+          "Low-frequency platform owner heartbeat: look for missed platform integrity, runtime, UI, or app-design issues that fixed ops-health metrics did not catch. Check recent heartbeat/platform-review/ops-health findings before creating work. Prefer one to three task-tree actions or no-op with reason; do not run multi-step implementation work from the owner session.",
+        reviewChecklist: [
+          "Look for stale assumptions in the app/project design docs versus current runtime behavior.",
+          "Look for repeated alerts, failed handlers, unclosed owner loops, or app manifests that drifted from the event-owner model.",
+          "Look for task-tree bloat or done work that should be rolled up with durable meaning preserved.",
+          "Avoid duplicate heartbeat tasks by inspecting recent owner-review findings first.",
+          "No-op is valid when existing tasks already cover the useful next work.",
+        ],
+      }),
     },
     {
       id: "ops-health-review",
@@ -239,7 +264,7 @@ export default defineProjectApp({
       type: "job",
       enabled: true,
       description:
-        "Builds the deterministic daily platform alert digest, notifies the human, and wakes May for open/noisy conditions.",
+        "Builds the deterministic daily platform alert digest, notifies the human, and wakes the project owner for open/noisy conditions.",
       on: ["project.ops_digest.tick"],
       handler: {
         workflow: "daily-ops-digest",
@@ -249,7 +274,7 @@ export default defineProjectApp({
           "persistent-task: skip",
           "",
           "You are entering the may-agent.app daily ops digest workflow.",
-          "Build the deterministic alert digest, notify the human with context, and wake May only when open/noisy/missing-owner conditions need judgment.",
+          "Build the deterministic alert digest, notify the human with context, and wake the project owner only when open/noisy/missing-owner conditions need judgment.",
         ].join("\n"),
         timeoutMs: 120_000,
       },
@@ -264,7 +289,7 @@ export default defineProjectApp({
       type: "job",
       enabled: true,
       description:
-        "Runs a deterministic ops-health observer packet and wakes May only for meaningful signals.",
+        "Runs a deterministic ops-health observer packet and wakes the project owner only for meaningful signals.",
       on: ["project.ops_health.tick"],
       handler: {
         workflow: "ops-health-review",
@@ -274,7 +299,7 @@ export default defineProjectApp({
           "persistent-task: skip",
           "",
           "You are entering the may-agent.app ops-health observer workflow.",
-          "Build and record a deterministic health packet. Do not wake May unless a meaningful signal needs owner judgment or closure.",
+          "Build and record a deterministic health packet. Do not wake the project owner unless a meaningful signal needs owner judgment or closure.",
         ].join("\n"),
         timeoutMs: 120_000,
       },
@@ -288,7 +313,7 @@ export default defineProjectApp({
       type: "job",
       enabled: true,
       description:
-        "Wakes May as project owner to review the task tree, platform signals, and project-app design work.",
+        "Wakes tech-lead as project owner to review the task tree, platform signals, and project-app design work.",
       on: ["project.owner.requested", "project.planning.requested"],
       handler: {
         workflow: "platform-owner-review",
@@ -297,7 +322,7 @@ export default defineProjectApp({
           appTaskContext,
           "persistent-task: skip",
           "",
-          "You are entering the may-agent.app local owner-review workflow. It will build a platform system-review packet before waking May.",
+          "You are entering the may-agent.app local owner-review workflow. It will build a platform system-review packet before waking tech-lead.",
           "",
           "Before claiming the platform is healthy, build a compact system-review packet from live evidence:",
           "- open metric alerts and recent metric judgments/recoveries",
@@ -307,7 +332,7 @@ export default defineProjectApp({
           "- evaluator findings or human messages about shallow/misleading platform claims",
           "- app integrity checks that are relevant to the triggered branch",
           "",
-          "The local workflow owns packet collection; May owns judgment, task-tree updates, fixes, verification, and escalation.",
+          "The local workflow owns packet collection; tech-lead owns judgment, task-tree updates, fixes, verification, and escalation.",
           "",
           "Scope discipline:",
           "- Only commit files that are directly tied to the diagnosed root cause or task-tree updates in THIS project (may-agent.app).",
@@ -344,17 +369,17 @@ export default defineProjectApp({
       "may-agent-daily-ops-digest": {
         emits: ["project.ops_digest.created", "project.owner.requested"],
         description:
-          "Produces the daily alert digest, notifies the human, and wakes May for open/noisy digest findings.",
+          "Produces the daily alert digest, notifies the human, and wakes the project owner for open/noisy digest findings.",
       },
       "may-agent-ops-health-review": {
         emits: ["project.ops_health.observed", "project.owner.requested"],
         description:
-          "Deterministically observes platform health and wakes May only for meaningful signals.",
+          "Deterministically observes platform health and wakes the project owner only for meaningful signals.",
       },
       "may-agent-project-planner": {
         emits: ["project.reviewed"],
         description:
-          "May reviews platform project state and updates task tree, docs, or code when useful.",
+          "Tech-lead reviews platform project state and updates task tree, docs, or code when useful.",
       },
     },
     adapters: [
@@ -376,18 +401,20 @@ export default defineProjectApp({
       {
         event: "metric.alerted",
         emits: ["project.owner.requested"],
-        description: "Platform metric alert wakes May to inspect and react.",
+        description:
+          "Platform metric alert wakes the project owner to inspect and react.",
       },
       {
         event: "metric.breach",
         emits: ["project.owner.requested"],
         description:
-          "Platform metric breach wakes May to inspect and react. Deferred metrics (health-observation: project.health.*, project.owner-*; delegated: guard.*-count-24h; human-backlog: escalation.pending-count) are captured in scheduled project.tick instead of immediate wakes.",
+          "Platform metric breach wakes the project owner to inspect and react. Deferred metrics (health-observation: project.health.*, project.owner-*; delegated: guard.*-count-24h; human-backlog: escalation.pending-count) are captured in scheduled project.tick instead of immediate wakes.",
       },
       {
         event: "metric.stalled",
         emits: ["project.owner.requested"],
-        description: "Platform metric stall wakes May to inspect and react.",
+        description:
+          "Platform metric stall wakes the project owner to inspect and react.",
       },
       {
         event: "metric.recovered",
@@ -412,7 +439,7 @@ export default defineProjectApp({
         id: "human-or-timer-to-platform-review",
         events: ["project.tick", "project.owner.requested"],
         reason:
-          "Timer and human events periodically wake May to maintain the May-agent platform project.",
+          "Timer and human events periodically wake tech-lead to maintain the May-agent platform project.",
       },
     ],
   },
@@ -421,7 +448,7 @@ export default defineProjectApp({
     "advance-project": {
       type: "async",
       description:
-        "Ask May to review and advance the May-agent platform project.",
+        "Ask tech-lead to review and advance the May-agent platform project.",
       event(params) {
         return projectOwnerEvent("manual-advance", params);
       },
@@ -429,6 +456,6 @@ export default defineProjectApp({
   },
 
   async onEvent(ctx, event) {
-    return routeMayAgentEvent(ctx, event);
+    return routePlatformEvent(ctx, event);
   },
 });

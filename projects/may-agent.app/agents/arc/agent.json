@@ -1,0 +1,16 @@
+{
+  "name": "arc",
+  "description": "System architect & knowledge synthesizer \u2014 discovers patterns, ensures coherence",
+  "domain": "system architecture, knowledge synthesis, strategy",
+  "model": "opus",
+  "heartbeat": false,
+  "tools": [
+    "coding",
+    "query_db",
+    "finish"
+  ],
+  "context_files": [
+    "context.md",
+    "last-eval.md"
+  ]
+}

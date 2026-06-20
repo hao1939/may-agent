@@ -39,7 +39,7 @@ describe("daily-ops-digest", () => {
 
     const ctx: WorkflowContext = {
       task: `app: ${appDir}\nBuild daily ops digest.`,
-      agent: "may",
+      agent: "tech-lead",
       emit: (event) => emitted.push(event),
       dispatchEvent: (eventType, data = {}) =>
         emitted.push({ type: eventType, ...data }),
@@ -58,7 +58,7 @@ describe("daily-ops-digest", () => {
       runFunction: async (label, fn) => ({
         ok: true,
         status: "done",
-        agent: "may",
+        agent: "tech-lead",
         sessionId: label,
         result: await fn(),
       }),
@@ -99,11 +99,11 @@ describe("daily-ops-digest", () => {
     );
   }
 
-  it("writes a report, notifies the human, and wakes May for open/noisy alerts", async () => {
+  it("writes a report, notifies the human, and wakes the owner for open/noisy alerts", async () => {
     const { appDir, db, emitted, notifications, ctx, close } = setup();
     const now = Date.now();
 
-    insertMetric(db, "runtime.daemon-heartbeat-stale", "may", "P0");
+    insertMetric(db, "runtime.daemon-heartbeat-stale", "tech-lead", "P0");
     insertMetric(
       db,
       "evaluator.stale-running-session-count",
@@ -139,7 +139,7 @@ describe("daily-ops-digest", () => {
       [
         "metric.alert_judged",
         "metric-alert-triage",
-        "agent:may",
+        "agent:tech-lead",
         JSON.stringify({
           metricId: "evaluator.stale-running-session-count",
           operation: "calibrate_metric",
@@ -184,7 +184,7 @@ describe("daily-ops-digest", () => {
     expect(report).toContain("latest judgment: calibrate_metric");
   });
 
-  it("still notifies and records a quiet report without waking May", async () => {
+  it("still notifies and records a quiet report without waking the owner", async () => {
     const { emitted, notifications, ctx, close } = setup();
 
     const result = await execute(ctx);

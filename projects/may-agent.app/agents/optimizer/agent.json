@@ -1,0 +1,9 @@
+{
+  "name": "optimizer",
+  "description": "Analyzes agent performance data, proposes and implements improvements to the agent system",
+  "domain": "agent system optimization",
+  "model": "opus",
+  "heartbeat": false,
+  "tools": ["coding", "agents", "message", "workflow", "checkpoint", "finish"],
+  "context_files": ["context.md", "last-eval.md"]
+}

@@ -4,7 +4,7 @@ import type { WorkflowContext, WorkflowResult } from "@may-agent/sdk";
 
 export const name = "daily-ops-digest";
 export const description =
-  "Deterministic daily platform alert digest. Writes a human-readable report, notifies the human, and wakes May when the digest needs owner judgment.";
+  "Deterministic daily platform alert digest. Writes a human-readable report, notifies the human, and wakes the project owner when the digest needs owner judgment.";
 
 type Row = Record<string, unknown>;
 
@@ -325,7 +325,7 @@ function reportFor(ctx: WorkflowContext): {
     noisyGroups.length > 0 ||
     missingOwnerGroups.length > 0
       ? [
-          "- May should review open alerts, noisy metrics, or missing owners.",
+          "- The project owner should review open alerts, noisy metrics, or missing owners.",
           "- Record closure as metric recovery, metric alert judgment, accepted exception, or a finite may-agent.app task.",
         ].join("\n")
       : "No owner action required from this digest.",

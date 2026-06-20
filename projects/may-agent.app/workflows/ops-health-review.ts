@@ -4,7 +4,10 @@ import type { WorkflowContext, WorkflowResult } from "@may-agent/sdk";
 
 export const name = "ops-health-review";
 export const description =
-  "Deterministic may-agent.app ops observer. Builds a health packet, records it, and wakes May only for meaningful signals.";
+  "Deterministic may-agent.app ops observer. Builds a health packet, records it, and wakes the project owner only for meaningful signals.";
+
+const ownerAgent = "tech-lead";
+const ownerEventOwner = `agent:${ownerAgent}`;
 
 type Row = Record<string, unknown>;
 
@@ -156,7 +159,7 @@ function writePacket(appDir: string, packet: Row): string {
 // These should NOT generate ops-health wake signals because:
 // 1. Health-observation metrics oscillate and create breach→review→recover loops
 // 2. Delegated metrics have known root causes being fixed elsewhere
-// 3. Human-backlog metrics require external action May cannot self-service
+// 3. Human-backlog metrics require external action the owner cannot self-service
 // Must stay in sync with DEFERRED_METRICS in app.ts.
 const DEFERRED_METRIC_IDS = new Set([
   "project.health.finding-count",
@@ -174,11 +177,11 @@ function buildPacket(ctx: WorkflowContext): { packet: Row; signals: Signal[] } {
   const oneHourAgo = now - 60 * 60_000;
   const staleEscalationCutoff = now - 60 * 60_000;
   // Escalations older than 6h are "chronically stale" — they require human
-  // action (ARM auth, external files, etc.) that May cannot self-service.
+  // action (ARM auth, external files, etc.) that the owner cannot self-service.
   // They're still recorded in observations and the daily digest, but don't
   // generate wake signals that interrupt the owner every hour.
-  // Fresh escalations (1h–6h) get one chance to wake the owner in case they
-  // are May-resolvable; after 6h without resolution they need the human.
+  // Fresh escalations (1h-6h) get one chance to wake the owner in case they
+  // are owner-resolvable; after 6h without resolution they need the human.
   const chronicallyStaleFloor = now - 6 * 60 * 60_000;
 
   const openOwnerAlerts = queryRows(ctx, () =>
@@ -188,7 +191,8 @@ function buildPacket(ctx: WorkflowContext): { packet: Row; signals: Signal[] } {
          FROM metric_alerts ma
          LEFT JOIN metrics m ON m.id = ma.metric_id
         WHERE ma.resolved_at IS NULL
-          AND (m.owner = 'may' OR m.owner = 'agent:may')
+          AND (m.owner = 'tech-lead' OR m.owner = 'agent:tech-lead'
+               OR m.owner = 'may' OR m.owner = 'agent:may')
         ORDER BY ma.created_at ASC`,
       [],
       { limit: 50 },
@@ -237,17 +241,18 @@ function buildPacket(ctx: WorkflowContext): { packet: Row; signals: Signal[] } {
     ),
   );
 
-  const pendingMayMessages = queryCount(
+  const pendingOwnerMessages = queryCount(
     ctx,
     `SELECT COUNT(*) as count
        FROM events
       WHERE event_type = 'message.created'
         AND status = 'pending'
-        AND (owner = 'agent:may' OR owner = 'human:operator')`,
+        AND owner = ?`,
+    [ownerEventOwner],
   );
 
   // Only count escalations from platform-internal sources (no sourceAgent,
-  // or sourceAgent = 'may'). Project-agent escalations (aks-explorer, scout,
+  // or sourceAgent = owner). Project-agent escalations (aks-explorer, scout,
   // evaluator, etc.) are project-level work items — typically needing human
   // action (ARM auth, external files, clean git baselines) — and should be
   // captured in the daily ops digest, not trigger hourly platform health wakes.
@@ -259,7 +264,7 @@ function buildPacket(ctx: WorkflowContext): { packet: Row; signals: Signal[] } {
           AND created.timestamp < ?
           AND created.timestamp >= ?
           AND (json_extract(created.data, '$.sourceAgent') IS NULL
-               OR json_extract(created.data, '$.sourceAgent') = 'may')
+               OR json_extract(created.data, '$.sourceAgent') = ?)
           AND NOT EXISTS (
             SELECT 1
               FROM events closed
@@ -267,7 +272,7 @@ function buildPacket(ctx: WorkflowContext): { packet: Row; signals: Signal[] } {
                AND json_extract(closed.data, '$.escalationId') = json_extract(created.data, '$.escalationId')
           )
         ORDER BY created.timestamp ASC`,
-      [staleEscalationCutoff, chronicallyStaleFloor],
+      [staleEscalationCutoff, chronicallyStaleFloor, ownerAgent],
       { limit: 20 },
     ),
   );
@@ -333,7 +338,7 @@ function buildPacket(ctx: WorkflowContext): { packet: Row; signals: Signal[] } {
     signals.push({
       kind: "metric-p0",
       severity: "P0",
-      reason: `${p0Alerts.length} open P0 May-owned metric alert(s).`,
+      reason: `${p0Alerts.length} open P0 platform-owned metric alert(s).`,
       evidence: compactRows(p0Alerts, 5),
     });
   }
@@ -341,7 +346,7 @@ function buildPacket(ctx: WorkflowContext): { packet: Row; signals: Signal[] } {
     signals.push({
       kind: "metric-p1-stale",
       severity: "P1",
-      reason: `${staleP1Alerts.length} open P1 May-owned metric alert(s) older than 1h.`,
+      reason: `${staleP1Alerts.length} open P1 platform-owned metric alert(s) older than 1h.`,
       evidence: compactRows(staleP1Alerts, 5),
     });
   }
@@ -400,7 +405,7 @@ function buildPacket(ctx: WorkflowContext): { packet: Row; signals: Signal[] } {
     generated_at: new Date(now).toISOString(),
     role: "observer",
     active_alerts: {
-      may_owned_open: compactRows(openOwnerAlerts, 12),
+      platform_owned_open: compactRows(openOwnerAlerts, 12),
       p0_count: p0Alerts.length,
       stale_p1_count: staleP1Alerts.length,
     },
@@ -408,7 +413,7 @@ function buildPacket(ctx: WorkflowContext): { packet: Row; signals: Signal[] } {
       recent_abnormal_events: compactRows(recentAbnormalEvents, 20),
       repeated_runtime_symptoms: compactRows(repeatedSymptoms, 12),
       unknown_project_events: compactRows(unknownProjectEvents, 10),
-      pending_may_messages: pendingMayMessages,
+      pending_owner_messages: pendingOwnerMessages,
       stale_escalations: compactRows(staleEscalations, 10),
       stale_blocked_workflow_runs: compactRows(staleBlockedWorkflowRuns, 10),
       chronic_blocked_workflow_runs: compactRows(

@@ -1,6 +1,6 @@
 {
   "id": "may-agent.app",
-  "owner": "may",
+  "owner": "tech-lead",
   "status": "active",
   "type": "project-app",
   "priority": "P0",
@@ -21,7 +21,7 @@
   "taskIndex": ["tasks/tree.json"],
   "currentFocus": {
     "taskId": null,
-    "summary": "Owner review 2026-06-20T07:35Z. Platform runtime healthy: 0 may-owned handler.failed in 2h (337 completions), handler.success-rate=1.0, subscriber-failed-count-1h=0, message.delivery-rate=1.0, 10/10 app tests pass. 4 open alerts all aks-rp-e2e domain-owned (owner=aks-explorer). DB at 1959MB with 2500MB threshold — retention working correctly (events 7d/291K rows, sessions 14d/24K, snapshots 14d/259K), db-retention handler running hourly with VACUUM (last run deleted 2172 events + truncated 330 digest tasks), 9.1GB disk free. aks-rp-e2e noHumanOrRequeueWork fix confirmed stable: 64 planner completions, 0 failures since fix. 70 tasks: 62 done, 8 backlog (all P2), 0 active/blocked/review."
+    "summary": "Owner review 2026-06-20T11:20Z. Disk-space risk found and fixed: .state/sessions/history/ had grown to 19GB (100k+ entries) with no retention — disk at 96% (11GB free). Immediate prune recovered 10GB (now 92%/20GB free). Added automated 14-day filesystem retention to metrics-snapshot handler. Platform runtime healthy: 0 handler.failed/session.resume_failed/subscriber.failed/message.delivery_failed in 1h, handler.success-rate=99.89%, DB=1990MB (510MB headroom, threshold=2500MB), WAL=4MB. 3 open alerts all aks-rp-e2e domain-owned (owner=aks-explorer). 0 tech-lead-owned open alerts. 71 tasks: 63 done, 8 backlog (all P2), 0 active/blocked/review."
   },
-  "updatedAt": "2026-06-20T07:35:00.000Z"
+  "updatedAt": "2026-06-20T11:20:00.000Z"
 }

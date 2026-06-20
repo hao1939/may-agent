@@ -4,13 +4,6 @@
   "domain": "research, content, XHS, AI community trends",
   "model": "opus",
   "heartbeat": false,
-  "tools": [
-    "coding",
-    "query_db",
-    "finish"
-  ],
-  "contextFiles": [
-    "projects/scout-knowledge-lib.app/agents/scout/context.md",
-    "shared/common-sense.md"
-  ]
+  "tools": ["coding", "query_db", "finish"],
+  "context_files": ["context.md"]
 }

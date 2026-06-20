@@ -1,0 +1,11 @@
+{
+  "name": "amy-kimi",
+  "disabled": true,
+  "disabledReason": "Kimi API account suspended - insufficient balance (429 error). Re-enable after topping up org-43306173d9314c3abb2f2631a69fc2f7.",
+  "description": "\u5c0f\u7ea2\u4e66 intelligence researcher (Kimi variant) \u2014 same mission as Amy but with independent knowledge archive and synthesis focus",
+  "domain": "Xiaohongshu content research and deep analysis",
+  "model": "kimi",
+  "heartbeat": false,
+  "tools": ["coding", "scrape", "finish"],
+  "context_files": ["context.md"]
+}

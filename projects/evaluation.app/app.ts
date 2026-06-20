@@ -129,6 +129,27 @@ export default defineProjectApp({
       },
     },
     {
+      id: "owner-heartbeat",
+      enabled: true,
+      intervalMs: 14_400_000,
+      event: {
+        type: "project.owner.requested",
+        project: projectId,
+        reason: "owner-heartbeat",
+        params: {
+          instruction:
+            "Low-frequency evaluation owner heartbeat: look for missed evaluation-system issues that fixed drift, patrol, aftermath, and metric loops did not catch. Check recent heartbeat/patrol/drift findings before creating work. Prefer one to three task-tree actions or no-op with reason; do not run session aftermath unless a concrete sessionId is present.",
+          reviewChecklist: [
+            "Look for stale criteria/scoring assumptions and repeated evaluator misjudgments.",
+            "Look for missed session aftermath, deep-eval candidate gaps, or drift patterns not covered by current schedules.",
+            "Look for task-tree bloat or findings that should be rolled up into durable evaluation knowledge.",
+            "Avoid duplicate heartbeat tasks by inspecting recent owner-review findings first.",
+            "No-op is valid when the existing queues already cover the useful next work.",
+          ],
+        },
+      },
+    },
+    {
       id: "integrity-patrol",
       enabled: true,
       intervalMs: 21_600_000,

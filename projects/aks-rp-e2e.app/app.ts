@@ -11,12 +11,14 @@ import {
 const projectId = "aks-rp-e2e";
 const projectAppPath = "projects/aks-rp-e2e.app";
 const appTaskContext =
-  "app: /app/projects/aks-rp-e2e.app\nproject: /app/projects/aks-rp-e2e";
+  "app: /app/projects/aks-rp-e2e.app\nproject: /app/projects/aks-rp-e2e\nsource: /app/sources/aks-rp";
 
 const taskTreeContext = [
   "projects/aks-rp-e2e.app/project.json",
   "projects/aks-rp-e2e.app/tasks/tree.json",
   "projects/aks-rp-e2e.app/tasks/README.md",
+  "sources/aks-rp/test/e2ev3/sigs/rp/virtualmachine/suites/prerelease.go",
+  "sources/aks-rp/test/e2ev3/sigs/rp/virtualmachine/suites/checkin.go",
 ];
 
 function projectOwnerEvent(
@@ -108,10 +110,9 @@ function taskNodeText(task: TaskTreeNode): string {
     .toLowerCase();
 }
 
-function loadTaskTree(projectAppContext: ProjectAppContext): Record<
-  string,
-  TaskTreeNode
-> {
+function loadTaskTree(
+  projectAppContext: ProjectAppContext,
+): Record<string, TaskTreeNode> {
   const path = projectAppContext.projectPath("tasks/tree.json");
   const raw = readFileSync(path, "utf8");
   const parsed = JSON.parse(raw) as {
@@ -133,7 +134,9 @@ function isArchivedAcceptedTask(
   archiveTask: Record<string, unknown> | undefined,
 ): boolean {
   if (!archiveTask || typeof archiveTask !== "object") return false;
-  const status = String(archiveTask.status ?? archiveTask.state ?? "").toLowerCase();
+  const status = String(
+    archiveTask.status ?? archiveTask.state ?? "",
+  ).toLowerCase();
   const resolution = String(archiveTask.resolution ?? "").toLowerCase();
   const doneByReview =
     typeof archiveTask.done_at === "string" ||
@@ -166,7 +169,8 @@ function findUniqueLiveSuccessorTaskId(
   liveTasks: Record<string, TaskTreeNode>,
   archivedTaskId: string,
 ): string | null {
-  const archivedEvidence = `evidence/archive/${archivedTaskId}.md`.toLowerCase();
+  const archivedEvidence =
+    `evidence/archive/${archivedTaskId}.md`.toLowerCase();
   const archivedRunStem = archivedTaskId.toLowerCase();
   const matches = Object.values(liveTasks)
     .filter((task) => {
@@ -201,7 +205,9 @@ function normalizeProblemTaskLinks(
     ]),
   ];
 
-  const stillLive = originalAffectedTasks.filter((taskId) => Boolean(liveTasks[taskId]));
+  const stillLive = originalAffectedTasks.filter((taskId) =>
+    Boolean(liveTasks[taskId]),
+  );
   const archivedRelinks = new Map<string, string>();
   const archivedWithoutSuccessor: string[] = [];
 
@@ -214,7 +220,11 @@ function normalizeProblemTaskLinks(
     else archivedWithoutSuccessor.push(taskId);
   }
 
-  if (archivedWithoutSuccessor.length > 0 && stillLive.length === 0 && archivedRelinks.size === 0) {
+  if (
+    archivedWithoutSuccessor.length > 0 &&
+    stillLive.length === 0 &&
+    archivedRelinks.size === 0
+  ) {
     return {
       problemKey: undefined,
       problem_key: undefined,
@@ -592,7 +602,10 @@ async function routeAksRpE2eEvent(
   ) {
     const eventProblemKey =
       eventString(event, "problemKey") || eventString(event, "problem_key");
-    const normalizedProblem = normalizeProblemTaskLinks(ctx, eventDetails(event));
+    const normalizedProblem = normalizeProblemTaskLinks(
+      ctx,
+      eventDetails(event),
+    );
     const problemKey = normalizedProblem.problemKey ?? eventProblemKey;
     const problem = {
       ...eventDetails(event),
@@ -736,6 +749,28 @@ export default defineProjectApp({
       event: {
         type: "project.watchdog.tick",
         project: projectId,
+      },
+    },
+    {
+      id: "owner-heartbeat",
+      enabled: true,
+      intervalMs: 14_400_000,
+      event: {
+        type: "project.owner.requested",
+        project: projectId,
+        reason: "owner-heartbeat",
+        maxConcurrent: 5,
+        params: {
+          instruction:
+            "Low-frequency owner heartbeat: look for missed project motion opportunities that fixed schedules and metrics did not catch. Check recent heartbeat/focus/watchdog findings before creating work. Prefer one to three task-tree actions: create or refresh concrete backlog work, record a finding/context update, request problem-solving, or no-op with reason. Do not run multi-step domain work from the owner session.",
+          reviewChecklist: [
+            "Check VM prerelease coverage/spec/replay gaps and whether the current feature set can be planned with bun run plan --features ...",
+            "Challenge stale source-holder, devbox, or authoritative-source blockers now that /app/sources/aks-rp is mounted.",
+            "Look for stale blocked families, underfilled worker capacity, task-tree bloat needing owner rollup, and repeated owner-loop/planner failures.",
+            "Avoid duplicate heartbeat tasks by inspecting recent heartbeat/focus/watchdog outputs first.",
+            "No-op is valid when the task tree already has clear active/review/runnable work.",
+          ],
+        },
       },
     },
     {

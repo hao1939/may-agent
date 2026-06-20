@@ -1,0 +1,17 @@
+{
+  "name": "bob",
+  "description": "System architect \u2014 holds the blueprint, designs agent cooperation and evolution, reviews designs, stewards philosophy, drives meta-loop",
+  "domain": "system architecture, design philosophy, agent evolution, meta-loop orchestration",
+  "model": "opus",
+  "heartbeat": false,
+  "tools": [
+    "coding",
+    "agents",
+    "message",
+    "system_status",
+    "checkpoint",
+    "workflow",
+    "finish"
+  ],
+  "context_files": ["context.md", "last-eval.md"]
+}

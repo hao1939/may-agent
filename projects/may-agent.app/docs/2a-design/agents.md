@@ -6,9 +6,12 @@
 >    auto-registered when the app loads (see project-app-v3.md)
 >
 > App-local agents are preferred for app-owned work. The global `agents/`
-> directory is for standalone agents (dev, arc) that don't have a project-app.
-> Evaluator, scout, and aks-explorer are app-local — their identity lives in
-> their `.app/agents/` directory.
+> directory is only for standalone agents that do not yet have a project-app.
+> Evaluator, scout, aks-explorer, arc, dev, tech-lead, bob, coach, optimizer,
+> qa, master, judge, amy, and amy-kimi are app-local — their identity lives in
+> their `.app/agents/` directory. Tech-lead owns `may-agent.app`; arc/dev and
+> the legacy platform specialists live under that project. Judge belongs to
+> `evaluation.app`; Amy/Amy-Kimi belong to `scout-knowledge-lib.app`.
 
 ## Calling Patterns
 
@@ -58,9 +61,9 @@ sdk.message("arc", "Review this design");
 ```
 call creates children; fork creates independent sessions:
 
-  Root (May heartbeat)
-    ├── call("tech-lead", task)         ← child (blocks)
-    │     └── call("dev", task)         ← grandchild
+  Root (project owner review)
+    ├── call("dev", task)              ← child (blocks)
+    ├── call("arc", review)            ← child
     ├── call("scout", review)          ← child
     └── fork("evaluator", task)        ← independent (non-blocking)
 ```

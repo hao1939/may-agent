@@ -69,7 +69,7 @@ async function routeScoutEvent(
 
 export default defineProjectApp({
   id: projectId,
-  version: 2,
+  version: 1,
   owner: "scout",
   description:
     "Scout research and knowledge app: discovers AI trends from arXiv, HN, XHS, GitHub; synthesizes findings into a source-grounded knowledge library; delivers daily digests.",
@@ -93,6 +93,22 @@ export default defineProjectApp({
         type: "scout.heartbeat",
         project: projectId,
       },
+    },
+    {
+      id: "owner-heartbeat",
+      enabled: true,
+      intervalMs: 14_400_000,
+      event: projectOwnerEvent("owner-heartbeat", {
+        instruction:
+          "Low-frequency knowledge-library owner heartbeat: look for missed synthesis, library-shape, source-coverage, or stale-assumption issues that routine source exploration and digest schedules did not catch. Check recent heartbeat/explore/digest findings before creating work. Prefer one to three task-tree actions or no-op with reason; do not create standalone projects.",
+        reviewChecklist: [
+          "Look for cross-source connections that should become library tasks, not ad hoc notes.",
+          "Look for stale or duplicate findings, missing index coverage, and knowledge entries that need rollup.",
+          "Look for source schedules that are producing noise or leaving useful gaps.",
+          "Avoid duplicate heartbeat tasks by inspecting recent owner-review findings first.",
+          "No-op is valid when existing exploration and maintenance tasks already cover the useful next work.",
+        ],
+      }),
     },
     {
       id: "scout-explore-arxiv",

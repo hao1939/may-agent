@@ -1,0 +1,9 @@
+{
+  "name": "dev",
+  "description": "May-agent platform debugger and metrics specialist",
+  "domain": "system reliability, metrics, debugging",
+  "model": "opus",
+  "heartbeat": false,
+  "tools": ["coding", "query_db", "finish"],
+  "context_files": ["context.md", "last-eval.md"]
+}

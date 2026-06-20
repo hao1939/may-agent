@@ -71,14 +71,23 @@ right agent based on what the task needs.
 ```
 projects/
   may-agent.app/agents/
-    platform-owner/   ← opus — deep platform reasoning, project ownership
-    platform-dev/     ← sonnet — fast implementation work
+    tech-lead/        ← opus — platform ownership
+    dev/              ← opus — runtime debugging and metrics
+    arc/              ← opus — architecture and coherence
+    bob/              ← opus — legacy platform architecture archive/specialist
+    coach/            ← opus — legacy coaching/training specialist
+    optimizer/        ← opus — legacy optimization specialist
+    qa/               ← gpt52 — code review specialist
+    master/           ← opus — legacy CLI delegation specialist
   evaluation.app/agents/
     evaluator/        ← gpt-5.4 — evaluation scoring
+    judge/            ← opus — convention compliance review
   aks-rp-e2e.app/agents/
     aks-explorer/     ← opus — spec/replay design and execution
   scout-knowledge-lib.app/agents/
     scout/            ← opus — research and knowledge synthesis
+    amy/              ← opus — XHS research archive/specialist
+    amy-kimi/         ← kimi — disabled alternate XHS researcher
 ```
 
 An app chooses how many agents it needs and which models they use. Deep
@@ -88,12 +97,14 @@ project-local decision — infra just runs whatever agent the app declares.
 
 ### What about dev, arc, and others?
 
-The current `agents/` directory has many standalone agents (dev, arc, amy,
-bob, coach, judge, master, optimizer, qa, tech-lead). These should be
-assessed:
+The current migration moves all durable non-May agent identities into app-local
+agent directories. The remaining `agents/` root should contain May plus
+temporary runtime leftovers only; new durable agents should be app-local.
+
+If a new global-looking role appears, assess it this way:
 
 - **Active and project-useful** → move to the app that uses them
-  (e.g., dev → may-agent.app/agents/platform-dev/)
+  (for example, a domain specialist should live under its domain app)
 - **Retired / inactive** → archive or remove
 - **Shared utility** → if genuinely needed by multiple apps, the app that
   dispatches can call any registered agent by name. The agent identity
@@ -118,7 +129,7 @@ Same agent identity, same AGENTS.md. Different sessions that never block
 each other.
 
 **May does not own any project.** Each project has its own domain-specific
-owner agent. may-agent.app's owner is `platform-owner`, not May. May is
+owner agent. may-agent.app's owner is `tech-lead`, not May. May is
 everyone's boss — she oversees, steers, escalates, and talks to the human.
 
 **May's background work is system-level judgment, not platform project
@@ -128,7 +139,7 @@ project. Deputy-May may judge those signals and decide who owns the next step.
 
 Platform diagnosis and platform repair are still project work. When a signal is
 about may-agent itself, Deputy-May should usually route the concrete fix into
-`may-agent.app` for `platform-owner` rather than trying to do all repair inside
+`may-agent.app` for `tech-lead` rather than trying to do all repair inside
 generic infra handlers.
 
 ### Escalation chain
@@ -140,7 +151,7 @@ Worker can't resolve
   → planner can't resolve
   → escalates to May (infra escalation handler)
   → Deputy-May reviews and judges (job session)
-  → if platform repair is needed, route to may-agent.app/platform-owner
+  → if platform repair is needed, route to may-agent.app/tech-lead
   → Deputy-May can't resolve
   → surfaces in chat as notification / proactive mention
   → human decides via Chat-May
@@ -555,12 +566,14 @@ metrics. Production May delegation should use `run_cli_agent`.
    Current remaining work is hardening and end-to-end verification from
    Chat-May: request accepted immediately, chat stays responsive, completion
    steers the source session, and May presents the result.
-8. Create `platform-owner` agent in may-agent.app and transfer may-agent.app
-   ownership away from May.
+8. ✅ Move `tech-lead` into may-agent.app and transfer may-agent.app ownership
+   away from May.
 9. Route Deputy-May system judgments through infra handlers, but route concrete
-   may-agent platform repair into may-agent.app/platform-owner.
-10. Migrate dev/arc to may-agent.app or assess for retirement; disable their
-    standalone heartbeats only after replacement coverage exists.
-11. Assess remaining `agents/` (amy, bob, coach, judge, master, optimizer, qa,
-    tech-lead) for migration, retirement, or explicit temporary global status.
-12. Shrink `agents/` toward only `may/` once migration evidence is clean.
+   may-agent platform repair into may-agent.app/tech-lead.
+10. ✅ Migrate dev to may-agent.app. Arc is already app-local under
+    may-agent.app with standalone heartbeat disabled.
+11. ✅ Move remaining legacy roles to app-local homes: bob/coach/optimizer/qa/
+    master under may-agent.app, judge under evaluation.app, amy/amy-kimi under
+    scout-knowledge-lib.app.
+12. Shrink `agents/` toward only `may/` once runtime leftover files are drained
+    or archived.

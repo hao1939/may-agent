@@ -38,7 +38,7 @@ describe("ops-health-review", () => {
 
     const ctx: WorkflowContext = {
       task: `app: ${appDir}\nReview may-agent operational health.`,
-      agent: "may",
+      agent: "tech-lead",
       emit: (event) => emitted.push(event),
       dispatchEvent: (eventType, data = {}) =>
         emitted.push({ type: eventType, ...data }),
@@ -57,7 +57,7 @@ describe("ops-health-review", () => {
       runFunction: async (label, fn) => ({
         ok: true,
         status: "done",
-        agent: "may",
+        agent: "tech-lead",
         sessionId: label,
         result: await fn(),
       }),
@@ -116,7 +116,7 @@ describe("ops-health-review", () => {
       "INSERT INTO events (event_type, owner, source, data, timestamp) VALUES (?, ?, ?, ?, ?)",
       [
         "escalation.created",
-        "agent:may",
+        "agent:tech-lead",
         "telegram",
         JSON.stringify({ escalationId: "esc_stale", reason: "needs reply" }),
         twoHoursAgo,
@@ -210,7 +210,7 @@ describe("ops-health-review", () => {
         [
           "handler.failed",
           "runtime",
-          "agent:may",
+          "agent:tech-lead",
           JSON.stringify({ handler: "telegram-reply", error: "timeout" }),
           now - i * 60_000,
         ],
@@ -243,7 +243,7 @@ describe("ops-health-review", () => {
       "INSERT INTO events (event_type, owner, source, data, timestamp) VALUES (?, ?, ?, ?, ?)",
       [
         "escalation.created",
-        "agent:may",
+        "agent:tech-lead",
         "runtime:session-finish",
         JSON.stringify({
           escalationId: "esc_aks",
@@ -259,7 +259,7 @@ describe("ops-health-review", () => {
       "INSERT INTO events (event_type, owner, source, data, timestamp) VALUES (?, ?, ?, ?, ?)",
       [
         "escalation.created",
-        "agent:may",
+        "agent:tech-lead",
         "runtime:session-finish",
         JSON.stringify({
           escalationId: "esc_scout",
@@ -292,7 +292,7 @@ describe("ops-health-review", () => {
       "INSERT INTO events (event_type, owner, source, data, timestamp) VALUES (?, ?, ?, ?, ?)",
       [
         "escalation.created",
-        "agent:may",
+        "agent:tech-lead",
         "telegram",
         JSON.stringify({
           escalationId: "esc_platform",
@@ -307,7 +307,7 @@ describe("ops-health-review", () => {
       "INSERT INTO events (event_type, owner, source, data, timestamp) VALUES (?, ?, ?, ?, ?)",
       [
         "escalation.created",
-        "agent:may",
+        "agent:tech-lead",
         "runtime:session-finish",
         JSON.stringify({
           escalationId: "esc_aks2",
@@ -339,7 +339,7 @@ describe("ops-health-review", () => {
     });
   });
 
-  it("wakes the owner for open P0 May-owned metric alerts", async () => {
+  it("wakes the owner for open P0 platform-owned metric alerts", async () => {
     const { db, emitted, ctx, close } = setup();
     const now = Date.now();
     db.run(
@@ -347,7 +347,7 @@ describe("ops-health-review", () => {
       [
         "runtime.daemon-heartbeat-stale",
         "Runtime daemon heartbeat stale",
-        "may",
+        "tech-lead",
         1,
         0,
         0,
@@ -395,7 +395,7 @@ describe("ops-health-review", () => {
        VALUES (?, ?, ?, ?, ?, ?, ?)`,
       [
         "custom.requested",
-        "agent:may",
+        "agent:tech-lead",
         "test",
         JSON.stringify({ requestId: "req_unaccepted" }),
         now - 5 * 60_000,

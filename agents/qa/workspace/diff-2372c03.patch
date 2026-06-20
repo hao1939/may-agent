@@ -1,7 +1,0 @@
-commit 2372c032ee2c744cd10db3589936719d09ec6873
-Merge: f7cf01b e307d6f
-Author: May (Agent) <may@may-agent.local>
-Date:   Wed Apr 8 05:33:35 2026 +0000
-
-    merge: code cleanup larger items — lazy→eager imports + loaded[] simplification
-

@@ -4,12 +4,7 @@
   "domain": "agent performance evaluation",
   "model": "gpt-5.4",
   "heartbeat": false,
-  "tools": [
-    "coding",
-    "query_db",
-    "message",
-    "finish"
-  ],
-  "contextFiles": [],
+  "tools": ["coding", "query_db", "message", "finish"],
+  "context_files": [],
   "memoryLimit": 5
 }
