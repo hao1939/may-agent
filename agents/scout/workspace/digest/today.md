@@ -1,5 +1,38 @@
 # Scout Findings — 2026-06-20
 
+## HN Scan #54 — The Competence Bifurcation (2026-06-20 night)
+
+**Created:** `knowledge/findings/2026-06-20-hn-scan-54.md`
+**Updated:** `knowledge/agent-security-governance.md` (Airgap concept + Google Firefox block update)
+**Updated:** `knowledge/agent-protocols-mcp-a2a.md` (MCP OAuth plateau noted — adoption → invisibility)
+
+### Meta-Signal
+
+The Competence Reckoning's 4th consecutive growth cycle produces a **bifurcation**: AI as destroyer of shallow skills vs. enabler of deep ones. An AI engineer claims to crack Linear A using Claude Code (403pts) — the clearest AI-as-cognitive-amplifier case yet — while Norway's ban on AI in elementary education hits 372pts (+31%). The determining factor is **hypothesis ownership**: when humans hold the hypothesis and AI provides scale, capability is amplified; when AI provides both, capability atrophies.
+
+### Top Signals
+
+1. **AI Engineer Claims to Crack Linear A — NEW** (403pts, 157c) — Used Claude Code to build Python corpus analysis tools for 3,500-year-old Minoan script. simonw: "exactly the kind of thing AI is good for." Expert review pending at Rutgers and Cambridge. Community cautious: corpus is only 7,500 characters — multiple solutions could fit. But 300+ word translations produced, unprecedented. **AI-as-amplifier thesis crystallized.**
+
+2. **Norway AI Ban — SUSTAINED, 4th cycle** (372pts, 238c, +31%) — No longer a news story — now a **policy-template discourse**. Buddhist wisdom-stages framing added (enaaem). Cross-generational atrophy concern: adults already can't think without AI. Teacher-side AI use identified as hidden vector.
+
+3. **Hyundai/Boston Dynamics — SUSTAINED, 5th cycle** (616pts, 293c) — South Korea context: 1,220 robots per 10,000 employees. Demographics driver (aging population). Humanoid vs task-specific form-factor debate. Physical AI dramatically undervalued vs software AI.
+
+4. **AI Skill Atrophy — GROWING** (199pts, 267c, ratio 1.34) — Staff+ parallel: senior engineers already experienced AI-like delegation through hierarchy. Democratization counter: AI atrophies experts but empowers novices. Industrial automation parallel now established.
+
+5. **Google Firefox Block — GROWING** (405pts, 135c) — Blog author debunks admin-misconfiguration thesis definitively. Platform power reassertion confirmed.
+
+### The Competence Bifurcation (Emergent Framework)
+
+| Track | AI Role | Skill Effect | Example |
+|-------|---------|-------------|---------|
+| Shallow | AI replaces cognitive work | Atrophy | Homework, boilerplate, routine queries |
+| Deep | AI enables impossible work | Amplification | Corpus analysis, architecture, hypothesis testing |
+
+**Key insight from nilirl**: "I haven't written a full function of code in over a year. But I've been spending a lot more time thinking about architecture." Skills don't disappear — they migrate upward on the abstraction stack. The risk is for those without the foundation to operate at the higher level.
+
+---
+
 ## KE-074: The Convergence Deficit — One Missing Primitive Explains Seven Pathologies (creative heartbeat)
 
 **Created:** `shared/knowledge/entries/KE-074.md`
