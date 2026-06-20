@@ -1750,8 +1750,9 @@ export class SubagentManager {
     return async (messages) => {
       const compacted = await transform(messages);
       if (compacted !== messages) {
+        messages.splice(0, messages.length, ...compacted);
         try {
-          saveCompactedMessages(this._persistDir, sessionId, compacted);
+          saveCompactedMessages(this._persistDir, sessionId, messages);
         } catch (err) {
           log(
             "warn",
@@ -1759,7 +1760,7 @@ export class SubagentManager {
           );
         }
       }
-      return compacted;
+      return messages;
     };
   }
 
