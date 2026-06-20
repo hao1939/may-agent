@@ -1,15 +1,16 @@
 # Heartbeat System
 
 > **Status (2026-06-20):** Heartbeat auto-generation is disabled for app-owned
-> agents (scout, evaluator) via `"heartbeat": false` in agent.json. Their apps
-> own deterministic schedules (explore, aftermath-scan, drift, patrol).
+> agents (scout, evaluator, arc) via `"heartbeat": false` in agent.json. Their
+> apps own deterministic schedules and event-driven owner reviews.
 >
 > The owner heartbeat concept (low-frequency creative fallback) is now part of
 > the unified app model in [app-project-integrity.md](app-project-integrity.md)
 > §Owner Heartbeat. That section defines how heartbeats relate to schedules and
 > event-driven wakes within the same task tree.
 >
-> `dev` and `arc` still use the global heartbeat auto-generator (no app yet).
+> `dev` still uses the global heartbeat auto-generator during migration. Arc is
+> now an app-local `may-agent.app` specialist and has no standalone heartbeat.
 > The design below applies to standalone agents without a project-app.
 
 ## Design Rationale
@@ -107,7 +108,7 @@ All injected into the agent's task prompt as structured sections.
 
 ## Per-Agent Workflows
 
-Each agent has a heartbeat workflow at `agents/<name>/workflows/<name>-heartbeat.ts`:
+Standalone heartbeat agents have a workflow at `agents/<name>/workflows/<name>-heartbeat.ts`:
 - Imports shared data loaders
 - Builds the task prompt with loaded context
 - Calls `ctx.runAgent()` with the agent name and assembled task
@@ -122,10 +123,10 @@ Agents don't need explicit cron.json entries for heartbeats:
 
 ## Heartbeat.md (per-agent)
 
-Each agent can have `agents/<name>/heartbeat.md` — role-specific guidance read
-during heartbeat. It should describe recurring inspection and judgment duties,
-not carry long-term project memory. Not in the system prompt — only loaded when
-the heartbeat fires.
+Each standalone heartbeat agent can have `agents/<name>/heartbeat.md` —
+role-specific guidance read during heartbeat. App-local specialists may keep a
+similar guide under `projects/<id>.app/agents/<name>/`, but it is only used
+when the app explicitly loads it.
 
 ## Metric Breaches and Heartbeats
 
@@ -167,7 +168,7 @@ Steering is *change what the agent sees when it next looks*, not "make the agent
 
 - **Heartbeat helper:** `@may-agent/sdk` → `genericHeartbeat()` (source: `projects/may-agent/packages/sdk/src/heartbeat-data.ts`, installed at `node_modules/@may-agent/sdk/src/heartbeat-data.ts`)
 - **Auto-generation:** `projects/may-agent/src/app/loader/heartbeat-loader.ts` → `generateAutoHeartbeats()`
-- **Per-agent workflows:** `agents/<name>/workflows/<name>-heartbeat.ts`
+- **Per-agent workflows:** `agents/<name>/workflows/<name>-heartbeat.ts` for standalone agents; app-owned schedules live in `projects/<id>.app/app.ts`
 - **Decision event:** heartbeat workflow emits `agent.decision` partway through
 
 > **Status (KE-1250):** `handler.heartbeat-coverage` metric exists. `agent.idle-rate` and `agent.self-initiated-rate` were never registered.

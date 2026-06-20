@@ -170,6 +170,7 @@ const DEFERRED_METRIC_IDS = new Set([
   "runtime.project-app-schedule-orphan-count-1h",
   "escalation.pending-count",
   "metric.stale-active-count",
+  "session.first-turn-error-count-1h",
 ]);
 
 function buildPacket(ctx: WorkflowContext): { packet: Row; signals: Signal[] } {

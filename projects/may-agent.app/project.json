@@ -21,7 +21,7 @@
   "taskIndex": ["tasks/tree.json"],
   "currentFocus": {
     "taskId": null,
-    "summary": "Owner review 2026-06-20T11:20Z. Disk-space risk found and fixed: .state/sessions/history/ had grown to 19GB (100k+ entries) with no retention — disk at 96% (11GB free). Immediate prune recovered 10GB (now 92%/20GB free). Added automated 14-day filesystem retention to metrics-snapshot handler. Platform runtime healthy: 0 handler.failed/session.resume_failed/subscriber.failed/message.delivery_failed in 1h, handler.success-rate=99.89%, DB=1990MB (510MB headroom, threshold=2500MB), WAL=4MB. 3 open alerts all aks-rp-e2e domain-owned (owner=aks-explorer). 0 tech-lead-owned open alerts. 71 tasks: 63 done, 8 backlog (all P2), 0 active/blocked/review."
+    "summary": "Owner review 2026-06-20T11:30Z. Schedule over-fire residual: 115 schedule fires in 24h (expected ~37). cron-schedule-resume-fallback-fix (done) added handler.started DB fallback — timers self-correct after startup burst via in-memory lastFireTimes cache. Current state: all 4 schedules stable (last fires 24-29 min ago, correct intervals). Residual startup burst (~5 extra fires per schedule per restart) is bounded and self-healing. 0 runtime failures in 1h. 7 open alerts: 4 aks-rp-e2e domain, 1 transient platform (first-turn-error-count auto-resolving), 2 new aks-rp-e2e task-gap alerts. 72 tasks: 64 done, 8 backlog (all P2). No task-tree changes needed."
   },
-  "updatedAt": "2026-06-20T11:20:00.000Z"
+  "updatedAt": "2026-06-20T11:30:00.000Z"
 }

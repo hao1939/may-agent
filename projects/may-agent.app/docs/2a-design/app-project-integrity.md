@@ -48,16 +48,16 @@ with compact context and provide tools that make the owner effective.
 
 ## Core Pieces
 
-| Piece | Responsibility | Must not do |
-| --- | --- | --- |
-| Runtime | Persist events, route handlers, run sessions/workflows, observe liveness. | Decide project strategy or mutate task meaning. |
-| Project app | Declare event graph, schedules, workflows, actions, UI links, and domain workspace. | Make the domain repo depend on May-agent. |
-| Owner workflow | Wake the owner, pass compact context, drain explicit assignments, emit follow-up events. | Become a decision tree for project strategy. |
-| Task tree | Store decomposition, current state, durable summaries, evidence links, and human steering. | Act as a scheduler, retry log, or source of domain truth. |
-| Worker workflow | Run exactly one owner-assigned task and return evidence. | Reshape siblings, mark done, or create planning/control branches. |
-| Problem solver | Investigate one visible local failure/root cause and return evidence. | Replace owner judgment or directly accept affected tasks. |
-| Metrics/watchdogs | Detect drift and wake the owner with context. | Decide fixes or silently mutate the task tree. |
-| Escalation | Cross an ownership boundary with requested action and resume context. | Hide local retries or routine project work. |
+| Piece             | Responsibility                                                                             | Must not do                                                       |
+| ----------------- | ------------------------------------------------------------------------------------------ | ----------------------------------------------------------------- |
+| Runtime           | Persist events, route handlers, run sessions/workflows, observe liveness.                  | Decide project strategy or mutate task meaning.                   |
+| Project app       | Declare event graph, schedules, workflows, actions, UI links, and domain workspace.        | Make the domain repo depend on May-agent.                         |
+| Owner workflow    | Wake the owner, pass compact context, drain explicit assignments, emit follow-up events.   | Become a decision tree for project strategy.                      |
+| Task tree         | Store decomposition, current state, durable summaries, evidence links, and human steering. | Act as a scheduler, retry log, or source of domain truth.         |
+| Worker workflow   | Run exactly one owner-assigned task and return evidence.                                   | Reshape siblings, mark done, or create planning/control branches. |
+| Problem solver    | Investigate one visible local failure/root cause and return evidence.                      | Replace owner judgment or directly accept affected tasks.         |
+| Metrics/watchdogs | Detect drift and wake the owner with context.                                              | Decide fixes or silently mutate the task tree.                    |
+| Escalation        | Cross an ownership boundary with requested action and resume context.                      | Hide local retries or routine project work.                       |
 
 ## Event Contract
 
@@ -88,7 +88,7 @@ belong in state, logs, traces, metrics, or knowledge instead.
 
 ## Owner Loop
 
-`project.owner.requested` is the normal project heartbeat.
+`project.owner.requested` is the normal owner wake event.
 
 ```text
 project.owner.requested
@@ -136,13 +136,13 @@ and waiting are not states. They are projections, metadata, structure, or
 
 Only `done` is final. Every other state must have a driver:
 
-| State | Driver |
-| --- | --- |
-| `backlog` | Owner assigns if runnable. If not runnable, owner repairs dependency, splits, asks, or records terminal `done`. |
-| `active` | Worker emits `project.task.completed`; stale-active watchdog wakes owner for retry, fresh session, replacement, split, problem work, or block. |
-| `review` | Owner accepts to `done`, rejects to `backlog`, creates follow-up/problem work, or records a precise blocker. |
-| `blocked` | Owner rechecks resume conditions, unblocks, creates problem-solving work, sends/escalates an ask, or records terminal `done`. |
-| `done` | Final project knowledge; may be rolled up or compacted. |
+| State     | Driver                                                                                                                                         |
+| --------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
+| `backlog` | Owner assigns if runnable. If not runnable, owner repairs dependency, splits, asks, or records terminal `done`.                                |
+| `active`  | Worker emits `project.task.completed`; stale-active watchdog wakes owner for retry, fresh session, replacement, split, problem work, or block. |
+| `review`  | Owner accepts to `done`, rejects to `backlog`, creates follow-up/problem work, or records a precise blocker.                                   |
+| `blocked` | Owner rechecks resume conditions, unblocks, creates problem-solving work, sends/escalates an ask, or records terminal `done`.                  |
+| `done`    | Final project knowledge; may be rolled up or compacted.                                                                                        |
 
 Every non-done task must either:
 
@@ -267,20 +267,39 @@ failure, not for routine project state.
 
 ## Owner Heartbeat
 
-The owner heartbeat is a low-frequency creative fallback. It is not a schedule
-(those execute known work) and not an event-driven wake (those react to
-completions and breaches). The heartbeat is the owner looking around freely —
-noticing what no schedule or metric would trigger.
+The owner heartbeat is a low-frequency creative fallback. It may be triggered
+by a timer, but it is not a schedule in the project-meaning sense: schedules
+execute known work, while heartbeat wakes the owner to look around freely and
+notice what no fixed procedure or metric would trigger.
 
 Three owner wake mechanisms, each with a different purpose:
 
-| Mechanism | Purpose | Frequency |
-| --- | --- | --- |
-| Schedule | Execute known work on a cadence | Per-task (minutes to hours) |
-| Owner wake (event) | React to completions, problems, metrics | On demand |
-| Owner heartbeat | Discover unknown issues, drive stuck work, creative insight | Low (every 2-4h) |
+| Mechanism          | Purpose                                                     | Frequency                   |
+| ------------------ | ----------------------------------------------------------- | --------------------------- |
+| Schedule           | Execute known work on a cadence                             | Per-task (minutes to hours) |
+| Owner wake (event) | React to completions, problems, metrics                     | On demand                   |
+| Owner heartbeat    | Discover unknown issues, drive stuck work, creative insight | Low (every 2-4h)            |
 
 All three write to the same task tree. None create standalone projects.
+
+App manifest contract:
+
+- declare heartbeat as a low-frequency schedule that emits
+  `project.owner.requested`
+- set `reason: "owner-heartbeat"` and include a compact intent packet
+- route it through the normal owner workflow; do not add a heartbeat-specific
+  controller
+- let the owner inspect deeper context through project tools
+- record explicit no-op when nothing useful is found
+
+Runtime read-model contract:
+
+- project app installation refreshes the `projects` table from
+  `project.json` when present, otherwise from `app.ts`
+- `app.ts` remains the routing manifest; `project.json` is the durable project
+  identity/status/priority read by UI and owner-review packets
+- owner/status drift between `project.json` and the runtime read model is a
+  platform sync issue, not a project strategy decision
 
 What the heartbeat does:
 
@@ -301,10 +320,18 @@ Bounded output contract:
 
 1. Read task tree + recent activity + metrics
 2. Look for: stale work, missed gaps, creative opportunities, stuck patterns
-3. If something found: create a backlog task, update context, or record finding
-4. If nothing found: no-op — don't force output
-5. Never create standalone projects
-6. Never execute multi-step domain work (create a task for that)
+3. Check recent heartbeat findings/tasks before creating new work
+4. If something found: create a backlog task, update context, or record finding
+5. If nothing found: no-op — don't force output
+6. Limit output to one to three task-tree actions unless severe liveness risk
+   requires more
+7. Never create standalone projects
+8. Never execute multi-step domain work (create a task for that)
+
+For `aks-rp-e2e`, heartbeat should especially look for stale source or
+environment assumptions, VM prerelease coverage/spec/replay gaps, underfilled
+worker capacity, blocked families that no metric sampled, task tree bloat that
+needs owner rollup, and repeated owner-loop/planner failures.
 
 ## Human And UI Interaction
 
@@ -323,6 +350,161 @@ The task tree UI should show:
 
 The UI should not mutate task meaning directly unless it is using the same
 task-tree tools and owner-reviewed event path.
+
+## Execution Plans
+
+### Problem: Always-On Pipeline vs Goal-Directed Execution
+
+The always-on pipeline pattern — watchdog ticks every 5min, planner wakes on
+every event, workers grab whatever's next — is good for sustained exploration
+but has structural costs:
+
+- **No completion target.** The pipeline runs forever. There is no "done" for
+  the pipeline, only for individual tasks. The planner cannot say "we're
+  finished" because it has no definition of finished.
+- **Reactive sequencing.** Workers run in whatever order the planner assigns.
+  There is no strategic ordering — drafts don't run before blocked retries,
+  quick wins don't run before deep investigations.
+- **Planner churn.** 500+ planner sessions/day just to keep assigning work.
+  Most wake, see nothing new, and exit. The planner is a refill loop, not a
+  strategist.
+- **No progress tracking against a goal.** "3 active tasks" is not the same as
+  "17/41 remaining paths to resolve." The pipeline has throughput but no
+  measured progress toward an end state.
+
+The pipeline is the right shape for open-ended ongoing work (scout's knowledge
+exploration, evaluation's session aftermath). It is the wrong shape when the
+work has a known end state and a finite set of items to resolve.
+
+### Execution Plan: Goal-Directed Run
+
+An execution plan is a bounded, goal-directed alternative to the always-on
+pipeline. It declares what "done" means, sequences work strategically, and
+tracks progress against the target.
+
+```text
+execution plan = {
+  goal:       "resolve all 41 actionable paths"
+  target:     [ list of specific items to resolve ]
+  sequence:   [ ordered phases or priority bands ]
+  completion: "all target items are pass or terminal"
+  timeout:    "48h from start"
+}
+```
+
+The execution plan is **owner-created, not infra-created.** The owner reviews
+the current model/coverage/tree state, decides what's achievable, writes the
+plan, and hands it to the execution runtime. The runtime executes the plan
+mechanically — assigning items in sequence, tracking progress, and stopping
+when the completion criteria are met or the timeout is reached.
+
+### Plan Lifecycle
+
+```text
+1. Owner creates plan
+   - reviews model gaps, blocked frontier, environment state
+   - selects target items (paths, tasks, domains)
+   - orders them into phases or priority bands
+   - sets completion criteria and timeout
+
+2. Runtime executes plan
+   - assigns items from the current phase to workers
+   - tracks item outcomes (pass, blocked, terminal, needs-retry)
+   - advances to next phase when current phase items are resolved
+   - reports progress: "phase 2/3, 12/17 items resolved"
+
+3. Plan completes or times out
+   - completion: all target items resolved → report to owner
+   - timeout: deadline reached → report remaining items to owner
+   - blocked: no items can make progress → wake owner for replan
+   - human interrupt: owner or human adjusts/cancels the plan
+
+4. Owner reviews results
+   - accepts done items
+   - creates new plan for remaining items if needed
+   - decides whether to re-enter pipeline mode or plan another run
+```
+
+### Plan vs Pipeline
+
+| Aspect              | Pipeline (always-on)                        | Execution plan (bounded run)                      |
+| ------------------- | ------------------------------------------- | ------------------------------------------------- |
+| Goal                | Keep moving                                 | Resolve specific items                            |
+| Sequencing          | Whatever's runnable                         | Strategic: quick wins first, then deep work       |
+| Progress tracking   | Task counts                                 | Items resolved / items targeted                   |
+| Completion          | Never                                       | When criteria met or timeout                      |
+| Planner involvement | Every event (500+/day)                      | Plan creation + replan on block                   |
+| Owner wake          | Every completion, metric, watchdog tick      | Plan creation, blocked replan, completion report  |
+| Right for           | Open-ended exploration, ongoing evaluation  | Finite coverage gaps, release pushes, audits      |
+
+### Coexistence
+
+Execution plans and the pipeline are not mutually exclusive. A project may:
+
+- Run a plan to clear a coverage push, then return to pipeline for ongoing work
+- Run the pipeline for discovery, then create a plan for the found gaps
+- Run multiple sequential plans: "clear drafts" → "retry env-blocked" → "push
+  blocked frontier"
+
+The pipeline schedules (watchdog, learning tick, heartbeat) may remain active
+during a plan run. The watchdog should be plan-aware: instead of waking the
+owner to "refill capacity," it tracks plan progress and wakes the owner only
+when the plan is stuck or complete.
+
+### Implementation Shape
+
+The execution plan lives in the task tree as a special node or as a separate
+plan file (`tasks/plan.json`). It is not a workflow or a schedule — it is
+owner-written data that the execution runtime reads.
+
+```json
+{
+  "id": "push-actionable-paths-20260620",
+  "goal": "Resolve all 41 actionable model paths to pass or terminal",
+  "created_by": "owner",
+  "created_at": "2026-06-20T...",
+  "timeout_at": "2026-06-22T...",
+  "phases": [
+    {
+      "id": "promote-drafts",
+      "items": ["path.vm.capacity-based-surge", "..."],
+      "strategy": "batch-promote with evidence"
+    },
+    {
+      "id": "retry-env-blocked",
+      "items": ["path.machines.preview-registration", "..."],
+      "strategy": "retry with westus2 auth, record precise blocker if still blocked"
+    },
+    {
+      "id": "push-blocked-frontier",
+      "items": ["path.kms.trusted-service", "..."],
+      "strategy": "challenge each blocker, resolve or record terminal"
+    }
+  ],
+  "completion": {
+    "criteria": "all items in pass, terminal, or product-gap",
+    "progress": { "resolved": 0, "total": 41 }
+  },
+  "status": "active"
+}
+```
+
+The planner workflow reads the active plan and assigns items from the current
+phase instead of scanning the full backlog. The watchdog reports plan progress
+instead of generic capacity metrics. The owner is woken only for plan-level
+decisions (phase complete, stuck, replan needed).
+
+### What Changes in the App
+
+- `app.ts`: add `project.plan.created` and `project.plan.completed` events
+- Planner workflow: if active plan exists, assign from plan phases; otherwise
+  fall back to pipeline behavior
+- Watchdog: report plan progress, wake owner when plan is stuck or complete
+- Task tree tools: plan-aware progress reporting
+- UI: show plan progress bar, phase status, remaining items
+
+The always-on pipeline remains as the fallback when no plan is active. The
+plan is the owner's tool for saying "push these specific things to completion."
 
 ## Integrity Checklist
 

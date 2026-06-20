@@ -802,8 +802,8 @@ later if they become significant.
 incomplete data. `COUNT(*)` over `events` reflects only the surviving window, not
 lifetime totals. Session-based analytics should stay within 14 days.
 
-Approved 2026-06-04 via `shared/work-queue.md`; proposal at
-`agents/arc/workspace/proposals/2026-05-27-db-retention-policy.md`.
+Approved 2026-06-04 via `shared/work-queue.md`; proposal now lives at
+`projects/may-agent.app/agents/arc/workspace/proposals/2026-05-27-db-retention-policy.md`.
 
 ### See Also
 

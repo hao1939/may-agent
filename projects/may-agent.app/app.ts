@@ -159,6 +159,12 @@ async function routePlatformEvent(
       // restarts (all metrics appear stale until the first snapshot run).
       // Self-resolves within one measurement cycle (~5min). Not actionable.
       "metric.stale-active-count",
+      // Category 6: first-turn-error-count measures provider errors across
+      // ALL agents. ~80% of triggers are aks-rp-e2e planner burst failures
+      // (opCount=0 instant errors during planner workflow restarts). Not
+      // platform-actionable — aks-rp-e2e.app owns its planner reliability.
+      // Kept in scheduled review (4h) for trend awareness.
+      "session.first-turn-error-count-1h",
     ]);
     const metricId = eventString(event, "metricId");
     if (metricId && DEFERRED_METRICS.has(metricId)) {

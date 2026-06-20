@@ -1,12 +1,12 @@
 {
   "version": 2,
   "project": "may-agent",
-  "updated_at": "2026-06-20T11:20:00.000Z",
+  "updated_at": "2026-06-20T11:35:00.000Z",
   "project_lifecycle": "active",
   "root_task_id": "project",
   "active_task_id": null,
   "active_task_ids": [],
-  "note": "63 done, 8 backlog, 0 active (71 total). Platform stable with disk-space fix deployed: session-history-filesystem-retention added to metrics-snapshot handler (recovered 10GB, automated 14d pruning). Zero platform failures, handler success 99.9%. 3 open alerts all aks-rp-e2e-owned. Next backlog priority: schedule-tick-event-handled-convention (P2).",
+  "note": "64 done, 8 backlog, 0 active (72 total). Schedule over-fire stabilized — all 4 timers at correct intervals, 0 runtime failures in 1h. 7 open alerts: 1 transient platform (session.first-turn-error-count-1h=21, auto-resolving as 1h window ages out), 6 aks-rp-e2e-owned. No task-tree changes needed.",
   "max_concurrent": 3,
   "tasks": {
     "project": {
@@ -2475,11 +2475,42 @@
         "cron-event-queue-depth-limit",
         "deploy-queue-depth-binary",
         "deferred-metric-stale-active-count",
-        "session-history-filesystem-retention"
+        "session-history-filesystem-retention",
+        "cron-schedule-resume-fallback-fix"
       ],
       "goal": "Durable ops-health branch for finite review/repair tasks. Created when signals demand investigation.",
       "context": {
         "design_ref": "docs/3-proposals/system-operations-model.md"
+      }
+    },
+    "cron-schedule-resume-fallback-fix": {
+      "id": "cron-schedule-resume-fallback-fix",
+      "parent_id": "ops-health",
+      "state": "done",
+      "resolution": "completed",
+      "kind": "work",
+      "priority": "P1",
+      "owner": "tech-lead",
+      "children": [],
+      "goal": "Fix cron getLastFireTime() returning null for synthetic project-app schedule entries after daemon restart, causing 24h/4h/1h schedules to over-fire every few minutes.",
+      "context": {
+        "root_cause": "getLastFireTime() falls back to workflow_runs WHERE workflow = <name>. For synthetic schedule entries (handler = '__project_app_schedule__'), workflowHandler() returns undefined, so it queries workflow_runs WHERE workflow = 'may-agent-schedule-daily-ops-digest' — which has 0 rows. The actual workflow_runs record uses workflow = 'daily-ops-digest'. Without a DB match, lastFireTime is null, computeResumeDelay returns 0, and the entry fires immediately after every restart/reload.",
+        "observed_at": "2026-06-20T10:30:00Z",
+        "evidence": "daily-ops-digest (86400000ms interval) fired 4 times in 25 minutes (gaps: 109s, 641s, 670s). ops-health-review (3600000ms interval) fired with gaps of 295s. owner-heartbeat (14400000ms interval) fired with gaps of ~600s. All 4 schedule entries had 0 matching workflow_runs rows but 45+ handler.started event rows.",
+        "fix_applied": "Added secondary DB fallback in getLastFireTime() that checks events table for handler.started records with json_extract(data, '$.handler') = entryName. These always exist because fireHandler() emits handler.started with the entry name.",
+        "fix_file": "projects/may-agent/src/app/cron.ts:826-866"
+      },
+      "acceptance": [
+        "getLastFireTime() returns a valid timestamp for synthetic schedule entries after restart",
+        "daily-ops-digest no longer fires every few minutes after restart",
+        "All 19 cron tests pass",
+        "All 19 project-app-loader tests pass",
+        "TypeScript check clean"
+      ],
+      "verification": {
+        "verdict": "accepted",
+        "ts": "2026-06-20T10:50:00Z",
+        "reason": "Added handler.started event fallback to getLastFireTime(). Confirmed the root cause: workflow_runs has 0 rows for 'may-agent-schedule-daily-ops-digest' but 38 rows for 'daily-ops-digest'. events table has 45 handler.started rows with the correct entry name. Fix is generic and covers all 4 affected schedules. All 19 cron tests pass, all 19 project-app-loader tests pass, TypeScript check clean."
       }
     },
     "static-integrity-checks": {

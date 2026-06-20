@@ -36,7 +36,8 @@ A **project-centered, event-based autonomous agent system** where:
 - **Metrics are signals.** Typed metrics measure progress toward project goals and system health. Metrics do not judge or decide; they signal what may need attention.
 - **App schedules replace heartbeats.** For app-owned agents, recurring work
   fires from app.ts schedules, not blind heartbeat timers. Heartbeats remain
-  for standalone agents (dev, arc) without a project-app.
+  only for standalone agents such as `dev` while they are still outside a
+  project-app.
 - Agents are role/responsibility/context scopes — accountability boundaries that own a domain.
 - Events are durable signals that something can react to: timers, metric
   changes, messages, session completions, and project owner requests. Facts

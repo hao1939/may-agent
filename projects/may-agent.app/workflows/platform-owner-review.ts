@@ -314,7 +314,8 @@ function buildReviewPacket(
       },
       runtime_project_rows: projectRows,
       project_state_mismatch: projectRows.some(
-        (row) => row.status !== projectJson.status,
+        (row) =>
+          row.status !== projectJson.status || row.owner !== projectJson.owner,
       ),
       task_tree: taskTreePacket(appDir),
       open_alerts: openAlerts,
