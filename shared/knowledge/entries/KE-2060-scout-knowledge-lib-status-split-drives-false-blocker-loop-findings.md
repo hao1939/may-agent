@@ -6,16 +6,17 @@ author: arc
 status: active
 tags: [status-mismatch, evaluator, stale-blocker-loop, scout, false-positive, project-apps]
 related: [KE-2052, KE-2058, KE-1854, KE-1392]
-last_verified: 2026-06-21T08:00Z
+last_verified: 2026-06-20T04:07Z
 ---
 
 <ai_context>
-summary: "scout-knowledge-lib.app has a status split: project.json on disk says status=active, but the DB projects table says status=waiting (set 2026-06-14 during creative audit). Meanwhile, app.ts explore schedules are all enabled=true, so 99 scout sessions ran in the last 24h — productive sessions averaging 43.5 ops with quality 0.85, producing real arXiv/HN/XHS findings. The evaluator's aftermath heuristic sees the DB status=waiting and generates stale-blocker-loop findings (13 in 24h, 7 for scout-knowledge-lib specifically). These are false positives: the sessions are not stuck in a blocker loop, they're doing scheduled exploration work successfully. The capability.status-reality-mismatch-count metric reads 1 — this is exactly that mismatch. This is the third instance of the evaluate-from-DB-but-control-from-disk pattern causing phantom findings (see KE-2058 for the zombie metrics variant)."
-triggers: [inbox learning.feedback stale-blocker-loop, capability.status-reality-mismatch-count=1]
+summary: "scout-knowledge-lib.app has a status split: project.json on disk says status=active, but the DB projects table says status=waiting (set 2026-06-14 during creative audit). Meanwhile, app.ts explore schedules are all enabled=true, so 107 scout sessions ran in the last 24h — productive sessions averaging 43.1 ops, producing real arXiv/HN/XHS findings. The evaluator's aftermath heuristic sees the DB status=waiting and generates stale-blocker-loop findings (24 in the last 12h alone, ~48/day projected — rate has doubled since first observation). CRITICAL CORRECTION: capability.status-reality-mismatch-count reads 0 — it does NOT detect this disk/DB split. The metric is a composite of staleActiveProjects + staleActiveMetrics + terminalSessionsWithoutEnd + agentsWithoutHeartbeat (metrics-snapshot.ts line ~2305). It never compares project.json status to DB projects.status. There is NO automatic reconciler for this class of mismatch."
+triggers: [inbox learning.feedback stale-blocker-loop, evaluator false positive flood]
 falsifiers:
-  - F1: "If the DB status is updated to active (matching project.json), the stale-blocker-loop findings stop and mismatch-count drops to 0." — Fix test.
+  - F1: "If the DB status is updated to active (matching project.json), the stale-blocker-loop findings stop." — Fix test. BLOCKED: requires DB write (emit or human).
   - F2: "If project.json is intentionally waiting (matching DB), the app.ts schedules should be disabled." — Check with may/hao.
   - F3: "If the evaluator's stale-blocker-loop heuristic checks disk status instead of DB status, the false positives stop regardless." — Evaluator code change.
+  - F4: "If a disk→DB status reconciler is added to metrics-snapshot.ts or project-health.ts, all future mismatches auto-resolve." — Code proposal needed.
 </ai_context>
 
 # KE-2060: scout-knowledge-lib Status Split Drives False Blocker-Loop Findings
@@ -45,7 +46,16 @@ These findings are false positives for scout. The sessions aren't looping on a b
 
 ### Metrics impact
 
-`capability.status-reality-mismatch-count = 1` — this is exactly the scout-knowledge-lib split.
+`capability.status-reality-mismatch-count = 0` — **does NOT detect this mismatch** (corrected 2026-06-20). The metric is a composite of `staleActiveProjects + staleActiveMetrics + terminalSessionsWithoutEnd + agentsWithoutHeartbeat` (metrics-snapshot.ts line ~2305). It never compares `project.json` disk status to DB `projects.status`. There is no automatic reconciler for disk/DB project status splits.
+
+### Rate escalation (2026-06-20 04:07Z)
+
+| Window | stale-blocker-loop findings |
+|--------|---------------------------|
+| KE-2060 initial (Jun 19) | 13/24h |
+| Last 12h (Jun 20 04:07Z) | 24/12h (48/day projected) |
+
+The rate has nearly quadrupled. 19/28 in the last 24h target scout-knowledge-lib specifically.
 
 ## Root Cause
 
