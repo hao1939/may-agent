@@ -220,6 +220,7 @@ function appWorkflowRuntimePaths(
   descriptor: ProjectAppDescriptor,
   agentName: string,
 ): {
+  agentsRoot: string;
   workflowDir: string;
   projectWorkflowDir: string;
   guardsDir: string;
@@ -230,6 +231,7 @@ function appWorkflowRuntimePaths(
   const globalAgentDir = join(runtime.agentsRoot, agentName);
   const agentDir = appAgentDir ?? globalAgentDir;
   return {
+    agentsRoot: appAgentDir ? join(descriptor.appDir, "agents") : runtime.agentsRoot,
     workflowDir: join(agentDir, "workflows"),
     projectWorkflowDir: join(descriptor.appDir, "workflows"),
     guardsDir: join(agentDir, "guards"),
@@ -482,7 +484,7 @@ function installWorkflowHandlers(opts: ProjectAppLoaderOptions, cron: Cron, desc
         bus: opts.bus,
         persistDir: runtime.persistDir,
         projectRoot: opts.projectRoot,
-        agentsRoot: runtime.agentsRoot,
+        agentsRoot: paths.agentsRoot,
         sharedRoot: runtime.sharedRoot,
         projectsRoot: opts.projectsRoot,
         agentName,
