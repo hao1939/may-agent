@@ -1,0 +1,64 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-19T23:26:40.853Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "evidence-feedback-and-model-update",
+  "summary": "Accepted scope-isolation evidence now records why the original task-completed burst repair cannot be taken directly from the current broad planner worktree: the settled task-completed guard/test are identifiable and currently pass, but unrelated regular-learning-tick, blocked-frontier-review, and other planner families remain co-resident in the same diff. Live work in this lane therefore stays focused on planner-timeout-post-task-completed-isolated-repair-20260619 to produce a reviewable narrow patch or equivalent file-level isolation proof, after which the burst-repair review leaf can be either accepted with checkpoint evidence or retired as unrecoverable.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "planner-timeout-post-task-completed-scope-isolation-20260619",
+      "parent_id": "evidence-feedback-and-model-update",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Isolate the already-settled task-completed planner-timeout repair from the broader current project-planner worktree diff, or produce exact evidence proving the timeout leaf changed only the settled task-completed no-op and its regression despite unrelated surrounding edits. Leave review-ready scope evidence so the original timeout leaf can be accepted or replaced cleanly.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/planner-timeout-post-task-completed-scope-isolation-20260619.md"
+      ],
+      "acceptance": [
+        "Work cites the current broad diff stat for workflows/project-planner.ts and workflows/project-planner.test.ts and names at least the unrelated regular-learning-tick quick path / blocked-frontier-review surfaces now visible in the worktree, so review records exactly why the original leaf was not accepted on packet evidence alone.",
+        "Either the workflow/test changes are narrowed to the settled task-completed timeout family or the evidence note proves with exact file-level context that the original repair added only the completed-task-settled guard plus the blocked-frontier regression while unrelated planner edits were preexisting or separately owned.",
+        "Validation records the exact planner test command/output after any narrowing, and the follow-up leaves the original review branch with a clear accept-or-supersede decision instead of another ambiguous broad-diff claim."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "workflow:project-planner-timeout-family"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-19T23:23:22.774Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_planner-timeout-post-task-completed-scope-isolation-20260619_20260619232322",
+        "assigned_at": "2026-06-19T23:23:22.824Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_planner-timeout-post-task-completed-scope-isolation-20260619",
+        "worker_started_attempt_id": "a_planner-timeout-post-task-completed-scope-isolation-20260619_20260619232322",
+        "worker_started_at": "2026-06-19T23:23:31.946Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Produced a review-ready scope-isolation note at evidence/archive/planner-timeout-post-task-completed-scope-isolation-20260619.md showing the planner diff is still broad, identifying unrelated regular-learning-tick and blocked-frontier-review surfaces, isolating the narrow settled task-completed guard/test within that diff, and recommending supersede/replace rather than direct acceptance.",
+        "last_worker_completed_at": "2026-06-19T23:25:07.114Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-19T23:25:36.512Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: the archive note captures the exact broad planner diff, names unrelated regular-learning-tick and blocked-frontier-review surfaces, isolates the narrow settled task-completed guard/test, records current planner-test validation (22 pass, 0 fail), and clearly concludes the original burst-repair leaf should be superseded rather than directly accepted."
+      },
+      "session_id": "s_task_planner-timeout-post-task-completed-scope-isolation-20260619",
+      "session_history": [
+        "s_task_planner-timeout-post-task-completed-scope-isolation-20260619"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-19T23:25:36.512Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: the archive note captures the exact broad planner diff, names unrelated regular-learning-tick and blocked-frontier-review surfaces, isolates the narrow settled task-completed guard/test, records current planner-test validation (22 pass, 0 fail), and clearly concludes the original burst-repair leaf should be superseded rather than directly accepted."
+      },
+      "status": "done"
+    }
+  ]
+}

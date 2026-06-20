@@ -160,6 +160,12 @@ chat session through the manager, but the manager routes `kind: "chat"` /
 `autoClose: "never"` through a chat-turn path instead of the job-style
 `executeSession()` terminal cycle.
 
+`kind: "chat"` is the semantic selector. `autoClose: "never"` is a persistence
+detail derived from that choice so the live session remains available between
+turns. New callers should not use `autoClose: "never"` to create non-chat
+long-running jobs; jobs should stay bounded and use events or task state for
+continuation.
+
 It still registers and updates a normal session record. The distinction is:
 
 - the session registry owns identity, persistence, events, and observability
@@ -222,11 +228,13 @@ Current implementation status:
 - ✅ Empty response detection and retry (one attempt)
 - ✅ Trim the empty assistant message before retry
 - ✅ Stay idle on retryable failure (don't kill session)
-- ❌ `transformContext` not wired — retry sends the same oversized context
-- ❌ No proactive compaction — context grows until it breaks
+- ✅ `transformContext` wired for persistent chat
+- ✅ Compacted snapshots persisted for restart recovery
+- ⚠️ Needs ongoing proof that live in-memory transcript stays bounded across
+  long conversations and that restart recovery uses the compact snapshot
 
-The fix is `transformContext` on the chat Agent. It runs before every LLM
-call:
+The core mechanism is `transformContext` on the chat Agent. It runs before
+every LLM call:
 
 ```typescript
 const agent = new Agent({
@@ -247,10 +255,11 @@ Rules:
   the retry's LLM call automatically
 - One mechanism, runs every turn, no aggressive trimming
 
-This is the single missing piece between the current implementation and a
-working long-lived chat session. Without it, every conversation that exceeds
-~70 messages (280KB) enters an unrecoverable error loop: empty response →
-retry with same oversized context → same empty response → session dies.
+This is the critical mechanism for a working long-lived chat session. Without
+it, a large conversation can enter an unrecoverable error loop: empty response
+→ retry with the same oversized context → same empty response → session dies.
+The runtime should verify this path with tests that prove both the prompt
+context and the live in-memory transcript stay bounded.
 
 **Continuity across restarts** — when the daemon restarts:
 - Transcript is persisted to JSONL (existing mechanism)
@@ -273,6 +282,9 @@ empty assistant message. That is a failed turn, not a dead conversation:
   human message.
 - The runtime must not silently drop the request, start a parallel May chat
   session, or archive the chat session for this retryable empty-output class.
+- A human message received while the chat session is already running must also
+  be visible and accepted. The runtime may steer it into the current turn or
+  queue it for the next turn, but it must not silently drop it.
 
 ## Event Boundary
 
@@ -536,10 +548,13 @@ metrics. Production May delegation should use `run_cli_agent`.
    Current implementation prefers compact snapshots during resume and refreshes
    the chat prompt on every turn; recovery still needs an end-to-end restart
    scenario with notification verification.
-7. Add durable CLI delegation runner: persist task before spawn, run Claude
+7. ✅ Add durable CLI delegation runner: persist task before spawn, run Claude
    Code / Codex in non-interactive mode, write structured result files, emit
    `cli.task.*` events, recover orphans after restart, and present results in
    chat.
+   Current remaining work is hardening and end-to-end verification from
+   Chat-May: request accepted immediately, chat stays responsive, completion
+   steers the source session, and May presents the result.
 8. Create `platform-owner` agent in may-agent.app and transfer may-agent.app
    ownership away from May.
 9. Route Deputy-May system judgments through infra handlers, but route concrete

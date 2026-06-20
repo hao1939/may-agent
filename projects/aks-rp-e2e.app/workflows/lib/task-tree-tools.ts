@@ -2,11 +2,14 @@ import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
 import { extname, join } from "node:path";
 import {
   appendToolJournal,
+  isLeaf,
+  planningPacket as sdkPlanningPacket,
   normalizeStringArray,
   readTaskTree,
   saveTaskTreeWithKanbanSnapshot,
   withTreeLock,
   type TaskNode,
+  type TaskPlanningPacket,
   type TaskTree,
   type TaskTreeConfig,
 } from "@may-agent/sdk";
@@ -25,10 +28,10 @@ export {
   listRunnableBacklogTaskIds,
   markTaskDone,
   peekTaskAssignments,
-  planningPacket,
   readTask,
   rejectTaskReview,
   requeueStaleActiveTasks,
+  rollupParent,
   updateTaskOutputs,
   updateTaskText,
   repairTaskTreeRollups,
@@ -49,6 +52,7 @@ export type {
   TaskKanbanSnapshot,
   TaskKanbanState,
   RejectTaskReviewInput,
+  RollupParentInput,
   TaskPlanningPacket,
   TaskPlanningSnapshot,
   TaskTreeCompactResult,
@@ -78,6 +82,8 @@ type KnowledgeFeaturePath = {
   status?: string;
   terminal?: boolean;
   verdictFinal?: boolean;
+  retestCondition?: string;
+  resumeCondition?: string;
   rootCauseClass?: string;
   remediationStatus?: string;
   variantOfSpecId?: string;
@@ -90,12 +96,246 @@ type KnowledgeFeaturePath = {
   };
 };
 
+export type ProjectHygieneWarning = {
+  kind: "stale-terminal-retry";
+  taskId: string;
+  taskState: string;
+  pathId: string;
+  pathStatus?: string;
+  terminal?: boolean;
+  verdictFinal?: boolean;
+  message: string;
+};
+
+export type AksTaskPlanningPacket = TaskPlanningPacket & {
+  project_hygiene_warnings?: ProjectHygieneWarning[];
+};
+
 function readJsonFile<T>(path: string, fallback: T): T {
   try {
     return JSON.parse(readFileSync(path, "utf-8")) as T;
   } catch {
     return fallback;
   }
+}
+
+function boolValue(value: unknown): boolean {
+  return value === true;
+}
+
+function normalizeTextValue(value: unknown): string | undefined {
+  return typeof value === "string" && value.trim() ? value.trim() : undefined;
+}
+
+function normalizeModelPath(entry: Record<string, unknown>): {
+  id: string;
+  status?: string;
+  terminal?: boolean;
+  verdictFinal?: boolean;
+  retestCondition?: string;
+  resumeCondition?: string;
+} | null {
+  const id = typeof entry.id === "string" ? entry.id.trim() : "";
+  if (!id) return null;
+  return {
+    id,
+    status: typeof entry.status === "string" ? entry.status : undefined,
+    terminal: boolValue(entry.terminal) || undefined,
+    verdictFinal: boolValue(entry.verdictFinal) || undefined,
+    retestCondition: normalizeTextValue(entry.retestCondition),
+    resumeCondition: normalizeTextValue(entry.resumeCondition),
+  };
+}
+
+function loadModelPaths(config: TaskTreeConfig): Array<{
+  id: string;
+  status?: string;
+  terminal?: boolean;
+  verdictFinal?: boolean;
+  retestCondition?: string;
+  resumeCondition?: string;
+}> {
+  const model = readJsonFile<Record<string, unknown>>(
+    join(config.projectDir, "model", "knowledge-map", "model.json"),
+    {},
+  );
+  const featurePaths = Array.isArray(model.featurePaths)
+    ? (model.featurePaths as Record<string, unknown>[])
+    : [];
+  const mirrorPaths = Array.isArray(model.paths)
+    ? (model.paths as Record<string, unknown>[])
+    : [];
+  const byId = new Map<
+    string,
+    { id: string; status?: string; terminal?: boolean; verdictFinal?: boolean }
+  >();
+  for (const entry of [...featurePaths, ...mirrorPaths]) {
+    const path = normalizeModelPath(entry);
+    if (!path) continue;
+    byId.set(path.id, { ...byId.get(path.id), ...path });
+  }
+  return [...byId.values()];
+}
+
+function taskSearchText(task: TaskNode): string {
+  return JSON.stringify({
+    id: task.id,
+    goal: task.goal,
+    inputs: task.inputs,
+    outputs: task.outputs,
+    acceptance: task.acceptance,
+    conflict_scope: task.conflict_scope,
+    depends_on: task.depends_on,
+    context: task.context,
+    blocker: task.blocker,
+    trace: task.trace,
+  }).toLowerCase();
+}
+
+function hasRetryIntent(text: string): boolean {
+  return /\b(retry|rerun|re-run|reopen|re-open|reverify|re-verify|resume|unblock|execute|execution|verify|verification)\b/i.test(
+    text,
+  );
+}
+
+function normalizeComparableText(value: string | undefined): string {
+  return (value ?? "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function holderTextMatchesResumeContract(
+  text: string,
+  path: Pick<KnowledgeFeaturePath, "retestCondition" | "resumeCondition">,
+): boolean {
+  const normalizedTaskText = normalizeComparableText(text);
+  if (!normalizedTaskText) return false;
+
+  const contractTexts = [path.resumeCondition, path.retestCondition]
+    .map((value) => normalizeComparableText(value))
+    .filter(Boolean);
+  if (contractTexts.length === 0) return false;
+
+  const tokenize = (value: string): string[] =>
+    value
+      .split(" ")
+      .map((part) => part.trim())
+      .filter(
+        (part) =>
+          part.length >= 4 &&
+          ![
+            "when",
+            "only",
+            "then",
+            "that",
+            "this",
+            "with",
+            "from",
+            "into",
+            "after",
+            "before",
+            "until",
+            "exact",
+            "blocked",
+            "resume",
+            "rerun",
+            "replay",
+            "path",
+            "host",
+            "gate",
+            "open",
+            "valid",
+            "will",
+            "must",
+            "should",
+            "project",
+            "staging",
+          ].includes(part),
+      );
+
+  const taskTokens = new Set(tokenize(normalizedTaskText));
+
+  return contractTexts.some((contract) => {
+    if (contract.length >= 24 && normalizedTaskText.includes(contract)) {
+      return true;
+    }
+    const contractTokens = [...new Set(tokenize(contract))];
+    if (contractTokens.length === 0) return false;
+    const overlap = contractTokens.filter((token) => taskTokens.has(token));
+    return overlap.length >= 3;
+  });
+}
+
+function isExactBlockedPrerequisiteHolder(
+  task: TaskNode,
+  text: string,
+  path: KnowledgeFeaturePath,
+): boolean {
+  const state = task.status ?? task.state ?? "backlog";
+  if (state !== "blocked") return false;
+
+  const holderSignals = [
+    "exact environment blocker",
+    "exact external prerequisite holder",
+    "exact prerequisite holder",
+    "remains only as the exact environment prerequisite holder",
+    "resume only when",
+    "blocked until",
+    "external unblock required",
+  ];
+  const hasHolderSignal = holderSignals.some((signal) => text.includes(signal));
+  if (!hasHolderSignal) return false;
+
+  return holderTextMatchesResumeContract(text, path);
+}
+
+function projectHygieneWarnings(
+  config: TaskTreeConfig,
+): ProjectHygieneWarning[] {
+  return withTreeLock(config, () => {
+    const tree = readTaskTree(config);
+    const terminalPaths = loadModelPaths(config).filter(
+      (path) => path.terminal === true || path.verdictFinal === true,
+    );
+    const warnings: ProjectHygieneWarning[] = [];
+    for (const task of Object.values(tree.tasks ?? {})) {
+      const state = task.status ?? task.state ?? "backlog";
+      if (!isLeaf(task)) continue;
+      if (state === "done") continue;
+      const text = taskSearchText(task);
+      if (!hasRetryIntent(text)) continue;
+      for (const path of terminalPaths) {
+        if (!text.includes(path.id.toLowerCase())) continue;
+        if (isExactBlockedPrerequisiteHolder(task, text, path)) continue;
+        warnings.push({
+          kind: "stale-terminal-retry",
+          taskId: task.id,
+          taskState: state,
+          pathId: path.id,
+          pathStatus: path.status,
+          terminal: path.terminal,
+          verdictFinal: path.verdictFinal,
+          message:
+            "model verdict may be stale; owner should reconcile the model path before retry planning",
+        });
+      }
+    }
+    return warnings
+      .sort(
+        (a, b) =>
+          a.taskId.localeCompare(b.taskId) || a.pathId.localeCompare(b.pathId),
+      )
+      .slice(0, 20);
+  });
+}
+
+export function planningPacket(config: TaskTreeConfig): AksTaskPlanningPacket {
+  const packet = sdkPlanningPacket(config) as AksTaskPlanningPacket;
+  const warnings = projectHygieneWarnings(config);
+  if (warnings.length > 0) packet.project_hygiene_warnings = warnings;
+  return packet;
 }
 
 function listArtifactStems(root: string, extension: string): Set<string> {

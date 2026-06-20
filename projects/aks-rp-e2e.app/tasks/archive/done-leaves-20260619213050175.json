@@ -1,0 +1,123 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-19T21:30:50.175Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "evidence-feedback-and-model-update",
+  "summary": "Evidence-feedback now absorbs the accepted LocalDNS Machines post-cleanup promotion: the hygiene follow-up separated unrelated Storage CSI co-travel, the canonical LocalDNS model/view surfaces now cite the accepted westus2/local rerun for path.localdns.cluster-topology and path.localdns.machines, and no further LocalDNS cleanup leaf is needed. Remaining work in this lane stays on other blocked promotions rather than reopening this settled LocalDNS branch.",
+  "archived": 2,
+  "tasks": [
+    {
+      "id": "localdns-machines-post-cleanup-scope-hygiene-20260619",
+      "parent_id": "evidence-feedback-and-model-update",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Resolve review scope hygiene for the LocalDNS Machines post-cleanup model promotion before acceptance: inspect the current dirty model/view/evidence diff, determine whether the unrelated storage-csi-blob-pvc-dynamic additions and model.json updatedAt drift are intentional preexisting repo changes or accidental co-travel from this promotion, then leave a LocalDNS-scoped acceptance-ready diff by either separating/removing unrelated edits or explicitly documenting and checkpointing them under the correct feature lineage.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/localdns-machines-post-cleanup-scope-hygiene-20260619.md"
+      ],
+      "acceptance": [
+        "Archive note cites the review concern on localdns-machines-post-cleanup-model-promotion-20260619, names every non-LocalDNS dirty artifact currently co-traveling with the promotion (including storage-csi-blob-pvc-dynamic surfaces and model.json updatedAt drift), and classifies each as intentional preexisting change vs accidental scope leak with evidence.",
+        "The resulting repo diff becomes acceptance-ready for the LocalDNS promotion: either only LocalDNS evidence/model/view surfaces remain dirty for that branch, or any retained unrelated change is explicitly justified, routed to its own correct lineage, and no longer makes the LocalDNS review misleading.",
+        "The note records the exact repo-local regeneration/validation state after cleanup and states whether localdns-machines-post-cleanup-model-promotion-20260619 is now safe to mark done or needs one more bounded follow-up."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "feature:localdns",
+        "path:path.localdns.cluster-topology",
+        "artifact:localdns-machines-post-cleanup-model-promotion"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-19T21:25:50.434Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_localdns-machines-post-cleanup-scope-hygiene-20260619_20260619212553",
+        "assigned_at": "2026-06-19T21:25:53.284Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_localdns-machines-post-cleanup-scope-hygiene-20260619",
+        "worker_started_attempt_id": "a_localdns-machines-post-cleanup-scope-hygiene-20260619_20260619212553",
+        "worker_started_at": "2026-06-19T21:26:15.278Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Cleaned the LocalDNS post-cleanup promotion diff to remove unrelated Storage CSI model/view co-travel, regenerated LocalDNS-derived views, and wrote an archive note documenting scope classification, validation state, and acceptance readiness.",
+        "last_worker_completed_at": "2026-06-19T21:29:23.139Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-19T21:30:50.054Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: the archive note proves the Storage CSI model/view co-travel was removed from the tracked LocalDNS promotion diff, classifies remaining unrelated untracked artifacts under their own lineages, and records post-cleanup regeneration/validation state showing the LocalDNS promotion is now scope-clean and acceptance-ready."
+      },
+      "session_id": "s_task_localdns-machines-post-cleanup-scope-hygiene-20260619",
+      "session_history": [
+        "s_task_localdns-machines-post-cleanup-scope-hygiene-20260619"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-19T21:30:50.054Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: the archive note proves the Storage CSI model/view co-travel was removed from the tracked LocalDNS promotion diff, classifies remaining unrelated untracked artifacts under their own lineages, and records post-cleanup regeneration/validation state showing the LocalDNS promotion is now scope-clean and acceptance-ready."
+      },
+      "status": "done"
+    },
+    {
+      "id": "localdns-machines-post-cleanup-model-promotion-20260619",
+      "parent_id": "evidence-feedback-and-model-update",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Promote the accepted LocalDNS Machines post-cleanup westus2/local rerun evidence into the durable feature/model surfaces: use evidence/archive/localdns-machines-westus2-local-rerun-after-cleanup-20260619.md plus the existing LocalDNS topology lineage to record that the repaired Machines branch now has direct passing execution evidence for LocalDNS-enabled node labeling and node-local DNS resolution, and leave adjacent LocalDNS family blockers unchanged unless this evidence materially changes their stated contract.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/model/knowledge-map/model.json",
+        "../aks-rp-e2e/model/knowledge-map/views/",
+        "../aks-rp-e2e/evidence/archive/localdns-machines-post-cleanup-model-promotion-20260619.md"
+      ],
+      "acceptance": [
+        "Work cites evidence/archive/localdns-machines-westus2-local-rerun-after-cleanup-20260619.md and the existing LocalDNS feature/path surfaces, then updates the durable model/view or feature-linked evidence so the Machines branch is no longer represented as unknown or still blocked on the superseded request-shape/cleanup story.",
+        "Any touched LocalDNS path text preserves exact scope: it records the Machines-path product-pass and clean RG outcome from the unchanged repaired-envelope rerun, while leaving unrelated LocalDNS autodefault/upgrade or other family blockers untouched unless an explicit contradiction is resolved with evidence.",
+        "Repo-local validation or view regeneration needed by the touched surfaces succeeds and the archive note states exactly what model/view/task state changed because of this accepted rerun evidence."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "path:path.localdns.cluster-topology",
+        "feature:localdns"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-19T21:19:58.805Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_localdns-machines-post-cleanup-model-promotion-20260619_20260619211958",
+        "assigned_at": "2026-06-19T21:19:58.858Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_localdns-machines-post-cleanup-model-promotion-20260619",
+        "worker_started_attempt_id": "a_localdns-machines-post-cleanup-model-promotion-20260619_20260619211958",
+        "worker_started_at": "2026-06-19T21:20:17.309Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Promoted the accepted LocalDNS Machines post-cleanup westus2/local rerun into the canonical knowledge-map model and regenerated views, adding durable evidence linkage plus a promotion note that documents the exact scope and unchanged adjacent LocalDNS blockers.",
+        "last_worker_completed_at": "2026-06-19T21:25:06.690Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-19T21:30:50.122Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review after scope hygiene closure: the promotion note links the 2026-06-19 post-cleanup westus2/local rerun into model.json and regenerated views, updates path.localdns.cluster-topology and path.localdns.machines with direct pass evidence, and leaves adjacent LocalDNS blockers unchanged."
+      },
+      "session_id": "s_task_localdns-machines-post-cleanup-model-promotion-20260619",
+      "session_history": [
+        "s_task_localdns-machines-post-cleanup-model-promotion-20260619"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-19T21:30:50.122Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review after scope hygiene closure: the promotion note links the 2026-06-19 post-cleanup westus2/local rerun into model.json and regenerated views, updates path.localdns.cluster-topology and path.localdns.machines with direct pass evidence, and leaves adjacent LocalDNS blockers unchanged."
+      },
+      "status": "done"
+    }
+  ]
+}

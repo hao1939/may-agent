@@ -1,0 +1,55 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-19T19:49:52.903Z",
+  "reason": "bottom-up cleanup after large lane rollups",
+  "parent_id": "spec-generation",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "batch-6-specs",
+      "parent_id": "spec-generation",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Generate specs for batch-6 features from feature packets. For each batch-6 feature: create spec with scenario, input variables, expected output assertions, and staging feasibility notes. Follow specs/ format conventions.",
+      "inputs": [],
+      "outputs": [
+        "specs/"
+      ],
+      "acceptance": [
+        "Specs created for batch-6 features matching feature packets. Each spec has scenario, inputVariables, and expectedOutput. bun run check passes."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec-generation"
+      ],
+      "depends_on": [
+        "batch-6-feature-packets"
+      ],
+      "trace": {
+        "created_at": "2026-06-14T00:17:11.320Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_batch-6-specs_20260614003932",
+        "assigned_at": "2026-06-14T00:39:32.541Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_batch-6-specs",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Created 21 batch-6 specs from 3 feature packets (net-integration: 10 specs, managementplane-addon: 6 specs, runtime-container: 5 specs). All specs follow the established format with id, title, featurePathIds, sourceRefs, sourceScenario, inputs, clusterRequirements, state, assertions, setup/operations/cleanup, and staging feasibility notes. Updated specs/index.json (223→244 entries). `bun run check` passes all 8 steps (format, whitespace, compile, wiring, check-mode, schema, typecheck).",
+        "last_worker_completed_at": "2026-06-14T00:48:48.250Z",
+        "last_worker_evidence": [],
+        "accepted_at": "2026-06-14T01:10:00Z",
+        "accepted_by": "planner",
+        "acceptance_note": "21 batch-6 specs created (net-integration: 10, managementplane-addon: 6, runtime-container: 5). specs/index.json updated to 244 entries. bun run check passes all 8 gates."
+      },
+      "session_history": [
+        "s_task_batch-6-specs"
+      ],
+      "state": "done",
+      "resolution": "completed",
+      "status": "done"
+    }
+  ]
+}

@@ -4,6 +4,10 @@
 
 Accepted. This is the canonical project-app design.
 
+For the compact end-to-end control-loop model that ties project apps, task
+trees, events, metrics, blockers, and owner review together, see
+`app-project-integrity.md`.
+
 Earlier project-app designs are retired. The embedded-app iteration proved the
 control-plane split by putting May-agent runtime files under an embedded
 `.app/` folder. V3 keeps the split but moves the app out of the domain project
@@ -826,6 +830,22 @@ agent in two steps during the same owner wake:
    replaced, roll up parents, create concrete next leaves, assign runnable
    backlog leaves, and classify exact blockers.
 
+The owner workflow is also the non-final-state driver. The app should not let
+`backlog`, `active`, `review`, or `blocked` become passive holding lanes. Each
+owner wake should push sampled non-final tasks toward `done` or toward an exact
+next wake condition:
+
+| State | App/project driver |
+| --- | --- |
+| `backlog` | Owner assigns runnable leaves. Dependency-waiting backlog is still owner-visible; stale, missing, done, or locally fixable dependencies should be repaired instead of left invisible. |
+| `active` | Worker completion emits `project.task.completed`; stale active attempts wake owner for requeue, fresh session, replacement, or problem-solving work. |
+| `review` | Owner accepts, rejects, follows up, or records a precise blocker. Stale review is owner backlog and should wake owner. |
+| `blocked` | Blocked-frontier review wakes owner to recheck resume conditions, create/link one problem task for local root causes, send/escalate external asks, unblock/retry changed work, or mark terminal dispositions `done`. |
+
+The app mechanism is simple: signals and events wake the owner; the owner uses
+task-tree tools and domain evidence to decide. Metrics, watchdogs, and schedule
+ticks should not encode project strategy or mutate task meaning directly.
+
 A project-owner pass should be bounded by capacity and clarity, not by one edit.
 When domain gaps remain and runnable backlog plus active work is below the app
 parallelism target, the project-owner agent should keep rolling up completed
@@ -898,8 +918,9 @@ Use three metric classes:
   succeeded, evidence recorded.
 - Health counters: no runnable/active work while gaps remain, runnable backlog
   starvation while gaps remain, capacity underfilled while gaps remain, stale
-  active tasks, live execution idle despite runnable work, duplicate artifact
-  growth.
+  active tasks, stale review tasks, stale blocked tasks, dependency-waiting
+  backlog with stale or missing dependencies, repeated shared blockers, live
+  execution idle despite runnable work, duplicate artifact growth.
 
 Metric breach handling stays event-based:
 

@@ -1,0 +1,80 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-19T19:49:52.916Z",
+  "reason": "bottom-up cleanup after large lane rollups",
+  "parent_id": "feature-knowledge-and-specs",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "vm-prerelease-cilium-podsubnet-canonical-spec-packet-20260618",
+      "parent_id": "feature-knowledge-and-specs",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Reduce VirtualMachine prerelease missingSpec for row 117 Scenario_Cilium_Dataplane_Podsubnet by extracting its exact source anchors, using the accepted nodeSubnet-vs-podSubnet boundary map to prove why overlay and node-subnet branches are insufficient, and landing the smallest dedicated pod-subnet packet/spec/replay lineage or exact repo-local blocker.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vm-prerelease-cilium-podsubnet-canonical-spec-packet-20260618.md"
+      ],
+      "acceptance": [
+        "Archive note cites row 117's exact matrix/source anchors, references the accepted nodeSubnet/podSubnet boundary-map decision in evidence/archive/vm-prerelease-cilium-node-pod-subnet-variant-boundary-map-20260618.md, contrasts row 117 with the adjacent overlay and node-subnet Cilium surfaces, and states the exact missing pod-subnet contract.",
+        "Work lands either a dedicated canonical Cilium pod-subnet packet/spec/replay linkage with any required ledger/model attachment, or one exact repo-local blocker that preserves row 117 as a distinct branch while keeping row 118 as the separate enterprise/ACNS follow-on branch, without cloud execution."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "feature:cilium",
+        "feature:virtualmachines",
+        "ledger:virtualmachine-prerelease"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-18T07:05:39.962Z",
+        "created_by": "task-tree-tool",
+        "promoted_at": "2026-06-18T07:33:02.722Z",
+        "promoted_by": "task-tree-tool",
+        "current_attempt_id": "a_vm-prerelease-cilium-podsubnet-canonical-spec-packet-20260618_20260618073314",
+        "assigned_at": "2026-06-18T07:33:14.772Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vm-prerelease-cilium-podsubnet-canonical-spec-packet-20260618",
+        "worker_started_attempt_id": "a_vm-prerelease-cilium-podsubnet-canonical-spec-packet-20260618_20260618073314",
+        "worker_started_at": "2026-06-18T07:33:34.472Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Created the requested archive note at evidence/archive/vm-prerelease-cilium-podsubnet-canonical-spec-packet-20260618.md, grounding row 117’s exact matrix anchors, reusing the accepted nodeSubnet-vs-podSubnet boundary decision, contrasting adjacent overlay/node-subnet/policy surfaces, and recording the exact repo-local blocker for the missing neutral pod-subnet+Cilium lineage while keeping row 118 separate.",
+        "last_worker_completed_at": "2026-06-18T07:34:37.559Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-18T07:35:13.946Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review of evidence/archive/vm-prerelease-cilium-podsubnet-canonical-spec-packet-20260618.md as the canonical row-117 blocker packet: it grounds the exact prerelease anchors, reuses the accepted nodeSubnet-vs-podSubnet boundary decision, proves why overlay/node-subnet/policy neighbors are insufficient, and leaves one precise successor lineage for neutral pod-subnet+Cilium without collapsing row 118.",
+        "rolled_up_at": "2026-06-19T19:49:52.915Z",
+        "rolled_up_by": "task-tree-tool"
+      },
+      "session_id": "s_task_vm-prerelease-cilium-podsubnet-canonical-spec-packet-20260618",
+      "session_history": [
+        "s_task_vm-prerelease-cilium-podsubnet-canonical-spec-packet-20260618"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-18T07:35:13.946Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review of evidence/archive/vm-prerelease-cilium-podsubnet-canonical-spec-packet-20260618.md as the canonical row-117 blocker packet: it grounds the exact prerelease anchors, reuses the accepted nodeSubnet-vs-podSubnet boundary decision, proves why overlay/node-subnet/policy neighbors are insufficient, and leaves one precise successor lineage for neutral pod-subnet+Cilium without collapsing row 118.",
+        "archived_done_leaf_count": 1,
+        "rollup_archives": [
+          {
+            "archive": "tasks/archive/done-leaves-20260619194952915-1.json",
+            "archived": 1,
+            "at": "2026-06-19T19:49:52.915Z",
+            "reason": "bottom-up cleanup after large lane rollups",
+            "task_ids": [
+              "vm-prerelease-cilium-podsubnet-landing-20260618"
+            ]
+          }
+        ]
+      },
+      "status": "done"
+    }
+  ]
+}

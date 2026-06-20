@@ -5,6 +5,16 @@
 
 # Tools
 
+## Chat-May Runtime Tools
+
+In the persistent human chat session, runtime filters May's tool surface to the
+conversation-safe set: `query_db`, `system_status`, `agents`, `message`,
+`read`, and `run_cli_agent`. Chat-May does not receive `finish`, `bash`,
+`write`, `edit`, or `cron`; concrete code or project changes should be
+delegated to project owners, task agents, or CLI workers.
+
+The full tool list below still applies to bounded May job sessions.
+
 ## `read` / `write` / `edit`
 Read, write, and edit files. Use for workspace files, agent configs, status reports.
 

@@ -1,0 +1,64 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-19T20:02:40.716Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "evidence-feedback-and-model-update",
+  "summary": "Cross-subscription VNet terminal reconciliation is now accepted: the path should stay finally environment-blocked with the staging-prereq leaf retained as the exact future resume contract, and the remaining evidence/model-update work is the newly split repo-local cleanup to remove stale non-final duplicate model/view wording for this path. Other evidence-feedback work remains focused on concrete post-run/model hygiene tasks rather than reopening execution planning.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "net-integration-cross-subscription-vnet-terminal-reconcile-20260619",
+      "parent_id": "evidence-feedback-and-model-update",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Reconcile the stale-terminal warning on path.net-integration.cross-subscription-vnet by comparing the final model verdict, the existing staging-prereq blocked leaf, and any lingering retry-oriented branch text, then record the exact tree/model cleanup needed so this path stops surfacing as a misleading retry candidate.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/net-integration-cross-subscription-vnet-terminal-reconcile-20260619.md"
+      ],
+      "acceptance": [
+        "Archive note cites the current final model state for path.net-integration.cross-subscription-vnet, the existing blocked successor net-integration-cross-subscription-vnet-staging-prereq-blocked-20260619, and the specific reason the planner hygiene warning still fires.",
+        "If the warning is only naming/lane drift, the note recommends the exact no-retry steady-state representation; if any branch text is inconsistent with the final environment-blocked verdict, the note identifies the exact task-tree update needed to remove retry ambiguity without reopening execution planning.",
+        "Work stays repo-local and planning-oriented only: no cloud execution, no new broad network rediscovery, and no environment unblock claims beyond the existing prerequisite statement."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "feature:net-integration-cross-subscription-vnet"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-19T20:00:44.616Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_net-integration-cross-subscription-vnet-terminal-reconcile-20260619_20260619200053",
+        "assigned_at": "2026-06-19T20:00:53.655Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_net-integration-cross-subscription-vnet-terminal-reconcile-20260619",
+        "worker_started_attempt_id": "a_net-integration-cross-subscription-vnet-terminal-reconcile-20260619_20260619200053",
+        "worker_started_at": "2026-06-19T20:01:07.988Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Recorded a durable terminal-reconcile note at evidence/archive/net-integration-cross-subscription-vnet-terminal-reconcile-20260619.md showing that the blocked staging-prereq leaf is correct and that the stale warning comes from an older duplicate non-final model/view row still advertising retry-oriented state.",
+        "last_worker_completed_at": "2026-06-19T20:02:25.117Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-19T20:02:40.589Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted the 2026-06-19 terminal-reconcile note: it verified the blocked staging-prereq leaf is the correct external prerequisite holder for the already-final environment-blocked path and isolated the real stale-terminal issue to duplicate non-final model/view text rather than retry planning."
+      },
+      "session_id": "s_task_net-integration-cross-subscription-vnet-terminal-reconcile-20260619",
+      "session_history": [
+        "s_task_net-integration-cross-subscription-vnet-terminal-reconcile-20260619"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-19T20:02:40.589Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted the 2026-06-19 terminal-reconcile note: it verified the blocked staging-prereq leaf is the correct external prerequisite holder for the already-final environment-blocked path and isolated the real stale-terminal issue to duplicate non-final model/view text rather than retry planning."
+      },
+      "status": "done"
+    }
+  ]
+}

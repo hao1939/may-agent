@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-19T21:39:45.414Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "feature-knowledge-and-specs",
+  "summary": "Feature-knowledge now records Storage CSI Blob PVC dynamic as an exhausted-source branch instead of a promotion-ready model landing: the accepted recovery packet confirmed the repo-local handwritten Blob lineage still stops at enablement while public/upstream sources only support the contract shape, so no durable model-promotion task should exist yet. The next live work for this branch moves to user-review as one send-ready storage source-holder ask rather than more repo-local rediscovery or cloud execution.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "storage-csi-blob-pvc-dynamic-authoritative-source-recovery-20260619",
+      "parent_id": "feature-knowledge-and-specs",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Starting from the accepted scope-correction artifacts (evidence/archive/storage-csi-blob-pvc-dynamic-feature-model-landing-20260619.md plus features/storage-csi/blob-pvc-dynamic.yaml, features/storage-csi/blob-driver-enable.yaml, and the family gap in features/storage-csi.yaml), recover the authoritative source/contract proof needed to justify any durable model promotion for path.storage-csi-blob-pvc-dynamic: search the handwritten e2ev3 lineage, public AKS/Kubernetes/Blob CSI docs, and adjacent repo-local source packets for an explicit Blob PVC dynamic-provisioning behavior contract; if repo-local authoritative proof still does not exist, leave an exact exhausted-search packet plus the precise external/source-holder ask needed next.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/storage-csi-blob-pvc-dynamic-authoritative-source-recovery-20260619.md"
+      ],
+      "acceptance": [
+        "Archive note cites evidence/archive/storage-csi-blob-pvc-dynamic-feature-model-landing-20260619.md plus the accepted Blob enablement/gap packets, records the exact authoritative surfaces searched, and states whether any source directly defines Blob PVC dynamic assertions beyond the family gap.",
+        "If authoritative proof is found, the note quotes the exact file/row/doc excerpts and maps them to the canonical input path and expected behavior so planning can open a bounded promotion task without redoing source discovery; if proof is not found, the note records exhausted-search evidence and one precise external/source-holder ask or blocker instead of vague rediscovery.",
+        "Work stays strictly in the feature-knowledge/spec lane: no cloud execution, no reopening path.storage-csi-blob-driver-enable, and no default split of azureblob-fuse-premium vs azureblob-nfs-premium without stronger proof."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "feature:storage-csi",
+        "path:path.storage-csi-blob-pvc-dynamic",
+        "artifact:storage-csi-blob-pvc-dynamic-source-proof"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-19T21:35:09.584Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_storage-csi-blob-pvc-dynamic-authoritative-source-recovery-20260619_20260619213509",
+        "assigned_at": "2026-06-19T21:35:09.636Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_storage-csi-blob-pvc-dynamic-authoritative-source-recovery-20260619",
+        "worker_started_attempt_id": "a_storage-csi-blob-pvc-dynamic-authoritative-source-recovery-20260619_20260619213509",
+        "worker_started_at": "2026-06-19T21:35:30.850Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Produced the authoritative-source recovery packet for Storage CSI Blob PVC dynamic provisioning at evidence/archive/storage-csi-blob-pvc-dynamic-authoritative-source-recovery-20260619.md, documenting exhausted repo-local/public source search results, recovered supporting contract surfaces, and the exact external source-holder ask needed next.",
+        "last_worker_completed_at": "2026-06-19T21:37:21.886Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-19T21:39:40.446Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted the authoritative-source recovery packet: it exhaustively searched the repo-local handwritten Blob lineage plus public/upstream support surfaces, confirmed Blob PVC dynamic still lacks repo-local authoritative AKS RP behavior proof, and reduced the next step to one exact external/source-holder ask instead of vague rediscovery or premature model promotion."
+      },
+      "session_id": "s_task_storage-csi-blob-pvc-dynamic-authoritative-source-recovery-20260619",
+      "session_history": [
+        "s_task_storage-csi-blob-pvc-dynamic-authoritative-source-recovery-20260619"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-19T21:39:40.446Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted the authoritative-source recovery packet: it exhaustively searched the repo-local handwritten Blob lineage plus public/upstream support surfaces, confirmed Blob PVC dynamic still lacks repo-local authoritative AKS RP behavior proof, and reduced the next step to one exact external/source-holder ask instead of vague rediscovery or premature model promotion."
+      },
+      "status": "done"
+    }
+  ]
+}

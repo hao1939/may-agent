@@ -1,0 +1,117 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-19T19:49:52.919Z",
+  "reason": "bottom-up cleanup after large lane rollups",
+  "parent_id": "vm-prerelease-swift-spec-batch1-20260618",
+  "archived": 2,
+  "tasks": [
+    {
+      "id": "vm-prerelease-swift-core-lineage-packet-20260618",
+      "parent_id": "vm-prerelease-swift-spec-batch1-20260618",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Extract the exact VirtualMachine prerelease Swift-family base row lineage for the first bounded missing-spec slice by separating Swift base, VNetScale, VNetScale+Cilium, and Windows-adjacent variants, then identify one exact spec/replay landing successor or blocker from authoritative source evidence.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vm-prerelease-swift-core-lineage-packet-20260618.md"
+      ],
+      "acceptance": [
+        "Archive note cites the exact Swift-family row ids and authoritative source anchors, separates base Swift semantics from VNetScale, Cilium, and Windows variants, and names one smallest explicit spec/replay landing candidate or exact blocker.",
+        "Any reuse claim points to exact sibling surfaces with matching contract fields; unresolved rows are left with one precise successor and no cloud execution."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "feature:swift",
+        "artifact:vm-prerelease-swift-core-lineage"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-18T07:39:31.211Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_vm-prerelease-swift-core-lineage-packet-20260618_20260618073934",
+        "assigned_at": "2026-06-18T07:39:34.938Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vm-prerelease-swift-core-lineage-packet-20260618",
+        "worker_started_attempt_id": "a_vm-prerelease-swift-core-lineage-packet-20260618_20260618073934",
+        "worker_started_at": "2026-06-18T07:39:59.643Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Produced the requested Swift-family lineage packet at evidence/archive/vm-prerelease-swift-core-lineage-packet-20260618.md, separating base Swift, VNetScale, VNetScale+Cilium, and Windows-adjacent variants, and naming row 177 -> spec.network-swift-v1.static-block-mode as the smallest exact landing while keeping row 178 as a precise blocker.",
+        "last_worker_completed_at": "2026-06-18T07:42:25.505Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-18T07:43:24.732Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted: the archive packet cleanly separates base Swift, static-block row 177, static-block+Cilium row 178, and Windows-adjacent variants, and it shows row 177 is the smallest safe exact landing candidate while keeping row 178 distinct."
+      },
+      "session_id": "s_task_vm-prerelease-swift-core-lineage-packet-20260618",
+      "session_history": [
+        "s_task_vm-prerelease-swift-core-lineage-packet-20260618"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-18T07:43:24.732Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted: the archive packet cleanly separates base Swift, static-block row 177, static-block+Cilium row 178, and Windows-adjacent variants, and it shows row 177 is the smallest safe exact landing candidate while keeping row 178 distinct."
+      },
+      "status": "done"
+    },
+    {
+      "id": "vm-prerelease-swift-staticblock-row177-canonical-landing-20260618",
+      "parent_id": "vm-prerelease-swift-spec-batch1-20260618",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Prove or reject the exact row-177 Scenario_Swift_CNI_VNetScale attachment against spec.network-swift-v1.static-block-mode and replays/network-swift-v1-static-block-mode.ts, landing any needed repo-local lineage/spec-reference updates only if the contract matches exactly; otherwise record one precise blocker without pulling row 178 Cilium semantics or Windows-adjacent Swift variants into the same slice.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vm-prerelease-swift-staticblock-row177-canonical-landing-20260618.md"
+      ],
+      "acceptance": [
+        "Archive note cites evidence/archive/vm-prerelease-swift-core-lineage-packet-20260618.md plus the exact authoritative source anchors and sibling surfaces checked for row 177, and states whether the row can be attached exactly to spec.network-swift-v1.static-block-mode.",
+        "If the attachment is exact, the repo lands the bounded lineage/spec-reference update for row 177 only; if not, the note records one precise blocker and preserves row 178 plus rows 119/176/207 as separate follow-on work without cloud execution."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "feature:swift",
+        "path:path.network-swift-v1-static-block-row177"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-18T07:43:24.888Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_vm-prerelease-swift-staticblock-row177-canonical-landing-20260618_20260618074325",
+        "assigned_at": "2026-06-18T07:43:25.045Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vm-prerelease-swift-staticblock-row177-canonical-landing-20260618",
+        "worker_started_attempt_id": "a_vm-prerelease-swift-staticblock-row177-canonical-landing-20260618_20260618074325",
+        "worker_started_at": "2026-06-18T07:43:41.387Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Landed the exact row-177 Swift prerelease canonical attachment in the VM prerelease coverage ledger and wrote the requested archive note documenting why row 177 maps to static-block while row 178 and rows 119/176/207 stay separate.",
+        "last_worker_completed_at": "2026-06-18T07:46:10.172Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-18T07:47:21.843Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: the archive note cites the required Swift lineage anchors, shows row 177's exact product delta is pod_ip_allocation_mode=StaticBlock, and records the bounded prerelease-ledger landing to spec.network-swift-v1.static-block-mode while preserving row 178 and rows 119/176/207 as separate follow-on branches."
+      },
+      "session_id": "s_task_vm-prerelease-swift-staticblock-row177-canonical-landing-20260618",
+      "session_history": [
+        "s_task_vm-prerelease-swift-staticblock-row177-canonical-landing-20260618"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-18T07:47:21.843Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: the archive note cites the required Swift lineage anchors, shows row 177's exact product delta is pod_ip_allocation_mode=StaticBlock, and records the bounded prerelease-ledger landing to spec.network-swift-v1.static-block-mode while preserving row 178 and rows 119/176/207 as separate follow-on branches."
+      },
+      "status": "done"
+    }
+  ]
+}

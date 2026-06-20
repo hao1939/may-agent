@@ -1,0 +1,64 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-19T19:49:52.917Z",
+  "reason": "bottom-up cleanup after large lane rollups",
+  "parent_id": "vm-prerelease-osm-source-packet-output-metadata-repair-20260618",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "vm-prerelease-osm-source-packet-output-targets-and-tooling-check-20260618",
+      "parent_id": "vm-prerelease-osm-source-packet-output-metadata-repair-20260618",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Verify the exact accepted branch task ids, packet YAML output paths, and available safe app-tooling surface for repairing missing output metadata on the two landed VM-prerelease App Routing OSM source-packet tasks, so the broader repair branch can proceed without rediscovery or unsafe manual tree edits.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vm-prerelease-osm-source-packet-output-targets-and-tooling-check-20260618.md"
+      ],
+      "acceptance": [
+        "Archive note cites the exact accepted task ids and the exact OSM packet YAML paths whose ownership metadata is missing or stale for checkpoint slicing.",
+        "Archive note states whether existing task-tree/app tooling can safely repair accepted-task output metadata directly; if not, it records the exact tooling limitation and one minimal safe follow-up mutation path without hand-editing tree.json.",
+        "Work stays metadata/tooling-scoped, makes no packet-content claims, and does not move files, checkpoint, or run cloud execution."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "feature:app-routing",
+        "artifact:domain-checkpoint"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-18T07:07:44.081Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_vm-prerelease-osm-source-packet-output-targets-and-tooling-check-20260618_20260618070746",
+        "assigned_at": "2026-06-18T07:07:46.647Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vm-prerelease-osm-source-packet-output-targets-and-tooling-check-20260618",
+        "worker_started_attempt_id": "a_vm-prerelease-osm-source-packet-output-targets-and-tooling-check-20260618_20260618070746",
+        "worker_started_at": "2026-06-18T07:08:06.381Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Verified the exact accepted owner task ids, exact VM-prerelease OSM packet YAML paths, and the supported task-tree metadata-repair surface; wrote a durable archive note showing the live owner-task outputs are already repaired and that remaining checkpoint hold comes from active tasks, not missing accepted-task metadata.",
+        "last_worker_completed_at": "2026-06-18T07:11:06.999Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-18T07:11:28.594Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted the archive note: it identifies the exact accepted owner task ids and OSM packet YAML paths, confirms those outputs are already declared on the live done tasks, and shows the remaining checkpoint hold comes from active review lineage rather than missing accepted-task metadata."
+      },
+      "session_id": "s_task_vm-prerelease-osm-source-packet-output-targets-and-tooling-check-20260618",
+      "session_history": [
+        "s_task_vm-prerelease-osm-source-packet-output-targets-and-tooling-check-20260618"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-18T07:11:28.594Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted the archive note: it identifies the exact accepted owner task ids and OSM packet YAML paths, confirms those outputs are already declared on the live done tasks, and shows the remaining checkpoint hold comes from active review lineage rather than missing accepted-task metadata."
+      },
+      "status": "done"
+    }
+  ]
+}

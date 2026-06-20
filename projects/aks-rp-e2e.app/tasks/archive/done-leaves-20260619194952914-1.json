@@ -1,0 +1,119 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-19T19:49:52.914Z",
+  "reason": "bottom-up cleanup after large lane rollups",
+  "parent_id": "vm-prerelease-cilium-overlay-upgrade-spec-packet-20260618",
+  "archived": 2,
+  "tasks": [
+    {
+      "id": "vm-prerelease-cilium-overlay-upgrade-landing-20260618",
+      "parent_id": "vm-prerelease-cilium-overlay-upgrade-spec-packet-20260618",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Author the dedicated row-111 overlay+Cilium upgrade landing identified by the accepted lineage decision: add path.network-cni-cilium-overlay-upgrade, spec.network-cni.cilium-overlay-upgrade in specs/network-cni-cilium-overlay-upgrade.json, and replays/network-cni-cilium-overlay-upgrade.ts by reusing the row-110 overlay+Cilium create substrate plus the existing repo-local upgrade-survival skeleton, then update the VirtualMachine prerelease coverage ledger and downstream plan surfaces so Scenario_Cilium_Dataplane_Overlay_Upgrade is no longer an unstructured missing-spec row.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vm-prerelease-cilium-overlay-upgrade-landing-20260618.md"
+      ],
+      "acceptance": [
+        "Artifact cites evidence/archive/vm-prerelease-cilium-overlay-upgrade-lineage-decision-20260618.md and the exact new or updated identifiers path.network-cni-cilium-overlay-upgrade, spec.network-cni.cilium-overlay-upgrade, specs/network-cni-cilium-overlay-upgrade.json, and replays/network-cni-cilium-overlay-upgrade.ts, and explains how the landing preserves overlay+Cilium upgrade-survival semantics distinct from the row-110 create branch and from stop/start, node-subnet, pod-subnet, dual-stack, network-policy, and Machines variants.",
+        "Work updates the exact repo-local landing surfaces plus evidence/pipelines/virtualmachine-prerelease-coverage.{md,json} and any downstream prerelease plan/config surface that consumes that ledger, without cloud execution; if authoring is blocked repo-locally, the artifact records one exact blocker and precise resume condition instead of broad rediscovery."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "feature:cilium",
+        "feature:virtualmachines",
+        "ledger:virtualmachine-prerelease"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-18T08:12:27.870Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_vm-prerelease-cilium-overlay-upgrade-landing-20260618_20260618081809",
+        "assigned_at": "2026-06-18T08:18:09.481Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vm-prerelease-cilium-overlay-upgrade-landing-20260618",
+        "worker_started_attempt_id": "a_vm-prerelease-cilium-overlay-upgrade-landing-20260618_20260618081809",
+        "worker_started_at": "2026-06-18T08:19:11.529Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Landed the dedicated row-111 overlay+Cilium upgrade branch: added specs/network-cni-cilium-overlay-upgrade.json and replays/network-cni-cilium-overlay-upgrade.ts, updated specs/index.json, features/network-cni.yaml, model/knowledge-map/model.json, regenerated views, and moved prerelease coverage row 111 to covered with a new landing artifact.",
+        "last_worker_completed_at": "2026-06-18T08:34:50.369Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-18T08:37:50.922Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted: artifact lands the dedicated row-111 overlay+Cilium upgrade branch, and repo-local checks confirm the new spec/replay identifiers plus prerelease coverage ledger entries were added without cloud execution."
+      },
+      "session_id": "s_task_vm-prerelease-cilium-overlay-upgrade-landing-20260618",
+      "session_history": [
+        "s_task_vm-prerelease-cilium-overlay-upgrade-landing-20260618"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-18T08:37:50.922Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted: artifact lands the dedicated row-111 overlay+Cilium upgrade branch, and repo-local checks confirm the new spec/replay identifiers plus prerelease coverage ledger entries were added without cloud execution."
+      },
+      "status": "done"
+    },
+    {
+      "id": "vm-prerelease-cilium-overlay-upgrade-lineage-decision-20260618",
+      "parent_id": "vm-prerelease-cilium-overlay-upgrade-spec-packet-20260618",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Decide the minimal exact repo-local landing for VM-prerelease row 111 Scenario_Cilium_Dataplane_Overlay_Upgrade by comparing the accepted handwritten-source extraction note against the existing overlay+Cilium create branch and nearby upgrade surfaces, then concluding whether row 111 should attach to an existing upgrade lineage or needs one dedicated new spec/replay identifier.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vm-prerelease-cilium-overlay-upgrade-lineage-decision-20260618.md"
+      ],
+      "acceptance": [
+        "Archive note cites row 111 matrix anchors plus evidence/archive/vm-prerelease-cilium-overlay-upgrade-handwritten-source-extraction-20260618.md and the exact sibling spec/replay or packet anchors reused, then states one exact repo-local lineage decision for the overlay+Cilium upgrade branch without broadening it into a generic overlay-upgrade family.",
+        "The note ends with one concrete next landing target: exact existing identifiers to attach or exact new dedicated spec/replay identifiers to author, or one exact repo-local blocker if no precise landing is defensible from current evidence."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "feature:cilium",
+        "feature:virtualmachines",
+        "ledger:virtualmachine-prerelease"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-18T08:08:15.022Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_vm-prerelease-cilium-overlay-upgrade-lineage-decision-20260618_20260618080815",
+        "assigned_at": "2026-06-18T08:08:15.212Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vm-prerelease-cilium-overlay-upgrade-lineage-decision-20260618",
+        "worker_started_attempt_id": "a_vm-prerelease-cilium-overlay-upgrade-lineage-decision-20260618_20260618080815",
+        "worker_started_at": "2026-06-18T08:09:33.937Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Authored the required lineage-decision archive note at evidence/archive/vm-prerelease-cilium-overlay-upgrade-lineage-decision-20260618.md, concluding row 111 needs one dedicated overlay+Cilium upgrade path/spec/replay lineage rather than attachment to any existing upgrade branch.",
+        "last_worker_completed_at": "2026-06-18T08:10:30.687Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-18T08:13:27.200Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: evidence/archive/vm-prerelease-cilium-overlay-upgrade-lineage-decision-20260618.md cites row 111 plus the accepted handwritten-source extraction, rejects the nearby dual-stack/nodesubnet/migration upgrade branches with exact reasons, and leaves one concrete next landing target: dedicated path/spec/replay identifiers for the overlay+Cilium upgrade branch."
+      },
+      "session_id": "s_task_vm-prerelease-cilium-overlay-upgrade-lineage-decision-20260618",
+      "session_history": [
+        "s_task_vm-prerelease-cilium-overlay-upgrade-lineage-decision-20260618"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-18T08:13:27.200Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: evidence/archive/vm-prerelease-cilium-overlay-upgrade-lineage-decision-20260618.md cites row 111 plus the accepted handwritten-source extraction, rejects the nearby dual-stack/nodesubnet/migration upgrade branches with exact reasons, and leaves one concrete next landing target: dedicated path/spec/replay identifiers for the overlay+Cilium upgrade branch."
+      },
+      "status": "done"
+    }
+  ]
+}

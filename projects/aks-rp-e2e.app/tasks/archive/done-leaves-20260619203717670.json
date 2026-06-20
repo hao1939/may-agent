@@ -1,0 +1,69 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-19T20:37:17.670Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "spec-runner-and-replays",
+  "summary": "Accepted the LocalDNS Machines post-envelope rerun as sufficient to close the old request-shape question: the repaired two-pool create envelope now reaches a succeeded Machines cluster with LocalDNS-enabled node labeling, so the branch no longer needs request-envelope rediscovery. What remains for this LocalDNS slice is operational cleanup of residual RG ldns-tp-20260619 before any clean-slate rerun can chase final replay artifact emission and end-to-end verdict capture.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "localdns-machines-westus2-local-rerun-after-envelope-repair-20260619",
+      "parent_id": "spec-runner-and-replays",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Execute one repaired westus2/local LocalDNS Machines rerun using the updated two-pool create envelope in replays/localdns-cluster-topology.ts so path.localdns.machines can distinguish post-repair product behavior from the previously known Machines-only request-shape failure.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/localdns-machines-westus2-local-rerun-after-envelope-repair-20260619.md",
+        "../aks-rp-e2e/runs/executions/"
+      ],
+      "acceptance": [
+        "Archive note cites the accepted contract triage, the accepted replay-envelope repair note, and the exact westus2/local command family (AKS_RP_E2E_LOCATION=westus2, --execute, --host=local, same LocalDNS mutation gate) used after the repair.",
+        "If execution reaches product assertions, record whether the repaired two-pool create envelope succeeds for the Machines branch together with cleanup state and any resulting LocalDNS verdict-driving observations; otherwise capture the exact preflight/runtime failure and the next precise resume condition without reopening the superseded Machines-only request-shape diagnosis.",
+        "Work stays on the repaired LocalDNS Machines replay branch only: no unrelated topology rewrites, no family-wide LocalDNS sweep, and no mutation without the existing probe-specific execution gate."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "cloud:staging:localdns-machines-westus2-local-rerun-20260619"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-19T20:23:41.183Z",
+        "created_by": "task-tree-tool",
+        "assigned_at": "2026-06-19T20:36:25.160Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_localdns-machines-westus2-local-rerun-after-envelope-repair-20260619",
+        "worker_started_attempt_id": "a_localdns-machines-westus2-local-rerun-after-envelope-repair-20260619_20260619203625",
+        "worker_started_at": "2026-06-19T20:36:25.471Z",
+        "stale_active_requeued_at": "2026-06-19T20:36:25.147Z",
+        "stale_active_requeue_reason": "watchdog-stale-active-review",
+        "stale_active_fresh_session": false,
+        "previous_attempt_id": "a_localdns-machines-westus2-local-rerun-after-envelope-repair-20260619_20260619202343",
+        "current_attempt_id": "a_localdns-machines-westus2-local-rerun-after-envelope-repair-20260619_20260619203625",
+        "last_worker_result": "partial",
+        "last_worker_claim": "partial",
+        "last_worker_summary": "Executed the assigned LocalDNS Machines westus2/local rerun far enough to prove the repaired two-pool create envelope cleared the old Machines-only agentPoolProfiles failure, and wrote the task archive note with exact command lineage, surviving Azure evidence, and interrupted cleanup state. The session process restart interrupted replay-owned final result emission and cleanup, leaving the runner status stale and residual resources in ldns-tp-20260619.",
+        "last_worker_completed_at": "2026-06-19T20:36:25.484Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-19T20:37:17.449Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted the archive note: the repaired two-pool LocalDNS Machines create envelope advanced past the superseded agentPoolProfiles request-shape failure, produced a succeeded Machines cluster with LocalDNS-enabled node labeling, and narrowed the remaining issue to interrupted final artifact emission/cleanup rather than the old envelope diagnosis."
+      },
+      "session_id": "s_task_localdns-machines-westus2-local-rerun-after-envelope-repair-20260619",
+      "session_history": [
+        "s_task_localdns-machines-westus2-local-rerun-after-envelope-repair-20260619"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-19T20:37:17.449Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted the archive note: the repaired two-pool LocalDNS Machines create envelope advanced past the superseded agentPoolProfiles request-shape failure, produced a succeeded Machines cluster with LocalDNS-enabled node labeling, and narrowed the remaining issue to interrupted final artifact emission/cleanup rather than the old envelope diagnosis."
+      },
+      "status": "done"
+    }
+  ]
+}

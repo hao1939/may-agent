@@ -143,6 +143,9 @@ function isProblemClaim(event: Record<string, unknown>): boolean {
       "owner-side commands",
       "owner-authorized app session",
       "owner-owned commit",
+      "owner checkpoint packet",
+      "owner-only",
+      "worker mode",
       "must be landed by the owner review path",
       "must not commit",
       "policy reserves domain repo commits",
@@ -151,6 +154,7 @@ function isProblemClaim(event: Record<string, unknown>): boolean {
       summary.includes("checkpoint") &&
       [
         "owner-owned",
+        "owner-only",
         "owner review path",
         "must not commit",
         "reserves domain repo commits",
@@ -264,6 +268,28 @@ function humanUnblockEscalation(
           ? "aks-rp-e2e:metric:stale-active-with-gaps"
           : "aks-rp-e2e:metric:no-work-with-gaps",
     },
+  };
+}
+
+function blockedFrontierReviewEvent(
+  event: Record<string, unknown>,
+): Record<string, unknown> {
+  const id = metricId(event);
+  return {
+    ...projectOwnerEvent("blocked-frontier-review", {
+      metricId: id,
+      metric: eventDetails(event),
+      instruction:
+        "Review the blocked and dependency-waiting task frontier and push sampled blockers toward final state. Classify blocked leaves into true external waits, local/tooling/environment problems, stale/dependency mismatches, already-resolved blockers, or terminal/product/environment dispositions. Create or link one visible problem/unblock task for each local shared root cause, unblock/requeue tasks whose resume condition is satisfied, mark proven terminal dispositions done with evidence, and leave a task blocked only after the external ask/escalation owner, exact resume condition, and next review trigger are explicit.",
+      reviewChecklist: [
+        "Do not treat blocked as final.",
+        "Do not assign blocked leaves back to the same worker unchanged.",
+        "Prefer one shared problem task for a shared root cause.",
+        "Dependency-waiting backlog is owner work when the dependency is done, missing, stale, or has a locally fixable blocker.",
+        "True source-holder/operator/product waits should be converted into sent/escalated asks or precise response-await tasks, then revisited.",
+      ],
+    }),
+    urgency: "high",
   };
 }
 
@@ -386,10 +412,12 @@ async function routeAksRpE2eEvent(
 
   if (event.type === "metric.breach" && isAksProjectMetric(event)) {
     const id = metricId(event);
+    if (id === "aks-rp-e2e.task.blocked-count") {
+      return ctx.emit(blockedFrontierReviewEvent(event));
+    }
     if (
       id === "aks-rp-e2e.task.no-work-with-gaps" ||
-      id === "aks-rp-e2e.task.stale-active-with-gaps" ||
-      id === "aks-rp-e2e.task.blocked-count"
+      id === "aks-rp-e2e.task.stale-active-with-gaps"
     ) {
       return ctx.emit(humanUnblockEscalation(event));
     }
@@ -455,6 +483,28 @@ export default defineProjectApp({
       event: {
         type: "project.watchdog.tick",
         project: projectId,
+      },
+    },
+    {
+      id: "blocked-frontier-owner-review",
+      enabled: true,
+      intervalMs: 7_200_000,
+      event: {
+        type: "project.owner.requested",
+        project: projectId,
+        reason: "scheduled-blocked-frontier-review",
+        urgency: "high",
+        params: {
+          instruction:
+            "Periodic blocked-frontier owner review: re-examine blocked and dependency-waiting task leaves and push sampled blockers toward final state. Unblock or replace stale blockers whose resume condition is satisfied, create/link problem-solving work for local/tooling/environment root causes, mark proven terminal/product/environment dispositions done with evidence, convert true external waits into sent/escalated asks or precise response-await tasks, and assign unrelated runnable work so the project keeps moving.",
+          reviewChecklist: [
+            "Do not treat blocked as final.",
+            "Do not retry a blocked leaf unchanged.",
+            "Do not assign blocked work back to the same worker without a changed condition or a new bounded task.",
+            "Prefer one shared problem/unblock task for a shared root cause.",
+            "Every sampled blocked task should leave review with a path toward closure: solved, reworked, escalated/sent, terminal-done, or a precise response-await with next review trigger.",
+          ],
+        },
       },
     },
     {
@@ -634,6 +684,12 @@ export default defineProjectApp({
         description: "Regular learning tick wakes the project owner.",
       },
       {
+        event: "project.owner.requested",
+        emits: ["project.task.assigned"],
+        description:
+          "Scheduled blocked-frontier review wakes the owner directly; the planner decides whether to unblock, create problem-solving work, keep true external waits blocked, or assign unrelated runnable work.",
+      },
+      {
         event: "project.action.invoked",
         emits: ["project.owner.requested"],
         description: "UI or API project action becomes owner context.",
@@ -684,7 +740,7 @@ export default defineProjectApp({
         event: "metric.breach",
         emits: ["escalation.created", "project.owner.requested"],
         description:
-          "Project metric breach wakes the owner unless it crosses an ownership boundary; no-work-with-gaps, stale-active-with-gaps, and blocked-count create an escalation instead of assigning back to the same owner.",
+          "Project metric breach wakes the owner unless it crosses an ownership boundary. Blocked-count first wakes owner blocked-frontier review; no-work-with-gaps and stale-active-with-gaps create an escalation because they indicate the owner loop itself may be stuck.",
       },
       {
         event: "metric.recovered",

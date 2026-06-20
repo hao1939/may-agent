@@ -1,0 +1,159 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-19T19:49:52.908Z",
+  "reason": "bottom-up cleanup after large lane rollups",
+  "parent_id": "non-pass-surface-reconciliation-batch-20260617",
+  "archived": 3,
+  "tasks": [
+    {
+      "id": "non-pass-authorized-service-tags-surface-reconcile-20260617",
+      "parent_id": "non-pass-surface-reconciliation-batch-20260617",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Reconcile the authorized-service-tags non-pass surface drift against the accepted promotion history so derived frontier/path-summary surfaces stop reporting a stale non-pass classification if the underlying model evidence already moved this path forward.",
+      "inputs": [],
+      "outputs": [
+        "model/knowledge-map/model.json,model/knowledge-map/views/path-summary.json,evidence/archive/non-pass-authorized-service-tags-surface-reconcile-20260617.md"
+      ],
+      "acceptance": [
+        "Archive note cites the accepted authorized-service-tags promotion evidence and exact before/after non-pass surfaces for path.net-integration.authorized-service-tags, updates repo-local model/views when the drift is stale, and otherwise records the exact remaining source-of-truth reason the path must stay non-passing."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "feature:net-integration"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-17T11:40:51.167Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_non-pass-authorized-service-tags-surface-reconcile-20260617_20260617114137",
+        "assigned_at": "2026-06-17T11:41:37.600Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_non-pass-authorized-service-tags-surface-reconcile-20260617",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Reconciled the authorized-service-tags stale non-pass concern by auditing accepted promotion evidence and current repo-local surfaces, then wrote a durable archive note showing the path is already forward-classified and needs no model/view edit from this task.",
+        "last_worker_completed_at": "2026-06-17T11:43:12.736Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-17T11:44:08.266Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: the archive note audits the prior pass-promotion evidence, shows current model/path-summary/status surfaces already classify path.net-integration.authorized-service-tags forward (staging-pass/pass) rather than non-pass, and correctly records that no repo-local model/view edit was needed."
+      },
+      "session_id": "s_task_non-pass-authorized-service-tags-surface-reconcile-20260617",
+      "session_history": [
+        "s_task_non-pass-authorized-service-tags-surface-reconcile-20260617"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-17T11:44:08.266Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: the archive note audits the prior pass-promotion evidence, shows current model/path-summary/status surfaces already classify path.net-integration.authorized-service-tags forward (staging-pass/pass) rather than non-pass, and correctly records that no repo-local model/view edit was needed."
+      },
+      "status": "done"
+    },
+    {
+      "id": "non-pass-localdns-autodefault-surface-reconcile-20260617",
+      "parent_id": "non-pass-surface-reconciliation-batch-20260617",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Reconcile the two LocalDNS autodefault non-pass surface drifts against their accepted task history so model/path-summary/frontier outputs consistently reflect whether these paths are still active gaps or already-final classifications.",
+      "inputs": [],
+      "outputs": [
+        "model/knowledge-map/model.json,model/knowledge-map/views/path-summary.json,evidence/archive/non-pass-localdns-autodefault-surface-reconcile-20260617.md"
+      ],
+      "acceptance": [
+        "Archive note cites the accepted task history for path.localdns.autodefault-on-upgrade and path.localdns.autodefault-fresh-create-1.36-cilium, shows exact before/after affected surfaces, updates repo-local model/views when drift is stale, and records any exact residual source that still legitimately keeps either path non-passing."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "feature:localdns"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-17T11:40:55.382Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_non-pass-localdns-autodefault-surface-reconcile-20260617_20260617114137",
+        "assigned_at": "2026-06-17T11:41:37.601Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_non-pass-localdns-autodefault-surface-reconcile-20260617",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Reconciled LocalDNS auto-default non-pass surface drift by updating `model/knowledge-map/model.json` statuses for `path.localdns.autodefault-on-upgrade` and `path.localdns.autodefault-fresh-create-1.36-cilium`, regenerating `model/knowledge-map/views/path-summary.json`, and writing the archive note `evidence/archive/non-pass-localdns-autodefault-surface-reconcile-20260617.md` with accepted-task-history evidence and before/after surfaces.",
+        "last_worker_completed_at": "2026-06-17T11:45:59.639Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-17T11:47:31.579Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted after review: archive note plus regenerated model/view surfaces now reconcile the two LocalDNS auto-default paths from stale blocked framing to product-gap and partial-pass classifications aligned with accepted task history."
+      },
+      "session_id": "s_task_non-pass-localdns-autodefault-surface-reconcile-20260617",
+      "session_history": [
+        "s_task_non-pass-localdns-autodefault-surface-reconcile-20260617"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-17T11:47:31.579Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted after review: archive note plus regenerated model/view surfaces now reconcile the two LocalDNS auto-default paths from stale blocked framing to product-gap and partial-pass classifications aligned with accepted task history."
+      },
+      "status": "done"
+    },
+    {
+      "id": "non-pass-storage-csi-top-level-surface-reconcile-20260617",
+      "parent_id": "non-pass-surface-reconciliation-batch-20260617",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Reconcile the stale top-level non-pass/path-summary surface for path.storage-csi.full-cache-os-disk after the accepted evidence-matrix repair so the model and derived frontier no longer present this path as an unresolved runner-infra gap unless a concrete residual source still says so.",
+      "inputs": [],
+      "outputs": [
+        "model/knowledge-map/model.json,model/knowledge-map/views/path-summary.json,evidence/archive/non-pass-storage-csi-top-level-surface-reconcile-20260617.md"
+      ],
+      "acceptance": [
+        "Archive note cites the accepted storage-csi evidence-matrix fix plus exact before/after model/path-summary surfaces for path.storage-csi.full-cache-os-disk, identifies the precise source causing any remaining blocked/runner_infra status, and updates repo-local model/views or records the exact residual tooling bug without cloud execution."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "feature:storage-csi"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-17T11:40:48.273Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_non-pass-storage-csi-top-level-surface-reconcile-20260617_20260617114057",
+        "assigned_at": "2026-06-17T11:40:57.443Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_non-pass-storage-csi-top-level-surface-reconcile-20260617",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Reconciled the stale top-level `model.json` mirror for `path.storage-csi.full-cache-os-disk` from blocked/runner_infra to accepted pass, regenerated knowledge-map views, and archived a before/after evidence note documenting the exact residual-source conclusion.",
+        "last_worker_completed_at": "2026-06-17T11:43:58.442Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-17T11:44:21.104Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: the archive note identifies the stale blocked runner_infra top-level model mirror for path.storage-csi.full-cache-os-disk, cites the accepted pass evidence that superseded it, records the model.json mirror update plus regenerated derived views, and shows the live repo-local surfaces now consistently classify the path as pass."
+      },
+      "session_id": "s_task_non-pass-storage-csi-top-level-surface-reconcile-20260617",
+      "session_history": [
+        "s_task_non-pass-storage-csi-top-level-surface-reconcile-20260617"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-17T11:44:21.104Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: the archive note identifies the stale blocked runner_infra top-level model mirror for path.storage-csi.full-cache-os-disk, cites the accepted pass evidence that superseded it, records the model.json mirror update plus regenerated derived views, and shows the live repo-local surfaces now consistently classify the path as pass."
+      },
+      "status": "done"
+    }
+  ]
+}

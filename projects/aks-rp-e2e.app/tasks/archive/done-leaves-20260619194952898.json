@@ -1,0 +1,222 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-19T19:49:52.898Z",
+  "reason": "bottom-up cleanup after large lane rollups",
+  "parent_id": "cross-family-dirty-workspace-ownership-reconcile-20260617",
+  "archived": 4,
+  "tasks": [
+    {
+      "id": "dirty-workspace-extra-safe-slice-or-no-slice-proof-20260617",
+      "parent_id": "cross-family-dirty-workspace-ownership-reconcile-20260617",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "From the current dirty-workspace ownership map, identify one additional checkpoint-safe done slice beyond the accepted VM-only slice, or prove with exact file evidence that no further safe slice exists yet.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/dirty-workspace-extra-safe-slice-or-no-slice-proof-20260617.md"
+      ],
+      "acceptance": [
+        "Archive note cites the current ownership map and names one additional checkpoint-safe done slice with exact paths and exclusion boundaries, or states that no extra safe slice exists and why.",
+        "The note records the exact staged-file command or explicit do-not-stage families for the proposed slice so a later planner checkpoint does not mix active or unowned files.",
+        "Any residual unowned or mixed-family files are linked to the minimal follow-up ownership/exclusion decision needed before broader checkpointing."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "checkpoint:dirty-workspace-ownership"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-17T23:04:58.081Z",
+        "created_by": "task-tree-tool",
+        "promoted_at": "2026-06-17T23:10:22.841Z",
+        "promoted_by": "task-tree-tool",
+        "current_attempt_id": "a_dirty-workspace-extra-safe-slice-or-no-slice-proof-20260617_20260617231029",
+        "assigned_at": "2026-06-17T23:10:29.118Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_dirty-workspace-extra-safe-slice-or-no-slice-proof-20260617",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Produced evidence/archive/dirty-workspace-extra-safe-slice-or-no-slice-proof-20260617.md proving one additional checkpoint-safe slice exists: the private-cluster canonical public create/update replay+spec quartet, with exact staging command and exclusion boundaries.",
+        "last_worker_completed_at": "2026-06-17T23:13:00.716Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-17T23:13:27.730Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted after reviewing evidence/archive/dirty-workspace-extra-safe-slice-or-no-slice-proof-20260617.md: it cites the live checkpoint-helper ownership map, identifies the exact four-file private-cluster create/update quartet as an additional candidate-only safe slice, provides the precise git add command, and records the exclusion boundaries that keep mixed private-cluster/CCP families out of checkpointing."
+      },
+      "session_id": "s_task_dirty-workspace-extra-safe-slice-or-no-slice-proof-20260617",
+      "session_history": [
+        "s_task_dirty-workspace-extra-safe-slice-or-no-slice-proof-20260617"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-17T23:13:27.730Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted after reviewing evidence/archive/dirty-workspace-extra-safe-slice-or-no-slice-proof-20260617.md: it cites the live checkpoint-helper ownership map, identifies the exact four-file private-cluster create/update quartet as an additional candidate-only safe slice, provides the precise git add command, and records the exclusion boundaries that keep mixed private-cluster/CCP families out of checkpointing."
+      },
+      "status": "done"
+    },
+    {
+      "id": "dirty-workspace-nonvm-family-ownership-map-20260617",
+      "parent_id": "cross-family-dirty-workspace-ownership-reconcile-20260617",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Use the current domain:checkpoint -- --json output plus git status families to map dirty CCP, private-cluster, coredns, and residual non-VM files into exact owned candidate/hold/needs-planner-review groups with task IDs or explicit unowned paths.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/dirty-workspace-nonvm-family-ownership-map-20260617.md"
+      ],
+      "acceptance": [
+        "Archive note cites the current domain:checkpoint JSON and git status evidence, lists the exact dirty CCP/private-cluster/coredns/residual non-VM paths, and maps each path or file family to candidate/hold/needs-planner-review with the owning task ID or exact unowned status.",
+        "The note names the exact paths that must stay out of the next checkpoint because they are active/review-held, blocked-family noise, or unowned planner-review artifacts.",
+        "If any unowned dirty files remain, the note groups them into the smallest concrete follow-up ownership or exclusion decisions instead of leaving them as generic workspace noise."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "checkpoint:dirty-workspace-ownership"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-17T23:04:57.912Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_dirty-workspace-nonvm-family-ownership-map-20260617_20260617230458",
+        "assigned_at": "2026-06-17T23:04:58.266Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_dirty-workspace-nonvm-family-ownership-map-20260617",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Mapped current non-VM dirty workspace ownership into exact candidate vs needs-planner-review groups and archived the result in evidence/archive/dirty-workspace-nonvm-family-ownership-map-20260617.md using live domain:checkpoint JSON plus current git-status families.",
+        "last_worker_completed_at": "2026-06-17T23:10:25.585Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-17T23:10:48.775Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted: archive note uses current domain:checkpoint JSON plus git status to map exact CCP/private-cluster/coredns/residual non-VM dirty paths into candidate versus needs-planner-review ownership groups, identifies the paths that must stay out of the next checkpoint, and reduces follow-up to concrete slice/exclusion decisions instead of generic dirty-workspace noise."
+      },
+      "session_id": "s_task_dirty-workspace-nonvm-family-ownership-map-20260617",
+      "session_history": [
+        "s_task_dirty-workspace-nonvm-family-ownership-map-20260617"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-17T23:10:48.775Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted: archive note uses current domain:checkpoint JSON plus git status to map exact CCP/private-cluster/coredns/residual non-VM dirty paths into candidate versus needs-planner-review ownership groups, identifies the paths that must stay out of the next checkpoint, and reduces follow-up to concrete slice/exclusion decisions instead of generic dirty-workspace noise."
+      },
+      "status": "done"
+    },
+    {
+      "id": "dirty-workspace-vm-family-ownership-map-20260617",
+      "parent_id": "cross-family-dirty-workspace-ownership-reconcile-20260617",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Use the current domain:checkpoint -- --json output plus git status families to map dirty VM prerelease, App Routing VM, ManagedSystem, and other VM-scoped files into exact owned candidate/hold/needs-planner-review groups with task IDs or explicit unowned paths.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/dirty-workspace-vm-family-ownership-map-20260617.md"
+      ],
+      "acceptance": [
+        "Archive note cites the current domain:checkpoint JSON and git status evidence, lists the exact dirty VM prerelease/App Routing VM/ManagedSystem paths, and maps each path or file family to candidate/hold/needs-planner-review with the owning task ID or exact unowned reason.",
+        "The note names the exact VM-family paths that must stay out of the next checkpoint because they are active/review-held, blocked-family noise, or unowned planner-review artifacts, and distinguishes any already checkpoint-safe done slice.",
+        "If any unowned or mixed VM-family files remain, the note groups them into the smallest concrete follow-up ownership or exclusion decisions instead of leaving them as generic workspace noise."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "checkpoint:dirty-workspace-ownership"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-17T23:07:43.580Z",
+        "created_by": "task-tree-tool",
+        "promoted_at": "2026-06-17T23:12:58.907Z",
+        "promoted_by": "task-tree-tool",
+        "current_attempt_id": "a_dirty-workspace-vm-family-ownership-map-20260617_20260617231311",
+        "assigned_at": "2026-06-17T23:13:11.682Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_dirty-workspace-vm-family-ownership-map-20260617",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Produced the requested VM-family dirty-workspace ownership map at evidence/archive/dirty-workspace-vm-family-ownership-map-20260617.md, using fresh domain:checkpoint JSON and current git-status evidence to classify App Routing VM prerelease, ManagedSystem, VM agentpool/virtualmachines, and serverless files into candidate vs needs-planner-review groups with concrete owner follow-ups.",
+        "last_worker_completed_at": "2026-06-17T23:15:50.858Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-17T23:17:19.265Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted: the archive note cites fresh domain:checkpoint JSON plus git-status evidence, classifies exact VM-family candidate vs needs-planner-review files, and leaves concrete follow-up ownership/exclusion decisions for the next checkpoint instead of generic workspace noise."
+      },
+      "session_id": "s_task_dirty-workspace-vm-family-ownership-map-20260617",
+      "session_history": [
+        "s_task_dirty-workspace-vm-family-ownership-map-20260617"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-17T23:17:19.265Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted: the archive note cites fresh domain:checkpoint JSON plus git-status evidence, classifies exact VM-family candidate vs needs-planner-review files, and leaves concrete follow-up ownership/exclusion decisions for the next checkpoint instead of generic workspace noise."
+      },
+      "status": "done"
+    },
+    {
+      "id": "serverless-row185-checkpoint-ownership-decision-20260617",
+      "parent_id": "cross-family-dirty-workspace-ownership-reconcile-20260617",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Decide exact checkpoint ownership for the serverless row-185 replay/spec/suite trio by reconciling current dirty-workspace evidence with the accepted row-185 feature/model work, so the next checkpoint can either attach those files to done lineage or exclude them with one precise reason.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/serverless-row185-checkpoint-ownership-decision-20260617.md"
+      ],
+      "acceptance": [
+        "Archive note cites the accepted dirty-workspace ownership map plus current checkpoint-helper evidence and classifies replays/serverless-virtual-nodes-virtual-node-addon.ts, specs/serverless-virtual-nodes-virtual-node-addon.json, and suites/serverless-virtual-nodes-virtual-node-addon.yaml as attach-to-done-lineage or remain-excluded with exact reasons.",
+        "If any file can be safely reattached, the note names the exact accepted task IDs or authoritative artifacts that justify it and the smallest checkpoint-safe slice; otherwise it records the exact exclusion condition without generic planner-review wording.",
+        "The result leaves one concrete owner action for the next checkpoint decision and does not stage or commit unrelated VM-family noise."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "checkpoint:dirty-workspace-ownership",
+        "artifact:serverless-virtual-node-addon"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-17T23:17:19.420Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_serverless-row185-checkpoint-ownership-decision-20260617_20260617231725",
+        "assigned_at": "2026-06-17T23:17:25.732Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_serverless-row185-checkpoint-ownership-decision-20260617",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Wrote the requested ownership decision note at evidence/archive/serverless-row185-checkpoint-ownership-decision-20260617.md, concluding the serverless row-185 replay/spec/suite trio should attach to done lineage as a narrow three-file checkpoint slice despite current helper metadata gaps.",
+        "last_worker_completed_at": "2026-06-17T23:19:55.400Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-17T23:20:31.788Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted the review note as a narrow three-file ownership decision: it ties the serverless row-185 replay/spec/suite trio to accepted done lineage, explains the checkpoint helper's remaining needs-planner-review result as exact-path ownership metadata gap rather than semantic uncertainty, and keeps broader serverless/model noise out of the slice."
+      },
+      "session_id": "s_task_serverless-row185-checkpoint-ownership-decision-20260617",
+      "session_history": [
+        "s_task_serverless-row185-checkpoint-ownership-decision-20260617"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-17T23:20:31.788Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted the review note as a narrow three-file ownership decision: it ties the serverless row-185 replay/spec/suite trio to accepted done lineage, explains the checkpoint helper's remaining needs-planner-review result as exact-path ownership metadata gap rather than semantic uncertainty, and keeps broader serverless/model noise out of the slice."
+      },
+      "status": "done"
+    }
+  ]
+}

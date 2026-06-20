@@ -1,0 +1,194 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-19T19:49:52.894Z",
+  "reason": "bottom-up cleanup after large lane rollups",
+  "parent_id": "model-feedback",
+  "archived": 4,
+  "tasks": [
+    {
+      "id": "batch-7-model-integrate",
+      "parent_id": "model-feedback",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Integrate batch-7 features into model.json. For each batch-7 feature packet and spec, add corresponding entries to model/knowledge-map/model.json with correct featurePath entries and initial status. Run bun run check to validate. Update ceiling-summary.md with new batch-7 path counts.",
+      "inputs": [],
+      "outputs": [
+        "model/knowledge-map/model.json"
+      ],
+      "acceptance": [
+        "batch-7 features added to model.json with featurePath entries. bun run check passes. ceiling-summary.md updated with new totals."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "model-update"
+      ],
+      "depends_on": [
+        "batch-7-specs",
+        "domain-checkpoint-batch-6"
+      ],
+      "trace": {
+        "created_at": "2026-06-14T00:59:36.081Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_batch-7-model-integrate_20260614012212",
+        "assigned_at": "2026-06-14T01:22:12.213Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_batch-7-model-integrate",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Integrated all 5 batch-7 features into model.json across 4 families (acccvm: 1, arm64: 1, dataplane: 1, windows: 2) with correct featurePath entries, inputVariables, expectationVariables, and userScenarios. Model expanded from 232→237 features and 236→241 paths. `bun run check` passes all 7 steps. ceiling-summary.md updated with new batch-7 path counts, batch history table, and uncovered SIG list reduced from 7→5 families.",
+        "last_worker_completed_at": "2026-06-14T01:28:15.521Z",
+        "last_worker_evidence": [],
+        "accepted_at": "2026-06-14T01:29:34.924774Z",
+        "accepted_by": "planner"
+      },
+      "session_history": [
+        "s_task_batch-7-model-integrate"
+      ],
+      "state": "done",
+      "resolution": "completed",
+      "status": "done"
+    },
+    {
+      "id": "batch-8-check-mode-model-integration",
+      "parent_id": "model-feedback",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Run check-mode for 25 remaining batch-6/7 replays (airlock: 3, gpu: 4, industry: 18) and integrate results into model.json. These specs and replays exist on disk but were never promoted to the model. For each replay: (1) run in --check mode, (2) add feature entry to model.json with status (pass or fail based on check output), (3) add featurePath entry. After all 25 are processed: regenerate views, run bun run check to validate. This will expand the model from 237 to ~262 features.",
+      "inputs": [],
+      "outputs": [
+        "model/knowledge-map/model.json"
+      ],
+      "acceptance": [
+        "All 25 features (airlock-agent-lifecycle, airlock-compliance-check, airlock-vmagent-pod-status, gpu-mig-partitioning, gpu-multi-gpu-workload, gpu-operator-default-install, gpu-skip-driver-install, plus 18 industry-* features) present in model.json with status and featurePath entries. Views regenerated. bun run check passes."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "model-batch8-checkmode"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-14T01:51:07.506Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_batch-8-check-mode-model-integration_20260614015111",
+        "assigned_at": "2026-06-14T01:51:11.827Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_batch-8-check-mode-model-integration",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Successfully ran check-mode for all 25 batch-6/7 replays (3 airlock, 4 gpu, 18 industry) — all pass. Integrated results into model.json: added 25 features, 25 featurePaths, 25 evidence entries, 19 new input variables, 62 new expectation variables. Model expanded from 237 to 262 features. Views regenerated. `bun run check` passes all steps (format, whitespace, compile, wiring, check-mode-readonly, schema, typecheck).",
+        "last_worker_completed_at": "2026-06-14T01:57:56.692Z",
+        "last_worker_evidence": [],
+        "accepted_at": "2026-06-14T02:15:00.000Z",
+        "accepted_by": "planner",
+        "planner_note": "Verified: 262 features in model (was 237, +25). 266 paths (was 241, +25). All 25 new features (3 airlock, 4 gpu, 18 industry) present with status=pass and featurePath entries. bun run check passes all gates. Views regenerated."
+      },
+      "session_history": [
+        "s_task_batch-8-check-mode-model-integration"
+      ],
+      "state": "done",
+      "resolution": "completed",
+      "status": "done"
+    },
+    {
+      "id": "domain-checkpoint-batch-3",
+      "parent_id": "model-feedback",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Checkpoint domain workspace after batch-3 integration. Commit new feature packets, specs, model.json updates, and regenerated views. Verify bun run check passes fully before committing.",
+      "inputs": [],
+      "outputs": [
+        "model/knowledge-map/model.json"
+      ],
+      "acceptance": [
+        "All batch-3 domain files committed. bun run check passes. git status --short shows clean workspace."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "domain-checkpoint"
+      ],
+      "depends_on": [
+        "feature-packet-batch-3-new-families",
+        "model-integrate-batch-3-families",
+        "specs-batch-3-new-families"
+      ],
+      "trace": {
+        "created_at": "2026-06-13T21:53:46.653Z",
+        "created_by": "task-tree-tool",
+        "promoted_at": "2026-06-13T22:30:00.000Z",
+        "promoted_by": "planner",
+        "promotion_reason": "Wired depends_on to 3 batch-3 tasks. Will gate until all complete.",
+        "current_attempt_id": "a_domain-checkpoint-batch-3_20260613220951",
+        "assigned_at": "2026-06-13T22:09:51.334Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_domain-checkpoint-batch-3",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Committed all batch-3 domain files (37 files, +10521/-592 lines) at f2adf9a. Includes 4 feature packets (image-cleaner, machines-agentpool, node-restriction, paf-throttling), 21 new specs (artifact-streaming, node-image, node-pool-config, scriptless-provision, secure-tls-bootstrap), model.json with 5 new families integrated, all regenerated views, and the batch3-model-integrate.ts runner script. bun run check passes fully. git status --short is clean.",
+        "last_worker_completed_at": "2026-06-13T22:12:48.028Z",
+        "last_worker_evidence": [],
+        "accepted_at": "2026-06-13T22:16:02.259800Z",
+        "accepted_by": "planner",
+        "acceptance_note": "All acceptance met: 37 files committed at f2adf9a, bun run check passes, workspace clean."
+      },
+      "session_history": [
+        "s_task_domain-checkpoint-batch-3"
+      ],
+      "state": "done",
+      "resolution": "completed",
+      "status": "done"
+    },
+    {
+      "id": "model-enrich-nonpassing-verdicts",
+      "parent_id": "model-feedback",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Enrich all 27 non-passing terminal-classified paths in model.json with structured verdict objects. ~13 paths already have verdicts (aad-rbac, ossku families). The remaining ~14 older paths (app-routing, kms, paf-throttling, vpa-cert-renewal, machines-agentpool, jwt-authenticator, planned-maintenance, trusted-access, managedsystem, virtualmachines-agentpool) lack verdict objects. For each, review existing evidence in evidence/archive/ and runs/executions/, then add a verdict with staging date, runId (if available), diagnosis category, claims passed/total, and notes. Do NOT re-run replays — synthesize from existing project evidence.",
+      "inputs": [],
+      "outputs": [
+        "model/knowledge-map/model.json"
+      ],
+      "acceptance": [
+        "All 27 non-passing paths have a verdict object with at minimum: diagnosis category, notes explaining terminal classification, and claims summary. model.json passes bun run check (after format fix)."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "artifact:model.json"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-14T03:09:18.077Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_model-enrich-nonpassing-verdicts_20260614030933",
+        "assigned_at": "2026-06-14T03:09:33.655Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_model-enrich-nonpassing-verdicts",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Enriched all 27 non-passing terminal-classified paths in model.json with structured verdict objects. 20 paths were newly enriched (the 7 from aad-rbac/ossku families already had dict verdicts). Each verdict contains staging outcome, stagingDate, stagingRunId, diagnosis category, claimsPassed/claimsTotal, failedClaims array, and notes synthesized from existing evidence. Also fixed 2 pre-existing spec status schema errors and 1 formatting issue to make `bun run check` pass cleanly.",
+        "last_worker_completed_at": "2026-06-14T03:18:37.353Z",
+        "last_worker_evidence": [],
+        "accepted_at": "2026-06-14T03:21:13.096Z",
+        "accepted_by": "planner",
+        "acceptance_notes": "Acceptance criteria met: All 27 non-passing terminal paths have verdict objects with diagnosis category, notes, and claims summary. bun run check passes cleanly. Worker enriched 20 new paths (7 already had verdicts from aad-rbac/ossku families)."
+      },
+      "session_history": [
+        "s_task_model-enrich-nonpassing-verdicts"
+      ],
+      "state": "done",
+      "resolution": "completed",
+      "status": "done"
+    }
+  ]
+}

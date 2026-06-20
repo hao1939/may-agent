@@ -1,0 +1,65 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-19T21:24:33.512Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "feature-knowledge-and-specs",
+  "summary": "Feature knowledge now includes an accepted repo-local boundary packet for serverless virtual-nodes subnet validation: the canonical positive path is enable virtual nodes with config.SubnetName on a delegated ACI subnet and then prove ACI-backed placement in that subnet, while the model correctly stays unknown because current evidence is only check-mode wiring and the replay still proxies container-group placement. Follow-on work has moved to spec-runner as a direct-observation contract task, and any missing-delegation rejection semantics remain a separate future source-learning branch rather than hidden inside this accepted packet.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "serverless-virtual-nodes-subnet-validation-boundary-packet-20260619",
+      "parent_id": "feature-knowledge-and-specs",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Map the remaining unknown boundary for path.serverless-virtual-nodes-subnet-validation without cloud execution: inspect the handwritten e2ev3 case(s), any existing serverless feature/spec surfaces, and public/repo-local cues to identify the canonical input path, expected subnet/container-placement behavior, adjacent surfaces, and the exact source/model gap that still prevents this path from moving beyond unknown.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/serverless-virtual-nodes-subnet-validation-boundary-packet-20260619.md"
+      ],
+      "acceptance": [
+        "Archive note cites the handwritten e2ev3 source scenario(s) and any existing repo-local serverless feature/spec/model surfaces, then states the canonical scenario/input path for delegated ACI subnet validation and container-group placement rather than guessing from the model row alone.",
+        "The note explicitly records accepted inputs, rejected/adjacent inputs if discoverable from source, expected behavior signals, current observed evidence status, and the exact next missing proof or spec/model action needed to advance path.serverless-virtual-nodes-subnet-validation.",
+        "Scope stays repo-local and non-cloud only: no staging/local execute run, no speculative product verdict, and no unrelated serverless edits outside the bounded boundary packet."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "feature:serverless-virtual-nodes",
+        "path:path.serverless-virtual-nodes-subnet-validation"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-19T21:22:14.678Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_serverless-virtual-nodes-subnet-validation-boundary-packet-20260619_20260619212214",
+        "assigned_at": "2026-06-19T21:22:14.732Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_serverless-virtual-nodes-subnet-validation-boundary-packet-20260619",
+        "worker_started_attempt_id": "a_serverless-virtual-nodes-subnet-validation-boundary-packet-20260619_20260619212214",
+        "worker_started_at": "2026-06-19T21:22:29.881Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Created the bounded repo-local boundary packet for serverless virtual-nodes subnet validation at evidence/archive/serverless-virtual-nodes-subnet-validation-boundary-packet-20260619.md, grounding the canonical positive input/expectation path, adjacent surfaces, current unknown status, and the exact remaining proof gaps.",
+        "last_worker_completed_at": "2026-06-19T21:24:01.585Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-19T21:24:33.355Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted the repo-local boundary packet: it cites the handwritten holder plus adjacent serverless spec/model/replay surfaces, preserves path.serverless-virtual-nodes-subnet-validation as unknown, and pins the real remaining gaps to direct ACI container-group subnet observation for the positive path and a separate missing-delegation source gap for the negative branch."
+      },
+      "session_id": "s_task_serverless-virtual-nodes-subnet-validation-boundary-packet-20260619",
+      "session_history": [
+        "s_task_serverless-virtual-nodes-subnet-validation-boundary-packet-20260619"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-19T21:24:33.355Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted the repo-local boundary packet: it cites the handwritten holder plus adjacent serverless spec/model/replay surfaces, preserves path.serverless-virtual-nodes-subnet-validation as unknown, and pins the real remaining gaps to direct ACI container-group subnet observation for the positive path and a separate missing-delegation source gap for the negative branch."
+      },
+      "status": "done"
+    }
+  ]
+}

@@ -1,0 +1,67 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-19T19:49:52.892Z",
+  "reason": "bottom-up cleanup after large lane rollups",
+  "parent_id": "user-review-workspace",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "app-routing-istio-tls-done-slice-checkpoint-land-20260617",
+      "parent_id": "user-review-workspace",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Land the newly accepted App Routing done slice on the main project branch without sweeping in mixed active work: isolate the default-domain Istio reviewed-exception repair plus the default-domain TLS-secret valid-input boundary packet changes, run the bounded checks that fit that slice, and record the resulting checkpoint commit hash or the exact isolation conflict that prevented landing.",
+      "inputs": [],
+      "outputs": [
+        "evidence/archive/app-routing-istio-tls-done-slice-checkpoint-land-20260617.md"
+      ],
+      "acceptance": [
+        "Archive note cites the accepted app-routing Istio reviewed-exception repair and TLS-secret valid-input boundary evidence, names the exact file slice or isolated commit used, records the main-branch checkpoint commit hash plus bounded checks run, and explicitly confirms unrelated active/review/blocked work stayed out; otherwise it records the exact file-level conflict that prevented a clean landing."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "workspace:checkpoint-slice"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-17T15:43:03.836Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_app-routing-istio-tls-done-slice-checkpoint-land-20260617_20260617154303",
+        "assigned_at": "2026-06-17T15:43:03.962Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_app-routing-istio-tls-done-slice-checkpoint-land-20260617",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Wrote the required archive note at evidence/archive/app-routing-istio-tls-done-slice-checkpoint-land-20260617.md documenting the exact App Routing Istio+TLS done-slice files, bounded checks, owner-only commit boundary, and the domain:checkpoint evidence-slice isolation conflict that prevented a worker-side landing.",
+        "last_worker_completed_at": "2026-06-17T15:47:13.839Z",
+        "last_worker_evidence": [],
+        "rolled_up_at": "2026-06-19T19:49:52.892Z",
+        "rolled_up_by": "task-tree-tool"
+      },
+      "session_id": "s_task_app-routing-istio-tls-done-slice-checkpoint-land-20260617",
+      "session_history": [
+        "s_task_app-routing-istio-tls-done-slice-checkpoint-land-20260617"
+      ],
+      "status": "done",
+      "context": {
+        "archived_done_leaf_count": 2,
+        "rollup_archives": [
+          {
+            "archive": "tasks/archive/done-leaves-20260619194952892.json",
+            "archived": 2,
+            "at": "2026-06-19T19:49:52.892Z",
+            "reason": "bottom-up cleanup after large lane rollups",
+            "task_ids": [
+              "app-routing-istio-tls-clean-checkpoint-reconstruct-20260617",
+              "app-routing-istio-tls-done-slice-isolation-preflight-20260617"
+            ]
+          }
+        ]
+      }
+    }
+  ]
+}

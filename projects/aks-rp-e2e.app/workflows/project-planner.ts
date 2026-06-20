@@ -12,12 +12,14 @@ import {
   assignRunnableBacklogTasks,
   drainTaskAssignments,
   planningPacket,
+  readTask,
   repairTaskTreeRollups,
   requeueStaleActiveTasks,
   seedModelGapBacklog,
   taskTreeConfig,
   type TaskAssignment,
   type TaskPlanningPacket,
+  type TaskTreeConfig,
 } from "./lib/task-tree-tools.ts";
 import {
   field,
@@ -191,6 +193,16 @@ Core operating model:
   it. Prefer one shared problem task for a shared root cause such as staging ARM
   auth, not one duplicate blocker task per affected replay. Use the stable
   problemKey from project.problem.* events when present.
+- Periodic blocked-frontier review is owner work. If the wake reason is
+  scheduled-blocked-frontier-review or blocked-frontier-review, sample blocked
+  and dependency-waiting leaves, recheck whether resume conditions changed,
+  and push each sampled blocker toward final state. Create/link problem-solving
+  work for locally fixable blockers, convert proven terminal/product/environment
+  dispositions to done with evidence and retest condition, unblock/rework stale
+  blockers, or create the external ask/escalation/response-await path needed to
+  close the blocker. Leave a task blocked only when the owner, exact resume
+  condition, and next review trigger are explicit. Never retry a blocked leaf
+  unchanged.
 - When project.problem.resolved, project.problem.escalated, or
   project.problem.unknown wakes you, reconcile the solver result into the
   affected task branch: retry or supersede affected tasks when resolved; mark
@@ -403,66 +415,38 @@ function routineRefillReason(rawTask: string): string | null {
     : null;
 }
 
-function cheapDeterministicWakeReason(rawTask: string): string | null {
-  const routineReason = routineRefillReason(rawTask);
-  if (routineReason) return routineReason;
-  const reason = triggerValue(parseTriggerEvent(rawTask), "reason");
-  return reason === "regular-learning-tick" ? reason : null;
-}
-
 function canUseDeterministicRefill(input: {
   rawTask: string;
   packet: TaskPlanningPacket;
   humanSteering: Record<string, unknown>[];
   maxConcurrentTasks: number;
 }): boolean {
-  if (!cheapDeterministicWakeReason(input.rawTask)) return false;
+  if (!routineRefillReason(input.rawTask)) return false;
   if (input.humanSteering.length > 0) return false;
   if (input.packet.frontier.review.length > 0) return false;
+  if (input.packet.frontier.blocked.length > 0) return false;
   return frontierUnderfilled(input.packet, input.maxConcurrentTasks);
 }
 
-function canSkipOwnerAfterQuickAssignments(input: {
-  rawTask: string;
-  packet: TaskPlanningPacket;
-  humanSteering: Record<string, unknown>[];
-  quickAssignments: TaskAssignment[];
-  maxConcurrentTasks: number;
-}): boolean {
-  if (input.quickAssignments.length === 0) return false;
-  if (input.humanSteering.length > 0) return false;
-  if (input.packet.frontier.review.length > 0) return false;
-  return (
-    input.packet.active_task_ids.length >= input.maxConcurrentTasks ||
-    cheapDeterministicWakeReason(input.rawTask) !== null
-  );
+function completedTaskIdFromTrigger(rawTask: string): string {
+  const trigger = parseTriggerEvent(rawTask);
+  const value =
+    triggerValue(trigger, "completedTaskId") ??
+    triggerValue(trigger, "completed_task_id");
+  return typeof value === "string" ? value : "";
 }
 
-function regularLearningTickNoopResult(input: {
-  rawTask: string;
-  packet: TaskPlanningPacket;
-  humanSteering: Record<string, unknown>[];
-  requeuedStaleTaskIds: string[];
-  quickAssignments: TaskAssignment[];
-}): string | null {
-  if (cheapDeterministicWakeReason(input.rawTask) !== "regular-learning-tick")
-    return null;
-  if (input.humanSteering.length > 0) return null;
-  if (input.requeuedStaleTaskIds.length > 0) return null;
-  if (input.quickAssignments.length > 0) return null;
-  if (input.packet.frontier.review.length > 0) {
-    return "Regular learning tick found pending review work already visible in the frontier; skipping owner-agent planning until the review/task-completed flow changes the tree.";
-  }
-  if (
-    input.packet.active_task_ids.length > 0 &&
-    input.packet.frontier.runnable.length === 0
-  ) {
-    return "Regular learning tick found active work already running and no deterministic refill was needed; skipping owner-agent planning until the frontier changes.";
-  }
-  return null;
+function taskCompletedWakeAlreadySettled(
+  config: TaskTreeConfig,
+  rawTask: string,
+): boolean {
+  const completedTaskId = completedTaskIdFromTrigger(rawTask);
+  if (!completedTaskId) return false;
+  return readTask(config, completedTaskId) === null;
 }
 
 function settledActiveNoopResult(input: {
+  config: TaskTreeConfig;
   rawTask: string;
   packet: TaskPlanningPacket;
   humanSteering: Record<string, unknown>[];
@@ -471,10 +455,20 @@ function settledActiveNoopResult(input: {
   const reason = triggerValue(parseTriggerEvent(input.rawTask), "reason");
   const noHumanOrRequeueWork =
     input.humanSteering.length === 0 && input.requeuedStaleTaskIds.length === 0;
-  const hasOnlyActiveFrontier =
-    input.packet.active_task_ids.length > 0 &&
+  const noRunnableOrReviewFrontier =
     input.packet.frontier.runnable.length === 0 &&
     input.packet.frontier.review.length === 0;
+  const hasActiveOrBlockedFrontier =
+    input.packet.active_task_ids.length > 0 ||
+    input.packet.frontier.blocked.length > 0;
+  const settledAfterCompletion =
+    reason === "task-completed" &&
+    noHumanOrRequeueWork &&
+    noRunnableOrReviewFrontier &&
+    hasActiveOrBlockedFrontier &&
+    taskCompletedWakeAlreadySettled(input.config, input.rawTask);
+  const hasOnlyActiveFrontier =
+    input.packet.active_task_ids.length > 0 && noRunnableOrReviewFrontier;
   const settledWithActiveWork =
     noHumanOrRequeueWork &&
     hasOnlyActiveFrontier &&
@@ -486,6 +480,9 @@ function settledActiveNoopResult(input: {
     hasOnlyActiveFrontier
   ) {
     return "Watchdog stale-active review was a false positive: no listed task was requeued, active work is still running, and every cited stale-active task is already settled/non-active after live-tree revalidation.";
+  }
+  if (settledAfterCompletion) {
+    return "Task-completed wake is already settled in the task tree: the completed task no longer exists in the live tree, no review task remains, and no runnable frontier needs owner judgment.";
   }
   if (!settledWithActiveWork) return null;
   if (reason === "task-completed") {
@@ -603,7 +600,6 @@ function appendNoopPlannerRun(input: {
   packet: TaskPlanningPacket;
   initialRepair: ReturnType<typeof repairTaskTreeRollups>;
   requeuedStaleTaskIds: string[];
-  startedAtMs: number;
 }): void {
   appendPlannerRun(input.appDir, {
     kind: "planner_wake",
@@ -616,13 +612,11 @@ function appendNoopPlannerRun(input: {
     seeded_task_ids: [],
     seed_skipped: [],
     active_task_ids: input.packet.active_task_ids,
-    durationMs: Math.max(0, Date.now() - input.startedAtMs),
     result: input.result,
   });
 }
 
 export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
-  const startedAtMs = Date.now();
   const projectDir = field(ctx.task, "project") ?? "/app/projects/aks-rp-e2e";
   const appDir = resolveAppDir(projectDir, field(ctx.task, "app"));
   const configuredMaxConcurrent = maxConcurrent(ctx.task, null);
@@ -649,6 +643,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
   let packet = planningPacket(config);
 
   const noopResult = settledActiveNoopResult({
+    config,
     rawTask: ctx.task,
     packet,
     humanSteering,
@@ -662,7 +657,6 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
       packet,
       initialRepair,
       requeuedStaleTaskIds,
-      startedAtMs,
     });
     return ctx.done(noopResult);
   }
@@ -682,72 +676,35 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
       packet,
       initialRepair,
       requeuedStaleTaskIds,
-      startedAtMs,
     });
     return ctx.done(staleRunnableNoop);
   }
 
-  const regularLearningTickNoop = regularLearningTickNoopResult({
-    rawTask: ctx.task,
-    packet,
-    humanSteering,
-    requeuedStaleTaskIds,
-    quickAssignments,
-  });
-  if (regularLearningTickNoop) {
-    appendNoopPlannerRun({
-      appDir,
-      result: regularLearningTickNoop,
-      steps: ["regular-learning-tick-noop"],
-      packet,
-      initialRepair,
-      requeuedStaleTaskIds,
-      startedAtMs,
-    });
-    return ctx.done(regularLearningTickNoop);
-  }
-
   if (
-    canSkipOwnerAfterQuickAssignments({
-      rawTask: ctx.task,
-      packet,
-      humanSteering,
-      quickAssignments,
-      maxConcurrentTasks: config.maxConcurrent,
-    })
+    quickAssignments.length > 0 &&
+    humanSteering.length === 0 &&
+    packet.frontier.review.length === 0 &&
+    packet.active_task_ids.length >= config.maxConcurrent
   ) {
-    const wakeReason = cheapDeterministicWakeReason(ctx.task);
     appendPlannerRun(appDir, {
       kind: "planner_wake",
       status: "assigned",
       ran_agent: false,
-      steps: [
-        wakeReason === "regular-learning-tick"
-          ? "regular-learning-tick-quick-path"
-          : "quick-refill",
-      ],
+      steps: ["quick-refill"],
       assigned_task_ids: quickAssignments.map(
         (assignment) => assignment.taskId,
       ),
       repaired_rollups: initialRepair.repaired,
       requeued_stale_task_ids: requeuedStaleTaskIds,
       active_task_ids: packet.active_task_ids,
-      durationMs: Math.max(0, Date.now() - startedAtMs),
       result:
-        wakeReason === "regular-learning-tick"
-          ? "Regular learning tick assigned already-runnable work and skipped owner-agent planning."
-          : "Quick refill assigned runnable backlog tasks up to worker capacity; skipped owner-agent planning for this routine wake.",
+        "Quick refill assigned runnable backlog tasks up to worker capacity; skipped owner-agent planning for this routine wake.",
     });
     return ctx.done(
-      wakeReason === "regular-learning-tick"
-        ? `Planner regular-learning-tick quick path assigned ${quickAssignments.length} task(s): ${quickAssignments
-            .map((assignment) => assignment.taskId)
-            .slice(0, 8)
-            .join(", ")}.`
-        : `Planner quick-refill assigned ${quickAssignments.length} task(s): ${quickAssignments
-            .map((assignment) => assignment.taskId)
-            .slice(0, 8)
-            .join(", ")}.`,
+      `Planner quick-refill assigned ${quickAssignments.length} task(s): ${quickAssignments
+        .map((assignment) => assignment.taskId)
+        .slice(0, 8)
+        .join(", ")}.`,
     );
   }
 
@@ -759,14 +716,14 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
       maxConcurrentTasks: config.maxConcurrent,
     })
   ) {
-    const reason = cheapDeterministicWakeReason(ctx.task);
+    const reason = routineRefillReason(ctx.task);
     const openSlots = Math.max(
       0,
       config.maxConcurrent -
         packet.active_task_ids.length -
         packet.frontier.runnable.length,
     );
-    const seedReason = `${reason === "regular-learning-tick" ? "regular-learning-tick" : "routine-refill"}:${reason}`;
+    const seedReason = `routine-refill:${reason}`;
     const seedResult = seedModelGapBacklog(config, {
       limit: Math.min(2, openSlots),
       reason: seedReason,
@@ -790,7 +747,6 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
         seed_reason: seedReason,
         seed_skipped: seedResult.skipped.slice(0, 12),
         active_task_ids: packet.active_task_ids,
-        durationMs: Math.max(0, Date.now() - startedAtMs),
         result:
           "Routine watchdog refill seeded model-gap work without owner-agent planning.",
       });
@@ -815,7 +771,6 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
       seed_reason: seedReason,
       seed_skipped: seedResult.skipped.slice(0, 12),
       active_task_ids: packet.active_task_ids,
-      durationMs: Math.max(0, Date.now() - startedAtMs),
       result:
         "Routine watchdog refill found no model gaps and no open frontier. Skipping agent session.",
     });
@@ -938,7 +893,6 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     seed_reason: seedResult?.created.length ? seedReason : undefined,
     seed_skipped: seedResult?.skipped?.slice(0, 12) ?? [],
     active_task_ids: packet.active_task_ids,
-    durationMs: Math.max(0, Date.now() - startedAtMs),
     event_review: resultText(eventReviewResult).slice(0, 2000),
     result: resultText(plannerResult).slice(0, 4000),
   });

@@ -146,6 +146,10 @@ async function routeMayAgentEvent(
       // is wasteful. The scheduled project.tick (4h) surfaces the count
       // for awareness; the human gets notified via the daily ops digest.
       "escalation.pending-count",
+      // Category 5: stale-active-count spikes transiently after daemon
+      // restarts (all metrics appear stale until the first snapshot run).
+      // Self-resolves within one measurement cycle (~5min). Not actionable.
+      "metric.stale-active-count",
     ]);
     const metricId = eventString(event, "metricId");
     if (metricId && DEFERRED_METRICS.has(metricId)) {

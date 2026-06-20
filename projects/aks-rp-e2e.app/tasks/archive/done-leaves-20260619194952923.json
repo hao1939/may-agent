@@ -1,0 +1,146 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-19T19:49:52.923Z",
+  "reason": "bottom-up cleanup after large lane rollups",
+  "parent_id": "project",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "go-e2ev3-total-coverage-closure-20260617",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "focus_plan",
+      "priority": "P0",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Close AKS RP e2e coverage against the full Go e2ev3 source, not a hand-picked slice. Treat every Go Scenario_/suite variant as a row that must be inventoried, mapped to feature/path/spec/replay/plan/evidence, executed or explicitly classified, and kept visible in the task tree until coverage is complete.",
+      "inputs": [
+        "model/knowledge-map/model.json",
+        "specs/index.json",
+        "evidence/archive/go-e2e-source-inventory.md",
+        "evidence/archive/scenario-catalog.md"
+      ],
+      "outputs": [
+        "evidence/go-e2ev3-total-coverage-matrix.md",
+        "features/",
+        "specs/",
+        "replays/",
+        "runs/executions/",
+        "model/knowledge-map/model.json"
+      ],
+      "acceptance": [
+        "A source-of-truth coverage matrix exists for all discovered Go e2ev3 scenarios and variants.",
+        "Every row has one status: mapped-and-live-verified, mapped-not-yet-verified, spec-needed, replay-needed, product-gap, environment-blocked, deprecated/no-product-behavior, or out-of-scope with reason.",
+        "The task tree has concrete follow-up leaves for every unmapped or unverified scenario group, and the project cannot be called complete while those leaves remain open."
+      ],
+      "forbidden": [
+        "Do not mark the project complete because one feature or one pipeline slice passed.",
+        "Do not hide uncovered source scenarios behind stale project-ceiling summaries.",
+        "Do not treat dry-run as live e2e verification."
+      ],
+      "conflict_scope": [],
+      "depends_on": [],
+      "context": {
+        "human_steering": "Cover all scenarios. The VM REST slice is not the whole pipeline/project.",
+        "current_model_snapshot": {
+          "features": 404,
+          "paths": 471,
+          "scenarios": 402,
+          "evidence": 974,
+          "known_nonpass": "25 fail, 28 blocked, 3 draft, 2 unknown as of 2026-06-17 check"
+        },
+        "reason": "The project stopped because stale closure state said project at ceiling while source/model gaps remain.",
+        "rollup_summary": "Go e2ev3 total coverage closure completed: refreshed the full scenario inventory, reconciled the coverage matrix, expanded source-family coverage, repaired probe/model/evidence links, promoted and verified remaining Go e2ev3 evidence gaps, and moved follow-up focus to VM prerelease replacement and current hygiene/retry branches. The scenario inventory refresh child remains visible because other tasks depend on it.",
+        "archived_done_leaf_count": 62,
+        "rollup_archives": [
+          {
+            "archive": "tasks/archive/done-leaves-20260619194952922-2.json",
+            "archived": 1,
+            "at": "2026-06-19T19:49:52.922Z",
+            "reason": "bottom-up cleanup after large lane rollups",
+            "task_ids": [
+              "go-e2ev3-total-scenario-inventory-refresh-20260617"
+            ]
+          },
+          {
+            "archive": "tasks/archive/done-leaves-20260619192804.json",
+            "archived": 61,
+            "at": "2026-06-19T19:28:04.440Z",
+            "summary": "Go e2ev3 total coverage closure completed: refreshed the full scenario inventory, reconciled the coverage matrix, expanded source-family coverage, repaired probe/model/evidence links, promoted and verified remaining Go e2ev3 evidence gaps, and moved follow-up focus to VM prerelease replacement and current hygiene/retry branches. The scenario inventory refresh child remains visible because other tasks depend on it.",
+            "reason": "owner rollup trial for completed Go e2ev3 coverage-closure branch",
+            "task_ids": [
+              "go-e2ev3-coverage-matrix-reconciliation-20260617",
+              "vm-agentpool-boundary-negative-live-20260617",
+              "source-family-expansion-frontier-20260617",
+              "go-e2ev3-scenario-inventory-retry-20260617",
+              "go-e2ev3-storage-csi-draft-execution-batch",
+              "go-e2ev3-private-cluster-staging-completion",
+              "go-e2ev3-probe-wiring-batch",
+              "go-e2ev3-speculor-source-expansion",
+              "go-e2ev3-ccp-traffic-rp-source-expansion",
+              "go-e2ev3-probe-wiring-batch-2",
+              "go-e2ev3-net-integration-staging-promotion",
+              "go-e2ev3-draft-spec-execution-sweep",
+              "go-e2ev3-ccp-traffic-rp-artifact-reconciliation-20260617",
+              "go-e2ev3-draft-sweep-artifact-reconciliation-20260617",
+              "go-e2ev3-probe-wiring-batch-2-validation-20260617",
+              "go-e2ev3-net-integration-evidence-audit-20260617",
+              "go-e2ev3-two-evidence-gap-closure-20260617",
+              "frontier-worker-output-audit-20260617",
+              "task-tree-active-count-reconcile-20260617",
+              "task-tree-active-count-contract-clarification-20260617",
+              "go-e2ev3-net-integration-pass-evidence-backfill-queue-20260617",
+              "stale-project-metadata-reconciliation-20260617",
+              "project-metadata-live-surface-repair-20260617",
+              "virtualmachines-pool-delete-rest-proberef-repair-20260617",
+              "go-e2ev3-source-family-expansion-frontier-reconciliation-20260617",
+              "virtualmachines-pool-delete-rest-proberef-evidence-retry-20260617",
+              "go-e2ev3-private-cluster-source-family-remainder-20260617",
+              "go-e2ev3-localdns-source-family-remainder-20260617",
+              "go-e2ev3-rp-update-tags-promotion-20260617",
+              "go-e2ev3-net-integration-pass-live-backfill-arm-rest-20260617",
+              "go-e2ev3-net-integration-pass-live-backfill-external-or-multi-resource-20260617",
+              "go-e2ev3-localdns-upgrade-survival-canonical-promotion-20260617",
+              "go-e2ev3-private-cluster-pass-metadata-alignment-20260617",
+              "go-e2ev3-net-integration-arm-put-400-diagnosis-20260617",
+              "go-e2ev3-rp-update-tags-promotion-retry-20260617",
+              "go-e2ev3-localdns-upgrade-survival-live-execute-20260617",
+              "go-e2ev3-rp-update-tags-promotion-recovery-20260617",
+              "go-e2ev3-net-integration-arm-put-400-visibility-fix-20260617",
+              "go-e2ev3-storage-csi-full-cache-os-disk-runner-classification-20260617",
+              "go-e2ev3-storage-csi-full-cache-os-disk-model-reconcile-20260617",
+              "go-e2ev3-vm-cli-add-multi-sku-negative-model-reconcile-20260617",
+              "go-e2ev3-knowledge-map-view-generation-debt-reconcile-20260617",
+              "go-e2ev3-knowledge-map-view-generation-repair-evidence-20260617",
+              "go-e2ev3-knowledge-map-validation-debt-bucket-triage-20260617",
+              "go-e2ev3-localdns-auto-default-normalization-repair-20260617",
+              "go-e2ev3-localdns-family-normalization-repair-20260617",
+              "go-e2ev3-traffic-family-scenario-evidence-normalization-repair-20260617",
+              "go-e2ev3-missing-input-dag-backfill-tranche-1-20260617",
+              "go-e2ev3-workload-identity-managedsystem-dag-backfill-retry-20260617",
+              "go-e2ev3-traffic-path-reference-normalization-retry-20260617",
+              "go-e2ev3-review-worker-quick-exit-audit-20260617",
+              "aad-managed-v2-lifecycle-recovery-plan-20260617",
+              "net-integration-natgw-v2-byoip-gap-triage-20260617",
+              "aad-managed-v2-lifecycle-recovery-plan-retry-20260617",
+              "net-integration-natgw-v2-byoip-feature-packet-harmonization-20260617",
+              "aad-managed-v2-lifecycle-request-shape-comparison-rebuild-20260617",
+              "go-e2ev3-traffic-reference-proof-repair-20260617",
+              "go-e2ev3-traffic-reference-proof-retry2-20260617",
+              "go-e2ev3-traffic-evidence-canonical-index-20260617",
+              "go-e2ev3-traffic-evidence-canonical-index-retry-20260617",
+              "go-e2ev3-traffic-check-burst-policy-packet-20260617"
+            ]
+          }
+        ]
+      },
+      "trace": {
+        "created_at": "2026-06-17T02:46:48.000Z",
+        "created_by": "task-tree-tool",
+        "rolled_up_at": "2026-06-19T19:49:52.922Z",
+        "rolled_up_by": "task-tree-tool"
+      },
+      "status": "done"
+    }
+  ]
+}

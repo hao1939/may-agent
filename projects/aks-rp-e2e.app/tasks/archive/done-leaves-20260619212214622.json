@@ -1,0 +1,67 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-19T21:22:14.623Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "feature-knowledge-and-specs",
+  "summary": "Feature knowledge now includes an accepted repo-local landing for storage-csi-blob-pvc-dynamic/path.storage-csi-blob-pvc-dynamic grounded in the draft spec plus protocol-boundary evidence. The branch now knows Blob dynamic PVC provisioning has one canonical path with protocol/storageClass variants kept below it, and that global knowledge-map validation is still red only because of unrelated baseline issues; remaining work in this lane stays focused on other source/spec gaps and blocked source-semantic asks.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "storage-csi-blob-pvc-dynamic-feature-model-landing-20260619",
+      "parent_id": "feature-knowledge-and-specs",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Land the matching repo-local feature and knowledge-map path for the accepted Blob CSI dynamic-provisioning contract: using specs/storage-csi-blob-pvc-dynamic-provision.json plus the accepted Blob PVC/protocol boundary evidence, add the canonical storage-csi-blob-pvc-dynamic feature/model landing without reopening blob-driver-enable, FIPS env metadata, or premature FUSE-vs-NFS contract splits.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/features/storage-csi/blob-pvc-dynamic.yaml",
+        "../aks-rp-e2e/model/knowledge-map/model.json",
+        "../aks-rp-e2e/model/knowledge-map/views/",
+        "../aks-rp-e2e/evidence/archive/storage-csi-blob-pvc-dynamic-feature-model-landing-20260619.md"
+      ],
+      "acceptance": [
+        "Work cites specs/storage-csi-blob-pvc-dynamic-provision.json, features/storage-csi.yaml gap.storage-csi.blob-pvc-provisioning, and evidence/archive/storage-csi-blob-pvc-provisioning-protocol-boundary-local-map-20260619.md, then lands the canonical feature/model records for storage-csi-blob-pvc-dynamic / path.storage-csi-blob-pvc-dynamic without changing the settled blob-driver-enable contract.",
+        "Knowledge-map/model output records one canonical Blob PVC dynamic path with azureblob-fuse-premium and azureblob-nfs-premium treated as input variants or execution-variant metadata unless stronger source proof is cited; regenerated views validate and reflect the new path as repo-local/draft-or-unknown rather than executed coverage.",
+        "Scope stays repo-local and non-cloud only: no execute run, no speculative protocol split, and no unrelated storage-csi edits outside the minimal feature/model landing plus view regeneration."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "sig:storage-csi"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-19T21:14:20.707Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_storage-csi-blob-pvc-dynamic-feature-model-landing-20260619_20260619211420",
+        "assigned_at": "2026-06-19T21:14:20.760Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_storage-csi-blob-pvc-dynamic-feature-model-landing-20260619",
+        "worker_started_attempt_id": "a_storage-csi-blob-pvc-dynamic-feature-model-landing-20260619_20260619211420",
+        "worker_started_at": "2026-06-19T21:15:22.718Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Landed the repo-local Blob CSI dynamic PVC feature/model surface by adding features/storage-csi/blob-pvc-dynamic.yaml, extending model/knowledge-map/model.json with storage-csi-blob-pvc-dynamic / path.storage-csi-blob-pvc-dynamic as an unknown canonical path, regenerating views, and writing a durable evidence summary artifact.",
+        "last_worker_completed_at": "2026-06-19T21:21:21.214Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-19T21:22:14.568Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted as a scoped repo-local Blob CSI dynamic PVC feature/model landing: the archive note and regenerated views show one canonical path with FUSE/NFS retained as variants, while explicitly recording that repo-wide validator errors remain pre-existing and unrelated to this task."
+      },
+      "session_id": "s_task_storage-csi-blob-pvc-dynamic-feature-model-landing-20260619",
+      "session_history": [
+        "s_task_storage-csi-blob-pvc-dynamic-feature-model-landing-20260619"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-19T21:22:14.568Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted as a scoped repo-local Blob CSI dynamic PVC feature/model landing: the archive note and regenerated views show one canonical path with FUSE/NFS retained as variants, while explicitly recording that repo-wide validator errors remain pre-existing and unrelated to this task."
+      },
+      "status": "done"
+    }
+  ]
+}

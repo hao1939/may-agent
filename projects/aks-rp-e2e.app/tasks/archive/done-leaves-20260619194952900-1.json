@@ -1,0 +1,55 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-19T19:49:52.900Z",
+  "reason": "bottom-up cleanup after large lane rollups",
+  "parent_id": "model-feedback",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "batch-6-model-integrate",
+      "parent_id": "model-feedback",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Integrate batch-6 features into model.json. For each batch-6 feature packet and spec, add corresponding entries to model/knowledge-map/model.json with correct featurePath entries and initial status. Run bun run check to validate. Update ceiling-summary.md with new batch-6 path counts.",
+      "inputs": [],
+      "outputs": [
+        "model/knowledge-map/model.json"
+      ],
+      "acceptance": [
+        "batch-6 features added to model.json with featurePath entries. bun run check passes. ceiling-summary.md updated with new totals."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "model-update"
+      ],
+      "depends_on": [
+        "batch-6-specs"
+      ],
+      "trace": {
+        "created_at": "2026-06-14T00:29:21.276Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_batch-6-model-integrate_20260614005053",
+        "assigned_at": "2026-06-14T00:50:53.279Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_batch-6-model-integrate",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Integrated 21 batch-6 features into model.json across 3 families (managementplane-addon: 6, net-integration: 10, runtime-container: 5) with correct featurePath entries and initial `unknown` status. Model expanded from 211→232 features and 215→236 paths. `bun run check` passes all gates. ceiling-summary.md updated with new batch-6 totals and uncovered SIG count reduced from 10→7.",
+        "last_worker_completed_at": "2026-06-14T00:59:15.512Z",
+        "last_worker_evidence": [],
+        "accepted_at": "2026-06-14T01:00:41.650Z",
+        "accepted_by": "planner",
+        "acceptance_note": "21 batch-6 features integrated into model.json (managementplane-addon: 6, net-integration: 10, runtime-container: 5). Model 211→232 features, 215→236 paths. ceiling-summary.md updated. bun run check passes all gates."
+      },
+      "session_history": [
+        "s_task_batch-6-model-integrate"
+      ],
+      "state": "done",
+      "resolution": "completed",
+      "status": "done"
+    }
+  ]
+}

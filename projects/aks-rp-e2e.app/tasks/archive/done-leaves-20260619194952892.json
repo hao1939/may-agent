@@ -1,0 +1,110 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-19T19:49:52.892Z",
+  "reason": "bottom-up cleanup after large lane rollups",
+  "parent_id": "app-routing-istio-tls-done-slice-checkpoint-land-20260617",
+  "archived": 2,
+  "tasks": [
+    {
+      "id": "app-routing-istio-tls-clean-checkpoint-reconstruct-20260617",
+      "parent_id": "app-routing-istio-tls-done-slice-checkpoint-land-20260617",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Reconstruct the bounded App Routing Istio/TLS checkpoint on a clean base by carrying only the reviewed-exception runner/spec hardening, the runner model-update/repair support, the single App Routing specs/index entry sync, and the canonical TLS-secret boundary packet/evidence files; explicitly exclude broad model/view churn and unrelated App Routing work.",
+      "inputs": [],
+      "outputs": [
+        "evidence/archive/app-routing-istio-tls-clean-checkpoint-reconstruct-20260617.md"
+      ],
+      "acceptance": [
+        "Archive note cites the exact files reconstructed on a clean base, confirms the canonical TLS-secret packet path, records the bounded verification checks/results for replay shaping + repair/model-update + spec registry consistency, and states whether the slice is now checkpoint-ready or names the exact remaining file-level blocker."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "workspace:checkpoint-slice",
+        "feature:app-routing"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-17T15:49:14.199Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_app-routing-istio-tls-clean-checkpoint-reconstruct-20260617_20260617154914",
+        "assigned_at": "2026-06-17T15:49:14.327Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_app-routing-istio-tls-clean-checkpoint-reconstruct-20260617",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Reconstructed the bounded App Routing Istio/TLS checkpoint on a clean worktree, verified replay shaping + repair/model-update + single-entry spec registry sync, and recorded the exact clean-slice file set plus owner next action in evidence/archive/app-routing-istio-tls-clean-checkpoint-reconstruct-20260617.md.",
+        "last_worker_completed_at": "2026-06-17T15:54:07.427Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-17T15:56:07.683Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: evidence/archive/app-routing-istio-tls-clean-checkpoint-reconstruct-20260617.md reconstructs the bounded clean-base slice, confirms the canonical TLS-secret packet path, records replay-shaping + repair/model-update + spec-index verification, and states the slice is checkpoint-ready on a clean base."
+      },
+      "session_id": "s_task_app-routing-istio-tls-clean-checkpoint-reconstruct-20260617",
+      "session_history": [
+        "s_task_app-routing-istio-tls-clean-checkpoint-reconstruct-20260617"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-17T15:56:07.683Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: evidence/archive/app-routing-istio-tls-clean-checkpoint-reconstruct-20260617.md reconstructs the bounded clean-base slice, confirms the canonical TLS-secret packet path, records replay-shaping + repair/model-update + spec-index verification, and states the slice is checkpoint-ready on a clean base."
+      },
+      "status": "done"
+    },
+    {
+      "id": "app-routing-istio-tls-done-slice-isolation-preflight-20260617",
+      "parent_id": "app-routing-istio-tls-done-slice-checkpoint-land-20260617",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Prepare the isolated App Routing checkpoint slice by inventorying the accepted default-domain Istio reviewed-exception repair, the TLS-secret valid-input boundary packet changes, and the newly accepted runner-result-shaping hardening work; record the exact files/checks needed to land them together on main without sweeping in unrelated active work.",
+      "inputs": [],
+      "outputs": [
+        "evidence/archive/app-routing-istio-tls-done-slice-isolation-preflight-20260617.md"
+      ],
+      "acceptance": [
+        "Archive note cites the exact files or prior accepted artifacts for the reviewed-exception repair, TLS-secret valid-input boundary packet, and runner-result-shaping hardening result; states whether those changes form a clean checkpoint slice on main; and names the bounded checks plus exact file-level conflicts if unrelated work still contaminates the slice."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "workspace:checkpoint-slice"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-17T15:44:48.786Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_app-routing-istio-tls-done-slice-isolation-preflight-20260617_20260617154448",
+        "assigned_at": "2026-06-17T15:44:48.911Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_app-routing-istio-tls-done-slice-isolation-preflight-20260617",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Wrote the requested App Routing slice-isolation preflight note at evidence/archive/app-routing-istio-tls-done-slice-isolation-preflight-20260617.md after inventorying the accepted Istio reviewed-exception repair, TLS boundary packet work, and runner hardening files/conflicts. The note concludes the slice is conceptually coherent but not cleanly stageable from the current dirty workspace, and it names the exact reconstruction set and bounded checks for the owner.",
+        "last_worker_completed_at": "2026-06-17T15:48:40.192Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-17T15:49:14.070Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted the preflight note at evidence/archive/app-routing-istio-tls-done-slice-isolation-preflight-20260617.md: it inventories the accepted Istio reviewed-exception repair, TLS-secret boundary packet, and runner hardening files, shows the slice is coherent but not cleanly stageable from the current dirty workspace, and names the exact reconstruction set, bounded checks, and contamination to exclude."
+      },
+      "session_id": "s_task_app-routing-istio-tls-done-slice-isolation-preflight-20260617",
+      "session_history": [
+        "s_task_app-routing-istio-tls-done-slice-isolation-preflight-20260617"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-17T15:49:14.070Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted the preflight note at evidence/archive/app-routing-istio-tls-done-slice-isolation-preflight-20260617.md: it inventories the accepted Istio reviewed-exception repair, TLS-secret boundary packet, and runner hardening files, shows the slice is coherent but not cleanly stageable from the current dirty workspace, and names the exact reconstruction set, bounded checks, and contamination to exclude."
+      },
+      "status": "done"
+    }
+  ]
+}

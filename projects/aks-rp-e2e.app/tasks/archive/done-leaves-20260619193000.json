@@ -1,0 +1,64 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-19T19:30:00.436Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "feature-knowledge-and-specs",
+  "summary": "LocalDNS auto-default upgrade envelope revalidation is now absorbed into the feature lane: the accepted 2026-06-19 note confirms westus2/local currently lacks a repo-proven creatable <1.36 cluster version for the canonical upgrade path, so the live LocalDNS replay should stay blocked on exact version availability rather than searching for a speculative new pin. Remaining feature-lane work should preserve that version-availability constraint until fresh authoritative version evidence appears.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "localdns-autodefault-upgrade-envelope-westus2-version-revalidate-20260619",
+      "parent_id": "feature-knowledge-and-specs",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Revalidate the LocalDNS auto-default westus2/local upgrade envelope after the accepted rerun proved the current pre-upgrade pin collapses to 1.36.1. Use the accepted execute/rerun artifacts plus repo-local replay/source inputs to determine whether a different exact <1.36 version should be pinned for westus2/local, or whether the environment now lacks any supported pre-1.36 create path and the blocker should be promoted as a version-availability constraint.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/localdns-autodefault-upgrade-envelope-westus2-version-revalidate-20260619.md"
+      ],
+      "acceptance": [
+        "Archive note cites evidence/archive/localdns-autodefault-upgrade-pool-level-westus2-local-execute-20260619.md and evidence/archive/localdns-autodefault-upgrade-pool-level-westus2-local-rerun-after-shortcircuit-20260619.md, names the exact replay/source inputs inspected, and explains why setup.create-pre-1.36 resolved to 1.36.1 instead of a real pre-1.36 cluster.",
+        "The note ends with one concrete next contract decision only: either an exact revised pre-upgrade version/input change that stays within the canonical LocalDNS path, or a precise external/version-availability blocker stating that westus2/local currently cannot supply the required <1.36 create edge.",
+        "No cloud mutation and no broad LocalDNS family rediscovery in this leaf; it is limited to version-envelope/source-contract revalidation needed to make the next replay decision runnable."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "path:path.localdns.autodefault-on-upgrade"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-19T19:20:29.482Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_localdns-autodefault-upgrade-envelope-westus2-version-revalidate-20260619_20260619192032",
+        "assigned_at": "2026-06-19T19:20:32.238Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_localdns-autodefault-upgrade-envelope-westus2-version-revalidate-20260619",
+        "worker_started_attempt_id": "a_localdns-autodefault-upgrade-envelope-westus2-version-revalidate-20260619_20260619192032",
+        "worker_started_at": "2026-06-19T19:20:53.921Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Wrote the bounded archive note `evidence/archive/localdns-autodefault-upgrade-envelope-westus2-version-revalidate-20260619.md`, revalidating the LocalDNS westus2/local pre-1.36 envelope and concluding the next contract decision is a version-availability blocker rather than a safe exact-pin change.",
+        "last_worker_completed_at": "2026-06-19T19:22:26.762Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-19T19:23:19.198Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted the bounded LocalDNS revalidation note: it cites the execute/rerun evidence plus exact replay/source inputs, shows the replay sends the requested pre-version directly, and narrows the remaining issue to a westus2/local version-availability blocker rather than a safe exact-pin change."
+      },
+      "session_id": "s_task_localdns-autodefault-upgrade-envelope-westus2-version-revalidate-20260619",
+      "session_history": [
+        "s_task_localdns-autodefault-upgrade-envelope-westus2-version-revalidate-20260619"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-19T19:23:19.198Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted the bounded LocalDNS revalidation note: it cites the execute/rerun evidence plus exact replay/source inputs, shows the replay sends the requested pre-version directly, and narrows the remaining issue to a westus2/local version-availability blocker rather than a safe exact-pin change."
+      },
+      "status": "done"
+    }
+  ]
+}

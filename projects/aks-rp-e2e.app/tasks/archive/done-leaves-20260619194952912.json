@@ -1,0 +1,80 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-19T19:49:52.912Z",
+  "reason": "bottom-up cleanup after large lane rollups",
+  "parent_id": "feature-knowledge-and-specs",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "vm-prerelease-agic-overlay-source-packet-20260618",
+      "parent_id": "feature-knowledge-and-specs",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Classify VirtualMachine prerelease row 99 Scenario_Azure_CNI_Overlay_AGIC into one exact AGIC-on-overlay feature/spec/replay frontier by separating the reusable Azure CNI overlay substrate from the still-missing ingress/AGIC semantics, leaving either a dedicated source packet or an exact blocker rather than a generic Azure-family gap.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vm-prerelease-agic-overlay-source-packet-20260618.md"
+      ],
+      "acceptance": [
+        "Archive note cites row 99's exact matrix/source anchors plus the current Azure CNI overlay adjacent spec/replay surfaces, and explains which AGIC or ingress-appgw semantics are or are not already covered repo-locally.",
+        "The result leaves one exact next branch state for row 99: either a dedicated AGIC-on-overlay packet/spec successor or one precise repo-local blocker, without cloud execution or broad app-routing expansion."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "feature:network-cni",
+        "feature:virtualmachines",
+        "ledger:virtualmachine-prerelease"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-18T07:01:25.522Z",
+        "created_by": "task-tree-tool",
+        "promoted_at": "2026-06-18T07:08:41.060Z",
+        "promoted_by": "task-tree-tool",
+        "current_attempt_id": "a_vm-prerelease-agic-overlay-source-packet-20260618_20260618071157",
+        "assigned_at": "2026-06-18T07:11:57.893Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vm-prerelease-agic-overlay-source-packet-20260618",
+        "worker_started_attempt_id": "a_vm-prerelease-agic-overlay-source-packet-20260618_20260618071157",
+        "worker_started_at": "2026-06-18T07:11:58.407Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Created the row-99 archive note at evidence/archive/vm-prerelease-agic-overlay-source-packet-20260618.md, classifying Scenario_Azure_CNI_Overlay_AGIC as a precise AGIC/appgw-on-overlay blocker and separating the landed Azure CNI overlay substrate from the missing ingress semantics.",
+        "last_worker_completed_at": "2026-06-18T07:13:37.298Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-18T07:14:58.168Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: archive note cites row 99 matrix anchors, separates the landed Azure CNI overlay substrate from the missing ingress-appgw/AGIC semantics, and leaves a precise repo-local next step instead of a generic Azure-family gap.",
+        "rolled_up_at": "2026-06-19T19:49:52.911Z",
+        "rolled_up_by": "task-tree-tool"
+      },
+      "session_id": "s_task_vm-prerelease-agic-overlay-source-packet-20260618",
+      "session_history": [
+        "s_task_vm-prerelease-agic-overlay-source-packet-20260618"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-18T07:14:58.168Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: archive note cites row 99 matrix anchors, separates the landed Azure CNI overlay substrate from the missing ingress-appgw/AGIC semantics, and leaves a precise repo-local next step instead of a generic Azure-family gap.",
+        "archived_done_leaf_count": 1,
+        "rollup_archives": [
+          {
+            "archive": "tasks/archive/done-leaves-20260619194952911-1.json",
+            "archived": 1,
+            "at": "2026-06-19T19:49:52.911Z",
+            "reason": "bottom-up cleanup after large lane rollups",
+            "task_ids": [
+              "vm-prerelease-agic-overlay-landing-20260618"
+            ]
+          }
+        ]
+      },
+      "status": "done"
+    }
+  ]
+}

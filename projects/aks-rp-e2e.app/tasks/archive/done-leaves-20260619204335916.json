@@ -1,0 +1,65 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-19T20:43:35.916Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "evidence-feedback-and-model-update",
+  "summary": "Evidence-feedback now absorbs the accepted stale-terminal holder exemption repair: final blocked prerequisite-holder leaves whose text matches a path resume/retest contract no longer emit misleading stale-terminal warnings, and targeted repo-local tests plus the archive note verify the two concrete reproductions. This lane remains a durable evidence/model sink, but its currently completed child work is archived and no new evidence-feedback execution is opened from this fix alone.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "stale-terminal-warning-holder-exemption-tooling-follow-up-20260619",
+      "parent_id": "evidence-feedback-and-model-update",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Tighten stale-terminal hygiene so final terminal paths with exact blocked prerequisite-holder leaves whose blocker text matches the path retest/resume contract do not keep triggering stale-retry warnings after their holder artifacts and model/view surfaces are already aligned. Use the cross-subscription VNet holder net-integration-cross-subscription-vnet-staging-prereq-blocked-20260619 and the row-185 VirtualNodeAddon holder vm-prerelease-virtual-node-addon-serverless-identity-gate-20260617 as the concrete reproductions.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/stale-terminal-warning-holder-exemption-tooling-follow-up-20260619.md"
+      ],
+      "acceptance": [
+        "Archive note cites the accepted remaining-stale-terminal-warning-hygiene-reconcile-20260619 evidence, reproduces the exact stale-terminal warnings for the two task/path pairs, and confirms both blocked-holder artifacts now exist while the linked model/view surfaces remain final/aligned.",
+        "Either the app/tooling warning logic is repaired and validated so these exact prerequisite-holder leaves stop warning without weakening generic stale-retry detection, or the note records the exact code-level false-positive decision point, the proposed resume-contract-vs-retestCondition matching rule, and the owner-ready next patch path.",
+        "Work stays repo-local and limited to stale-terminal hygiene/tooling behavior for exact blocked prerequisite holders; no cloud execution, no reopening model verdicts, and no unrelated planner/watchdog changes."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "model:knowledge-map",
+        "tasktree:hygiene"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-19T20:39:04.313Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_stale-terminal-warning-holder-exemption-tooling-follow-up-20260619_20260619203904",
+        "assigned_at": "2026-06-19T20:39:04.367Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_stale-terminal-warning-holder-exemption-tooling-follow-up-20260619",
+        "worker_started_attempt_id": "a_stale-terminal-warning-holder-exemption-tooling-follow-up-20260619_20260619203904",
+        "worker_started_at": "2026-06-19T20:39:30.837Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Landed a repo-local stale-terminal hygiene fix in the AKS app so exact blocked prerequisite-holder leaves are exempt from stale-retry warnings when they match a final path’s resume/retest contract, and documented the two concrete reproductions in a new archive note.",
+        "last_worker_completed_at": "2026-06-19T20:42:50.432Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-19T20:43:35.864Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted owner review: archive note documents the exact stale-terminal false-positive reproductions, the repo-local task-tree-tools repair now matches blocked prerequisite holders against path resume/retest contracts, targeted tests pass, and generic stale-terminal warning coverage remains intact."
+      },
+      "session_id": "s_task_stale-terminal-warning-holder-exemption-tooling-follow-up-20260619",
+      "session_history": [
+        "s_task_stale-terminal-warning-holder-exemption-tooling-follow-up-20260619"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-19T20:43:35.864Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted owner review: archive note documents the exact stale-terminal false-positive reproductions, the repo-local task-tree-tools repair now matches blocked prerequisite holders against path resume/retest contracts, targeted tests pass, and generic stale-terminal warning coverage remains intact."
+      },
+      "status": "done"
+    }
+  ]
+}

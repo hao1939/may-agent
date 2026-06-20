@@ -230,21 +230,27 @@
       "state": "active",
       "context": {
         "latest_evidence": {
-          "observed_at": "2026-06-18T10:35:00Z",
-          "metric_id": "evaluator.aftermath-coverage-rate-3h",
-          "metric_current": 0,
-          "metric_threshold": 0.2,
-          "measured_at_ms": 1781793212119,
+          "observed_at": "2026-06-19T15:23:00Z",
+          "metric_id": "session.failed-triage-rate-3h",
+          "metric_current": 0.4444,
+          "metric_threshold": 0.8,
+          "measured_at_ms": 1781882630207,
           "window_ms": 10800000,
-          "session_completed_events_last_3h": 25,
-          "sessions_ended_last_3h": 29,
-          "evaluation_routed_last_3h": 0,
-          "evaluation_reviewed_last_3h": 0,
-          "evaluation_skipped_last_3h": 0,
-          "signal": "The live breach has worsened from a per-session reviewed-delivery mismatch to a full aftermath-activity outage in the measured window. There were 25 session.completed events and 29 ended sessions in the same 3h window, but zero evaluation.routed, evaluation.reviewed, or evaluation.skipped events. That points first to trigger/dispatch liveness rather than to artifact parsing or reviewed-event matching."
+          "failed_sessions_last_3h": 18,
+          "triaged_sessions_last_3h": 8,
+          "direct_failed_join_count": 20,
+          "direct_failed_join_triaged": 10,
+          "session_completed_events_last_3h": 271,
+          "evaluation_routed_last_3h": 4,
+          "evaluation_reviewed_last_3h": 4,
+          "evaluation_skipped_last_3h": 5,
+          "direct_trigger_runs_last_3h": 0,
+          "session_completed_accepted_by": "cron:1",
+          "scan_events_accepted_by": "cron:1",
+          "signal": "The live breach is no longer a total evaluator outage, but direct session.completed -> evaluator-aftermath dispatch still appears absent. In the measured 3h window, 271 session.completed events were accepted by cron:1, no direct-trigger evaluator-aftermath runs started, and only thin scan/backfill activity produced 4 routed / 4 reviewed / 5 skipped outcomes. Checked-in platform code now shows project-app workflow-handler pre-registration in project-app-loader.ts, so the active problem is a runtime deployment/loader contradiction or another dispatch bypass, not just stale task context about reviewed-event matching."
         }
       },
-      "updated_at": "2026-06-18T10:35:00Z"
+      "updated_at": "2026-06-19T15:23:00Z"
     }
   }
 }

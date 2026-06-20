@@ -7,6 +7,7 @@ import {
   completeTask,
   createTask,
   markTaskDone,
+  planningPacket,
   repairTaskTreeRollups,
   seedModelGapBacklog,
   taskTreeConfig,
@@ -212,6 +213,164 @@ describe("task tree tools", () => {
       await readFile(join(projectDir, "tasks", "tree.json"), "utf8"),
     );
     expect(tree.tasks["spec-runner-and-replays"].children).toEqual([]);
+  });
+
+  test("planning packet warns when retry work references terminal model paths", async () => {
+    const projectDir = await makeProject();
+    await mkdir(join(projectDir, "model", "knowledge-map"), {
+      recursive: true,
+    });
+    await writeFile(
+      join(projectDir, "model", "knowledge-map", "model.json"),
+      `${JSON.stringify(
+        {
+          featurePaths: [
+            {
+              id: "path.feature-a.retry-me",
+              status: "blocked",
+              terminal: true,
+              verdictFinal: true,
+            },
+          ],
+        },
+        null,
+        2,
+      )}\n`,
+      "utf8",
+    );
+    await writeFile(
+      join(projectDir, "tasks", "tree.json"),
+      `${JSON.stringify(
+        {
+          version: 1,
+          project: "aks-rp-e2e",
+          project_lifecycle: "active",
+          root_task_id: "project",
+          active_task_id: null,
+          active_task_ids: [],
+          tasks: {
+            project: {
+              id: "project",
+              state: "blocked",
+              children: ["retry-task"],
+              goal: "project",
+              outputs: ["tasks/tree.json"],
+              acceptance: ["done"],
+            },
+            "retry-task": {
+              id: "retry-task",
+              parent_id: "project",
+              state: "blocked",
+              children: [],
+              goal: "Retry path.feature-a.retry-me after source repair.",
+              outputs: ["evidence/archive/retry.md"],
+              acceptance: ["path.feature-a.retry-me can be reverified"],
+              blocker: "model terminal verdict may be stale",
+            },
+          },
+        },
+        null,
+        2,
+      )}\n`,
+      "utf8",
+    );
+
+    const packet = planningPacket(config(projectDir));
+
+    expect(packet.project_hygiene_warnings).toEqual([
+      expect.objectContaining({
+        kind: "stale-terminal-retry",
+        taskId: "retry-task",
+        pathId: "path.feature-a.retry-me",
+      }),
+    ]);
+  });
+
+  test("planning packet suppresses warning for exact blocked prerequisite holder matching terminal resume contract", async () => {
+    const projectDir = await makeProject();
+    await mkdir(join(projectDir, "model", "knowledge-map"), {
+      recursive: true,
+    });
+    await writeFile(
+      join(projectDir, "model", "knowledge-map", "model.json"),
+      `${JSON.stringify(
+        {
+          featurePaths: [
+            {
+              id: "path.feature-a.retry-me",
+              status: "blocked",
+              terminal: true,
+              verdictFinal: true,
+              retestCondition:
+                "Provide SHARED_IDENTITY_RESOURCE_ID on the gate-open host and rerun the exact replay.",
+            },
+            {
+              id: "path.feature-b.retry-me",
+              status: "blocked",
+              terminal: true,
+              verdictFinal: true,
+              retestCondition:
+                "Set AKS_RP_E2E_ASSIGN_IDENTITY to a valid user-assigned identity resource ID and rerun the dedicated row-185 replay without broadening coverage.",
+            },
+          ],
+        },
+        null,
+        2,
+      )}\n`,
+      "utf8",
+    );
+    await writeFile(
+      join(projectDir, "tasks", "tree.json"),
+      `${JSON.stringify(
+        {
+          version: 1,
+          project: "aks-rp-e2e",
+          project_lifecycle: "active",
+          root_task_id: "project",
+          active_task_id: null,
+          active_task_ids: [],
+          tasks: {
+            project: {
+              id: "project",
+              state: "blocked",
+              children: ["holder-task", "holder-task-paraphrased"],
+              goal: "project",
+              outputs: ["tasks/tree.json"],
+              acceptance: ["done"],
+            },
+            "holder-task": {
+              id: "holder-task",
+              parent_id: "project",
+              state: "blocked",
+              children: [],
+              goal: "Keep path.feature-a.retry-me visible as an exact environment blocker; resume only when Provide SHARED_IDENTITY_RESOURCE_ID on the gate-open host and rerun the exact replay.",
+              outputs: ["evidence/archive/holder.md"],
+              acceptance: ["holder remains precise"],
+              blocker:
+                "External unblock required: blocked until Provide SHARED_IDENTITY_RESOURCE_ID on the gate-open host and rerun the exact replay.",
+            },
+            "holder-task-paraphrased": {
+              id: "holder-task-paraphrased",
+              parent_id: "project",
+              state: "blocked",
+              children: [],
+              goal: "Hold path.feature-b.retry-me on the exact shared-identity prerequisite; rerun is meaningful only after the dedicated row-185 branch has AKS_RP_E2E_ASSIGN_IDENTITY set to a user-assigned identity resource ID.",
+              outputs: ["evidence/archive/holder-b.md"],
+              acceptance: ["holder remains precise"],
+              blocker:
+                "External unblock required: provide AKS_RP_E2E_ASSIGN_IDENTITY as a user-assigned identity resource id so the dedicated row-185 replay can proceed without broadening coverage.",
+            },
+          },
+        },
+        null,
+        2,
+      )}\n`,
+      "utf8",
+    );
+
+    const packet = planningPacket(config(projectDir));
+
+    expect(packet.project_hygiene_warnings).toBeUndefined();
   });
 
   test("repairs parent rollups and lifecycle from active leaves", async () => {

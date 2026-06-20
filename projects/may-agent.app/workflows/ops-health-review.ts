@@ -152,6 +152,23 @@ function writePacket(appDir: string, packet: Row): string {
   return packetPath;
 }
 
+// Metrics that are intentionally deferred to scheduled project.tick reviews.
+// These should NOT generate ops-health wake signals because:
+// 1. Health-observation metrics oscillate and create breach→review→recover loops
+// 2. Delegated metrics have known root causes being fixed elsewhere
+// 3. Human-backlog metrics require external action May cannot self-service
+// Must stay in sync with DEFERRED_METRICS in app.ts.
+const DEFERRED_METRIC_IDS = new Set([
+  "project.health.finding-count",
+  "project.owner-incomplete-count",
+  "project.owner-judgment-needed-count",
+  "guard.triggered-count-24h",
+  "guard.warned-count-24h",
+  "runtime.project-app-schedule-orphan-count-1h",
+  "escalation.pending-count",
+  "metric.stale-active-count",
+]);
+
 function buildPacket(ctx: WorkflowContext): { packet: Row; signals: Signal[] } {
   const now = Date.now();
   const oneHourAgo = now - 60 * 60_000;
@@ -302,8 +319,14 @@ function buildPacket(ctx: WorkflowContext): { packet: Row; signals: Signal[] } {
   );
 
   const signals: Signal[] = [];
-  const p0Alerts = openOwnerAlerts.filter((row) => row.priority === "P0");
-  const staleP1Alerts = openOwnerAlerts.filter(
+  // Exclude deferred metrics from generating wake signals.
+  // They are still visible in the packet observations for context,
+  // but do not trigger project.owner.requested events.
+  const nonDeferredAlerts = openOwnerAlerts.filter(
+    (row) => !DEFERRED_METRIC_IDS.has(stringValue(row.metric_id)),
+  );
+  const p0Alerts = nonDeferredAlerts.filter((row) => row.priority === "P0");
+  const staleP1Alerts = nonDeferredAlerts.filter(
     (row) => row.priority === "P1" && numberValue(row.created_at) < oneHourAgo,
   );
   if (p0Alerts.length > 0) {

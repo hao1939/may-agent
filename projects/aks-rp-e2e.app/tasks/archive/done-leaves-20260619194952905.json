@@ -1,0 +1,75 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-19T19:49:52.905Z",
+  "reason": "bottom-up cleanup after large lane rollups",
+  "parent_id": "source-discovery",
+  "archived": 2,
+  "tasks": [
+    {
+      "id": "batch-6-source-exploration",
+      "parent_id": "source-discovery",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Explore remaining uncovered SIG families for batch-6 expansion. Focus on high-value areas: speculor/storage (~15-20 scenarios), speculor/netintegration (~15-20 scenarios), industry (18 scenarios), managementplane (6), gpu (4), runtime (5), windows (2), airlock (3). For each sub-area: catalog Go plan files, extract scenario intent, identify input variables and assertions, estimate staging feasibility. Produce a structured batch-6 exploration report with ranked families and concrete scenario lists.",
+      "inputs": [],
+      "outputs": [
+        "evidence/archive/batch-6-source-exploration.md"
+      ],
+      "acceptance": [
+        "Report covers remaining speculor sub-areas (storage, netintegration) and at least 3 smaller families. Each cataloged sub-area has scenario count, input surface summary, staging feasibility assessment, and concrete feature names for extraction."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "source-exploration"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-14T00:12:16.448Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_batch-6-source-exploration_20260614001230",
+        "assigned_at": "2026-06-14T00:12:30.232Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_batch-6-source-exploration",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Created comprehensive batch-6 source exploration report at `evidence/archive/batch-6-source-exploration.md` (533 lines, 28KB). Report catalogs 10 remaining unexplored SIG families (~55-60 scenarios total), with detailed sub-area analysis for speculor/netintegration (~15-20 scenarios), speculor/storage (10 remaining beyond 4 existing specs), industry (18 scenarios), managementplane (6), runtime (5), gpu (4), airlock (3), windows (2), dataplane (1), arm64 (1), acccvm (1). Each cataloged area includes scenario count, inferred scenario list, RP API input surface, staging feasibility assessment, and concrete feature names for extraction. Ranked families into 3 tiers: Tier 1 (netintegration, managementplane), Tier 2 (runtime, industry, windows), Tier 3 (gpu, airlock, others).",
+        "last_worker_completed_at": "2026-06-14T00:21:12.779Z",
+        "last_worker_evidence": [],
+        "accepted_at": "2026-06-14T00:35:00.000Z",
+        "accepted_by": "planner"
+      },
+      "session_history": [
+        "s_task_batch-6-source-exploration"
+      ],
+      "state": "done",
+      "resolution": "completed",
+      "status": "done"
+    },
+    {
+      "id": "source-gap-audit-20260614",
+      "goal": "Explore 6 missing Go e2ev3 sigs and 3 partially-covered sigs to discover undocumented AKS features. MISSING (zero coverage): speculor (67 plans — storage CSI: AzureDisk/AzureFile across OS types, authorized IP ranges, private cluster networking), secops (32 plans — FIPS cluster compliance, identity binding, secure transport), serverless (35 plans — virtual node scenarios), workload (5 plans — cluster health monitor), fqdnpolicy (FQDN policy). PARTIAL (big sig, few features): traffic (114 plans, only app-routing covered — missing AppLink/mesh membership, API proxy, service mesh), node (57 plans, only ossku covered — missing artifact streaming, custom CA, ephemeral disk, FIPS node, HTTP proxy, CVM/SNP), ccp (70 plans, only 4 features — missing CoreDNS autoscaler/ENO, control plane scaling profile, mixed SKU scaling, billing, auto-upgrader). Priority: Tier 1 = speculor (storage), secops (FIPS), node (artifact streaming etc). Tier 2 = traffic beyond app-routing, ccp beyond current. For each sig: read plans/*.go, extract Scenario_ names, create feature packets, generate specs.",
+      "parent_id": "source-discovery",
+      "children": [],
+      "depends_on": [],
+      "priority": 1,
+      "created_at": "2026-06-14T08:20:29.218Z",
+      "updated_at": "2026-06-14T08:20:29.218Z",
+      "state": "done",
+      "resolution": "completed",
+      "context": {
+        "archived_done_leaf_count": 6,
+        "rollup_archives": [
+          {
+            "archive": "tasks/archive/done-leaves-20260614164317.json",
+            "archived": 6,
+            "at": "2026-06-14T16:43:17.017Z"
+          }
+        ]
+      },
+      "status": "done"
+    }
+  ]
+}

@@ -43,6 +43,30 @@ describe("app event contract", () => {
     });
   });
 
+  test("manifest schedules periodic blocked-frontier owner review", () => {
+    const schedule = app.schedules?.find(
+      (entry: { id?: string }) =>
+        entry.id === "blocked-frontier-owner-review",
+    );
+
+    expect(schedule).toMatchObject({
+      enabled: true,
+      intervalMs: 7_200_000,
+      event: {
+        type: "project.owner.requested",
+        project: "aks-rp-e2e",
+        reason: "scheduled-blocked-frontier-review",
+        urgency: "high",
+      },
+    });
+    expect(String(schedule?.event?.params?.instruction)).toContain(
+      "Periodic blocked-frontier owner review",
+    );
+    expect(String(schedule?.event?.params?.instruction)).toContain(
+      "push sampled blockers toward final state",
+    );
+  });
+
   test("task.requeued wakes owner review with task context", async () => {
     const { ctx, emitted } = testContext();
 
@@ -236,6 +260,38 @@ describe("app event contract", () => {
         task: {
           taskId:
             "app-routing-default-domain-tls-owner-checkpoint-commit-20260617",
+          result: "blocked",
+        },
+      },
+    });
+  });
+
+  test("blocked owner checkpoint packet in worker mode stays owner-visible without problem solver escalation", async () => {
+    const { ctx, emitted } = testContext();
+
+    await app.onEvent(ctx, {
+      type: "project.task.completed",
+      project: "aks-rp-e2e",
+      data: {
+        taskId: "networkcni-done-slice-owner-checkpoint-after-routing-20260619",
+        status: "review",
+        result: "blocked",
+        summary:
+          "Produced the owner checkpoint packet at projects/aks-rp-e2e/evidence/archive/networkcni-done-slice-owner-checkpoint-after-routing-20260619.md with fresh git/domain:checkpoint evidence confirming the exact 12-file candidate slice and 4 tracked holdouts. I did not create the repo commit hash because aks-rp-e2e worker mode and tasks/README make domain repo commits owner-only.",
+      },
+    });
+
+    expect(emitted).toHaveLength(1);
+    expect(emitted[0]).toMatchObject({
+      type: "project.owner.requested",
+      reason: "task-completed",
+      params: {
+        completedTaskId:
+          "networkcni-done-slice-owner-checkpoint-after-routing-20260619",
+        status: "review",
+        task: {
+          taskId:
+            "networkcni-done-slice-owner-checkpoint-after-routing-20260619",
           result: "blocked",
         },
       },
@@ -569,7 +625,7 @@ describe("app event contract", () => {
     ).toBe(false);
   });
 
-  test("blocked-count metric breach creates aggregated human unblock escalation without assigning back to owner", async () => {
+  test("blocked-count metric breach wakes owner blocked-frontier review before human escalation", async () => {
     const { ctx, emitted } = testContext();
 
     await app.onEvent(ctx, {
@@ -585,22 +641,25 @@ describe("app event contract", () => {
 
     expect(emitted).toHaveLength(1);
     expect(emitted[0]).toMatchObject({
-      type: "escalation.created",
-      owner: "human:operator",
+      type: "project.owner.requested",
       project: "aks-rp-e2e",
-      data: {
-        projectId: "aks-rp-e2e",
-        severity: "P1",
-        blockedOn: "metric breach aks-rp-e2e.task.blocked-count",
-        dedupKey: "aks-rp-e2e:metric:blocked-count",
+      reason: "blocked-frontier-review",
+      urgency: "high",
+      params: {
+        metricId: "aks-rp-e2e.task.blocked-count",
+        metric: {
+          metricId: "aks-rp-e2e.task.blocked-count",
+          current: 64,
+          threshold: 5,
+          priority: "P1",
+        },
       },
     });
-    const escalationData = emitted[0].data as Record<string, unknown>;
-    expect(String(escalationData.reason)).toContain(
-      "too many blocked task-tree leaves",
-    );
     expect(
-      emitted.some((event) => event.type === "project.owner.requested"),
-    ).toBe(false);
+      String((emitted[0].params as Record<string, unknown>).instruction),
+    ).toContain("Review the blocked and dependency-waiting task frontier");
+    expect(emitted.some((event) => event.type === "escalation.created")).toBe(
+      false,
+    );
   });
 });

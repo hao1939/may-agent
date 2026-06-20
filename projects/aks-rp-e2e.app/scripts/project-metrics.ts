@@ -199,8 +199,7 @@ function archivedCompletedTaskIds24h(): Set<string> {
   for (const path of listFiles(
     archiveDir,
     (candidate) =>
-      extname(candidate) === ".json" &&
-      candidate.includes("done-leaves-"),
+      extname(candidate) === ".json" && candidate.includes("done-leaves-"),
   )) {
     const archive = readJson<{ tasks?: TaskNode[] }>(path, {});
     for (const [index, task] of (archive.tasks ?? []).entries()) {
@@ -503,7 +502,9 @@ function sessionRestartReason(sessionId: string): string | null {
   }
 }
 
-function activeTaskWorkerSessionRow(taskId: string): Record<string, unknown> | null {
+function activeTaskWorkerSessionRow(
+  taskId: string,
+): Record<string, unknown> | null {
   if (!existsSync(stateDbPath)) return null;
   const db = new Database(stateDbPath, { readonly: true });
   const taskIdPattern = new RegExp(
@@ -570,7 +571,11 @@ function activeTaskRestartReason(task: TaskNode): string | null {
   if (reason === "session-not-running" && activeTaskIsWithinStartGrace(task)) {
     return null;
   }
-  if (reason === "session-not-running" && sessionId.startsWith("s_task_") && taskId) {
+  if (
+    reason === "session-not-running" &&
+    sessionId.startsWith("s_task_") &&
+    taskId
+  ) {
     const workerRow = activeTaskWorkerSessionRow(taskId);
     const workerReason = sessionRestartReasonFromRow(workerRow);
     if (workerReason === null) return null;

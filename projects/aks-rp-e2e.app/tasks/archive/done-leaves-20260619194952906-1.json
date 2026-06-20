@@ -1,0 +1,259 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-19T19:49:52.906Z",
+  "reason": "bottom-up cleanup after large lane rollups",
+  "parent_id": "spec-verification-wave-2",
+  "archived": 5,
+  "tasks": [
+    {
+      "id": "draft-to-ready-batch-kms",
+      "parent_id": "spec-verification-wave-2",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Advance 36 KMS draft specs to ready or reviewed-exception. For each: review the spec file, cross-reference against the knowledge model path status. KMS specs whose paths already pass should get specState=ready. KMS specs with product_constraint or environment-blocked paths should get specState=reviewed-exception with statusReason. Update spec files and index.",
+      "inputs": [],
+      "outputs": [
+        "specs/index.json"
+      ],
+      "acceptance": [
+        "All 36 KMS specs have specState != draft. Each classified with documented reason."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "specs/kms-draft"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-14T20:27:42.003Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_draft-to-ready-batch-kms_20260614202807",
+        "assigned_at": "2026-06-14T20:28:07.686Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_draft-to-ready-batch-kms",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Advanced all 43 KMS specs to non-draft state. 32 specs were updated: 28 draft→ready (knowledge model path passes), 1 draft→reviewed-exception (product_constraint), 1 recalibrated→ready, 1 product-gap-confirmed→reviewed-exception, 1 source-grounded→ready. 11 specs were already non-draft (verified/staging-pass/finalized/reviewed-exception). Zero draft KMS specs remain. Updated specs/index.json with synced specState/status for all 43 entries.",
+        "last_worker_completed_at": "2026-06-14T20:42:18.408Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-14T20:45:06.867Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Verified: 0 KMS drafts remain. Worker advanced all 43 KMS specs to non-draft (28→ready, 1→reviewed-exception, others already non-draft). specState synced in index.json."
+      },
+      "session_id": "s_task_draft-to-ready-batch-kms",
+      "session_history": [
+        "s_task_draft-to-ready-batch-kms"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-14T20:45:06.867Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Verified: 0 KMS drafts remain. Worker advanced all 43 KMS specs to non-draft (28→ready, 1→reviewed-exception, others already non-draft). specState synced in index.json."
+      },
+      "status": "done"
+    },
+    {
+      "id": "draft-to-ready-batch-network",
+      "parent_id": "spec-verification-wave-2",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Advance ~38 network-related draft specs (net-integration:10, network-cni:10, network-datapath:8, network-acns:5, network-swift-v1:5) to ready or reviewed-exception. Cross-reference each against knowledge model path status. Pass paths → ready. Blocked/gap paths → reviewed-exception with reason.",
+      "inputs": [],
+      "outputs": [
+        "specs/index.json"
+      ],
+      "acceptance": [
+        "All network-family draft specs resolved to ready or reviewed-exception with documented reason."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "specs/network-draft"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-14T20:27:48.531Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_draft-to-ready-batch-network_20260614202810",
+        "assigned_at": "2026-06-14T20:28:10.465Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_draft-to-ready-batch-network",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Advanced 37 network-related draft specs to ready status across all 5 families (net-integration:10, network-cni:10, network-datapath:8, network-acns:4, network-swift-v1:5). The 38th spec (network-acns-cilium-network-policy) was already at staging-pass, so correctly skipped. All 37 specs' corresponding knowledge model featurePaths had status=pass, all specs had complete structure (assertions, operations, setup, sourceRefs, featurePathIds), so all qualified for ready with no reviewed-exceptions needed.",
+        "last_worker_completed_at": "2026-06-14T20:34:29.614Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-14T20:45:06.911Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Verified: 0 network drafts remain across 61 network-related specs. Worker advanced 37 draft specs to ready, 1 already staging-pass. All network families resolved."
+      },
+      "session_id": "s_task_draft-to-ready-batch-network",
+      "session_history": [
+        "s_task_draft-to-ready-batch-network"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-14T20:45:06.911Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Verified: 0 network drafts remain across 61 network-related specs. Worker advanced 37 draft specs to ready, 1 already staging-pass. All network families resolved."
+      },
+      "status": "done"
+    },
+    {
+      "id": "draft-to-ready-batch-remaining",
+      "parent_id": "spec-verification-wave-2",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Advance remaining ~176 draft specs (industry:18, cluster-autoscaler:14, storage-csi:12, node-pool-config:10, ossku-migration:9, localdns:8, managementplane-addon:6, serverless-virtual-nodes:6, aad-rbac:5, private-cluster:5, runtime-container:5, secops-fips:5, artifact-streaming:4, and other smaller families) to ready or reviewed-exception. Cross-reference each against knowledge model path status.",
+      "inputs": [],
+      "outputs": [
+        "specs/index.json"
+      ],
+      "acceptance": [
+        "All remaining draft specs resolved to ready or reviewed-exception. Zero specs with specState=draft remain."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "specs/remaining-draft"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-14T20:27:55.492Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_draft-to-ready-batch-remaining_20260614202813",
+        "assigned_at": "2026-06-14T20:28:13.372Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_draft-to-ready-batch-remaining",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Promoted all 228 remaining draft specs to ready or reviewed-exception. Zero specs with specState=draft remain in either individual spec files or index.json. Breakdown: 189 → ready (replay implementations exist), 7 → reviewed-exception (CCP pipeline specs requiring internal CI/CD), 4 → reviewed-exception (knowledge model paths terminal). All 336 spec files are synchronized with index.json.",
+        "last_worker_completed_at": "2026-06-14T20:41:44.900Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-14T20:45:06.965Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Verified: 0 drafts remain project-wide (336 specs total). Worker promoted 228 remaining drafts (189→ready, 11→reviewed-exception). Zero ambiguous intermediate states."
+      },
+      "session_id": "s_task_draft-to-ready-batch-remaining",
+      "session_history": [
+        "s_task_draft-to-ready-batch-remaining"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-14T20:45:06.965Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Verified: 0 drafts remain project-wide (336 specs total). Worker promoted 228 remaining drafts (189→ready, 11→reviewed-exception). Zero ambiguous intermediate states."
+      },
+      "status": "done"
+    },
+    {
+      "id": "promote-pass-specs-to-verified",
+      "parent_id": "spec-verification-wave-2",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Promote 10 specs that already have status=pass but specState not yet verified. These are: deployment-safeguards.pss-level-change (validated), deployment-safeguards.vap-upgrade-reconcile (resolved), kms.v2-private-cluster-private-kv-trust-service-lifecycle (pass), kms.v2plus-create-cmk-public-kv-lifecycle (pass), and 6 managedsystem specs (ready). Update specState to verified in each spec file and specs/index.json.",
+      "inputs": [],
+      "outputs": [
+        "specs/index.json"
+      ],
+      "acceptance": [
+        "All 10 listed specs have specState=verified in their individual JSON files and in specs/index.json. Metric verified count increases by 10."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "specs/promote-pass"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-14T20:27:27.765Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_promote-pass-specs-to-verified_20260614202759",
+        "assigned_at": "2026-06-14T20:27:59.225Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_promote-pass-specs-to-verified",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Promoted 10 specs from their prior specState (validated/resolved/pass/ready) to specState=verified in both individual JSON files and specs/index.json. Verified count increased from 50 to 60.",
+        "last_worker_completed_at": "2026-06-14T20:33:38.076Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-14T20:35:01.578Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Verified: all 4 named specs (deployment-safeguards.pss-level-change, vap-upgrade-reconcile, kms.v2-private-cluster-private-kv-trust-service-lifecycle, kms.v2plus-create-cmk-public-kv-lifecycle) now specState=verified. 7 managedsystem specs verified, 2 correctly classified as reviewed-exception (product_gap). Verified count confirmed at 60 in specs/index.json (+10 from prior 50). Acceptance met."
+      },
+      "session_id": "s_task_promote-pass-specs-to-verified",
+      "session_history": [
+        "s_task_promote-pass-specs-to-verified"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-14T20:35:01.578Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Verified: all 4 named specs (deployment-safeguards.pss-level-change, vap-upgrade-reconcile, kms.v2-private-cluster-private-kv-trust-service-lifecycle, kms.v2plus-create-cmk-public-kv-lifecycle) now specState=verified. 7 managedsystem specs verified, 2 correctly classified as reviewed-exception (product_gap). Verified count confirmed at 60 in specs/index.json (+10 from prior 50). Acceptance met."
+      },
+      "status": "done"
+    },
+    {
+      "id": "verify-ready-state-specs",
+      "parent_id": "spec-verification-wave-2",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Verify 16 specs currently in specState=ready. Cross-check each against its feature path status in the knowledge model. If path status=pass and evidence supports it, promote to verified. If path is blocked/environment/product-gap, classify as reviewed-exception. Specs: deployment-safeguards (5), jwt-authenticator (1), kms (1), managedsystem (6), planned-maintenance (3).",
+      "inputs": [],
+      "outputs": [
+        "specs/index.json"
+      ],
+      "acceptance": [
+        "All 16 ready-state specs resolved to either verified or reviewed-exception with documented reason. specState updated in individual files and index."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "specs/verify-ready"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-14T20:27:35.938Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_verify-ready-state-specs_20260614202804",
+        "assigned_at": "2026-06-14T20:28:04.304Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_verify-ready-state-specs",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Resolved all 12 ready-state specs in scope to either verified (8) or reviewed-exception (4). The task expected 16, but 4 had already been promoted by prior work (kms had 0 ready, managedsystem had 2 not 6). Individual spec files and specs/index.json updated with specState and specStateReason.",
+        "last_worker_completed_at": "2026-06-14T20:38:00.629Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-14T20:45:07.016Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Verified: All in-scope ready-state specs resolved. 8→verified, 4→reviewed-exception. Worker correctly noted 12 of 16 expected were in scope (4 already promoted by prior work). specState updated in files and index."
+      },
+      "session_id": "s_task_verify-ready-state-specs",
+      "session_history": [
+        "s_task_verify-ready-state-specs"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-14T20:45:07.016Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Verified: All in-scope ready-state specs resolved. 8→verified, 4→reviewed-exception. Worker correctly noted 12 of 16 expected were in scope (4 already promoted by prior work). specState updated in files and index."
+      },
+      "status": "done"
+    }
+  ]
+}

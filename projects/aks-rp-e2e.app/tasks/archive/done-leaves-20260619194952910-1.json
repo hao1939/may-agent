@@ -1,0 +1,64 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-19T19:49:52.910Z",
+  "reason": "bottom-up cleanup after large lane rollups",
+  "parent_id": "virtualmachines-cli-add-multi-sku-negative-canonical-client-gap-packet-20260618",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "virtualmachines-cli-add-multi-sku-negative-evidence-and-source-extract-20260618",
+      "parent_id": "virtualmachines-cli-add-multi-sku-negative-canonical-client-gap-packet-20260618",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Extract the strongest existing repo-local CLI failure artifact and the exact az aks-preview single-SKU source restriction for path.virtualmachines.cli-add-multi-sku-negative, then identify the exact packet/model/view/spec surfaces that are stale before the broader canonical client-gap packet is landed.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/virtualmachines-cli-add-multi-sku-negative-evidence-and-source-extract-20260618.md"
+      ],
+      "acceptance": [
+        "Archive note cites the strongest repo-local comma-separated --vm-sizes failure artifact and the exact az aks-preview source location/logic that rejects len(sizes)>1 for VirtualMachines agent pools.",
+        "Archive note names the exact stale or already-canonical repo-local packet/model/view/spec surfaces for path.virtualmachines.cli-add-multi-sku-negative so the parent packet can finish without re-discovery or cloud execution.",
+        "Work stays path-scoped and repo-local, does not broaden into other VirtualMachines branches, and does not commit or run cloud probes."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "path:path.virtualmachines.cli-add-multi-sku-negative",
+        "artifact:virtualmachines-cli-add-multi-sku-negative-canonical-packet"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-18T07:07:43.929Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_virtualmachines-cli-add-multi-sku-negative-evidence-and-source-extract-20260618_20260618070746",
+        "assigned_at": "2026-06-18T07:07:46.803Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_virtualmachines-cli-add-multi-sku-negative-evidence-and-source-extract-20260618",
+        "worker_started_attempt_id": "a_virtualmachines-cli-add-multi-sku-negative-evidence-and-source-extract-20260618_20260618070746",
+        "worker_started_at": "2026-06-18T07:08:06.595Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Created a path-scoped archive note at evidence/archive/virtualmachines-cli-add-multi-sku-negative-evidence-and-source-extract-20260618.md that identifies the strongest repo-local CLI failure artifact, quotes the exact aks-preview single-SKU source guard, and enumerates which packet/model/view/spec surfaces are canonical, alias-only, or stale for this path.",
+        "last_worker_completed_at": "2026-06-18T07:09:59.117Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-18T07:11:01.067Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted the archive note: it cites the strongest repo-local CLI failure artifact, quotes the exact aks-preview len(sizes)!=1 source guard, and names the canonical versus stale packet/model/view/spec surfaces needed for the parent client-gap packet without any cloud execution."
+      },
+      "session_id": "s_task_virtualmachines-cli-add-multi-sku-negative-evidence-and-source-extract-20260618",
+      "session_history": [
+        "s_task_virtualmachines-cli-add-multi-sku-negative-evidence-and-source-extract-20260618"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-18T07:11:01.067Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted the archive note: it cites the strongest repo-local CLI failure artifact, quotes the exact aks-preview len(sizes)!=1 source guard, and names the canonical versus stale packet/model/view/spec surfaces needed for the parent client-gap packet without any cloud execution."
+      },
+      "status": "done"
+    }
+  ]
+}

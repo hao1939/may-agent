@@ -1,0 +1,64 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-19T20:07:43.594Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "evidence-feedback-and-model-update",
+  "summary": "Cross-subscription VNet model/view cleanup is now accepted: the stale non-final duplicate path representation was removed, repo-local path-summary now matches the final environment-blocked terminal posture, and the blocked staging-prereq leaf remains the only live prerequisite holder for future staging availability. Remaining evidence-feedback work stays on other concrete post-run/model-hygiene tasks rather than retry planning for this path.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "net-integration-cross-subscription-vnet-model-view-finalization-20260619",
+      "parent_id": "evidence-feedback-and-model-update",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Remove the stale non-final duplicate representation for path.net-integration.cross-subscription-vnet from the repo-local model/view surfaces while preserving the existing blocked staging-prereq leaf, so planner hygiene stops treating this final environment-blocked path as a retry candidate.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/net-integration-cross-subscription-vnet-model-view-finalization-20260619.md"
+      ],
+      "acceptance": [
+        "Archive note cites the accepted terminal-reconcile evidence, names the exact stale model/view fields still advertising a retry posture (including the non-final duplicate row and derived path-summary flags), and records the exact cleanup applied.",
+        "Repo-local model/view surfaces are updated so the canonical cross-subscription VNet path renders as final environment-blocked without retry-oriented duplicate wording, while net-integration-cross-subscription-vnet-staging-prereq-blocked-20260619 remains the precise external prerequisite holder.",
+        "Work stays bounded to repo-local model/view hygiene for path.net-integration.cross-subscription-vnet only: no cloud execution, no new network rediscovery, and no retirement of the blocked staging-prereq leaf."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "feature:net-integration-cross-subscription-vnet"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-19T20:02:40.529Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_net-integration-cross-subscription-vnet-model-view-finalization-20260619_20260619200240",
+        "assigned_at": "2026-06-19T20:02:40.655Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_net-integration-cross-subscription-vnet-model-view-finalization-20260619",
+        "worker_started_attempt_id": "a_net-integration-cross-subscription-vnet-model-view-finalization-20260619_20260619200240",
+        "worker_started_at": "2026-06-19T20:03:05.150Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Finalized the repo-local cross-subscription VNet model/view surface by marking the stale featurePaths representation as final/terminal in model/knowledge-map/model.json and writing the archive note at evidence/archive/net-integration-cross-subscription-vnet-model-view-finalization-20260619.md. Regenerated knowledge-map views confirmed path-summary now renders the path as final environment-blocked; unrelated pre-existing model validation errors remain outside this task’s scope.",
+        "last_worker_completed_at": "2026-06-19T20:04:43.220Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-19T20:07:43.533Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: archive note identifies the exact stale featurePaths verdictFinal/terminal/_retry_reason fields, repo-local model/path-summary now render path.net-integration.cross-subscription-vnet as final environment-blocked terminal, and the blocked staging-prereq leaf remains the sole open prerequisite holder."
+      },
+      "session_id": "s_task_net-integration-cross-subscription-vnet-model-view-finalization-20260619",
+      "session_history": [
+        "s_task_net-integration-cross-subscription-vnet-model-view-finalization-20260619"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-19T20:07:43.533Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: archive note identifies the exact stale featurePaths verdictFinal/terminal/_retry_reason fields, repo-local model/path-summary now render path.net-integration.cross-subscription-vnet as final environment-blocked terminal, and the blocked staging-prereq leaf remains the sole open prerequisite holder."
+      },
+      "status": "done"
+    }
+  ]
+}

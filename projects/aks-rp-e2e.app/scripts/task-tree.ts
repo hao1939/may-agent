@@ -16,6 +16,7 @@ import {
   rejectTaskReview,
   requeueStaleActiveTasks,
   repairTaskTreeRollups,
+  rollupParent,
   summarizeTaskTree,
   updateAcceptedReviewMetadata,
   updateTaskOutputs,
@@ -34,6 +35,7 @@ function usage(): never {
   bun run task-tree kanban-snapshot
   bun run task-tree repair-rollups
   bun run task-tree compact-done [--limit N]
+  bun run task-tree rollup-parent <parent-id> --summary "..." [--archive-done <child-id> ...] [--limit N]
   bun run task-tree frontier
   bun run task-tree confirm-runnable [--limit N]
   bun run task-tree add <task-id> --parent <task-id> --goal "..." --output <path> --acceptance "..." [--state backlog|blocked]
@@ -154,6 +156,23 @@ if (command === "summary") {
       compactDoneLeaves(config, {
         limit: numberOption("--limit", 200),
         reason: option("--reason") ?? "operator requested task tree roll-up",
+      }),
+      null,
+      2,
+    ),
+  );
+} else if (command === "rollup-parent") {
+  const parentId = process.argv[3];
+  const summary = option("--summary");
+  if (!parentId || !summary) usage();
+  console.log(
+    JSON.stringify(
+      rollupParent(config, {
+        parentId,
+        summary,
+        taskIds: repeatedStringOption("--archive-done"),
+        limit: numberOption("--limit", 200),
+        reason: option("--reason") ?? "owner rolled up completed child tasks",
       }),
       null,
       2,

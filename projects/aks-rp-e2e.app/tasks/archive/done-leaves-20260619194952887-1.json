@@ -1,0 +1,95 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-19T19:49:52.887Z",
+  "reason": "bottom-up cleanup after large lane rollups",
+  "parent_id": "spec-runner-and-replays",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "combined-scenario-planning-and-execution",
+      "parent_id": "spec-runner-and-replays",
+      "state": "done",
+      "kind": "work",
+      "priority": "P0",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Make combined-scenario planning and execution a reusable project capability: plan multiple compatible specs into one CRUD lifecycle, run them efficiently, preserve per-scenario diagnosis, and feed evidence back into the model.",
+      "inputs": [
+        "suites/",
+        "specs/",
+        "replays/",
+        "runner/",
+        "model/knowledge-map/"
+      ],
+      "outputs": [
+        "suites/",
+        "runner/",
+        "replays/",
+        "evidence/archive/",
+        "model/knowledge-map/"
+      ],
+      "acceptance": [
+        "The project can select compatible specs and produce a reviewable multi-spec run plan with expected CRUD savings.",
+        "At least one combined suite is live-verified end to end against staging with per-spec verdicts, cleanup evidence, and model feedback.",
+        "The pattern is documented enough for applying to additional AKS RP feature families without rebuilding the runner."
+      ],
+      "forbidden": [
+        "Do not count dry-run/local generation as e2e verification.",
+        "Do not merge incompatible specs into one lifecycle unless the plan records the dependency risk and preserves per-spec diagnosis."
+      ],
+      "conflict_scope": [],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-14T15:19:23.428Z",
+        "created_by": "task-tree-tool",
+        "paused_at": "2026-06-14T16:10:00Z",
+        "pause_reason": "Project waiting per discussion iter1. Human direction needed.",
+        "approved_at": "2026-06-14T15:30:00.000Z",
+        "approved_by": "planner",
+        "approval_note": "Combined-scenario direction approved. Grounded in live-verified ManagedSystem probe. Risk envelope accepted: cloud mutations through existing gates. Audit confirms concrete 3-priority runner gap.",
+        "rolled_up_at": "2026-06-19T19:49:52.887Z",
+        "rolled_up_by": "task-tree-tool"
+      },
+      "context": {
+        "archived_done_leaf_count": 6,
+        "rollup_archives": [
+          {
+            "archive": "tasks/archive/done-leaves-20260619194952887.json",
+            "archived": 1,
+            "at": "2026-06-19T19:49:52.887Z",
+            "reason": "bottom-up cleanup after large lane rollups",
+            "task_ids": [
+              "combined-scenario-capability-audit-20260614"
+            ]
+          },
+          {
+            "archive": "tasks/archive/done-leaves-20260619194952886.json",
+            "archived": 2,
+            "at": "2026-06-19T19:49:52.886Z",
+            "reason": "bottom-up cleanup after large lane rollups",
+            "task_ids": [
+              "managedsystem-combined-suite-live-verification-20260614",
+              "combined-planner-generator-hardening-20260614"
+            ]
+          },
+          {
+            "archive": "tasks/archive/done-leaves-20260619194952882.json",
+            "archived": 2,
+            "at": "2026-06-19T19:49:52.883Z",
+            "reason": "bottom-up cleanup after large lane rollups",
+            "task_ids": [
+              "combined-scenario-execution-waves-20260614",
+              "combined-scenario-rollout-candidates-20260614"
+            ]
+          },
+          {
+            "archive": "tasks/archive/done-leaves-20260614164317.json",
+            "archived": 1,
+            "at": "2026-06-14T16:43:17.017Z"
+          }
+        ]
+      },
+      "status": "done"
+    }
+  ]
+}

@@ -40,6 +40,7 @@ type RelatedTask = {
 
 type FileCheckpoint = GitChange & {
   active_or_review_tasks: RelatedTask[];
+  blocked_tasks: RelatedTask[];
   accepted_tasks: RelatedTask[];
   related_tasks: RelatedTask[];
   recommendation: "hold" | "candidate" | "needs-planner-review";
@@ -49,18 +50,22 @@ type SliceCheckpoint = {
   slice: string;
   files: string[];
   active_or_review_tasks: string[];
+  blocked_tasks: string[];
   accepted_tasks: string[];
   recommendation: "hold" | "candidate" | "needs-planner-review";
 };
 
-const appDir = resolve(dirname(fileURLToPath(import.meta.url)), "..");
-const projectJson = readJson<ProjectJson>(resolve(appDir, "project.json"));
-const projectDir = resolve(
-  appDir,
-  projectJson?.domainProject?.path ?? "../aks-rp-e2e",
-);
-const taskTree = readJson<TaskTree>(resolve(appDir, "tasks", "tree.json")) ?? {
-  tasks: {},
+type CheckpointSummary = {
+  projectDir: string;
+  files: FileCheckpoint[];
+  slices: SliceCheckpoint[];
+};
+
+type SummarizeOptions = {
+  appDir?: string;
+  projectDir?: string;
+  taskTree?: TaskTree;
+  changes?: GitChange[];
 };
 
 function readJson<T>(path: string): T | null {
@@ -69,6 +74,23 @@ function readJson<T>(path: string): T | null {
   } catch {
     return null;
   }
+}
+
+function loadAppContext(appDir: string): {
+  projectDir: string;
+  taskTree: TaskTree;
+} {
+  const projectJson = readJson<ProjectJson>(resolve(appDir, "project.json"));
+  const projectDir = resolve(
+    appDir,
+    projectJson?.domainProject?.path ?? "../aks-rp-e2e",
+  );
+  const taskTree = readJson<TaskTree>(
+    resolve(appDir, "tasks", "tree.json"),
+  ) ?? {
+    tasks: {},
+  };
+  return { projectDir, taskTree };
 }
 
 function taskState(task: TaskNode): string {
@@ -81,7 +103,7 @@ function taskState(task: TaskNode): string {
   return raw;
 }
 
-function git(args: string[]): string {
+function git(projectDir: string, args: string[]): string {
   return execFileSync("git", args, {
     cwd: projectDir,
     encoding: "utf-8",
@@ -113,16 +135,28 @@ function changeSlice(path: string): string {
       ? `replay:${parts[1].slice(0, -".ts".length)}`
       : "replay";
   }
+  if (
+    parts[0] === "model" &&
+    parts[1] === "knowledge-map" &&
+    parts[2] === "derived" &&
+    parts[3]
+  ) {
+    return `model-derived:${parts[3]}`;
+  }
   if (parts[0] === "model") return "model";
   if (parts[0] === "evidence") return "evidence";
   return parts[0] || "root";
 }
 
-function parseGitStatus(): GitChange[] {
+function parseGitStatus(projectDir: string): GitChange[] {
   if (!existsSync(projectDir)) {
     throw new Error(`Domain project does not exist: ${projectDir}`);
   }
-  const output = git(["status", "--porcelain=v1", "--untracked-files=all"]);
+  const output = git(projectDir, [
+    "status",
+    "--porcelain=v1",
+    "--untracked-files=all",
+  ]);
   return output
     .split("\n")
     .filter(Boolean)
@@ -138,7 +172,10 @@ function parseGitStatus(): GitChange[] {
 
 const derivedPathSignalsCache = new Map<string, string[]>();
 
-function featureSignalsFromSpecPath(specPath: string): string[] {
+function featureSignalsFromSpecPath(
+  projectDir: string,
+  specPath: string,
+): string[] {
   try {
     const fullPath = resolve(projectDir, specPath);
     const spec = JSON.parse(readFileSync(fullPath, "utf-8")) as {
@@ -163,39 +200,40 @@ function featureSignalsFromSpecPath(specPath: string): string[] {
   }
 }
 
-function derivedPathSignals(path: string): string[] {
-  const cached = derivedPathSignalsCache.get(path);
+function derivedPathSignals(projectDir: string, path: string): string[] {
+  const cacheKey = `${projectDir}\u0000${path}`;
+  const cached = derivedPathSignalsCache.get(cacheKey);
   if (cached) return cached;
 
   const parts = path.split("/");
   let signals: string[] = [];
 
   if (parts[0] === "specs" && parts[1]?.endsWith(".json")) {
-    signals = featureSignalsFromSpecPath(path);
+    signals = featureSignalsFromSpecPath(projectDir, path);
   }
 
   if (parts[0] === "replays" && parts[1]?.endsWith(".ts")) {
     const siblingSpecPath = path
       .replace(/^replays\//, "specs/")
       .replace(/\.ts$/, ".json");
-    signals = featureSignalsFromSpecPath(siblingSpecPath);
+    signals = featureSignalsFromSpecPath(projectDir, siblingSpecPath);
   }
 
   const normalized = [
     ...new Set(signals.filter(Boolean).map((signal) => signal.toLowerCase())),
   ];
-  derivedPathSignalsCache.set(path, normalized);
+  derivedPathSignalsCache.set(cacheKey, normalized);
   return normalized;
 }
 
-function pathSignals(path: string): string[] {
+function pathSignals(projectDir: string, path: string): string[] {
   const withoutExt = path.replace(/\.[^.]+$/, "");
   const parts = path.split("/");
   const signals = new Set<string>([
     path,
     withoutExt,
     changeSlice(path),
-    ...derivedPathSignals(path),
+    ...derivedPathSignals(projectDir, path),
   ]);
   if (parts[0] === "features" && parts[1]) {
     signals.add(parts[1].replace(/\.(yaml|json|md)$/, ""));
@@ -243,14 +281,22 @@ function pathOwnedByDeclaration(path: string, declaration: string): boolean {
   );
 }
 
-function scopeMatchesPath(path: string, scope: string): boolean {
+function scopeMatchesPath(
+  projectDir: string,
+  path: string,
+  scope: string,
+): boolean {
   const normalizedScope = scope.toLowerCase().trim();
   if (!normalizedScope) return false;
 
   const slice = changeSlice(path).toLowerCase();
   if (normalizedScope === slice) return true;
 
-  const signals = pathSignals(path);
+  if (normalizedScope.startsWith("model-derived:")) {
+    return slice === normalizedScope;
+  }
+
+  const signals = pathSignals(projectDir, path);
   if (
     normalizedScope.startsWith("feature:") ||
     normalizedScope.startsWith("spec:") ||
@@ -271,7 +317,21 @@ function scopeMatchesPath(path: string, scope: string): boolean {
   return false;
 }
 
-function relatedTasks(path: string): RelatedTask[] {
+function isHistoricalSupersededBlockedTask(task: TaskNode): boolean {
+  return (
+    taskState(task) === "blocked" &&
+    typeof (task as { blocker?: unknown }).blocker === "string" &&
+    (task as { blocker?: string }).blocker!.startsWith(
+      "Historical/superseded blocker only:",
+    )
+  );
+}
+
+function relatedTasks(
+  taskTree: TaskTree,
+  projectDir: string,
+  path: string,
+): RelatedTask[] {
   return Object.values(taskTree.tasks ?? {})
     .filter((task): task is TaskNode & { id: string } =>
       Boolean(task.id && (task.state || task.status)),
@@ -282,10 +342,22 @@ function relatedTasks(path: string): RelatedTask[] {
         ...normalizeStringArray(task.outputs),
       ];
       const declaredScopes = normalizeStringArray(task.conflict_scope);
-      return (
-        declaredPaths.some((value) => pathOwnedByDeclaration(path, value)) ||
-        declaredScopes.some((value) => scopeMatchesPath(path, value))
+      const exactPathMatch = declaredPaths.some((value) =>
+        pathOwnedByDeclaration(path, value),
       );
+      const scopeMatch = declaredScopes.some((value) =>
+        scopeMatchesPath(projectDir, path, value),
+      );
+
+      if (
+        !exactPathMatch &&
+        scopeMatch &&
+        isHistoricalSupersededBlockedTask(task)
+      ) {
+        return false;
+      }
+
+      return exactPathMatch || scopeMatch;
     })
     .map((task) => ({ id: task.id, status: taskState(task) }))
     .sort(
@@ -299,8 +371,8 @@ function statusRank(status: string): number {
     {
       active: 0,
       review: 1,
-      done: 2,
-      blocked: 3,
+      blocked: 2,
+      done: 3,
       backlog: 4,
     }[status] ?? 9
   );
@@ -310,15 +382,20 @@ function unique(values: string[]): string[] {
   return [...new Set(values)].sort();
 }
 
-function summarizeFiles(changes: GitChange[]): FileCheckpoint[] {
+function summarizeFiles(
+  changes: GitChange[],
+  taskTree: TaskTree,
+  projectDir: string,
+): FileCheckpoint[] {
   return changes.map((change) => {
-    const related = relatedTasks(change.path);
+    const related = relatedTasks(taskTree, projectDir, change.path);
     const activeOrReview = related.filter((task) =>
       ["active", "review"].includes(task.status),
     );
+    const blocked = related.filter((task) => task.status === "blocked");
     const accepted = related.filter((task) => task.status === "done");
     const recommendation: FileCheckpoint["recommendation"] =
-      activeOrReview.length > 0
+      activeOrReview.length > 0 || blocked.length > 0
         ? "hold"
         : accepted.length > 0
           ? "candidate"
@@ -326,6 +403,7 @@ function summarizeFiles(changes: GitChange[]): FileCheckpoint[] {
     return {
       ...change,
       active_or_review_tasks: activeOrReview,
+      blocked_tasks: blocked,
       accepted_tasks: accepted,
       related_tasks: related,
       recommendation,
@@ -345,13 +423,16 @@ function summarizeSlices(files: FileCheckpoint[]): SliceCheckpoint[] {
           file.active_or_review_tasks.map((task) => task.id),
         ),
       );
+      const blocked = unique(
+        sliceFiles.flatMap((file) => file.blocked_tasks.map((task) => task.id)),
+      );
       const accepted = unique(
         sliceFiles.flatMap((file) =>
           file.accepted_tasks.map((task) => task.id),
         ),
       );
       const recommendation: SliceCheckpoint["recommendation"] =
-        activeOrReview.length > 0
+        activeOrReview.length > 0 || blocked.length > 0
           ? "hold"
           : sliceFiles.some(
                 (file) => file.recommendation === "needs-planner-review",
@@ -364,6 +445,7 @@ function summarizeSlices(files: FileCheckpoint[]): SliceCheckpoint[] {
         slice,
         files: sliceFiles.map((file) => file.path).sort(),
         active_or_review_tasks: activeOrReview,
+        blocked_tasks: blocked,
         accepted_tasks: accepted,
         recommendation,
       };
@@ -371,11 +453,7 @@ function summarizeSlices(files: FileCheckpoint[]): SliceCheckpoint[] {
     .sort((a, b) => a.recommendation.localeCompare(b.recommendation));
 }
 
-function printText(summary: {
-  projectDir: string;
-  files: FileCheckpoint[];
-  slices: SliceCheckpoint[];
-}) {
+function printText(summary: CheckpointSummary) {
   console.log(`Domain project: ${summary.projectDir}`);
   console.log(`dirty files: ${summary.files.length}`);
   const counts = summary.slices.reduce<Record<string, number>>((acc, slice) => {
@@ -393,21 +471,36 @@ function printText(summary: {
       console.log(`  ... ${slice.files.length - 8} more`);
     if (slice.active_or_review_tasks.length)
       console.log(`active/review: ${slice.active_or_review_tasks.join(", ")}`);
+    if (slice.blocked_tasks.length)
+      console.log(`blocked: ${slice.blocked_tasks.join(", ")}`);
     if (slice.accepted_tasks.length)
       console.log(`accepted: ${slice.accepted_tasks.slice(0, 8).join(", ")}`);
   }
 }
 
-const files = summarizeFiles(parseGitStatus());
-const slices = summarizeSlices(files);
-const summary = {
-  projectDir,
-  files,
-  slices,
-};
+export function summarizeDomainCheckpoint(
+  options: SummarizeOptions = {},
+): CheckpointSummary {
+  const defaultAppDir = resolve(dirname(fileURLToPath(import.meta.url)), "..");
+  const appDir = options.appDir ?? defaultAppDir;
+  const appContext = loadAppContext(appDir);
+  const projectDir = options.projectDir ?? appContext.projectDir;
+  const taskTree = options.taskTree ?? appContext.taskTree;
+  const changes = options.changes ?? parseGitStatus(projectDir);
+  const files = summarizeFiles(changes, taskTree, projectDir);
+  const slices = summarizeSlices(files);
+  return {
+    projectDir,
+    files,
+    slices,
+  };
+}
 
-if (process.argv.includes("--json")) {
-  console.log(JSON.stringify(summary, null, 2));
-} else {
-  printText(summary);
+if (import.meta.main) {
+  const summary = summarizeDomainCheckpoint();
+  if (process.argv.includes("--json")) {
+    console.log(JSON.stringify(summary, null, 2));
+  } else {
+    printText(summary);
+  }
 }

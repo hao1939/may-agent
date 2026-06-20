@@ -1,0 +1,124 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-19T20:36:20.827Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "evidence-feedback-and-model-update",
+  "summary": "CCP security-patch AzureLinux evidence/model hygiene is now absorbed: the accepted clean rerun, normalized featurePaths entry, and regenerated repo-local current-state views all agree on terminal AzureLinux pass_at_ceiling status with the newer-image retest ceiling preserved. Remaining evidence-feedback work stays on other post-run model promotions and stale-terminal hygiene, not on reopening this already-settled path.",
+  "archived": 2,
+  "tasks": [
+    {
+      "id": "ccp-security-patch-azurelinux-derived-view-alignment-repair-20260619",
+      "parent_id": "evidence-feedback-and-model-update",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Resolve the repo-local stale-terminal mismatch for path.ccp-security-patch.azurelinux by bringing authoritative derived-view surfaces (at minimum model/knowledge-map/views/path-summary.json and any directly cited generated summaries) into the same final AzureLinux pass_at_ceiling state already accepted in model/knowledge-map/model.json, or capture the exact regeneration/tooling blocker with the mismatching files and command named.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/model/knowledge-map/views/",
+        "../aks-rp-e2e/evidence/archive/ccp-security-patch-azurelinux-derived-view-alignment-repair-20260619.md"
+      ],
+      "acceptance": [
+        "Repo-local current-state surfaces for path.ccp-security-patch.azurelinux that this project treats as authoritative (at minimum model/knowledge-map/views/path-summary.json and any directly-cited generated summary artifacts touched by the mismatch) mention AzureLinux-specific accepted pass_at_ceiling evidence and no longer reuse Ubuntu2404 wording for this path.",
+        "Archive note cites the rejected review evidence from ccp-security-patch-azurelinux-pass-at-ceiling-model-normalize-20260619.md plus direct repo proof of the mismatching derived view text, then records the exact files corrected or the exact regeneration/validation blocker that still prevents safe alignment.",
+        "No cloud execution is performed; this is repo-local evidence/model/view repair only."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "path:path.ccp-security-patch.azurelinux",
+        "model:knowledge-map"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-19T20:31:29.979Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_ccp-security-patch-azurelinux-derived-view-alignment-repair-20260619_20260619203130",
+        "assigned_at": "2026-06-19T20:31:30.087Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_ccp-security-patch-azurelinux-derived-view-alignment-repair-20260619",
+        "worker_started_attempt_id": "a_ccp-security-patch-azurelinux-derived-view-alignment-repair-20260619_20260619203130",
+        "worker_started_at": "2026-06-19T20:33:23.529Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Repaired the repo-local derived-view alignment for path.ccp-security-patch.azurelinux by regenerating maintained knowledge-map views and documenting the exact mismatch/fix in a new archive note. Verified path-summary and graph-view now both show AzureLinux-specific pass_at_ceiling state with no cloud execution.",
+        "last_worker_completed_at": "2026-06-19T20:34:44.718Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-19T20:36:20.718Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted owner review: archive note documents the pre-regeneration mismatch, direct repo proof, exact regenerate command, and current repo-local path-summary/graph-view alignment showing path.ccp-security-patch.azurelinux as terminal AzureLinux pass_at_ceiling with no cloud execution."
+      },
+      "session_id": "s_task_ccp-security-patch-azurelinux-derived-view-alignment-repair-20260619",
+      "session_history": [
+        "s_task_ccp-security-patch-azurelinux-derived-view-alignment-repair-20260619"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-19T20:36:20.718Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted owner review: archive note documents the pre-regeneration mismatch, direct repo proof, exact regenerate command, and current repo-local path-summary/graph-view alignment showing path.ccp-security-patch.azurelinux as terminal AzureLinux pass_at_ceiling with no cloud execution."
+      },
+      "status": "done"
+    },
+    {
+      "id": "ccp-security-patch-azurelinux-pass-at-ceiling-model-normalize-20260619",
+      "parent_id": "evidence-feedback-and-model-update",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Normalize path.ccp-security-patch.azurelinux in the generated model/view surfaces to match the accepted clean 2026-06-19 pass-at-ceiling rerun, so stale-terminal hygiene stops treating this path as unresolved environment work.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/model/knowledge-map/",
+        "../aks-rp-e2e/evidence/archive/ccp-security-patch-azurelinux-pass-at-ceiling-model-normalize-20260619.md"
+      ],
+      "acceptance": [
+        "Update the model/view evidence chain for path.ccp-security-patch.azurelinux so it reflects the accepted clean rerun and terminal pass-at-ceiling/final status rather than the older staging-inconclusive environment view.",
+        "Archive note cites the accepted reconcile note, the clean westus2/local rerun note, and the resulting model/view deltas or exact tooling blocker.",
+        "No new cloud execution is performed; this is evidence/model reconciliation only."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "path:path.ccp-security-patch.azurelinux",
+        "model:knowledge-map"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-19T20:28:11.990Z",
+        "created_by": "task-tree-tool",
+        "promoted_at": "2026-06-19T20:28:15.721Z",
+        "promoted_by": "task-tree-tool",
+        "current_attempt_id": "a_ccp-security-patch-azurelinux-pass-at-ceiling-model-normalize-20260619_20260619202820",
+        "assigned_at": "2026-06-19T20:28:20.747Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_ccp-security-patch-azurelinux-pass-at-ceiling-model-normalize-20260619",
+        "worker_started_attempt_id": "a_ccp-security-patch-azurelinux-pass-at-ceiling-model-normalize-20260619_20260619202820",
+        "worker_started_at": "2026-06-19T20:28:28.685Z",
+        "last_worker_result": "partial",
+        "last_worker_claim": "partial",
+        "last_worker_summary": "Normalized the accepted `featurePaths[]` entry for `path.ccp-security-patch.azurelinux` in `model/knowledge-map/model.json` to terminal `pass_at_ceiling` and wrote an archive reconciliation note documenting the accepted evidence chain plus the exact unrelated global validation/regeneration blocker.",
+        "last_worker_completed_at": "2026-06-19T20:30:02.736Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-19T20:36:20.770Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted owner review after derived-view repair: model featurePaths normalization and the archive evidence chain now align with regenerated repo-local current-state views, so path.ccp-security-patch.azurelinux no longer carries the stale environment non-pass reading; only unrelated global validator debt remains."
+      },
+      "session_id": "s_task_ccp-security-patch-azurelinux-pass-at-ceiling-model-normalize-20260619",
+      "session_history": [
+        "s_task_ccp-security-patch-azurelinux-pass-at-ceiling-model-normalize-20260619"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-19T20:36:20.770Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted owner review after derived-view repair: model featurePaths normalization and the archive evidence chain now align with regenerated repo-local current-state views, so path.ccp-security-patch.azurelinux no longer carries the stale environment non-pass reading; only unrelated global validator debt remains."
+      },
+      "status": "done"
+    }
+  ]
+}

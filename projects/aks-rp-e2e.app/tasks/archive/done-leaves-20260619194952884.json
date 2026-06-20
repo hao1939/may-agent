@@ -1,0 +1,63 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-19T19:49:52.884Z",
+  "reason": "bottom-up cleanup after large lane rollups",
+  "parent_id": "go-e2e-source-inventory-and-feature-completion",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "go-e2e-source-inventory-manifest-20260614",
+      "parent_id": "go-e2e-source-inventory-and-feature-completion",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P0",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Build the authoritative Go e2ev3 source inventory manifest: enumerate sig directories, plan files, Scenario_ names, feature hints, existing feature/spec/model matches, and unknown/unmapped scenarios.",
+      "inputs": [
+        "devbox:/home/hayua/rp/test/e2ev3",
+        "features/",
+        "specs/index.json",
+        "model/knowledge-map/model.json"
+      ],
+      "outputs": [
+        "evidence/archive/go-e2e-source-inventory.md"
+      ],
+      "acceptance": [
+        "Inventory includes counts by sig and links each plan/scenario to mapped, unmapped, duplicate, or out-of-scope status.",
+        "Inventory explicitly revisits previously claimed missing/partial sigs: speculor, secops, serverless, workload, fqdnpolicy, traffic, node, and ccp.",
+        "Inventory produces a prioritized gap list suitable for creating extraction tasks."
+      ],
+      "forbidden": [
+        "Do not rely on old summaries without rechecking source paths and current domain files."
+      ],
+      "conflict_scope": [],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-14T15:22:33.210Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_go-e2e-source-inventory-manifest-20260614_20260614153355",
+        "assigned_at": "2026-06-14T15:33:55.908Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_go-e2e-source-inventory-manifest-20260614",
+        "paused_at": "2026-06-14T16:10:00Z",
+        "pause_reason": "Project waiting per discussion iter1. Human direction needed.",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Rebuilt go-e2e-source-inventory.md with corrected SIG→spec attribution. Fixed 5 material errors: (1) speculor now shows 27 specs (was 0) via private-cluster/net-integration/storage-csi sub-areas, (2) rp corrected to 36 specs (was 57), (3) dplat correctly owns deployment-safeguards (was misattributed to storage-csi), (4) network correctly 33 specs (was 51), (5) ccp correctly 22 specs (was 14, now includes localdns). Also discovered 8 unindexed specs and added rp as a new P0 gap (53 unmapped). All 344 specs sum correctly across SIG assignments.",
+        "last_worker_completed_at": "2026-06-14T15:40:14.182Z",
+        "last_worker_evidence": [],
+        "accepted_at": "2026-06-14T16:12:00.000Z",
+        "accepted_by": "planner",
+        "acceptance_note": "Evidence file (477 lines) meets all 3 acceptance criteria: SIG-level counts + status per scenario, explicit §3 revisiting all 8 previously-claimed SIGs, and prioritized extraction gap list (§10) with P0/P1/P2 tasks."
+      },
+      "session_id": "s_task_go-e2e-source-inventory-manifest-20260614",
+      "session_history": [
+        "s_task_go-e2e-source-inventory-manifest-20260614"
+      ],
+      "resolution": "completed",
+      "status": "done"
+    }
+  ]
+}

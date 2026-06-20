@@ -1,0 +1,71 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-19T19:49:52.898Z",
+  "reason": "bottom-up cleanup after large lane rollups",
+  "parent_id": "user-review-workspace",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "cross-family-dirty-workspace-ownership-reconcile-20260617",
+      "parent_id": "user-review-workspace",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Reconcile the current domain:checkpoint dirty-workspace '.' slice into owned include/exclude groups for CCP, private-cluster, coredns, and residual VM prerelease artifacts so the next planner checkpoint can stage accepted done work without mixing active or unowned files.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/cross-family-dirty-workspace-ownership-reconcile-20260617.md"
+      ],
+      "acceptance": [
+        "Archive note cites the current bun run domain:checkpoint -- --json output plus git status families checked, maps the noisy CCP/private-cluster/coredns/residual-VM files to active-review-blocked-done ownership (or exact unowned status), and names the exact files that must stay out of the next checkpoint.",
+        "The note identifies at least one additional checkpoint-safe done slice beyond the already accepted VM-only triage slice, or records exact evidence that no such slice is currently safe.",
+        "If any files are currently dirty without task ownership, the note lists the exact paths and the minimal follow-up task or exclusion decision needed rather than leaving them as generic planner noise."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "checkpoint:dirty-workspace-ownership"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-17T23:02:56.982Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_cross-family-dirty-workspace-ownership-reconcile-20260617_20260617230300",
+        "assigned_at": "2026-06-17T23:03:00.166Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_cross-family-dirty-workspace-ownership-reconcile-20260617",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Reconciled the current dirty-workspace CCP/private-cluster/CoreDNS/residual-VM families into owned vs excluded groups and wrote the durable archive note at evidence/archive/cross-family-dirty-workspace-ownership-reconcile-20260617.md, citing fresh domain:checkpoint and git-status evidence plus exact owner follow-up splits.",
+        "last_worker_completed_at": "2026-06-17T23:07:07.544Z",
+        "last_worker_evidence": [],
+        "rolled_up_at": "2026-06-19T19:49:52.898Z",
+        "rolled_up_by": "task-tree-tool"
+      },
+      "session_id": "s_task_cross-family-dirty-workspace-ownership-reconcile-20260617",
+      "session_history": [
+        "s_task_cross-family-dirty-workspace-ownership-reconcile-20260617"
+      ],
+      "status": "done",
+      "context": {
+        "archived_done_leaf_count": 4,
+        "rollup_archives": [
+          {
+            "archive": "tasks/archive/done-leaves-20260619194952898.json",
+            "archived": 4,
+            "at": "2026-06-19T19:49:52.898Z",
+            "reason": "bottom-up cleanup after large lane rollups",
+            "task_ids": [
+              "dirty-workspace-extra-safe-slice-or-no-slice-proof-20260617",
+              "dirty-workspace-nonvm-family-ownership-map-20260617",
+              "dirty-workspace-vm-family-ownership-map-20260617",
+              "serverless-row185-checkpoint-ownership-decision-20260617"
+            ]
+          }
+        ]
+      }
+    }
+  ]
+}

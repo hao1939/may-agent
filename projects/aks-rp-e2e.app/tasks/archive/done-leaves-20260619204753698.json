@@ -1,0 +1,64 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-19T20:47:53.698Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "spec-runner-and-replays",
+  "summary": "Accepted the bounded LocalDNS Machines residual-RG cleanup and reactivated the exact post-cleanup westus2/local rerun as the next live replay step. Shared blocked waits remain external/product gated, but the LocalDNS branch now has one concrete runnable successor instead of a stale cleanup blocker.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "localdns-machines-westus2-local-residual-rg-cleanup-20260619",
+      "parent_id": "spec-runner-and-replays",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Clean up the residual westus2/local LocalDNS resource group ldns-tp-20260619 left by the interrupted repaired-envelope rerun, then capture exact delete and clean-slate verification evidence so the Machines branch can be rerun without reopening the superseded agentPoolProfiles request-shape diagnosis.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/localdns-machines-westus2-local-residual-rg-cleanup-20260619.md"
+      ],
+      "acceptance": [
+        "Archive note cites the accepted repaired-envelope rerun evidence and records the exact Azure command family used to inspect and delete the residual ldns-tp-20260619 resource group, including whether deletion completed or the exact blocker if it did not.",
+        "If cleanup succeeds, the note records durable verification that az group exists -n ldns-tp-20260619 returned false (or equivalent read-only proof that the group is gone) so the next replay attempt can start from a clean slate; if cleanup fails, the note captures the exact failure and precise resume condition.",
+        "Work stays on residual cleanup and clean-slate verification only: no replay rerun, no unrelated LocalDNS family edits, and no re-litigation of the superseded Machines-only agentPoolProfiles failure."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "cloud:staging:localdns-machines-westus2-local-rerun-20260619"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-19T20:37:17.504Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_localdns-machines-westus2-local-residual-rg-cleanup-20260619_20260619203717",
+        "assigned_at": "2026-06-19T20:37:17.609Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_localdns-machines-westus2-local-residual-rg-cleanup-20260619",
+        "worker_started_attempt_id": "a_localdns-machines-westus2-local-residual-rg-cleanup-20260619_20260619203717",
+        "worker_started_at": "2026-06-19T20:37:43.521Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Cleaned up residual Azure resource group ldns-tp-20260619 and recorded delete plus clean-slate verification evidence in evidence/archive/localdns-machines-westus2-local-residual-rg-cleanup-20260619.md.",
+        "last_worker_completed_at": "2026-06-19T20:47:10.063Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-19T20:47:53.528Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: evidence/archive/localdns-machines-westus2-local-residual-rg-cleanup-20260619.md cites the repaired-envelope rerun predecessor, records the exact az inspect/delete/poll command family, and proves ldns-tp-20260619 reached a clean-slate exists=false state by 2026-06-19T20:46:38Z, satisfying the rerun prerequisite."
+      },
+      "session_id": "s_task_localdns-machines-westus2-local-residual-rg-cleanup-20260619",
+      "session_history": [
+        "s_task_localdns-machines-westus2-local-residual-rg-cleanup-20260619"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-19T20:47:53.528Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: evidence/archive/localdns-machines-westus2-local-residual-rg-cleanup-20260619.md cites the repaired-envelope rerun predecessor, records the exact az inspect/delete/poll command family, and proves ldns-tp-20260619 reached a clean-slate exists=false state by 2026-06-19T20:46:38Z, satisfying the rerun prerequisite."
+      },
+      "status": "done"
+    }
+  ]
+}

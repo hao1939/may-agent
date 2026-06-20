@@ -294,7 +294,9 @@ project_policy: aggressive-push
       data: expect.objectContaining({ handler: "project-steward", reason: "no projects found" }),
       envelope: undefined,
     });
-    expect(metrics.defineMany).not.toHaveBeenCalled();
+    // defineMany is now called unconditionally so zero-value metrics are
+    // recorded even when no projects exist, preventing stale-metric alerts.
+    expect(metrics.defineMany).toHaveBeenCalled();
   });
 
   it("uses the real metric lifecycle for breach and recovery", async () => {

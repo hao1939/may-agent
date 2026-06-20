@@ -1,0 +1,384 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-19T19:49:52.921Z",
+  "reason": "bottom-up cleanup after large lane rollups",
+  "parent_id": "vm-prerelease-wave1-msi-ssh-localdns-ilbbackendpool-spec-batch1-20260618",
+  "archived": 7,
+  "tasks": [
+    {
+      "id": "vm-prerelease-wave1-identity-ssh-lineage-packet-20260618",
+      "parent_id": "vm-prerelease-wave1-msi-ssh-localdns-ilbbackendpool-spec-batch1-20260618",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Extract the exact row lineage and smallest first landing candidate for VirtualMachine prerelease identity/SSH rows 35/36/39/40 by separating MSI system-assigned, AzureMonitorAADAuth, Disable SSH, and Update SSH Public Key semantics before any spec/replay landing.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vm-prerelease-wave1-identity-ssh-lineage-packet-20260618.md"
+      ],
+      "acceptance": [
+        "Archive note cites rows 35/36/39/40 and exact source anchors, groups them into precise identity versus SSH lifecycle branches, and identifies one exact first spec/replay landing candidate or blocker.",
+        "Remaining rows are left with precise successor notes, and the work stays repo-local without cloud execution."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "feature:virtualmachines",
+        "feature:identity",
+        "ledger:virtualmachine-prerelease"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-18T07:51:46.396Z",
+        "created_by": "task-tree-tool",
+        "promoted_at": "2026-06-18T09:32:41.278Z",
+        "promoted_by": "task-tree-tool",
+        "current_attempt_id": "a_vm-prerelease-wave1-identity-ssh-lineage-packet-20260618_20260618093327",
+        "assigned_at": "2026-06-18T09:33:27.980Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vm-prerelease-wave1-identity-ssh-lineage-packet-20260618",
+        "worker_started_attempt_id": "a_vm-prerelease-wave1-identity-ssh-lineage-packet-20260618_20260618093327",
+        "worker_started_at": "2026-06-18T09:33:28.795Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Produced the requested VM prerelease identity/SSH lineage packet at evidence/archive/vm-prerelease-wave1-identity-ssh-lineage-packet-20260618.md, separating rows 35/36/39/40 into identity vs SSH branches and naming row 35 as the smallest first landing candidate pending exact source-body confirmation.",
+        "last_worker_completed_at": "2026-06-18T09:35:59.817Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-18T09:37:41.052Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted: the archive note cites rows 35/36/39/40 plus exact row/source anchors, cleanly separates identity versus SSH branches, and truthfully identifies row 35 as the smallest first landing candidate while leaving precise successor notes for rows 36/39/40."
+      },
+      "session_id": "s_task_vm-prerelease-wave1-identity-ssh-lineage-packet-20260618",
+      "session_history": [
+        "s_task_vm-prerelease-wave1-identity-ssh-lineage-packet-20260618"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-18T09:37:41.052Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted: the archive note cites rows 35/36/39/40 plus exact row/source anchors, cleanly separates identity versus SSH branches, and truthfully identifies row 35 as the smallest first landing candidate while leaving precise successor notes for rows 36/39/40."
+      },
+      "status": "done"
+    },
+    {
+      "id": "vm-prerelease-wave1-localdns-ilbbackendpool-lineage-packet-20260618",
+      "parent_id": "vm-prerelease-wave1-msi-ssh-localdns-ilbbackendpool-spec-batch1-20260618",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Extract the exact row lineage and first landing candidate for VirtualMachine prerelease rows 44/52 by separating IPBasedLBBackendPool and LocalDNS AzureLinux semantics before any spec/replay landing.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vm-prerelease-wave1-localdns-ilbbackendpool-lineage-packet-20260618.md"
+      ],
+      "acceptance": [
+        "Archive note cites rows 44/52 and exact source anchors, shows why ILB backend-pool and LocalDNS AzureLinux do not belong in one undifferentiated branch, and names one exact first spec/replay landing candidate or blocker.",
+        "Work stays repo-local and leaves exact successor notes rather than a broad mixed-feature placeholder."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "feature:virtualmachines",
+        "feature:identity",
+        "ledger:virtualmachine-prerelease"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-18T07:51:46.576Z",
+        "created_by": "task-tree-tool",
+        "promoted_at": "2026-06-18T09:32:41.278Z",
+        "promoted_by": "task-tree-tool",
+        "current_attempt_id": "a_vm-prerelease-wave1-localdns-ilbbackendpool-lineage-packet-20260618_20260618094001",
+        "assigned_at": "2026-06-18T09:40:01.352Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vm-prerelease-wave1-localdns-ilbbackendpool-lineage-packet-20260618",
+        "worker_started_attempt_id": "a_vm-prerelease-wave1-localdns-ilbbackendpool-lineage-packet-20260618_20260618094001",
+        "worker_started_at": "2026-06-18T09:40:02.886Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Wrote a new lineage packet at evidence/archive/vm-prerelease-wave1-localdns-ilbbackendpool-lineage-packet-20260618.md separating VM prerelease rows 44 and 52, proving row 52 already has an exact LocalDNS AzureLinux landing candidate while row 44 remains source-packet blocked and must not be merged into the same branch.",
+        "last_worker_completed_at": "2026-06-18T09:42:50.346Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-18T09:43:42.866Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: lineage packet cleanly separates row 52 LocalDNS AzureLinux from row 44 IPBasedLBBackendPool, names the exact existing row-52 landing candidate, and records row 44 as a distinct source-packet need instead of a mixed VM prerelease placeholder."
+      },
+      "session_id": "s_task_vm-prerelease-wave1-localdns-ilbbackendpool-lineage-packet-20260618",
+      "session_history": [
+        "s_task_vm-prerelease-wave1-localdns-ilbbackendpool-lineage-packet-20260618"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-18T09:43:42.866Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: lineage packet cleanly separates row 52 LocalDNS AzureLinux from row 44 IPBasedLBBackendPool, names the exact existing row-52 landing candidate, and records row 44 as a distinct source-packet need instead of a mixed VM prerelease placeholder."
+      },
+      "status": "done"
+    },
+    {
+      "id": "vm-prerelease-wave1-row35-msiplans-equivalence-proof-20260618",
+      "parent_id": "vm-prerelease-wave1-msi-ssh-localdns-ilbbackendpool-spec-batch1-20260618",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Recover one authoritative native/body excerpt for prerelease row 35 source handle msiplans.Scenario_MSI_SystemAssigned_Identity so the row can truthfully attach to the existing secops system-assigned lifecycle chain or, if contradicted, surface one exact VM-specific identity delta.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vm-prerelease-wave1-row35-msiplans-equivalence-proof-20260618.md"
+      ],
+      "acceptance": [
+        "Archive note cites the accepted row-35 source-boundary review plus one authoritative native/body excerpt for msiplans.Scenario_MSI_SystemAssigned_Identity and proves whether the row uses the same create-time identity.type=SystemAssigned request and identity validation surface already modeled by the secops system-assigned lifecycle chain.",
+        "If the excerpt matches, the note names the exact existing path/spec/replay attachment target; if it diverges, the note records the one exact VM-specific request or expectation delta that warrants a new branch. Work stays repo-local and non-mutating."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "path:path.virtualmachines.msi-system-assigned",
+        "feature:identity"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-18T09:51:47.632Z",
+        "created_by": "task-tree-tool",
+        "promoted_at": "2026-06-18T09:51:48.088Z",
+        "promoted_by": "task-tree-tool",
+        "current_attempt_id": "a_vm-prerelease-wave1-row35-msiplans-equivalence-proof-20260618_20260618095155",
+        "assigned_at": "2026-06-18T09:51:55.906Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vm-prerelease-wave1-row35-msiplans-equivalence-proof-20260618",
+        "worker_started_attempt_id": "a_vm-prerelease-wave1-row35-msiplans-equivalence-proof-20260618_20260618095155",
+        "worker_started_at": "2026-06-18T09:52:10.780Z",
+        "last_worker_result": "blocked",
+        "last_worker_claim": "blocked",
+        "last_worker_summary": "Wrote a durable blocker note at evidence/archive/vm-prerelease-wave1-row35-msiplans-equivalence-proof-20260618.md showing that repo-local searches did not recover any authoritative native/body excerpt for msiplans.Scenario_MSI_SystemAssigned_Identity, so row 35 remains blocked on one missing source artifact rather than any unresolved semantic analysis.",
+        "last_worker_completed_at": "2026-06-18T09:58:14.573Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-18T10:02:57.200Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted the row-35 review: repo-local evidence proved the missing authoritative msiplans.Scenario_MSI_SystemAssigned_Identity excerpt is now the only remaining blocker, so the review leaf completed by handing the continuing wait to blocked leaf vm-prerelease-wave1-row35-msiplans-native-source-holder-blocker-20260618."
+      },
+      "session_id": "s_task_vm-prerelease-wave1-row35-msiplans-equivalence-proof-20260618",
+      "session_history": [
+        "s_task_vm-prerelease-wave1-row35-msiplans-equivalence-proof-20260618"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-18T10:02:57.200Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted the row-35 review: repo-local evidence proved the missing authoritative msiplans.Scenario_MSI_SystemAssigned_Identity excerpt is now the only remaining blocker, so the review leaf completed by handing the continuing wait to blocked leaf vm-prerelease-wave1-row35-msiplans-native-source-holder-blocker-20260618."
+      },
+      "status": "done"
+    },
+    {
+      "id": "vm-prerelease-wave1-row35-system-assigned-source-body-confirmation-20260618",
+      "parent_id": "vm-prerelease-wave1-msi-ssh-localdns-ilbbackendpool-spec-batch1-20260618",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Recover the exact handwritten or native source-body lineage for prerelease row 35 Scenario_MSI_SystemAssigned_Identity_VirtualMachine and determine whether it is an exact attachment to the existing secops system-assigned lifecycle spec/replay or requires a new VM-specific branch.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vm-prerelease-wave1-row35-system-assigned-source-body-confirmation-20260618.md"
+      ],
+      "acceptance": [
+        "Archive note cites row 35 plus exact msiplans/native source anchors, records the concrete request and expectation surface under test, and states whether specs/secops-identity-system-assigned-lifecycle.json and replays/secops-identity-system-assigned-lifecycle.ts are exact attachments or only adjacency.",
+        "Work stays repo-local and leaves one exact next disposition for row 35 plus a precise successor note for any still-unresolved VM-specific edge, without cloud execution."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "ledger:virtualmachine-prerelease"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-18T09:38:36.016Z",
+        "created_by": "task-tree-tool",
+        "reviewed_at": "2026-06-18T09:48:33.544Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Superseded by narrower executable leaf vm-prerelease-wave1-row35-system-assigned-source-boundary-20260618b, which isolates row-35 source-lineage recovery from later ledger/plan mutation and removes the broad ledger-scoped duplicate from the runnable frontier."
+      },
+      "resolution": "completed",
+      "done_at": "2026-06-18T09:48:33.544Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Superseded by narrower executable leaf vm-prerelease-wave1-row35-system-assigned-source-boundary-20260618b, which isolates row-35 source-lineage recovery from later ledger/plan mutation and removes the broad ledger-scoped duplicate from the runnable frontier."
+      },
+      "status": "done"
+    },
+    {
+      "id": "vm-prerelease-wave1-row35-system-assigned-source-boundary-20260618b",
+      "parent_id": "vm-prerelease-wave1-msi-ssh-localdns-ilbbackendpool-spec-batch1-20260618",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Recover the exact handwritten or native source-body lineage for prerelease row 35 Scenario_MSI_SystemAssigned_Identity_VirtualMachine and reduce the branch to one bounded attachment decision: exact fit to the existing system-assigned lifecycle chain or one precise VM-specific delta that still requires a new branch.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vm-prerelease-wave1-row35-system-assigned-source-boundary-20260618b.md"
+      ],
+      "acceptance": [
+        "Archive note cites the current row-35 prerelease coverage context plus the exact repo-local handwritten/native source artifacts inspected, and proves the authoritative request-body lineage for Scenario_MSI_SystemAssigned_Identity_VirtualMachine without running cloud execution.",
+        "Work ends with one bounded decision backed by the source evidence: either row 35 is an exact attachment to the existing system-assigned lifecycle spec/replay family with the named target path/surfaces, or one exact remaining body/expectation delta is recorded that justifies a later VM-specific branch; do not update the prerelease ledger or feature-set plan in this task."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "path:path.virtualmachines.msi-system-assigned",
+        "feature:identity"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-18T09:47:30.513Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_vm-prerelease-wave1-row35-system-assigned-source-boundary-20260618b_20260618094730",
+        "assigned_at": "2026-06-18T09:47:30.703Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vm-prerelease-wave1-row35-system-assigned-source-boundary-20260618b",
+        "worker_started_attempt_id": "a_vm-prerelease-wave1-row35-system-assigned-source-boundary-20260618b_20260618094730",
+        "worker_started_at": "2026-06-18T09:48:52.188Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Created the row-35 source-boundary archive note at evidence/archive/vm-prerelease-wave1-row35-system-assigned-source-boundary-20260618b.md, grounding the prerelease row against the existing secops system-assigned lifecycle chain and reducing the branch to one exact missing native/body proof item instead of a VM-specific branch.",
+        "last_worker_completed_at": "2026-06-18T09:50:49.408Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-18T09:51:47.198Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: archive note grounds row 35 against the existing secops system-assigned lifecycle chain, shows no repo-local VM-only request or expectation delta, and reduces the branch to one exact missing msiplans source/body equivalence proof item."
+      },
+      "session_id": "s_task_vm-prerelease-wave1-row35-system-assigned-source-boundary-20260618b",
+      "session_history": [
+        "s_task_vm-prerelease-wave1-row35-system-assigned-source-boundary-20260618b"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-18T09:51:47.198Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: archive note grounds row 35 against the existing secops system-assigned lifecycle chain, shows no repo-local VM-only request or expectation delta, and reduces the branch to one exact missing msiplans source/body equivalence proof item."
+      },
+      "status": "done"
+    },
+    {
+      "id": "vm-prerelease-wave1-row44-ipbasedlbbackendpool-source-packet-20260618",
+      "parent_id": "vm-prerelease-wave1-msi-ssh-localdns-ilbbackendpool-spec-batch1-20260618",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Recover the exact source-body lineage and expectation surface for VirtualMachine prerelease row 44 Scenario_IPBasedLBBackendPool_VirtualMachine so the project can place it under the smallest truthful cloud-provider/LB branch instead of collapsing it into LocalDNS or nearby false-equivalent load-balancer specs.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vm-prerelease-wave1-row44-ipbasedlbbackendpool-source-packet-20260618.md"
+      ],
+      "acceptance": [
+        "Archive note cites row 44 from the prerelease ledger plus the accepted vm-prerelease-wave1-localdns-ilbbackendpool lineage packet, recovers the exact request field/path and expected assertion surface for Scenario_IPBasedLBBackendPool_VirtualMachine, and names the smallest truthful existing landing candidate or exact blocker.",
+        "Archive note explicitly contrasts row 44 against nearby false-equivalent branches such as multiple SLB and outbound custom IP so the next landing does not widen into a broad load-balancer placeholder.",
+        "Work stays repo-local and leaves one exact successor landing or blocker note without cloud execution."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "feature:virtualmachines",
+        "feature:cloud-provider",
+        "ledger:virtualmachine-prerelease"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-18T09:43:43.253Z",
+        "created_by": "task-tree-tool",
+        "promoted_at": "2026-06-18T10:06:03.540Z",
+        "promoted_by": "task-tree-tool",
+        "current_attempt_id": "a_vm-prerelease-wave1-row44-ipbasedlbbackendpool-source-packet-20260618_20260618101331",
+        "assigned_at": "2026-06-18T10:13:31.403Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vm-prerelease-wave1-row44-ipbasedlbbackendpool-source-packet-20260618",
+        "worker_started_attempt_id": "a_vm-prerelease-wave1-row44-ipbasedlbbackendpool-source-packet-20260618_20260618101331",
+        "worker_started_at": "2026-06-18T10:14:32.269Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Produced the requested row-44 archive note at evidence/archive/vm-prerelease-wave1-row44-ipbasedlbbackendpool-source-packet-20260618.md, recovering the strongest repo-local request/expectation lineage for Scenario_IPBasedLBBackendPool_VirtualMachine and contrasting it against LocalDNS, multiple-SLB, and outbound-custom-IP false equivalents.",
+        "last_worker_completed_at": "2026-06-18T10:16:31.695Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-18T10:17:06.789Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: archive note recovers row 44 ledger lineage, names the exact request path properties.networkProfile.loadBalancerProfile.backendPoolType with persisted nodeIPConfiguration expectation surface, contrasts LocalDNS/multiple-SLB/outbound-custom-IP false equivalents, and leaves one exact source-backed landing successor."
+      },
+      "session_id": "s_task_vm-prerelease-wave1-row44-ipbasedlbbackendpool-source-packet-20260618",
+      "session_history": [
+        "s_task_vm-prerelease-wave1-row44-ipbasedlbbackendpool-source-packet-20260618"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-18T10:17:06.789Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: archive note recovers row 44 ledger lineage, names the exact request path properties.networkProfile.loadBalancerProfile.backendPoolType with persisted nodeIPConfiguration expectation surface, contrasts LocalDNS/multiple-SLB/outbound-custom-IP false equivalents, and leaves one exact source-backed landing successor."
+      },
+      "status": "done"
+    },
+    {
+      "id": "vm-prerelease-wave1-row52-localdns-azurelinux-ledger-attachment-20260618",
+      "parent_id": "vm-prerelease-wave1-msi-ssh-localdns-ilbbackendpool-spec-batch1-20260618",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Attach VirtualMachine prerelease row 52 Scenario_LocalDNS_AzureLinux_VirtualMachine to the exact existing LocalDNS AzureLinux feature/spec/replay chain, update the prerelease coverage ledger, and regenerate the VM prerelease feature-set plan so this row stops presenting as missing-spec.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vm-prerelease-wave1-row52-localdns-azurelinux-ledger-attachment-20260618.md"
+      ],
+      "acceptance": [
+        "Archive note cites evidence/archive/vm-prerelease-wave1-localdns-ilbbackendpool-lineage-packet-20260618.md plus features/localdns.yaml, specs/localdns-os-arch-matrix.json, and replays/localdns-os-arch-matrix.ts, and proves row 52 maps exactly to path.localdns.azurelinux / spec.localdns.os-arch-matrix without inventing a new mixed-feature branch.",
+        "Work updates evidence/pipelines/virtualmachine-prerelease-coverage.md and evidence/pipelines/virtualmachine-prerelease-coverage.json for row 52 and regenerates the VM prerelease feature-set plan/config surface so the accepted attachment is reflected downstream.",
+        "Work stays repo-local and performs no cloud execution."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "feature:virtualmachines",
+        "feature:localdns",
+        "ledger:virtualmachine-prerelease"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-18T09:43:43.058Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_vm-prerelease-wave1-row52-localdns-azurelinux-ledger-attachment-20260618_20260618094343",
+        "assigned_at": "2026-06-18T09:43:43.452Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vm-prerelease-wave1-row52-localdns-azurelinux-ledger-attachment-20260618",
+        "worker_started_attempt_id": "a_vm-prerelease-wave1-row52-localdns-azurelinux-ledger-attachment-20260618_20260618094343",
+        "worker_started_at": "2026-06-18T09:44:02.322Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Attached VM prerelease row 52 to the existing LocalDNS AzureLinux canonical chain by updating the prerelease coverage ledgers and writing the requested archive note; no cloud execution or task-tree/planner changes were performed.",
+        "last_worker_completed_at": "2026-06-18T09:47:18.935Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-18T09:48:33.371Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted owner review: evidence/archive/vm-prerelease-wave1-row52-localdns-azurelinux-ledger-attachment-20260618.md plus the updated prerelease coverage ledgers prove row 52 now maps to path.localdns.azurelinux / spec.localdns.os-arch-matrix / replays/localdns-os-arch-matrix.ts as a candidate-only execution-variant attachment, with no cloud execution or new mixed branch."
+      },
+      "session_id": "s_task_vm-prerelease-wave1-row52-localdns-azurelinux-ledger-attachment-20260618",
+      "session_history": [
+        "s_task_vm-prerelease-wave1-row52-localdns-azurelinux-ledger-attachment-20260618"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-18T09:48:33.371Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted owner review: evidence/archive/vm-prerelease-wave1-row52-localdns-azurelinux-ledger-attachment-20260618.md plus the updated prerelease coverage ledgers prove row 52 now maps to path.localdns.azurelinux / spec.localdns.os-arch-matrix / replays/localdns-os-arch-matrix.ts as a candidate-only execution-variant attachment, with no cloud execution or new mixed branch."
+      },
+      "status": "done"
+    }
+  ]
+}

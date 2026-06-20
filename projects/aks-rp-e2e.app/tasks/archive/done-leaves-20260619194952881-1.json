@@ -1,0 +1,80 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-19T19:49:52.881Z",
+  "reason": "bottom-up cleanup after large lane rollups",
+  "parent_id": "execution-and-verification",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "live-staging-wave-1",
+      "parent_id": "execution-and-verification",
+      "kind": "group",
+      "priority": "P1",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Human-approved live staging execution wave 1: aad-rbac (7 replays) and ossku-migration (9 replays). Execute each family's replays against staging REST, collect evidence, classify results, and feed back into model. Approval: operator approved 2026-06-13 via focus-plan-live-staging-20260613.",
+      "inputs": [],
+      "outputs": [
+        "runs/executions/"
+      ],
+      "acceptance": [
+        "All 16 replays executed or classified. Evidence recorded under runs/executions/. Model paths updated with live staging verdicts."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "live-staging-wave-1"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-13T22:14:21.468Z",
+        "created_by": "task-tree-tool",
+        "accepted_at": "2026-06-14T02:00:00.000Z",
+        "accepted_by": "planner",
+        "acceptance_note": "All 16 replays resolved: staging-aad-rbac-family accepted (7 replays), staging-ossku-remaining-4 accepted (9 replays complete; staging-ossku-migration-family failed and was superseded). Evidence in runs/executions/.",
+        "rolled_up_at": "2026-06-19T19:49:52.881Z",
+        "rolled_up_by": "task-tree-tool"
+      },
+      "context": {
+        "approval": {
+          "source": "focus-plan-live-staging-20260613",
+          "approved_by": "human:operator",
+          "approved_at": "2026-06-13T22:14:00Z",
+          "scope": [
+            "aad-rbac",
+            "ossku-migration"
+          ],
+          "risk_assessment": "Both families are low-risk: public topology, standard ARM REST, no complex networking."
+        },
+        "archived_done_leaf_count": 3,
+        "rollup_archives": [
+          {
+            "archive": "tasks/archive/done-leaves-20260619194952881.json",
+            "archived": 1,
+            "at": "2026-06-19T19:49:52.881Z",
+            "reason": "bottom-up cleanup after large lane rollups",
+            "task_ids": [
+              "staging-ossku-remaining-4"
+            ]
+          },
+          {
+            "archive": "tasks/archive/done-leaves-20260619193616810.json",
+            "archived": 1,
+            "at": "2026-06-19T19:36:16.811Z",
+            "reason": "bottom-up compaction trial after recursive recovery fix",
+            "task_ids": [
+              "staging-aad-rbac-family"
+            ]
+          },
+          {
+            "archive": "tasks/archive/done-leaves-20260614164317.json",
+            "archived": 1,
+            "at": "2026-06-14T16:43:17.017Z"
+          }
+        ]
+      },
+      "state": "done",
+      "resolution": "completed",
+      "status": "done"
+    }
+  ]
+}

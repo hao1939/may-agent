@@ -1,0 +1,82 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-19T20:05:54.875Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "spec-runner-and-replays",
+  "summary": "CCP VPA OS/arch variant matrix stale-frontier review is now accepted: the 2026-06-19 westus2/local execute reconfirmed the same final environment ceiling, so this lane should preserve the terminal environment resume contract in model/evidence rather than carrying this path as open retry work. Remaining runner attention stays on separately blocked execute contracts and other live execution tasks.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "ccp-vpa-os-arch-variants-staging-frontier-20260619",
+      "parent_id": "spec-runner-and-replays",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Close the knowledge-model gap for path.ccp-vpa.os-arch-variant-matrix by running or repairing the existing staging REST test path. Use specs/ccp-vpa-os-arch-variant-matrix.json and replays/ccp-vpa-os-arch-variant-matrix.ts through the project runner. Produce real execution feedback, not a dry-run-only conclusion.",
+      "inputs": [
+        "specs/ccp-vpa-os-arch-variant-matrix.json",
+        "replays/ccp-vpa-os-arch-variant-matrix.ts"
+      ],
+      "outputs": [
+        "runs/executions/",
+        "evidence/archive/",
+        "model/knowledge-map/model.json"
+      ],
+      "acceptance": [
+        "A live staging REST run result or precise runner-fix result is recorded under runs/executions/.",
+        "Failure is classified as product, test, runner, or environment with evidence and cleanup state.",
+        "The knowledge model or a model-update proposal reflects the path verdict."
+      ],
+      "forbidden": [
+        "Do not treat dry-run output as live verification.",
+        "Do not hard-code credentials, subscription IDs, or tenant-specific secrets.",
+        "Do not bypass project runner artifacts when executing live staging work."
+      ],
+      "conflict_scope": [
+        "feature:ccp-vpa-os-arch-variants",
+        "path:path.ccp-vpa.os-arch-variant-matrix",
+        "artifact:ccp-vpa-os-arch-variant-matrix"
+      ],
+      "context": {
+        "seeded_by": "model-gap-frontier",
+        "seed_reason": "planner-left-underfilled-frontier",
+        "model_path_id": "path.ccp-vpa.os-arch-variant-matrix",
+        "feature_id": "ccp-vpa-os-arch-variants",
+        "model_status": "environment",
+        "spec": "specs/ccp-vpa-os-arch-variant-matrix.json",
+        "replay": "replays/ccp-vpa-os-arch-variant-matrix.ts",
+        "seed_preference": "execution",
+        "acceptance_note": "Accepted the review because durable evidence already finalizes the branch: evidence/archive/ccp-vpa-os-arch-variant-matrix-stale-terminal-reconcile-20260619.md plus the 2026-06-19 westus2/local execute note reconfirm the same final environment ceiling, so this frontier leaf should not stay open as retry work."
+      },
+      "trace": {
+        "created_at": "2026-06-19T20:04:13.403Z",
+        "created_by": "model-gap-frontier-seeder",
+        "current_attempt_id": "a_ccp-vpa-os-arch-variants-staging-frontier-20260619_20260619200413",
+        "assigned_at": "2026-06-19T20:04:13.421Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_ccp-vpa-os-arch-variants-staging-frontier-20260619",
+        "worker_started_attempt_id": "a_ccp-vpa-os-arch-variants-staging-frontier-20260619_20260619200413",
+        "worker_started_at": "2026-06-19T20:04:13.833Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Executed the CCP VPA OS/arch variant matrix through the project spec runner with a real staging-rest/local execute path, captured fresh blocked-by-environment evidence under runs/executions and evidence/archive, and recorded a concise task-scoped evidence note.",
+        "last_worker_completed_at": "2026-06-19T20:04:13.852Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-19T20:05:49.239Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted the review because durable evidence already finalizes the branch: evidence/archive/ccp-vpa-os-arch-variant-matrix-stale-terminal-reconcile-20260619.md plus the 2026-06-19 westus2/local execute note reconfirm the same final environment ceiling, so this frontier leaf should not stay open as retry work."
+      },
+      "session_id": "s_task_ccp-vpa-os-arch-variants-staging-frontier-20260619",
+      "session_history": [
+        "s_task_ccp-vpa-os-arch-variants-staging-frontier-20260619"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-19T20:05:49.239Z",
+      "done_by": "task-tree-tool",
+      "status": "done"
+    }
+  ]
+}

@@ -265,7 +265,7 @@ function buildReviewPacket(
     /* best-effort: don't block review if escalation collection fails */
   }
 
-  // Collect pending metric.breach and metric.recovered events owned by agent:may.
+  // Collect pending signal events owned by agent:may.
   // These are informational signals that the owner review consumes by including
   // them in the review packet. Without draining them, they accumulate indefinitely
   // (the expireStaleSignalEvents helper only catches events >24h old, so recent
@@ -273,7 +273,13 @@ function buildReviewPacket(
   const pendingSignalEventIds: number[] = [];
   try {
     const SIGNAL_LOOKBACK_MS = 48 * 60 * 60_000; // 48h to catch backlog
-    const signalTypes = ["metric.breach", "metric.recovered", "metric.stalled"];
+    const signalTypes = [
+      "metric.breach",
+      "metric.recovered",
+      "metric.stalled",
+      "session.resume_failed",
+      "handler.failed",
+    ];
     for (const type of signalTypes) {
       const pendingSignals = ctx.query.events({
         type,

@@ -1,0 +1,337 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-19T19:24:48.529Z",
+  "reason": "operator trial of agent-led parent rollup compaction",
+  "parent_id": "vm-agentpool-pipeline-replacement-focus-refresh-20260617",
+  "summary": "VM agentpool pipeline replacement focus refresh completed: REST canonical plan merge, Machines/NAP coverage classification, CLI-to-REST equivalence mapping, link normalization repair, live execute proof slice, and inventory summary reconciliation were accepted and folded into this parent. Durable details remain in the archived child records and linked domain artifacts; remaining VM prerelease full replacement work continues under vm-prerelease-feature-set-replacement-20260617 and the active VM prerelease wave tasks.",
+  "archived": 6,
+  "tasks": [
+    {
+      "id": "vm-agentpool-rest-canonical-plan-merge-20260617",
+      "parent_id": "vm-agentpool-pipeline-replacement-focus-refresh-20260617",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Merge the current VM positive REST lifecycle coverage and boundary-negative coverage into one canonical bun-run-execute replacement plan under specs/run-plans/vm-agentpool-combined/, showing exactly which inventory rows it covers now and which rows remain excluded for terminal reasons.",
+      "inputs": [],
+      "outputs": [
+        "evidence/archive/vm-agentpool-rest-canonical-plan-merge-20260617.md"
+      ],
+      "acceptance": [
+        "The artifact cites the concrete inventory rows merged into the canonical REST plan, names the generated/updated run-plan files under specs/run-plans/vm-agentpool-combined/, and explains any remaining excluded rows by exact terminal classification or pending follow-up leaf. The plan is runner-compatible for bun run execute and keeps REST-first priority without depending on CLI coverage."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "specs/run-plans/vm-agentpool-combined/",
+        "evidence/archive/vm-agentpool-rest-canonical-plan-merge-20260617.md"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-17T07:35:23.604Z",
+        "created_by": "task-tree-tool",
+        "promoted_at": "2026-06-17T07:35:30.296Z",
+        "promoted_by": "task-tree-tool",
+        "current_attempt_id": "a_vm-agentpool-rest-canonical-plan-merge-20260617_20260617073542",
+        "assigned_at": "2026-06-17T07:35:42.538Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vm-agentpool-rest-canonical-plan-merge-20260617",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Created a new canonical VM agent pool REST execute plan at specs/run-plans/vm-agentpool-combined/canonical-rest-plan.json and documented exact included/excluded inventory-row coverage in evidence/archive/vm-agentpool-rest-canonical-plan-merge-20260617.md. Verified the merged plan is runner-compatible via bun run execute dry-run and cited prior live pass evidence for the merged positive and boundary subplans.",
+        "last_worker_completed_at": "2026-06-17T07:40:43.994Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-17T07:41:35.919Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted after review: evidence/archive/vm-agentpool-rest-canonical-plan-merge-20260617.md documents the merged inventory rows, names specs/run-plans/vm-agentpool-combined/canonical-rest-plan.json, explains remaining excluded rows by terminal or follow-up classification, and cites a successful bun run execute --dry-run summary showing the canonical plan is runner-compatible."
+      },
+      "session_id": "s_task_vm-agentpool-rest-canonical-plan-merge-20260617",
+      "session_history": [
+        "s_task_vm-agentpool-rest-canonical-plan-merge-20260617"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-17T07:41:35.919Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted after review: evidence/archive/vm-agentpool-rest-canonical-plan-merge-20260617.md documents the merged inventory rows, names specs/run-plans/vm-agentpool-combined/canonical-rest-plan.json, explains remaining excluded rows by terminal or follow-up classification, and cites a successful bun run execute --dry-run summary showing the canonical plan is runner-compatible."
+      },
+      "status": "done"
+    },
+    {
+      "id": "vm-agentpool-machines-nap-coverage-classification-20260617",
+      "parent_id": "vm-agentpool-pipeline-replacement-focus-refresh-20260617",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Include or explicitly classify the Machines API and NAP Machines VM scenarios in the VM replacement branch by reconciling inventory rows 7-8 with existing specs/replays/blockers and deciding whether each belongs in the executable replacement plan, a linked REST branch, or a terminal/external classification.",
+      "inputs": [],
+      "outputs": [
+        "evidence/archive/vm-agentpool-machines-nap-coverage-classification-20260617.md"
+      ],
+      "acceptance": [
+        "The artifact covers both Scenario_MachinesAgentPool and Scenario_MachinesAgentPoolNAPEnabled, cites the existing specs/replays/tasks or blocker evidence for each, and records one explicit disposition per row: in-plan, linked separate executable path, or terminal/external classification with resume condition. Coverage accounting impact on the VM replacement branch is stated explicitly."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "evidence/archive/vm-agentpool-machines-nap-coverage-classification-20260617.md",
+        "model/knowledge-map/model.json"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-17T07:35:23.730Z",
+        "created_by": "task-tree-tool",
+        "promoted_at": "2026-06-17T08:06:10.924Z",
+        "promoted_by": "task-tree-tool",
+        "current_attempt_id": "a_vm-agentpool-machines-nap-coverage-classification-20260617_20260617080628",
+        "assigned_at": "2026-06-17T08:06:28.866Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vm-agentpool-machines-nap-coverage-classification-20260617",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Classified VM inventory rows 7-8 in a new archive artifact, concluding Scenario_MachinesAgentPool is a linked separate executable path and Scenario_MachinesAgentPoolNAPEnabled is an external/rollout-gated classification outside the active VM canonical REST bundle.",
+        "last_worker_completed_at": "2026-06-17T08:08:48.014Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-17T08:09:28.312Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: archive artifact classifies both Scenario_MachinesAgentPool and Scenario_MachinesAgentPoolNAPEnabled with cited specs/replays/blockers and explicit dispositions, preserving 8/8 inventory mapping while keeping rows 7-8 outside the canonical VM REST execution bundle."
+      },
+      "session_id": "s_task_vm-agentpool-machines-nap-coverage-classification-20260617",
+      "session_history": [
+        "s_task_vm-agentpool-machines-nap-coverage-classification-20260617"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-17T08:09:28.312Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: archive artifact classifies both Scenario_MachinesAgentPool and Scenario_MachinesAgentPoolNAPEnabled with cited specs/replays/blockers and explicit dispositions, preserving 8/8 inventory mapping while keeping rows 7-8 outside the canonical VM REST execution bundle."
+      },
+      "status": "done"
+    },
+    {
+      "id": "vm-agentpool-cli-rest-equivalence-mapping-20260617",
+      "parent_id": "vm-agentpool-pipeline-replacement-focus-refresh-20260617",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Link VM CLI scenarios to the REST-first replacement branch by marking each CLI row as REST-equivalent coverage or as a direct CLI execution variant that should stay out of the blocking critical path, including the multi-SKU negative/client-contract case.",
+      "inputs": [],
+      "outputs": [
+        "evidence/archive/vm-agentpool-cli-rest-equivalence-mapping-20260617.md"
+      ],
+      "acceptance": [
+        "The artifact enumerates the VM CLI inventory rows, states whether each is REST-equivalent or requires direct CLI execution, names the exact REST plan row or execution variant it maps to, and preserves the direct CLI negative classification for multi-SKU when REST equivalence is not appropriate. The mapping does not block the REST-first live replacement work."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "evidence/archive/vm-agentpool-cli-rest-equivalence-mapping-20260617.md",
+        "evidence/vm-agentpool-pipeline-inventory.md"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-17T07:35:23.855Z",
+        "created_by": "task-tree-tool",
+        "promoted_at": "2026-06-17T07:35:48.166Z",
+        "promoted_by": "task-tree-tool",
+        "current_attempt_id": "a_vm-agentpool-cli-rest-equivalence-mapping-20260617_20260617073558",
+        "assigned_at": "2026-06-17T07:35:58.764Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vm-agentpool-cli-rest-equivalence-mapping-20260617",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Created the requested CLI↔REST equivalence artifact at evidence/archive/vm-agentpool-cli-rest-equivalence-mapping-20260617.md, mapping VM CLI rows 4/6 to the REST combined plan and preserving row 5 as a direct CLI negative/client-contract variant outside the blocking cutover path.",
+        "last_worker_completed_at": "2026-06-17T07:39:12.576Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-17T07:39:47.950Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted after reviewing evidence/archive/vm-agentpool-cli-rest-equivalence-mapping-20260617.md: it enumerates VM CLI inventory rows 4/5/6, maps rows 4 and 6 to exact REST combined-plan coverage, preserves row 5 as a direct CLI negative/client-contract variant, and explicitly states the mapping is non-blocking for the REST-first cutover path."
+      },
+      "session_id": "s_task_vm-agentpool-cli-rest-equivalence-mapping-20260617",
+      "session_history": [
+        "s_task_vm-agentpool-cli-rest-equivalence-mapping-20260617"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-17T07:39:47.950Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted after reviewing evidence/archive/vm-agentpool-cli-rest-equivalence-mapping-20260617.md: it enumerates VM CLI inventory rows 4/5/6, maps rows 4 and 6 to exact REST combined-plan coverage, preserves row 5 as a direct CLI negative/client-contract variant, and explicitly states the mapping is non-blocking for the REST-first cutover path."
+      },
+      "status": "done"
+    },
+    {
+      "id": "vm-agentpool-link-normalization-repair-20260617",
+      "parent_id": "vm-agentpool-pipeline-replacement-focus-refresh-20260617",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Repair VM replacement coverage accounting so model/testCase/spec/path links count correctly across the inventory, total coverage matrix, model.json, and run-plan references.",
+      "inputs": [],
+      "outputs": [
+        "evidence/archive/vm-agentpool-link-normalization-repair-20260617.md"
+      ],
+      "acceptance": [
+        "The artifact lists every VM-related link repair applied, including exact model/spec/path/testCase/run-plan identifiers changed, and shows the resulting coverage accounting for the inventory and total-coverage matrix rows. Repo-local validation evidence confirms the affected references resolve cleanly without introducing duplicate ids."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "model/knowledge-map/model.json",
+        "specs/index.json",
+        "evidence/go-e2ev3-total-coverage-matrix.md",
+        "evidence/archive/vm-agentpool-link-normalization-repair-20260617.md"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-17T07:35:23.994Z",
+        "created_by": "task-tree-tool",
+        "promoted_at": "2026-06-17T07:50:31.230Z",
+        "promoted_by": "task-tree-tool",
+        "assigned_at": "2026-06-17T07:50:44.691Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vm-agentpool-link-normalization-repair-20260617",
+        "stale_active_requeued_at": "2026-06-17T07:50:04.885Z",
+        "stale_active_requeue_reason": "watchdog-stale-active-review",
+        "stale_active_fresh_session": false,
+        "previous_attempt_id": "a_vm-agentpool-link-normalization-repair-20260617_20260617074505",
+        "current_attempt_id": "a_vm-agentpool-link-normalization-repair-20260617_20260617075044",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Repaired VM replacement link/accounting drift in model/knowledge-map/model.json and specs/index.json, and wrote evidence/archive/vm-agentpool-link-normalization-repair-20260617.md documenting every identifier change and the resulting 6-pass/2-product-gap VM coverage accounting.",
+        "last_worker_completed_at": "2026-06-17T08:03:07.162Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-17T08:04:18.921Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: the repair artifact documents the exact VM model/spec/path/testCase/evidence id changes, records clean 8-feature VM accounting (6 pass / 2 product-gap / 0 stale fail), and includes targeted repo-local validation showing the replacement-active VM spec/path references resolve without duplicate ids. Remaining repo-wide validator failures are outside this slice, and the separate inventory executive-summary mismatch is tracked as follow-up work."
+      },
+      "session_id": "s_task_vm-agentpool-link-normalization-repair-20260617",
+      "session_history": [
+        "s_task_vm-agentpool-link-normalization-repair-20260617"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-17T08:04:18.921Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: the repair artifact documents the exact VM model/spec/path/testCase/evidence id changes, records clean 8-feature VM accounting (6 pass / 2 product-gap / 0 stale fail), and includes targeted repo-local validation showing the replacement-active VM spec/path references resolve without duplicate ids. Remaining repo-wide validator failures are outside this slice, and the separate inventory executive-summary mismatch is tracked as follow-up work."
+      },
+      "status": "done"
+    },
+    {
+      "id": "vm-agentpool-live-execute-proof-slice-20260617",
+      "parent_id": "vm-agentpool-pipeline-replacement-focus-refresh-20260617",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Run enough live staging executions through bun run execute to prove the refreshed VM replacement mechanism works end-to-end for the canonical REST plan, then record which inventory rows are now execution-proven versus still terminal or gated.",
+      "inputs": [],
+      "outputs": [
+        "evidence/archive/vm-agentpool-live-execute-proof-slice-20260617.md"
+      ],
+      "acceptance": [
+        "The artifact cites the exact bun run execute command(s), run ids, and outcome per covered VM row, demonstrating live staging proof for the canonical REST replacement mechanism. Any uncovered rows are explicitly classified as terminal, separate follow-up, or externally gated with precise evidence and resume condition."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "runs/executions/",
+        "evidence/archive/vm-agentpool-live-execute-proof-slice-20260617.md",
+        "specs/run-plans/vm-agentpool-combined/"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-17T07:35:24.123Z",
+        "created_by": "task-tree-tool",
+        "promoted_at": "2026-06-17T07:38:44.707Z",
+        "promoted_by": "task-tree-tool",
+        "current_attempt_id": "a_vm-agentpool-live-execute-proof-slice-20260617_20260617074044",
+        "assigned_at": "2026-06-17T07:40:44.251Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vm-agentpool-live-execute-proof-slice-20260617",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Resolved the VM agentpool proof-slice problem by creating the missing evidence artifact at evidence/archive/vm-agentpool-live-execute-proof-slice-20260617.md, assembling exact live run ids/commands and row classifications from existing execute evidence, and verifying the canonical merged plan still dry-runs cleanly through bun run execute.",
+        "last_worker_completed_at": "2026-06-17T07:42:26.334Z",
+        "last_worker_evidence": [
+          "evidence/archive/vm-agentpool-live-execute-proof-slice-20260617.md",
+          "runs/executions/vm-agentpool-rest-v2-common-executor-live-20260616/summary.md",
+          "runs/executions/vm-boundary-negative-live-20260617-3/summary.md",
+          "runs/executions/vm-agentpool-canonical-dryrun-20260617/summary.md"
+        ],
+        "reviewed_at": "2026-06-17T07:45:49.286Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: evidence/archive/vm-agentpool-live-execute-proof-slice-20260617.md cites the exact bun run execute commands, run ids, per-row outcomes, and explicit terminal/separate/gated classifications backed by existing execution artifacts, satisfying the live-proof acceptance without requiring a fresh probe."
+      },
+      "session_id": "s_task_vm-agentpool-live-execute-proof-slice-20260617",
+      "session_history": [
+        "s_task_vm-agentpool-live-execute-proof-slice-20260617"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-17T07:45:49.286Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: evidence/archive/vm-agentpool-live-execute-proof-slice-20260617.md cites the exact bun run execute commands, run ids, per-row outcomes, and explicit terminal/separate/gated classifications backed by existing execution artifacts, satisfying the live-proof acceptance without requiring a fresh probe."
+      },
+      "status": "done"
+    },
+    {
+      "id": "vm-agentpool-inventory-summary-reconcile-20260617",
+      "parent_id": "vm-agentpool-pipeline-replacement-focus-refresh-20260617",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Reconcile evidence/vm-agentpool-pipeline-inventory.md executive summary with the now-complete 8/8 VM scenario mapping and terminal ManagedSystem classification established by the link-normalization repair.",
+      "inputs": [],
+      "outputs": [
+        "evidence/archive/vm-agentpool-pipeline-inventory-summary-reconcile-20260617.md"
+      ],
+      "acceptance": [
+        "The artifact cites the before/after executive-summary counts, updates evidence/vm-agentpool-pipeline-inventory.md so its summary matches the body and current VM accounting (8/8 mapped, 0 unmapped product scenarios), and records a quick repo-local check showing the revised summary still matches the scenario table/classification in the document."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "evidence/vm-agentpool-pipeline-inventory.md"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-17T08:04:19.050Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_vm-agentpool-inventory-summary-reconcile-20260617_20260617080419",
+        "assigned_at": "2026-06-17T08:04:19.190Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vm-agentpool-inventory-summary-reconcile-20260617",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Reconciled the VM agentpool inventory executive summary from 7/8 mapped + 1 unmapped to 8/8 mapped + 0 unmapped, and wrote an archive artifact documenting the before/after counts and repo-local consistency checks.",
+        "last_worker_completed_at": "2026-06-17T08:05:37.590Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-17T08:06:10.682Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: archive artifact documents the executive-summary change from 7/8 mapped + 1 unmapped to 8/8 mapped + 0 unmapped, and evidence/vm-agentpool-pipeline-inventory.md now matches the body with ManagedSystem still terminal but counted as mapped."
+      },
+      "session_id": "s_task_vm-agentpool-inventory-summary-reconcile-20260617",
+      "session_history": [
+        "s_task_vm-agentpool-inventory-summary-reconcile-20260617"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-17T08:06:10.682Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: archive artifact documents the executive-summary change from 7/8 mapped + 1 unmapped to 8/8 mapped + 0 unmapped, and evidence/vm-agentpool-pipeline-inventory.md now matches the body with ManagedSystem still terminal but counted as mapped."
+      },
+      "status": "done"
+    }
+  ]
+}

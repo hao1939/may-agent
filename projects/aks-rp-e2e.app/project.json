@@ -25,8 +25,8 @@
     "Continuously reconcile Go e2ev3 source coverage, including suite-condition variants, and tidy feature/spec/model structure so the knowledge base stays canonical."
   ],
   "currentState": {
-    "summary": "The live task tree now shows 2389 total tasks with 2291 done, 0 active leaves, 68 blocked nodes (61 blocked leaves), 2 review leaves, and 28 backlog leaves. The westus2/local verification frontier is materially cleaner: `ccp-agent-lifecycle-deployment-westus2-local-execute-20260619` is now a reviewed real product pass, `aad-rbac-nonaad-reset-stable-empty-westus2-local-execute-20260619` is now a reviewed stable-empty product-gap, `app-routing-vm-prerelease-default-internal-westus2-local-execute-20260619` is now a reviewed bounded product pass, and `aad-rbac-managed-v2-reset-stable-empty-westus2-local-execute-20260619` is now closed as the reviewed stable-empty product-gap result. The managed-v2 follow-up is now explicit backlog as `aad-rbac-managed-v2-reset-preview-bodyful-westus2-local-execute-20260619`. `jwt-authenticator-upgrade-survival-westus2-local-execute-20260619` is now truthfully blocked on runner/runtime stability after a real westus2/local partial execute cleared the old auth/subscription gate but lost replay-owned final evidence when the worker restarted. `ccp-connected-cluster-proxy-auth-westus2-local-execute-20260619`, `localdns-autodefault-upgrade-pool-level-westus2-local-execute-20260619`, `private-cluster-vnet-integration-update-westus2-local-execute-20260619`, `cloud-provider-multiple-slb-westus2-local-execute-20260619`, and `managedsystem-day2-count-type-westus2-local-execute-20260619` remain truthfully blocked on specific reproduced non-auth/runtime blockers.",
-    "activeTaskId": null,
+    "summary": "The live task tree now shows 2389 total tasks with 2292 done, 4 active westus2/local execute leaves (6 active nodes total), 0 review leaves, 68 blocked nodes (61 blocked leaves), and 23 backlog leaves. The frontier is materially cleaner: `jwt-authenticator-upgrade-survival-westus2-local-execute-20260619` is now a reviewed real product pass backed by a replay-owned westus2/local rerun with verified cleanup, while `ccp-agent-lifecycle-deployment-westus2-local-execute-20260619` and `app-routing-vm-prerelease-default-internal-westus2-local-execute-20260619` remain closed as real product passes. The earlier managed-v2 stable-empty review and its preview-bodyful follow-up now resolve to a truthful blocked route: `aad-rbac-managed-v2-reset-preview-bodyful-westus2-local-execute-20260619` reached live westus2/local execution but stalled earlier in baseline cluster create with ARM long-running operation status `Canceled`, so no new ResetAADProfile product verdict was reached. `ccp-connected-cluster-proxy-auth-westus2-local-execute-20260619`, `localdns-autodefault-upgrade-pool-level-westus2-local-execute-20260619`, `private-cluster-vnet-integration-update-westus2-local-execute-20260619`, `cloud-provider-multiple-slb-westus2-local-execute-20260619`, and `managedsystem-day2-count-type-westus2-local-execute-20260619` remain truthfully blocked on their specific reproduced non-auth/runtime blockers.",
+    "activeTaskId": "ccp-coredns-metrics-endpoint-westus2-local-execute-20260619",
     "metrics": {
       "features": 411,
       "featuresPass": 340,
@@ -34,11 +34,11 @@
       "pathsPass": 412,
       "passRatePaths": "86.2%",
       "passRateFeatures": "82.7%",
-      "tasksCompleted": 2291,
-      "tasksActive": 0,
-      "tasksInReview": 2,
+      "tasksCompleted": 2292,
+      "tasksActive": 6,
+      "tasksInReview": 0,
       "tasksBlocked": 68,
-      "tasksBacklog": 28,
+      "tasksBacklog": 23,
       "tasksTotal": 2389,
       "uncommittedChanges": 338,
       "lastCommit": "a4c157d",
@@ -47,17 +47,22 @@
     }
   },
   "currentFocus": {
-    "summary": "The current 12-24h focus is to preserve the exact blocked westus2/local routes, keep `jwt-authenticator-upgrade-survival-westus2-local-execute-20260619` blocked on runner/runtime stability rather than treating it as a clean active execute center, and treat managed-v2 preview-bodyful as explicit backlog rather than a still-open review decision.",
-    "nextAction": "Use `tasks/tree.json` plus the fresh westus2/local evidence notes as the routing authority. `jwt-authenticator-upgrade-survival-westus2-local-execute-20260619` should resume only when the same westus2/local command family can run under a stable execution window long enough to flush replay-owned final evidence for the pending kubeconfig/JWT/create-upgrade/post-upgrade assertions. Keep `ccp-connected-cluster-proxy-auth-westus2-local-execute-20260619` blocked on the surrogate `InvalidAADClusterToken` contract, `localdns-autodefault-upgrade-pool-level-westus2-local-execute-20260619` blocked on upgrade-envelope plus `HTTP 409` sequencing repair, `private-cluster-vnet-integration-update-westus2-local-execute-20260619` blocked on baseline cluster-create cancellation, `managedsystem-day2-count-type-westus2-local-execute-20260619` blocked on the local Azure CLI create-path crash, and `cloud-provider-multiple-slb-westus2-local-execute-20260619` blocked on the reproduced ARM deserializer rejection until a real environment/request-surface change occurs. If a stable rerun window is not available and no higher-priority human comment arrives, choose the next promotion from the explicit backlog list rather than pretending JWT is still actively executing.",
-    "activeTaskIds": [],
+    "summary": "The current 12-24h focus is to keep the promoted westus2/local execute set moving from `tasks/tree.json` authority while preserving the exact blocked routes, including the newly confirmed managed-v2 preview-bodyful cluster-create cancellation, and keep `jwt-authenticator-upgrade-survival-westus2-local-execute-20260619` closed as a real product pass rather than a stale blocked frontier leaf.",
+    "nextAction": "Use `tasks/tree.json` plus the fresh westus2/local evidence notes as the routing authority. Keep `ccp-coredns-metrics-endpoint-westus2-local-execute-20260619`, `kms-v2-managed-hsm-westus2-local-execute-20260619`, `ccp-security-patch-azurelinux-westus2-local-execute-20260619`, and `localdns-cluster-topology-westus2-local-execute-20260619` as the live active execute leaves. Keep `aad-rbac-managed-v2-reset-preview-bodyful-westus2-local-execute-20260619` blocked on the reproduced baseline cluster-create ARM `Canceled` path until the same westus2/local preview-bodyful command family can run without that runtime cancellation. Keep `ccp-connected-cluster-proxy-auth-westus2-local-execute-20260619` blocked on the surrogate `InvalidAADClusterToken` contract, `localdns-autodefault-upgrade-pool-level-westus2-local-execute-20260619` blocked on upgrade-envelope plus `HTTP 409` sequencing repair, `private-cluster-vnet-integration-update-westus2-local-execute-20260619` blocked on baseline cluster-create cancellation, `managedsystem-day2-count-type-westus2-local-execute-20260619` blocked on the local Azure CLI create-path crash, and `cloud-provider-multiple-slb-westus2-local-execute-20260619` blocked on the reproduced ARM deserializer rejection until a real environment/request-surface change occurs.",
+    "activeTaskIds": [
+      "ccp-coredns-metrics-endpoint-westus2-local-execute-20260619",
+      "kms-v2-managed-hsm-westus2-local-execute-20260619",
+      "ccp-security-patch-azurelinux-westus2-local-execute-20260619",
+      "localdns-cluster-topology-westus2-local-execute-20260619"
+    ],
     "focusPlanId": "focus-plan-westus2-local-queue-20260619",
     "focusPlanStatus": "active",
     "priorFocusPlanId": "go-e2ev3-total-coverage-closure-20260617",
     "priorFocusResult": "completed",
     "focusReview": {
-      "reviewedAt": "2026-06-19T14:24:30Z",
+      "reviewedAt": "2026-06-19T14:24:05.375Z",
       "result": "updated",
-      "note": "Frontier reconciliation now reflects the post-execute queue truthfully: `jwt-authenticator-upgrade-survival-westus2-local-execute-20260619` is blocked on runner/runtime stability after a real westus2/local partial execute cleared the old auth/subscription gate, `aad-rbac-managed-v2-reset-preview-bodyful-westus2-local-execute-20260619` remains explicit backlog, and the reproduced blocked routes stay narrowed to their exact non-auth/runtime resume conditions."
+      "note": "Frontier reconciliation now reflects the managed-v2 preview-bodyful execute truthfully: the branch produced real westus2/local blocker evidence and moved from active focus to blocked, leaving four live westus2/local execute leaves in the current queue."
     }
   },
   "focusPlan": {
@@ -74,5 +79,5 @@
     "tasks/README.md",
     "tasks/tree.json"
   ],
-  "updatedAt": "2026-06-19T14:24:30Z"
+  "updatedAt": "2026-06-19T14:24:05.375Z"
 }

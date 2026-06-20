@@ -1,0 +1,65 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-19T21:15:09.832Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "spec-runner-and-replays",
+  "summary": "Spec-runner lane no longer carries the repo-local arm-rest format gate as live work; that formatting-only repair is accepted and future checkpoints can reuse the clean check path. Live runner work remains the active LocalDNS Machines post-cleanup westus2/local rerun, while the existing blocked execute leaves still wait on their exact environment, product, or external-input resume conditions.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "runner-check-arm-rest-format-gate-fix-20260619",
+      "parent_id": "spec-runner-and-replays",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Restore repo-local domain check health for future checkpoints by reproducing the current App integrity OK: aks-rp-e2e owner=aks-explorer workflows=5 tasks=87\nBundled 9 modules in 5ms\n\n  app.js                                  25.97 KB  (entry point)\n  workflows/project-execution-watchdog.js  27.74 KB  (entry point)\n  workflows/project-planner.js            54.65 KB  (entry point)\n  workflows/task-worker.js                27.56 KB  (entry point)\n  workflows/problem-solver.js             8.96 KB   (entry point)\n  workflows/focus-plan.js                 33.57 KB  (entry point)\n\nChecking formatting...\nAll matched files use Prettier code style!\nbun test v1.3.14 (0d9b296a) failure at replays/lib/arm-rest.ts, then either land the minimal formatting-only fix or capture exact evidence proving the gate is blocked elsewhere without touching unrelated replay behavior.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/runner-check-arm-rest-format-gate-fix-20260619.md",
+        "../aks-rp-e2e/replays/lib/arm-rest.ts"
+      ],
+      "acceptance": [
+        "Task cites the exact 2026-06-19 App integrity OK: aks-rp-e2e owner=aks-explorer workflows=5 tasks=87\nBundled 9 modules in 5ms\n\n  app.js                                  25.97 KB  (entry point)\n  workflows/project-execution-watchdog.js  27.74 KB  (entry point)\n  workflows/project-planner.js            54.65 KB  (entry point)\n  workflows/task-worker.js                27.56 KB  (entry point)\n  workflows/problem-solver.js             8.96 KB   (entry point)\n  workflows/focus-plan.js                 33.57 KB  (entry point)\n\nChecking formatting...\nAll matched files use Prettier code style!\nbun test v1.3.14 (0d9b296a) failure showing Prettier/code-style issues in replays/lib/arm-rest.ts and records the minimal command family used to reproduce and verify the gate.",
+        "If the gate is locally fixable, the task lands a formatting-only repair for replays/lib/arm-rest.ts and records a clean rerun of App integrity OK: aks-rp-e2e owner=aks-explorer workflows=5 tasks=87\nBundled 9 modules in 5ms\n\n  app.js                                  25.97 KB  (entry point)\n  workflows/project-execution-watchdog.js  27.74 KB  (entry point)\n  workflows/project-planner.js            54.65 KB  (entry point)\n  workflows/task-worker.js                27.56 KB  (entry point)\n  workflows/problem-solver.js             8.96 KB   (entry point)\n  workflows/focus-plan.js                 33.57 KB  (entry point)\n\nChecking formatting...\nAll matched files use Prettier code style!\nbun test v1.3.14 (0d9b296a); otherwise the archive note captures the exact remaining blocker and precise resume condition.",
+        "Scope stays narrowly on the replay-library format gate needed for domain checkpoints: no unrelated replay/model/spec edits and no cloud execution."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "repo:check-format-arm-rest"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-19T21:12:28.633Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_runner-check-arm-rest-format-gate-fix-20260619_20260619211233",
+        "assigned_at": "2026-06-19T21:12:33.275Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_runner-check-arm-rest-format-gate-fix-20260619",
+        "worker_started_attempt_id": "a_runner-check-arm-rest-format-gate-fix-20260619_20260619211233",
+        "worker_started_at": "2026-06-19T21:12:33.425Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Applied a formatting-only Prettier repair to `replays/lib/arm-rest.ts` and documented reproduction/verification in `evidence/archive/runner-check-arm-rest-format-gate-fix-20260619.md`; rerunning `/app/projects/aks-rp-e2e.app` check now passes fully.",
+        "last_worker_completed_at": "2026-06-19T21:14:21.311Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-19T21:15:09.774Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted the repo-local replay-library gate repair: evidence/archive/runner-check-arm-rest-format-gate-fix-20260619.md reproduces the exact Prettier failure on replays/lib/arm-rest.ts, shows the formatting-only diff, and verifies /app/projects/aks-rp-e2e.app bun run check is clean again with App integrity OK, formatting clean, and tests passing."
+      },
+      "session_id": "s_task_runner-check-arm-rest-format-gate-fix-20260619",
+      "session_history": [
+        "s_task_runner-check-arm-rest-format-gate-fix-20260619"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-19T21:15:09.774Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted the repo-local replay-library gate repair: evidence/archive/runner-check-arm-rest-format-gate-fix-20260619.md reproduces the exact Prettier failure on replays/lib/arm-rest.ts, shows the formatting-only diff, and verifies /app/projects/aks-rp-e2e.app bun run check is clean again with App integrity OK, formatting clean, and tests passing."
+      },
+      "status": "done"
+    }
+  ]
+}

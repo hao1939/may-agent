@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-19T20:02:00.129Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "feature-knowledge-and-specs",
+  "summary": "Private-cluster batch-1 local mapping is now accepted: the first five Go e2ev3 private-cluster scenarios are classified into two direct mappings (private endpoint connections, BYO DNS server), two partial source/status normalization targets (base PrivateLink create and custom DNS zone), and one missing execution-variant linkage target (Private_Cluster_Runner_V3). The lane should now convert that accepted map into bounded private-cluster authoring leaves rather than reopening family-wide rediscovery.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "private-cluster-go-e2ev3-source-batch1-local-map-20260619",
+      "parent_id": "feature-knowledge-and-specs",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Use repo-local Go e2ev3 private-cluster sources plus the current model/spec views to map a first bounded batch of uncovered private-cluster scenarios into exact coverage status and next durable authoring targets, so the reopened project regains a non-external runnable frontier without cloud mutation.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/private-cluster-go-e2ev3-source-batch1-local-map-20260619.md"
+      ],
+      "acceptance": [
+        "Archive note lists the first five repo-local private-cluster Go e2ev3 scenarios examined, cites their source locations, and records for each whether current model/spec coverage is direct, partial, or missing.",
+        "For every scenario in the batch, the note names the exact existing path/spec linkage when present or the exact missing coverage surface when absent, then recommends one bounded next authoring action per uncovered or ambiguous scenario.",
+        "Work stays in the regular learning lane: repo-local source/spec/model analysis only, no human source-holder waits, no cloud execution, and no broad all-family sweep beyond the first five scenarios."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "feature:private-cluster"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-19T19:59:27.779Z",
+        "created_by": "task-tree-tool",
+        "promoted_at": "2026-06-19T19:59:31.886Z",
+        "promoted_by": "task-tree-tool",
+        "current_attempt_id": "a_private-cluster-go-e2ev3-source-batch1-local-map-20260619_20260619195931",
+        "assigned_at": "2026-06-19T19:59:31.992Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_private-cluster-go-e2ev3-source-batch1-local-map-20260619",
+        "worker_started_attempt_id": "a_private-cluster-go-e2ev3-source-batch1-local-map-20260619_20260619195931",
+        "worker_started_at": "2026-06-19T20:00:07.384Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Produced the requested archive note `evidence/archive/private-cluster-go-e2ev3-source-batch1-local-map-20260619.md`, mapping the first five repo-local private-cluster Go e2ev3 scenarios to current spec/model coverage and bounded next authoring targets without cloud execution.",
+        "last_worker_completed_at": "2026-06-19T20:01:38.236Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-19T20:02:00.067Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted the 2026-06-19 archive note: it mapped the first five repo-local private-cluster Go e2ev3 scenarios to exact current source/spec/model coverage, distinguished direct vs partial vs missing linkage, and produced bounded next authoring targets without cloud execution or external waits."
+      },
+      "session_id": "s_task_private-cluster-go-e2ev3-source-batch1-local-map-20260619",
+      "session_history": [
+        "s_task_private-cluster-go-e2ev3-source-batch1-local-map-20260619"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-19T20:02:00.067Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted the 2026-06-19 archive note: it mapped the first five repo-local private-cluster Go e2ev3 scenarios to exact current source/spec/model coverage, distinguished direct vs partial vs missing linkage, and produced bounded next authoring targets without cloud execution or external waits."
+      },
+      "status": "done"
+    }
+  ]
+}

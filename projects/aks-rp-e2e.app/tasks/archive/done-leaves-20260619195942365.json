@@ -1,0 +1,64 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-19T19:59:42.365Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "evidence-feedback-and-model-update",
+  "summary": "VirtualNodeAddon stale-terminal hygiene is reconciled: the accepted 2026-06-19 note confirmed path.serverless-virtual-nodes-virtual-node-addon remains finally blocked, and the blocked identity-gate leaf is intentionally retained because it carries the exact shared-identity resume contract (AKS_RP_E2E_ASSIGN_IDENTITY on a gate-open host) for any future bounded rerun. Evidence/model-update work has no live review debt after this acceptance and can focus next on future execution-result classification or terminal-hygiene mismatches when they appear.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "vm-prerelease-virtual-node-addon-stale-terminal-reconcile-20260619",
+      "parent_id": "evidence-feedback-and-model-update",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Reconcile the stale-terminal mismatch on path.serverless-virtual-nodes-virtual-node-addon, where the model is already final blocked but spec-runner still carries blocked retry leaf vm-prerelease-virtual-node-addon-serverless-identity-gate-20260617. Review the final model verdict and the blocked identity-gate leaf, then decide one exact outcome only: keep the blocked leaf as the precise external prerequisite holder consistent with the final model, or supersede/retire it if it duplicates the final surface without adding a distinct resume contract.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vm-prerelease-virtual-node-addon-stale-terminal-reconcile-20260619.md"
+      ],
+      "acceptance": [
+        "Archive note cites the current stale-terminal warning, blocked leaf vm-prerelease-virtual-node-addon-serverless-identity-gate-20260617, and the final model verdict/retest condition for path.serverless-virtual-nodes-virtual-node-addon, then explains exactly why the path should keep or retire the blocked replay holder.",
+        "The task ends with one concrete tree/model action only: either the blocked identity-gate leaf is explicitly retained as the exact external prerequisite holder for the final blocked path, or it is superseded/retired in favor of the final model surface; no new cloud execution is scheduled from this leaf.",
+        "Work stays bounded to evidence/model reconciliation for path.serverless-virtual-nodes-virtual-node-addon; no broad VM prerelease rediscovery and no remote rerun."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "path:path.serverless-virtual-nodes-virtual-node-addon"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-19T19:57:53.261Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_vm-prerelease-virtual-node-addon-stale-terminal-reconcile-20260619_20260619195753",
+        "assigned_at": "2026-06-19T19:57:53.317Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vm-prerelease-virtual-node-addon-stale-terminal-reconcile-20260619",
+        "worker_started_attempt_id": "a_vm-prerelease-virtual-node-addon-stale-terminal-reconcile-20260619_20260619195753",
+        "worker_started_at": "2026-06-19T19:58:12.637Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Wrote the requested stale-terminal reconciliation note at evidence/archive/vm-prerelease-virtual-node-addon-stale-terminal-reconcile-20260619.md, concluding the blocked identity-gate leaf should be retained because it carries the exact external shared-identity resume contract for the already-final blocked path.",
+        "last_worker_completed_at": "2026-06-19T19:59:28.738Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-19T19:59:42.303Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: the 2026-06-19 reconciliation note cites the stale-terminal warning, final blocked model verdict/retest condition, and existing identity-gate evidence, and correctly concludes the blocked leaf should be retained as the exact external prerequisite holder rather than retired as duplicate retry work."
+      },
+      "session_id": "s_task_vm-prerelease-virtual-node-addon-stale-terminal-reconcile-20260619",
+      "session_history": [
+        "s_task_vm-prerelease-virtual-node-addon-stale-terminal-reconcile-20260619"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-19T19:59:42.303Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: the 2026-06-19 reconciliation note cites the stale-terminal warning, final blocked model verdict/retest condition, and existing identity-gate evidence, and correctly concludes the blocked leaf should be retained as the exact external prerequisite holder rather than retired as duplicate retry work."
+      },
+      "status": "done"
+    }
+  ]
+}

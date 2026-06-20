@@ -1,0 +1,75 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-19T19:49:52.889Z",
+  "reason": "bottom-up cleanup after large lane rollups",
+  "parent_id": "feature-knowledge-and-specs",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "feature-spec-model-hygiene",
+      "parent_id": "feature-knowledge-and-specs",
+      "state": "done",
+      "kind": "work",
+      "priority": "P1",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Keep the AKS RP feature/spec/model workspace coherent: tidy feature packets, reorganize specs, remove duplicates, normalize naming, and preserve canonical mappings so humans and agents can review the knowledge base reliably.",
+      "inputs": [
+        "features/",
+        "specs/",
+        "suites/",
+        "model/knowledge-map/",
+        "evidence/archive/"
+      ],
+      "outputs": [
+        "features/",
+        "specs/",
+        "suites/",
+        "model/knowledge-map/",
+        "evidence/archive/hygiene-review.md"
+      ],
+      "acceptance": [
+        "Feature packets and specs have canonical naming, sourceRefs, featurePathIds, and no duplicate or competing representation for the same product behavior.",
+        "Spec organization makes atomic specs, combined suites, generated replays, and evidence links easy to navigate.",
+        "Hygiene changes are validated with domain checks and produce a review note explaining merges/removals/renames."
+      ],
+      "forbidden": [
+        "Do not delete evidence or specs without preserving a canonical replacement or explicit obsolete reason.",
+        "Do not mix cosmetic cleanup with semantic model changes without documenting the model impact."
+      ],
+      "conflict_scope": [],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-14T15:22:59.220Z",
+        "created_by": "task-tree-tool",
+        "paused_at": "2026-06-14T16:05:00Z",
+        "pause_reason": "Project owner loop: waiting status.",
+        "rolled_up_at": "2026-06-19T19:49:52.888Z",
+        "rolled_up_by": "task-tree-tool"
+      },
+      "context": {
+        "archived_done_leaf_count": 5,
+        "rollup_archives": [
+          {
+            "archive": "tasks/archive/done-leaves-20260619194952888.json",
+            "archived": 4,
+            "at": "2026-06-19T19:49:52.888Z",
+            "reason": "bottom-up cleanup after large lane rollups",
+            "task_ids": [
+              "feature-spec-duplicate-inventory-20260614",
+              "fix-spec-status-schema-batch2",
+              "normalize-specstate-values",
+              "spec-status-schema-fix-20260614"
+            ]
+          },
+          {
+            "archive": "tasks/archive/done-leaves-20260614164317.json",
+            "archived": 1,
+            "at": "2026-06-14T16:43:17.017Z"
+          }
+        ]
+      },
+      "status": "done"
+    }
+  ]
+}

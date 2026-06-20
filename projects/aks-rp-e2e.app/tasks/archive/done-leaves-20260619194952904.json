@@ -1,0 +1,55 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-19T19:49:52.904Z",
+  "reason": "bottom-up cleanup after large lane rollups",
+  "parent_id": "feature-extraction",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "batch-6-feature-packets",
+      "parent_id": "feature-extraction",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Create feature packets for batch-6 families discovered in batch-6-source-exploration. For each family: extract feature YAML with ground truth, design refs, API specs, Go e2e source refs, and judgment rules. Follow features/SCHEMA.md format.",
+      "inputs": [],
+      "outputs": [
+        "features/"
+      ],
+      "acceptance": [
+        "Feature packets created for top-priority batch-6 families (at least 3 families). Each packet has groundTruth, judgmentRules, and goE2eSource refs. bun run check passes."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "feature-extraction"
+      ],
+      "depends_on": [
+        "batch-6-source-exploration"
+      ],
+      "trace": {
+        "created_at": "2026-06-14T00:17:03.691Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_batch-6-feature-packets_20260614002851",
+        "assigned_at": "2026-06-14T00:28:51.279Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_batch-6-feature-packets",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Accepted: 3 feature packets (managementplane-addon, net-integration, runtime-container) created. Feature count 23→26. All have groundTruth, judgmentRules, goE2eSource refs. bun run check passes 0 warnings.",
+        "last_worker_completed_at": "2026-06-14T00:38:51.150Z",
+        "last_worker_evidence": [],
+        "accepted_at": "2026-06-14T00:40:00.000Z",
+        "accepted_by": "planner",
+        "acceptance_note": "3 feature packets verified: managementplane-addon, net-integration, runtime-container. groundTruth/judgmentRules/goE2eSource present. bun run check 0 warnings."
+      },
+      "session_history": [
+        "s_task_batch-6-feature-packets"
+      ],
+      "state": "done",
+      "resolution": "completed",
+      "status": "done"
+    }
+  ]
+}

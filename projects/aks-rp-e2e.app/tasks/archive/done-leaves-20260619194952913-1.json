@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-19T19:49:52.913Z",
+  "reason": "bottom-up cleanup after large lane rollups",
+  "parent_id": "vm-prerelease-cilium-nodesubnet-canonical-spec-packet-20260618",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "vm-prerelease-cilium-nodesubnet-landing-20260618",
+      "parent_id": "vm-prerelease-cilium-nodesubnet-canonical-spec-packet-20260618",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Author the dedicated VM prerelease Cilium node-subnet landing grounded by the accepted canonical spec packet and variant boundary evidence: add the corresponding repo-local path/spec/replay surfaces and update the VirtualMachine prerelease coverage ledger so the scenario is no longer an unstructured missing-spec row.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vm-prerelease-cilium-nodesubnet-landing-20260618.md"
+      ],
+      "acceptance": [
+        "Artifact cites vm-prerelease-cilium-nodesubnet-canonical-spec-packet-20260618 and vm-prerelease-cilium-node-pod-subnet-variant-boundary-map-20260618 evidence, names the exact path/spec/replay identifiers landed, and explains the lineage from packet to landing surfaces.",
+        "Work updates the exact repo-local landing surfaces plus evidence/pipelines/virtualmachine-prerelease-coverage.{md,json} and any downstream prerelease plan/config consumer, without cloud execution; if authoring is blocked repo-locally, the note records the precise missing local prerequisite instead of broad rediscovery."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "feature:cilium",
+        "feature:virtualmachines",
+        "ledger:virtualmachine-prerelease"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-18T08:20:01.839Z",
+        "created_by": "task-tree-tool",
+        "promoted_at": "2026-06-18T08:37:51.312Z",
+        "promoted_by": "task-tree-tool",
+        "current_attempt_id": "a_vm-prerelease-cilium-nodesubnet-landing-20260618_20260618084125",
+        "assigned_at": "2026-06-18T08:41:25.119Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vm-prerelease-cilium-nodesubnet-landing-20260618",
+        "worker_started_attempt_id": "a_vm-prerelease-cilium-nodesubnet-landing-20260618_20260618084125",
+        "worker_started_at": "2026-06-18T08:41:35.094Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Landed the VM prerelease Cilium node-subnet branch across repo-local surfaces: updated features/network-cni.yaml, added knowledge-model/path wiring for path.network-cni-cilium-node-subnet, refreshed virtualmachine-prerelease coverage rows 112/113/226/227, and wrote the archive note evidence/archive/vm-prerelease-cilium-nodesubnet-landing-20260618.md.",
+        "last_worker_completed_at": "2026-06-18T08:50:24.410Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-18T08:50:42.641Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: archive note and repo-local updates landed the dedicated Cilium node-subnet path/spec/replay/model/coverage surfaces for canonical row 112, with rows 113/226/227 explicitly recorded as variants and bounded repo-local verification captured in the artifact."
+      },
+      "session_id": "s_task_vm-prerelease-cilium-nodesubnet-landing-20260618",
+      "session_history": [
+        "s_task_vm-prerelease-cilium-nodesubnet-landing-20260618"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-18T08:50:42.641Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: archive note and repo-local updates landed the dedicated Cilium node-subnet path/spec/replay/model/coverage surfaces for canonical row 112, with rows 113/226/227 explicitly recorded as variants and bounded repo-local verification captured in the artifact."
+      },
+      "status": "done"
+    }
+  ]
+}

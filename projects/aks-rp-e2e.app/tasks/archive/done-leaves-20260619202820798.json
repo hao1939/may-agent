@@ -1,0 +1,77 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-19T20:28:20.799Z",
+  "reason": "owner rolled up completed child tasks",
+  "parent_id": "feature-knowledge-and-specs",
+  "summary": "CCP security-patch AzureLinux source/spec frontier work is now explicitly accepted and archived: existing feature/spec/replay artifacts remain valid, fresh local --check still passes, and any remaining work for path.ccp-security-patch.azurelinux has moved out of source/spec exploration into evidence/model normalization. Live feature-lane focus stays on the remaining handwritten/source unblock branches rather than re-opening this already-satisfied frontier leaf.",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "ccp-security-patch-azurelinux-source-spec-frontier-20260619",
+      "parent_id": "feature-knowledge-and-specs",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Explore source/material for path.ccp-security-patch.azurelinux and build up the source-grounded spec/replay frontier before scheduling more slow staging execution. Create missing feature/spec/replay artifacts from source material. Feed the result into the runner lane for later high-value verification.",
+      "inputs": [],
+      "outputs": [
+        "features/",
+        "specs/",
+        "replays/",
+        "evidence/archive/"
+      ],
+      "acceptance": [
+        "Feature/source packet identifies the source scenario and expected behavior.",
+        "A runnable spec and replay script are created or an exact external blocker is recorded.",
+        "The new work is linked to the knowledge-model path and ready for runner verification."
+      ],
+      "forbidden": [
+        "Do not treat dry-run output as live verification.",
+        "Do not hard-code credentials, subscription IDs, or tenant-specific secrets.",
+        "Do not bypass project runner artifacts when executing live staging work."
+      ],
+      "conflict_scope": [
+        "feature:ccp-security-patch-azurelinux",
+        "path:path.ccp-security-patch.azurelinux"
+      ],
+      "context": {
+        "seeded_by": "model-gap-frontier",
+        "seed_reason": "planner-left-underfilled-frontier",
+        "model_path_id": "path.ccp-security-patch.azurelinux",
+        "feature_id": "ccp-security-patch-azurelinux",
+        "model_status": "environment",
+        "seed_preference": "execution",
+        "acceptance_note": "Accepted the 2026-06-19 frontier refresh: source/spec/replay/model linkage for path.ccp-security-patch.azurelinux already exists, fresh local --check passed 16/16, and the durable note records that any future execution must use a unique run-id. This leaf's source/spec frontier goal is satisfied and should not remain live review work."
+      },
+      "trace": {
+        "created_at": "2026-06-19T20:27:14.590Z",
+        "created_by": "model-gap-frontier-seeder",
+        "current_attempt_id": "a_ccp-security-patch-azurelinux-source-spec-frontier-20260619_20260619202714",
+        "assigned_at": "2026-06-19T20:27:14.612Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_ccp-security-patch-azurelinux-source-spec-frontier-20260619",
+        "worker_started_attempt_id": "a_ccp-security-patch-azurelinux-source-spec-frontier-20260619_20260619202714",
+        "worker_started_at": "2026-06-19T20:27:14.973Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Refreshed the CCP security patch AzureLinux source/spec frontier by verifying the existing feature/spec/replay/model linkage, running a fresh local replay check (16/16 pass), and writing a new durable archive note that captures the exact runner-lane resume condition after the 2026-06-19 westus2/local run-id collision.",
+        "last_worker_completed_at": "2026-06-19T20:27:14.989Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-19T20:28:11.939Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted the 2026-06-19 frontier refresh: source/spec/replay/model linkage for path.ccp-security-patch.azurelinux already exists, fresh local --check passed 16/16, and the durable note records that any future execution must use a unique run-id. This leaf's source/spec frontier goal is satisfied and should not remain live review work."
+      },
+      "session_id": "s_task_ccp-security-patch-azurelinux-source-spec-frontier-20260619",
+      "session_history": [
+        "s_task_ccp-security-patch-azurelinux-source-spec-frontier-20260619"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-19T20:28:11.939Z",
+      "done_by": "task-tree-tool",
+      "status": "done"
+    }
+  ]
+}

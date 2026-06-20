@@ -1,0 +1,58 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-19T19:49:52.906Z",
+  "reason": "bottom-up cleanup after large lane rollups",
+  "parent_id": "feature-knowledge-and-specs",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "source-discovery",
+      "goal": "Explore Go e2ev3 source code to discover AKS feature intent, scenarios, and input/expectation boundaries",
+      "parent_id": "feature-knowledge-and-specs",
+      "children": [],
+      "summary": "14 feature families discovered from Go e2ev3. Source inventory covers managedsystem-pool, app-routing, workload-identity, oidc-issuer, bootstrap-profile, KMS, deployment-safeguards, planned-maintenance, VPA/KEDA, image-cleaner, node-restriction, node-autoprovision, virtualmachines, jwt-authenticator, trusted-access.",
+      "evidence": [
+        "features/*.yaml",
+        "evidence/archive/go-e2e-source-feature-exploration-*.md"
+      ],
+      "reusable_for": [
+        "Adding new features: read Go e2ev3 source, extract scenario names, identify input/expectation variables"
+      ],
+      "created_at": "2026-06-13T08:30:39.007694+00:00",
+      "updated_at": "2026-06-14T13:37:57.602819+00:00",
+      "trace": {
+        "accepted_at": "2026-06-14T13:37:57.602819+00:00",
+        "accepted_by": "watchdog-reconcile",
+        "acceptance_note": "All children terminal. Lane complete at project ceiling (262 features, 266 paths, 89.8%).",
+        "acceptance_notes": "All 4 children accepted. Source discovery complete across 14+ AKS feature families from Go e2ev3 source.",
+        "rolled_up_at": "2026-06-19T19:49:52.905Z",
+        "rolled_up_by": "task-tree-tool"
+      },
+      "reason": "Gap audit found 6 missing sigs and 3 partial sigs with ~300 undiscovered plan files",
+      "archive_summary": "14 feature families discovered from Go e2ev3. Source inventory covers managedsystem-pool, app-routing, workload-identity, oidc-issuer, bootstrap-profile, KMS, deployment-safeguards, planned-maintenance, VPA/KEDA, image-cleaner, node-restriction, node-autoprovision, virtualmachines, jwt-authenticator, trusted-access.",
+      "state": "done",
+      "resolution": "completed",
+      "context": {
+        "archived_done_leaf_count": 4,
+        "rollup_archives": [
+          {
+            "archive": "tasks/archive/done-leaves-20260619194952905.json",
+            "archived": 2,
+            "at": "2026-06-19T19:49:52.905Z",
+            "reason": "bottom-up cleanup after large lane rollups",
+            "task_ids": [
+              "batch-6-source-exploration",
+              "source-gap-audit-20260614"
+            ]
+          },
+          {
+            "archive": "tasks/archive/done-leaves-20260614164317.json",
+            "archived": 2,
+            "at": "2026-06-14T16:43:17.017Z"
+          }
+        ]
+      },
+      "status": "done"
+    }
+  ]
+}

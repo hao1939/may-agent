@@ -1,0 +1,65 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-19T19:49:52.904Z",
+  "reason": "bottom-up cleanup after large lane rollups",
+  "parent_id": "feature-knowledge-and-specs",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "feature-extraction",
+      "goal": "Create source-grounded feature packets with design refs, API specs, user docs, Go e2ev3 source refs, and judgment rules",
+      "parent_id": "feature-knowledge-and-specs",
+      "children": [],
+      "summary": "14 top-level feature packets + 18 sub-packets created. Each packet documents ground truth, known contradictions, and judgment rules for classifying failures. Schema: features/SCHEMA.md.",
+      "evidence": [
+        "features/*.yaml",
+        "features/SCHEMA.md"
+      ],
+      "reusable_for": [
+        "Feature packet schema: features/SCHEMA.md",
+        "Ground truth format: design/api/userDocs/goE2E/implementation refs"
+      ],
+      "created_at": "2026-06-13T08:30:39.007694+00:00",
+      "updated_at": "2026-06-13T08:30:39.007694+00:00",
+      "trace": {
+        "accepted_at": "2026-06-14T02:27:14.747Z",
+        "accepted_by": "planner",
+        "acceptance_note": "All children terminal. Lane complete at project ceiling (262 features, 266 paths, 89.8%).",
+        "rolled_up_at": "2026-06-19T19:49:52.904Z",
+        "rolled_up_by": "task-tree-tool"
+      },
+      "state": "done",
+      "resolution": "completed",
+      "context": {
+        "archived_done_leaf_count": 7,
+        "rollup_archives": [
+          {
+            "archive": "tasks/archive/done-leaves-20260619194952904.json",
+            "archived": 1,
+            "at": "2026-06-19T19:49:52.904Z",
+            "reason": "bottom-up cleanup after large lane rollups",
+            "task_ids": [
+              "batch-6-feature-packets"
+            ]
+          },
+          {
+            "archive": "tasks/archive/done-leaves-20260619194952897.json",
+            "archived": 2,
+            "at": "2026-06-19T19:49:52.897Z",
+            "reason": "bottom-up cleanup after large lane rollups",
+            "task_ids": [
+              "batch-7-feature-packets",
+              "feature-packet-batch-3-new-families"
+            ]
+          },
+          {
+            "archive": "tasks/archive/done-leaves-20260614164317.json",
+            "archived": 4,
+            "at": "2026-06-14T16:43:17.017Z"
+          }
+        ]
+      },
+      "status": "done"
+    }
+  ]
+}

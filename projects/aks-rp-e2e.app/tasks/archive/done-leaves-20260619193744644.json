@@ -1,0 +1,213 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-19T19:37:44.645Z",
+  "reason": "bottom-up branch recursion trial after recovery compaction fix",
+  "archived": 5,
+  "tasks": [
+    {
+      "id": "expansion-replay-aad-rbac",
+      "parent_id": "expansion-replay-execution-batch",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Execute the 7 aad-rbac replays in check mode: aad-rbac-azure-rbac-authorization, aad-rbac-azure-rbac-automatic-sku, aad-rbac-managed-v2-lifecycle, aad-rbac-nonaad-reset, aad-rbac-nonaad-to-aadv2-migration, aad-rbac-rbac-disabled-to-aadv2, aad-rbac-run-command-access. Collect evidence JSON for each. Record pass/fail/error per replay.",
+      "inputs": [],
+      "outputs": [
+        "runs/"
+      ],
+      "acceptance": [
+        "All 7 aad-rbac replays executed in check mode. Evidence JSON produced. Summary table of pass/fail/error. bun run check passes."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "expansion-replay-aad-rbac"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-13T19:09:13.136Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_expansion-replay-aad-rbac_20260613190939",
+        "assigned_at": "2026-06-13T19:09:39.807Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_expansion-replay-aad-rbac",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Executed all 7 aad-rbac replays in check mode. All 7 passed with exit code 0. Evidence JSON produced for each replay under `evidence/archive/` with `aad-rbac-check-20260613T191000Z_` prefix. Results JSONL and summary markdown written to `runs/executions/aad-rbac-check-20260613T191000Z/`. `bun run check` passes cleanly.",
+        "last_worker_completed_at": "2026-06-13T19:13:31.554Z",
+        "last_worker_evidence": []
+      },
+      "session_history": [
+        "s_task_expansion-replay-aad-rbac"
+      ],
+      "state": "done",
+      "resolution": "completed",
+      "status": "done"
+    },
+    {
+      "id": "expansion-replay-cluster-autoscaler",
+      "parent_id": "expansion-replay-execution-batch",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Execute the 14 cluster-autoscaler replays in check mode: cluster-autoscaler-cse-failure-fast-handling, cluster-autoscaler-cse-failure-not-disruptive, cluster-autoscaler-force-delete-long-unregistered, cluster-autoscaler-long-unregistered-nodes, cluster-autoscaler-mincount-fail-provision, cluster-autoscaler-mincount-recovery, cluster-autoscaler-mixed-agent-pool-autoscale, cluster-autoscaler-overscale-node-stability, cluster-autoscaler-provisioning-request, cluster-autoscaler-scale-from-zero-labels-fips, cluster-autoscaler-scale-from-zero-labels-manageddisks, cluster-autoscaler-scale-from-zero-taints, cluster-autoscaler-soft-taint-removal, cluster-autoscaler-statefulset-pdb. Collect evidence JSON for each. Record pass/fail/error per replay.",
+      "inputs": [],
+      "outputs": [
+        "runs/"
+      ],
+      "acceptance": [
+        "All 14 cluster-autoscaler replays executed in check mode. Evidence JSON produced. Summary table of pass/fail/error. bun run check passes."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "expansion-replay-cluster-autoscaler"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-13T19:09:27.217Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_expansion-replay-cluster-autoscaler_20260613190945",
+        "assigned_at": "2026-06-13T19:09:45.389Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_expansion-replay-cluster-autoscaler",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Executed all 14 cluster-autoscaler replays in check mode. All 14 passed with 70/70 total assertions passing. Evidence JSON produced for each, consolidated batch evidence and summary table written to runs/runs/cas-check-20260613T191316Z/. bun run check passes.",
+        "last_worker_completed_at": "2026-06-13T19:14:45.628Z",
+        "last_worker_evidence": []
+      },
+      "session_history": [
+        "s_task_expansion-replay-cluster-autoscaler"
+      ],
+      "state": "done",
+      "resolution": "completed",
+      "status": "done"
+    },
+    {
+      "id": "expansion-replay-custom-node-config",
+      "parent_id": "expansion-replay-execution-batch",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Execute the 2 custom-node-config replays in check mode: custom-node-config-eviction-reserved-create, custom-node-config-kubelet-os-create. Collect evidence JSON for each. Record pass/fail/error per replay.",
+      "inputs": [],
+      "outputs": [
+        "runs/"
+      ],
+      "acceptance": [
+        "Both custom-node-config replays executed in check mode. Evidence JSON produced. Summary table of pass/fail/error. bun run check passes."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "expansion-replay-custom-node-config"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-13T19:09:27.065Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_expansion-replay-custom-node-config_20260613190939",
+        "assigned_at": "2026-06-13T19:09:39.703Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_expansion-replay-custom-node-config",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Executed both custom-node-config replays in check mode. custom-node-config-eviction-reserved-create: pass (7/7 assertions). custom-node-config-kubelet-os-create: pass (8/8 assertions). Evidence JSON produced for each. Summary table and JSONL results written to runs/executions/batch-cnc-20260613T191000Z/. `bun run check` passes.",
+        "last_worker_completed_at": "2026-06-13T19:12:50.308Z",
+        "last_worker_evidence": []
+      },
+      "session_history": [
+        "s_task_expansion-replay-custom-node-config"
+      ],
+      "state": "done",
+      "resolution": "completed",
+      "status": "done"
+    },
+    {
+      "id": "expansion-replay-localdns",
+      "parent_id": "expansion-replay-execution-batch",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Execute the 8 localdns replays in check mode: localdns-auto-default, localdns-cluster-topology, localdns-cni-matrix, localdns-hosts-plugin, localdns-lifecycle, localdns-network-policy-coexistence, localdns-os-arch-matrix, localdns-serve-stale. Collect evidence JSON for each. Record pass/fail/error per replay.",
+      "inputs": [],
+      "outputs": [
+        "runs/"
+      ],
+      "acceptance": [
+        "All 8 localdns replays executed in check mode. Evidence JSON produced. Summary table of pass/fail/error. bun run check passes."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "expansion-replay-localdns"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-13T19:09:27.167Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_expansion-replay-localdns_20260613190939",
+        "assigned_at": "2026-06-13T19:09:39.753Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_expansion-replay-localdns",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Executed all 8 localdns replays in check mode. All 8 passed: localdns-auto-default, localdns-cluster-topology, localdns-cni-matrix, localdns-hosts-plugin, localdns-lifecycle, localdns-network-policy-coexistence, localdns-os-arch-matrix, localdns-serve-stale. Evidence JSON produced for each. `bun run check` passes clean.",
+        "last_worker_completed_at": "2026-06-13T19:12:39.398Z",
+        "last_worker_evidence": []
+      },
+      "session_history": [
+        "s_task_expansion-replay-localdns"
+      ],
+      "state": "done",
+      "resolution": "completed",
+      "status": "done"
+    },
+    {
+      "id": "expansion-replay-ossku-migration",
+      "parent_id": "expansion-replay-execution-batch",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Execute the 9 ossku-migration replays in check mode: ossku-migration-azurelinux-to-azurelinux3, ossku-migration-azurelinux-to-ubuntu, ossku-migration-azurelinux3-to-azurelinux, ossku-migration-mariner-to-azurelinux, ossku-migration-ubuntu-to-azurelinux, ossku-migration-ubuntu-to-mariner, ossku-migration-ubuntu2204-to-ubuntu2404-failed, ossku-migration-ubuntu2204-to-ubuntu2404, ossku-migration-ubuntu2404-to-ubuntu2204. Collect evidence JSON for each. Record pass/fail/error per replay.",
+      "inputs": [],
+      "outputs": [
+        "runs/"
+      ],
+      "acceptance": [
+        "All 9 ossku-migration replays executed in check mode. Evidence JSON produced. Summary table of pass/fail/error. bun run check passes."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "expansion-replay-ossku-migration"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-13T19:09:27.116Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_expansion-replay-ossku-migration_20260613190945",
+        "assigned_at": "2026-06-13T19:09:45.440Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_expansion-replay-ossku-migration",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Executed all 9 ossku-migration replays in check mode: all 9 pass (0 fail, 0 error). Evidence JSON files produced per replay, results JSONL, and summary markdown written to runs/executions/ossku-migration-batch-20260613T191000Z/. `bun run check` passes clean.",
+        "last_worker_completed_at": "2026-06-13T19:13:17.768Z",
+        "last_worker_evidence": []
+      },
+      "session_history": [
+        "s_task_expansion-replay-ossku-migration"
+      ],
+      "state": "done",
+      "resolution": "completed",
+      "status": "done"
+    }
+  ]
+}

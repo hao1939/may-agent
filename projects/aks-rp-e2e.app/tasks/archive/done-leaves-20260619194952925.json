@@ -1,0 +1,48 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-19T19:49:52.925Z",
+  "reason": "bottom-up cleanup after large lane rollups",
+  "parent_id": "project",
+  "archived": 1,
+  "tasks": [
+    {
+      "id": "problem-result-escalation-leak",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "work",
+      "priority": "P1",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Problem-solver results (resolved/escalated/unknown) should be consumed by the planner in the owner workflow, not leak out as top-level escalation events. The planner should reconcile them into the task tree — retry, accept, block, or supersede the affected task branch.",
+      "context": {
+        "problem": "19 of 33 pending escalations were actually successful work results from the problem-solver. They reported as escalation.created because project.problem.unknown/escalated events bypass the planner and leak to the escalation handler.",
+        "escalation_chain": "worker → problem-solver → planner → may → human. Each level handles what it can. Currently the planner doesn't consume problem results, so they skip straight to may/human escalation.",
+        "fix_direction": "The app's event routing (app.ts onEvent or a workflowHandler) should handle project.problem.resolved/escalated/unknown by waking the planner with the result context. The planner reconciles: retry affected tasks (resolved), mark blocker (escalated), or investigate (unknown). Only if the planner can't resolve should it escalate further.",
+        "evidence": "triage-2026-06-19: 19 of 33 pending escalations were aks-explorer work results (wrote evidence/archive/...) not real human-needing emergencies.",
+        "archived_done_leaf_count": 1,
+        "rollup_archives": [
+          {
+            "archive": "tasks/archive/done-leaves-20260619194952924.json",
+            "archived": 1,
+            "at": "2026-06-19T19:49:52.924Z",
+            "reason": "bottom-up cleanup after large lane rollups",
+            "task_ids": [
+              "problem-result-routing-planner-wake-fix-20260619"
+            ]
+          }
+        ]
+      },
+      "acceptance": [
+        "project.problem.resolved/escalated/unknown events are consumed by the planner workflow",
+        "Planner reconciles problem results into the task tree (retry, block, supersede)",
+        "Only genuinely unresolvable problems reach may or human as escalations",
+        "Escalation.pending-count stays near zero during normal operation"
+      ],
+      "status": "done",
+      "trace": {
+        "rolled_up_at": "2026-06-19T19:49:52.924Z",
+        "rolled_up_by": "task-tree-tool"
+      }
+    }
+  ]
+}

@@ -6,6 +6,10 @@ The task tree is the project owner's durable thinking map. It shows how the
 project is understood, how the goal is decomposed, what work is active, what was
 learned, and where humans can steer the project.
 
+For the compact end-to-end app/project control-loop model, see
+`app-project-integrity.md`. This document is the task-tree schema and tool
+contract beneath that mechanism.
+
 It is not a scheduler queue, retry log, or workflow attempt history. Runtime
 attempts belong in infra traces. Domain facts belong in the domain workspace.
 The task tree links to both, but its job is to keep the project reasoning
@@ -76,6 +80,25 @@ blocked -> backlog       (resume condition satisfied)
 backlog -> done          (rare owner-recorded fact, milestone, or cancellation)
 ```
 
+Only `done` is final. Every other state must have an active driver that moves
+the task toward `done` or records the exact wake condition needed to continue.
+
+```text
+Every non-done task must either:
+1. be actively executing,
+2. be owner-reviewable now,
+3. have a concrete event or resume condition that will wake the owner later, or
+4. be invalid and repaired by owner review.
+```
+
+| State | Driver |
+| --- | --- |
+| `backlog` | Owner assigns if runnable. If not runnable, owner repairs dependency, splits, asks, or records a terminal `done` disposition. |
+| `active` | Worker emits `project.task.completed`; stale-active watchdog requeues or wakes owner. |
+| `review` | Owner accepts to `done`, rejects to `backlog`, creates follow-up/problem work, or records a precise blocker. |
+| `blocked` | Owner periodically rechecks, unblocks, creates problem-solving work, sends/escalates an ask, or records a terminal `done` disposition. |
+| `done` | Final project knowledge. It may be rolled up or compacted, but not worked again as open work. |
+
 Parent nodes use the same five states. A parent with children is not in a
 special "decomposed" state. Its state is the owner's current rollup judgment for
 that branch:
@@ -101,6 +124,7 @@ The owner owns all project judgment:
 - decides whether a failure means rework, retry, split, replacement, or block
 - confirms real external blockers
 - assigns runnable backlog leaves
+- drives every non-done task toward a final state or exact next wake condition
 - folds human steering and problem-solver results into the tree
 
 The owner should keep moving until available worker capacity is filled or the
@@ -216,6 +240,48 @@ When a parent becomes `done`, it must carry a useful summary of what the branch
 proved or learned. Do not hide useful milestones. Archive only low-value
 mechanical detail after the parent summary preserves the understanding.
 
+## Blocked Frontier Review
+
+`blocked` is not a final state and not a trash can. It means the owner
+confirmed a real blocker and recorded an exact resume condition. A blocked task
+can stay blocked temporarily, but every owner review should try to push it
+toward final state: solve the local cause, create follow-up work, escalate or
+send the external ask, or accept a terminal/product/environment disposition as
+`done` when the project has enough evidence.
+
+When blocked-task metrics, watchdogs, human steering, or focus reviews show that
+blocked work is dominating the frontier, the project should wake the owner for a
+blocked-frontier review before escalating to a human. The owner reviews a compact
+sample of blocked and dependency-waiting leaves and chooses one of four actions:
+
+- create or link one visible problem/unblock task for a local, tooling,
+  environment, or runner root cause
+- unblock or requeue tasks whose resume condition is now satisfied
+- convert proven terminal/product/environment dispositions to `done` with
+  evidence and retest condition
+- escalate only when another owner or human must provide input or take action
+- keep a true external wait blocked only after making the ask/send-ready state,
+  owner, resume condition, and next review trigger explicit
+
+Dependency-waiting backlog is part of the same review. If the dependency is
+missing, already done, stale, or blocked by a locally fixable problem, the owner
+repairs the branch instead of leaving the task invisible behind a dependency
+edge. If the dependency is a true source-holder/operator/product wait, the owner
+keeps the dependency blocked and ensures the outgoing ask or resume condition is
+clear.
+
+Workers do not decide this. The owner decides what the blocker means, and the
+task-tree tool only preserves the structure.
+
+Large or long-running projects should also schedule a regular blocked-frontier
+owner review. This is not a separate controller and it should not auto-retry
+blocked leaves. It is just a periodic owner wake with the current tree packet:
+the owner rechecks whether resume conditions changed, creates problem-solving
+work for locally fixable blockers, escalates or sends asks for external
+blockers, accepts terminal dispositions when evidence is sufficient, and moves
+to unrelated runnable work only after the sampled blockers have a clear path
+toward closure.
+
 ## Live Tree Hygiene
 
 The live task tree should stay focused and readable. It is the project owner's
@@ -289,6 +355,36 @@ tree.rollup(parentId, summary);
 tree.compactDone(parentId, { archiveDoneChildren: true });
 ```
 
+In command form, the normal owner path is:
+
+```bash
+bun run task-tree rollup-parent <parent-id> \
+  --summary "what the parent now knows and what remains" \
+  --archive-done <child-id> \
+  --archive-done <child-id>
+```
+
+This command does not decide what matters. The owner agent decides the summary
+and which completed children are low-value enough to fold away. The command only
+performs the safe archive operation.
+
+For oversized legacy trees, a batch compaction command may exist:
+
+```bash
+bun run task-tree compact-done --limit 200
+```
+
+Batch compaction is for recovery from already-noisy trees. Normal project
+progress should compact while rolling up a parent after child review.
+
+Batch compaction must run bottom-up. It should choose the deepest safe done
+leaf group under one parent, archive that group, repair the immediate parent,
+then recompute the tree. If that parent becomes a safe done leaf, compact that
+parent next before jumping sideways to another branch. This matters because the
+parent may become compactable only after its lower-level detail has been folded
+away. A batch command that grabs arbitrary done leaves across the whole tree
+produces a noisy and misleading shape.
+
 The tool should enforce only structural safety:
 
 - never archive active, review, backlog, or blocked leaves
@@ -296,6 +392,8 @@ The tool should enforce only structural safety:
   dependency is first rewritten by the owner
 - never archive children unless the parent keeps a summary and archive link
 - preserve parent/child integrity, root integrity, and kanban projections
+- write each archive to a unique path, even when multiple rollups happen in the
+  same second
 - write an audit journal entry with archive path, count, parent id, and reason
 
 The tool should not inspect domain content to decide whether a child is
@@ -328,6 +426,35 @@ Useful metrics for triggering hygiene:
 These metrics are signals. A breach should wake the owner with a compact
 request such as: "tidy the task tree before continuing planning." The owner
 still decides the actual rollup.
+
+### Project Hygiene Checks
+
+`tree.check()` stays structural. It should validate the tree frame, links,
+states, references, and projections. It should not understand domain-specific
+truth such as whether an AKS feature path is truly terminal.
+
+Project apps may add warning-level hygiene checks that combine task-tree context
+with domain model state. These checks should not block generic task-tree
+operations, but they should wake the owner when the tree and domain model appear
+misaligned.
+
+Example for `aks-rp-e2e`:
+
+- a backlog or blocked retry task references a model path
+- the referenced model path has `terminal=true` or `verdictFinal=true`
+- the task goal/blocker says the path should be retried, reopened, or
+  reverified
+
+That should produce a project hygiene warning, not a tree integrity failure:
+
+```text
+model verdict may be stale; owner should reconcile the model path before retry
+planning
+```
+
+This catches domain issues such as stale terminal verdicts preventing legitimate
+retry work, while preserving the core rule that the task-tree tool manages
+structure and the project owner decides meaning.
 
 ## Human Steering
 

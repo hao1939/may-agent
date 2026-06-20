@@ -60,10 +60,16 @@ async function routeEvaluationEvent(
     );
   }
 
-  // metric.breach and metric.recovered are routed by the project-app-loader's
-  // default metric feedback routing (isOwnerMetricFeedback). No explicit
-  // subscription or onEvent handler needed — the loader routes evaluator-owned
-  // metrics to this app's owner automatically.
+  if (event.type === "metric.breach" || event.type === "metric.recovered") {
+    return ctx.emit(
+      evaluationReviewRequested(
+        event.type === "metric.breach" ? "metric-breach" : "metric-recovered",
+        {
+          metric: eventDetails(event),
+        },
+      ),
+    );
+  }
 
   if (event.type === "project.action.invoked") {
     return ctx.emit(
@@ -243,6 +249,8 @@ export default defineProjectApp({
     "evaluation.tick",
     "evaluation.aftermath.scan",
     "evaluation.deep.scan",
+    { type: "metric.breach" },
+    { type: "metric.recovered" },
     { type: "project.owner.requested", project: projectId },
     { type: "project.planning.requested", project: projectId },
     { type: "project.action.invoked", project: projectId },

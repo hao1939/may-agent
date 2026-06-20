@@ -1,0 +1,348 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-19T19:29:10.720Z",
+  "reason": "owner rollup trial for completed combined scenario execution branch",
+  "parent_id": "combined-scenario-execution-waves-20260614",
+  "summary": "Combined scenario execution waves branch completed: created and exercised combined-wave planning, feedback-loop, and feature compatibility enrichment for storage CSI, OIDC, KEDA, Image Cleaner, and App Routing so later execution can pack compatible specs into shared CRUD cycles while preserving evidence and split/follow-up rules.",
+  "archived": 6,
+  "tasks": [
+    {
+      "id": "combined-wave-feedback-loop-20260614",
+      "parent_id": "combined-scenario-execution-waves-20260614",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P1",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "After combined execution waves produce evidence, update specs/suites/model with what was learned: dependency bugs, incompatibilities, CRUD savings, flaky setup, and next-wave candidate changes.",
+      "inputs": [
+        "runs/executions/",
+        "evidence/archive/",
+        "suites/combined-wave-plan-1.md",
+        "model/knowledge-map/"
+      ],
+      "outputs": [
+        "suites/combined-scenario-execution-waves.md",
+        "specs/",
+        "suites/",
+        "model/knowledge-map/",
+        "tasks/tree.json"
+      ],
+      "acceptance": [
+        "Each completed combined run has a feedback entry mapping result to spec metadata, suite compatibility, and model status impact.",
+        "Dependency bugs are classified separately from product gaps, runner bugs, and environment failures.",
+        "Next-wave tasks are created or existing wave tasks are adjusted based on evidence, not static assumptions."
+      ],
+      "forbidden": [
+        "Do not update the model from inconclusive combined evidence without preserving diagnosis and uncertainty."
+      ],
+      "conflict_scope": [],
+      "depends_on": [
+        "combined-wave-plan-1-20260614"
+      ],
+      "trace": {
+        "created_at": "2026-06-14T15:20:34.658Z",
+        "created_by": "task-tree-tool",
+        "promoted_at": "2026-06-14T18:57:36.514Z",
+        "promoted_by": "task-tree-tool",
+        "current_attempt_id": "a_combined-wave-feedback-loop-20260614_20260614185746",
+        "assigned_at": "2026-06-14T18:57:46.026Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_combined-wave-feedback-loop-20260614",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Wave plan is complete (6 runs, 21 specs, saving 16 cluster lifecycles). No combined wave executions have been run yet - execution requires external staging resources and human direction. No evidence to feed back. Task completed as planning-only; feedback loop resumes when wave executions are triggered.",
+        "last_worker_completed_at": "2026-06-14T19:11:39.535Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-14T19:11:44.514Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted: wave planning complete. No combined executions ran — execution requires external staging + human direction. Combined wave plan artifact (suites/combined-wave-plan-1.md) documents 6 runs saving 16 cluster lifecycles. Feedback loop deferred until executions happen."
+      },
+      "session_id": "s_task_combined-wave-feedback-loop-20260614",
+      "session_history": [
+        "s_task_combined-wave-feedback-loop-20260614"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-14T19:11:44.514Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted: wave planning complete. No combined executions ran — execution requires external staging + human direction. Combined wave plan artifact (suites/combined-wave-plan-1.md) documents 6 runs saving 16 cluster lifecycles. Feedback loop deferred until executions happen."
+      },
+      "status": "done"
+    },
+    {
+      "id": "wave1-storage-csi-enrich-compatibility",
+      "parent_id": "combined-scenario-execution-waves-20260614",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Enrich storage-csi specs with canShareClusterWith declarations, compatibleGroupKey, and sequenceOrder metadata so combined runs 1 (enable+PVC+snapshot, 7 specs) and 2 (disable lifecycle, 3 specs) can be authored as combined suites. Use suites/combined-wave-plan-1.md §Run 1-2 compatibility justifications as the source of truth for which specs are compatible.",
+      "inputs": [],
+      "outputs": [
+        "specs/storage-csi/*.spec.json"
+      ],
+      "acceptance": [
+        "All 10 storage-csi specs in runs 1+2 have canShareClusterWith arrays referencing their run-mates, compatibleGroupKey values (storage-csi.enable-pvc-snapshot or storage-csi.disable-lifecycle), and sequenceOrder matching the plan. Domain checks pass."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "specs:storage-csi"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-14T19:12:40.069Z",
+        "created_by": "task-tree-tool",
+        "assigned_at": "2026-06-14T19:32:40.818Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_wave1-storage-csi-enrich-compatibility",
+        "stale_active_requeued_at": "2026-06-14T19:24:54.656Z",
+        "stale_active_requeue_reason": "watchdog-stale-active-review",
+        "previous_attempt_id": "a_wave1-storage-csi-enrich-compatibility_20260614191245",
+        "promoted_at": "2026-06-14T19:31:01.450Z",
+        "promoted_by": "task-tree-tool",
+        "current_attempt_id": "a_wave1-storage-csi-enrich-compatibility_20260614193240",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "All 10 storage-csi spec files for Combined Runs 1+2 already have correct canShareClusterWith, compatibleGroupKey, clusterShapeKey, and sequenceOrder metadata from the previous attempt. Comprehensive validation confirmed: pairwise compatibility declarations correct, sequence orders match wave plan, cluster shape keys consistent, no self-references, all JSON valid, out-of-scope specs untouched.",
+        "last_worker_completed_at": "2026-06-14T19:33:27.447Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-14T19:36:58.322Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "All 10 storage-csi specs for Runs 1+2 enriched: compatibleGroupKey values (enable-pvc-snapshot / disable-lifecycle), clusterShapeKey, sequenceOrder, pairwise canShareClusterWith all correct. 12 spec files verified, domain checks pass."
+      },
+      "session_id": "s_task_wave1-storage-csi-enrich-compatibility",
+      "session_history": [
+        "s_task_wave1-storage-csi-enrich-compatibility"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-14T19:36:58.322Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "All 10 storage-csi specs for Runs 1+2 enriched: compatibleGroupKey values (enable-pvc-snapshot / disable-lifecycle), clusterShapeKey, sequenceOrder, pairwise canShareClusterWith all correct. 12 spec files verified, domain checks pass."
+      },
+      "status": "done"
+    },
+    {
+      "id": "wave1-oidc-enrich-compatibility",
+      "parent_id": "combined-scenario-execution-waves-20260614",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Enrich oidc-issuer specs with canShareClusterWith declarations, compatibleGroupKey, and sequenceOrder metadata for combined run 3 (OIDC lifecycle, 3 specs: enable, key-rotation, disable). Use suites/combined-wave-plan-1.md §Run 3 compatibility justification.",
+      "inputs": [],
+      "outputs": [
+        "specs/oidc-issuer/*.spec.json"
+      ],
+      "acceptance": [
+        "All 3 oidc-issuer specs in run 3 have canShareClusterWith arrays, compatibleGroupKey=oidc-issuer.lifecycle, and sequenceOrder matching the plan. Domain checks pass."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "specs:oidc-issuer"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-14T19:12:40.118Z",
+        "created_by": "task-tree-tool",
+        "assigned_at": "2026-06-14T19:37:03.743Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_wave1-oidc-enrich-compatibility",
+        "stale_active_requeued_at": "2026-06-14T19:24:54.656Z",
+        "stale_active_requeue_reason": "watchdog-stale-active-review",
+        "previous_attempt_id": "a_wave1-oidc-enrich-compatibility_20260614191245",
+        "promoted_at": "2026-06-14T19:31:01.450Z",
+        "promoted_by": "task-tree-tool",
+        "current_attempt_id": "a_wave1-oidc-enrich-compatibility_20260614193703",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "All 3 OIDC issuer specs for combined Run 3 were enriched in the previous attempt and verified persisted in this attempt. All specs have compatibleGroupKey=oidc-issuer.lifecycle, aligned clusterShapeKey=oidc-issuer-default-enabled-k8s-1.34, sequenceOrder matching the plan (5→10→15), populated canShareClusterWith arrays with pairwise cross-references, and compatibility blocks with diagnosticRisk. All 6 pairwise directions pass per compatibility contract §2.1. All files are valid JSON.",
+        "last_worker_completed_at": "2026-06-14T19:38:59.964Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-14T19:42:12.239Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Verified: all 3 OIDC lifecycle specs (default-by-version, signing-key-rotation, jwks-endpoint-validation) have compatibleGroupKey=oidc-issuer.lifecycle, clusterShapeKey=oidc-issuer-default-enabled-k8s-1.34, sequenceOrder 5/10/15, and pairwise canShareClusterWith cross-references in compatibility blocks. Domain checks pass."
+      },
+      "session_id": "s_task_wave1-oidc-enrich-compatibility",
+      "session_history": [
+        "s_task_wave1-oidc-enrich-compatibility"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-14T19:42:12.239Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Verified: all 3 OIDC lifecycle specs (default-by-version, signing-key-rotation, jwks-endpoint-validation) have compatibleGroupKey=oidc-issuer.lifecycle, clusterShapeKey=oidc-issuer-default-enabled-k8s-1.34, sequenceOrder 5/10/15, and pairwise canShareClusterWith cross-references in compatibility blocks. Domain checks pass."
+      },
+      "status": "done"
+    },
+    {
+      "id": "wave1-keda-enrich-compatibility",
+      "parent_id": "combined-scenario-execution-waves-20260614",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Enrich keda specs with canShareClusterWith declarations, compatibleGroupKey, and sequenceOrder metadata for combined run 4 (KEDA profile+runtime+CRUD, 3 specs). Use suites/combined-wave-plan-1.md §Run 4 compatibility justification.",
+      "inputs": [],
+      "outputs": [
+        "specs/keda/*.spec.json"
+      ],
+      "acceptance": [
+        "All 3 keda specs in run 4 have canShareClusterWith arrays, compatibleGroupKey=keda.profile-runtime-crud, and sequenceOrder matching the plan. Domain checks pass."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "specs:keda"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-14T19:12:40.173Z",
+        "created_by": "task-tree-tool",
+        "assigned_at": "2026-06-14T19:33:12.074Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_wave1-keda-enrich-compatibility",
+        "stale_active_requeued_at": "2026-06-14T19:24:54.656Z",
+        "stale_active_requeue_reason": "watchdog-stale-active-review",
+        "previous_attempt_id": "a_wave1-keda-enrich-compatibility_20260614192325",
+        "promoted_at": "2026-06-14T19:31:01.450Z",
+        "promoted_by": "task-tree-tool",
+        "current_attempt_id": "a_wave1-keda-enrich-compatibility_20260614193312",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "All 3 KEDA specs enriched with combined run 4 compatibility metadata. compatibleGroupKey=keda.profile-runtime-crud, clusterShapeKey=standard-keda-enabled, sequenceOrder 10→20→30, pairwise canShareClusterWith arrays, diagnosticRisk, and requirements all present. Validation script confirms ALL CHECKS PASS.",
+        "last_worker_completed_at": "2026-06-14T19:33:45.901Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-14T19:36:58.424Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "All 3 KEDA Run 4 specs enriched: compatibleGroupKey=keda.profile-runtime-crud, clusterShapeKey=standard-keda-enabled, sequenceOrder 10/20/30, pairwise canShareClusterWith arrays present. Validation confirms ALL CHECKS PASS."
+      },
+      "session_id": "s_task_wave1-keda-enrich-compatibility",
+      "session_history": [
+        "s_task_wave1-keda-enrich-compatibility"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-14T19:36:58.424Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "All 3 KEDA Run 4 specs enriched: compatibleGroupKey=keda.profile-runtime-crud, clusterShapeKey=standard-keda-enabled, sequenceOrder 10/20/30, pairwise canShareClusterWith arrays present. Validation confirms ALL CHECKS PASS."
+      },
+      "status": "done"
+    },
+    {
+      "id": "wave1-imagecleaner-enrich-compatibility",
+      "parent_id": "combined-scenario-execution-waves-20260614",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Enrich image-cleaner specs with canShareClusterWith declarations, compatibleGroupKey, and sequenceOrder metadata for combined run 5 (state+components, 2 specs). Use suites/combined-wave-plan-1.md §Run 5 compatibility justification.",
+      "inputs": [],
+      "outputs": [
+        "specs/image-cleaner/*.spec.json"
+      ],
+      "acceptance": [
+        "Both image-cleaner specs in run 5 have canShareClusterWith arrays, compatibleGroupKey=image-cleaner.state-components, and sequenceOrder matching the plan. Domain checks pass."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "specs:image-cleaner"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-14T19:12:47.886Z",
+        "created_by": "task-tree-tool",
+        "promoted_at": "2026-06-14T19:14:17.979Z",
+        "promoted_by": "task-tree-tool",
+        "assigned_at": "2026-06-14T19:27:45.076Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_wave1-imagecleaner-enrich-compatibility",
+        "stale_active_requeued_at": "2026-06-14T19:24:54.656Z",
+        "stale_active_requeue_reason": "watchdog-stale-active-review",
+        "previous_attempt_id": "a_wave1-imagecleaner-enrich-compatibility_20260614192325",
+        "current_attempt_id": "a_wave1-imagecleaner-enrich-compatibility_20260614192745",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Enriched both image-cleaner specs for combined Run 5 (state+components). Added `compatibleGroupKey: \"image-cleaner.state-components\"`, `clusterShapeKey: \"image-cleaner.state-components.combined\"`, `sequenceOrder` (10 for state-interval, 20 for components-lifecycle), and bidirectional `canShareClusterWith` declarations. Updated requirements text to document sequencing rationale. All domain checks pass.",
+        "last_worker_completed_at": "2026-06-14T19:30:27.454Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-14T19:32:31.860Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Verified: both image-cleaner specs enriched with compatibleGroupKey=image-cleaner.state-components, clusterShapeKey, sequenceOrder (10/20), and bidirectional canShareClusterWith. Domain checks pass (0 schema failures, 0 warnings)."
+      },
+      "session_id": "s_task_wave1-imagecleaner-enrich-compatibility",
+      "session_history": [
+        "s_task_wave1-imagecleaner-enrich-compatibility"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-14T19:32:31.860Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Verified: both image-cleaner specs enriched with compatibleGroupKey=image-cleaner.state-components, clusterShapeKey, sequenceOrder (10/20), and bidirectional canShareClusterWith. Domain checks pass (0 schema failures, 0 warnings)."
+      },
+      "status": "done"
+    },
+    {
+      "id": "wave1-approuting-enrich-compatibility",
+      "parent_id": "combined-scenario-execution-waves-20260614",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Enrich app-routing specs with canShareClusterWith declarations, compatibleGroupKey, and sequenceOrder metadata for combined run 6 (enable→HTTP→disable, 3 specs). Use suites/combined-wave-plan-1.md §Run 6 compatibility justification.",
+      "inputs": [],
+      "outputs": [
+        "specs/app-routing/*.spec.json"
+      ],
+      "acceptance": [
+        "All 3 app-routing specs in run 6 have canShareClusterWith arrays, compatibleGroupKey=app-routing.enable-http-disable, and sequenceOrder matching the plan. Domain checks pass."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "specs:app-routing"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-14T19:12:47.937Z",
+        "created_by": "task-tree-tool",
+        "assigned_at": "2026-06-14T19:32:41.501Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_wave1-approuting-enrich-compatibility",
+        "stale_active_requeued_at": "2026-06-14T19:32:41.488Z",
+        "stale_active_requeue_reason": "watchdog-stale-active-review",
+        "previous_attempt_id": "a_wave1-approuting-enrich-compatibility_20260614192454",
+        "current_attempt_id": "a_wave1-approuting-enrich-compatibility_20260614193241",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "All 3 app-routing specs for Run 6 were already enriched in the previous attempt and verified intact. All acceptance criteria pass: compatibleGroupKey=app-routing.enable-http-disable, clusterShapeKey=app-routing.enable-http-disable.combined, sequenceOrder (10/20/90), pairwise canShareClusterWith arrays, and state DAG chain (enable→HTTP→disable) are all correct.",
+        "last_worker_completed_at": "2026-06-14T19:33:12.343Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-14T19:36:58.373Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "All 3 app-routing Run 6 specs enriched: compatibleGroupKey=app-routing.enable-http-disable, clusterShapeKey=app-routing.enable-http-disable.combined, sequenceOrder (10/20/90), pairwise canShareClusterWith arrays verified in spec files. Domain checks pass."
+      },
+      "session_id": "s_task_wave1-approuting-enrich-compatibility",
+      "session_history": [
+        "s_task_wave1-approuting-enrich-compatibility"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-14T19:36:58.373Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "All 3 app-routing Run 6 specs enriched: compatibleGroupKey=app-routing.enable-http-disable, clusterShapeKey=app-routing.enable-http-disable.combined, sequenceOrder (10/20/90), pairwise canShareClusterWith arrays verified in spec files. Domain checks pass."
+      },
+      "status": "done"
+    }
+  ]
+}
