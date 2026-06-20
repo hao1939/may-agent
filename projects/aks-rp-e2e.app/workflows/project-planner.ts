@@ -25,6 +25,7 @@ import {
   parseTriggerEvent,
   resolveAppDir,
   resultText,
+  sourceDir,
   triggerBlock,
   triggerValue,
 } from "./lib/workflow-input.ts";
@@ -152,12 +153,22 @@ function humanSteeringBlock(events: Record<string, unknown>[]): string {
 function buildPlannerPrompt(input: {
   appDir: string;
   projectDir: string;
+  sourceDir: string;
   agent: string;
   eventReview: string;
   trigger: string;
   packet: unknown;
   humanSteering: Record<string, unknown>[];
+  wakeReason: string | null;
 }): string {
+  const singleAssignmentWakeGuidance = [
+    "task-completed",
+    "watchdog-capacity-underfilled",
+    "planner-timeout-underfilled-frontier",
+  ].includes(input.wakeReason ?? "")
+    ? `
+- This wake is in the bounded single-assignment short-circuit family (${input.wakeReason}). If you create or assign one truthful deterministic refill or bounded successor and no human-steering or review frontier remains, stop immediately. Do not keep scanning unrelated blocked families or try to saturate all remaining capacity in this same wake.`
+    : "";
   return `Planning Update Step
 
 This is step 2 of 2 for the same planner wake. Use the event review from step
@@ -216,7 +227,8 @@ Core operating model:
   replay, evidence-ceiling, public-doc check, or draft follow-up can progress.
   Missing perfect handwritten source should not freeze the project by itself:
   first try local artifacts, checked-in specs/replays, accepted source-equivalent
-  evidence, public docs, and bounded "best known equivalent" specs. Environment
+  evidence, mounted Go source, public docs, and bounded "best known equivalent"
+  specs. Environment
   blockers are also work, not a parking lot: create setup/diagnosis/retry or a
   single exact owner escalation/wait for the shared environment cause, then move
   unrelated work forward.
@@ -264,7 +276,7 @@ Core operating model:
   action. Follow-up investigation belongs in newly created worker/problem tasks.
 - Stop once the next useful project action is clear and recorded, or once you
   have assigned enough runnable work for this wake.
-  Do not stop merely because one rollup or one new leaf was created.
+  Do not stop merely because one rollup or one new leaf was created.${singleAssignmentWakeGuidance}
 - Tree hygiene is owner judgment. If task_tree_hygiene shows many safe done
   leaves under a parent, decide whether their durable meaning is already
   summarized on that parent or in linked evidence. When it is, use
@@ -308,6 +320,15 @@ Useful domain workspace commands:
 - cd ${input.projectDir} && git status --short
 - cd ${input.projectDir} && git diff --stat
 
+Mounted AKS RP Go source is available at ${input.sourceDir}. Use it before
+accepting any source-holder, devbox, handwritten-source, or authoritative-source
+blocker. For VirtualMachine prerelease work, start from:
+- ${input.sourceDir}/test/e2ev3/sigs/rp/virtualmachine/suites/prerelease.go
+- ${input.sourceDir}/test/e2ev3/sigs/rp/virtualmachine/suites/checkin.go
+If those files or referenced scenario definitions answer the question, update
+or create source-backed spec/replay/model work instead of owner-send or
+response-await tasks.
+
 Do not edit ${input.appDir}/tasks/tree.json directly. Use the task-tree commands
 so updates take the tree lock, repair rollups, keep kanban in sync, and avoid
 overwriting newer planner/watchdog changes. If the current primitive is not
@@ -319,6 +340,7 @@ review findings, and follow-up work in tasks/tree.json through task-tree tools.
 
 Current app: ${input.appDir}
 Domain workspace: ${input.projectDir}
+Source workspace: ${input.sourceDir}
 Agent: ${input.agent}
 
 Event review from step 1:
@@ -336,6 +358,7 @@ ${input.trigger}`.trim();
 function buildEventReviewPrompt(input: {
   appDir: string;
   projectDir: string;
+  sourceDir: string;
   agent: string;
   trigger: string;
   packet: unknown;
@@ -378,9 +401,16 @@ Use commands from the app directory when needed:
 Useful domain workspace commands when needed:
 - cd ${input.projectDir} && bun run status -- --gaps
 - cd ${input.projectDir} && bun run status -- --json
+- rg -n "Scenario_|NewScenario|suites.Static" ${input.sourceDir}/test/e2ev3
+
+Mounted AKS RP Go source is available at ${input.sourceDir}. If the wake is
+about missing source, source-holder waits, devbox paths, or VM prerelease
+coverage, call out that planning must inspect the mounted source before keeping
+any external-source blocker.
 
 Current app: ${input.appDir}
 Domain workspace: ${input.projectDir}
+Source workspace: ${input.sourceDir}
 Agent: ${input.agent}
 
 Compact task-tree packet:
@@ -462,6 +492,7 @@ function settledActiveNoopResult(input: {
   rawTask: string;
   packet: TaskPlanningPacket;
   humanSteering: Record<string, unknown>[];
+  quickAssignments: TaskAssignment[];
 }): string | null {
   const reason = triggerValue(parseTriggerEvent(input.rawTask), "reason");
   const noHumanSteering = input.humanSteering.length === 0;
@@ -474,6 +505,7 @@ function settledActiveNoopResult(input: {
     input.packet.frontier.blocked.length > 0;
   const settledAfterCompletion =
     reason === "task-completed" &&
+    input.quickAssignments.length === 0 &&
     noHumanSteering &&
     noRunnableOrReviewFrontier &&
     hasActiveOrBlockedFrontier &&
@@ -489,6 +521,7 @@ function settledActiveNoopResult(input: {
     liveActiveIds.has(taskId),
   );
   const settledWithActiveWork =
+    input.quickAssignments.length === 0 &&
     noHumanSteering &&
     hasOnlyActiveFrontier &&
     input.packet.frontier.blocked.length === 0;
@@ -601,19 +634,48 @@ function staleRunnableBacklogNoopResult(input: {
   return `Watchdog runnable-backlog wake is stale: trigger IDs ${JSON.stringify(triggerIds)} are no longer confirm-runnable in the live frontier. ${freshnessParts.join("; ")}.`;
 }
 
+function singleAssignmentShortCircuitResult(input: {
+  rawTask: string;
+  packet: TaskPlanningPacket;
+  humanSteering: Record<string, unknown>[];
+  quickAssignments: TaskAssignment[];
+}): string | null {
+  const reason = triggerValue(parseTriggerEvent(input.rawTask), "reason");
+  if (
+    ![
+      "task-completed",
+      "watchdog-capacity-underfilled",
+      "planner-timeout-underfilled-frontier",
+    ].includes(typeof reason === "string" ? reason : "")
+  ) {
+    return null;
+  }
+  if (input.humanSteering.length > 0) return null;
+  if (input.quickAssignments.length === 0) return null;
+  if (input.packet.frontier.review.length > 0) return null;
+  if ((input.packet.frontier.waiting ?? []).length > 0) return null;
+  if (input.packet.active_task_ids.length === 0) return null;
+
+  const assignedTaskIds = input.quickAssignments.map(
+    (assignment) => assignment.taskId,
+  );
+  return `Bounded ${reason} wake already achieved a truthful refill/assignment (${assignedTaskIds.join(", ")}) with no remaining human-steering or review frontier. Short-circuiting after the first deterministic refill/bounded successor assignment.`;
+}
+
 function appendNoopPlannerRun(input: {
   appDir: string;
   result: string;
   steps: string[];
   packet: TaskPlanningPacket;
   initialRepair: ReturnType<typeof repairTaskTreeRollups>;
+  assignedTaskIds?: string[];
 }): void {
   appendPlannerRun(input.appDir, {
     kind: "planner_wake",
-    status: "idle",
+    status: input.assignedTaskIds?.length ? "assigned" : "idle",
     ran_agent: false,
     steps: input.steps,
-    assigned_task_ids: [],
+    assigned_task_ids: input.assignedTaskIds ?? [],
     repaired_rollups: input.initialRepair.repaired,
     active_task_ids: input.packet.active_task_ids,
     result: input.result,
@@ -623,6 +685,7 @@ function appendNoopPlannerRun(input: {
 export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
   const projectDir = field(ctx.task, "project") ?? "/app/projects/aks-rp-e2e";
   const appDir = resolveAppDir(projectDir, field(ctx.task, "app"));
+  const sourceRoot = sourceDir(ctx.task);
   const configuredMaxConcurrent = maxConcurrent(ctx.task, null);
   const agent =
     field(ctx.task, "owner") ?? field(ctx.task, "agent") ?? ctx.agent;
@@ -647,6 +710,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     rawTask: ctx.task,
     packet,
     humanSteering,
+    quickAssignments,
   });
   if (noopResult) {
     appendNoopPlannerRun({
@@ -674,6 +738,24 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
       initialRepair,
     });
     return ctx.done(staleRunnableNoop);
+  }
+
+  const singleAssignmentNoop = singleAssignmentShortCircuitResult({
+    rawTask: ctx.task,
+    packet,
+    humanSteering,
+    quickAssignments,
+  });
+  if (singleAssignmentNoop) {
+    appendNoopPlannerRun({
+      appDir,
+      result: singleAssignmentNoop,
+      steps: ["assigned-refill-short-circuit"],
+      packet,
+      initialRepair,
+      assignedTaskIds: quickAssignments.map((assignment) => assignment.taskId),
+    });
+    return ctx.done(singleAssignmentNoop);
   }
 
   if (
@@ -719,6 +801,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
       prompt: buildEventReviewPrompt({
         appDir,
         projectDir,
+        sourceDir: sourceRoot,
         agent,
         trigger: triggerBlock(ctx.task),
         packet,
@@ -738,11 +821,15 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
       prompt: buildPlannerPrompt({
         appDir,
         projectDir,
+        sourceDir: sourceRoot,
         agent,
         eventReview: resultText(eventReviewResult).slice(0, 5000),
         trigger: triggerBlock(ctx.task),
         packet,
         humanSteering,
+        wakeReason: triggerValue(parseTriggerEvent(ctx.task), "reason") as
+          | string
+          | null,
       }),
     });
   } catch (err) {

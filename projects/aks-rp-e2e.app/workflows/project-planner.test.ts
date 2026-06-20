@@ -152,6 +152,11 @@ describe("project owner workflow", () => {
     expect(prompts[1]).toContain(
       "cd " + projectDir + " && bun run status -- --gaps",
     );
+    expect(prompts[0]).toContain("Source workspace: /app/sources/aks-rp");
+    expect(prompts[1]).toContain("Source workspace: /app/sources/aks-rp");
+    expect(prompts[1]).toContain(
+      "/app/sources/aks-rp/test/e2ev3/sigs/rp/virtualmachine/suites/prerelease.go",
+    );
     expect(prompts[1]).toContain("Do not rewrite " + appDir + "/project.json");
     expect(prompts[1]).not.toContain("Current project status packet");
     expect(prompts[1]).not.toContain('"path_gap_count"');
@@ -455,6 +460,208 @@ describe("project owner workflow", () => {
       "utf8",
     );
     expect(plannerRuns).toContain('"steps":["quick-refill"]');
+    expect(plannerRuns).toContain('"ran_agent":false');
+  });
+
+  test("short-circuits task-completed wake after first bounded successor assignment", async () => {
+    const { appDir, projectDir } = await makeWorkspace();
+    await writeFile(
+      join(appDir, "tasks", "tree.json"),
+      `${JSON.stringify(
+        {
+          version: 1,
+          project: "aks-rp-e2e",
+          project_lifecycle: "active",
+          root_task_id: "project",
+          updated_at: new Date().toISOString(),
+          active_task_id: null,
+          active_task_ids: [],
+          tasks: {
+            project: {
+              id: "project",
+              state: "backlog",
+              children: ["backlog-task"],
+              goal: "project",
+              outputs: ["tasks/tree.json"],
+              acceptance: ["done"],
+            },
+            "backlog-task": {
+              id: "backlog-task",
+              parent_id: "project",
+              state: "backlog",
+              kind: "domain_leaf",
+              priority: "P1",
+              owner: "aks-explorer",
+              children: [],
+              goal: "Take the next truthful successor.",
+              outputs: ["evidence/archive/backlog.md"],
+              acceptance: ["done"],
+              conflict_scope: ["backlog"],
+            },
+          },
+        },
+        null,
+        2,
+      )}\n`,
+      "utf8",
+    );
+
+    const prompts: string[] = [];
+    const dispatched: Array<{
+      type: string;
+      payload: Record<string, unknown>;
+    }> = [];
+    const result = await execute({
+      task: [
+        `app: ${appDir}`,
+        `project: ${projectDir}`,
+        "agent: aks-explorer",
+        "maxConcurrent: 5",
+        "## Trigger Event",
+        "```json",
+        JSON.stringify({
+          type: "project.owner.requested",
+          data: {
+            project: "aks-rp-e2e",
+            reason: "task-completed",
+            completedTaskId: "recently-finished-task",
+          },
+        }),
+        "```",
+      ].join("\n"),
+      agent: "aks-explorer",
+      done: (message: string) => ({ status: "done", message }),
+      escalate: (message: string) => ({ status: "escalated", message }),
+      emit() {},
+      dispatchEvent(type: string, payload: Record<string, unknown>) {
+        dispatched.push({ type, payload });
+      },
+      runAgent: async () => ({ status: "success" }),
+      runAgentSession: async (_agent: string, task: string) => {
+        prompts.push(task);
+        return { status: "success", message: "should not run" };
+      },
+      summarize: () => "",
+    } as any);
+
+    expect(result.status).toBe("done");
+    expect(result.message).toContain(
+      "task-completed wake already achieved a truthful refill/assignment",
+    );
+    expect(result.message).toContain("backlog-task");
+    expect(prompts).toHaveLength(0);
+    expect(dispatched).toHaveLength(1);
+    expect(dispatched[0]).toMatchObject({
+      type: "project.task.assigned",
+      payload: {
+        taskId: "backlog-task",
+        sessionId: "s_task_backlog-task",
+      },
+    });
+
+    const plannerRuns = await readFile(
+      join(appDir, ".state", "planner-runs.jsonl"),
+      "utf8",
+    );
+    expect(plannerRuns).toContain('"steps":["assigned-refill-short-circuit"]');
+    expect(plannerRuns).toContain('"assigned_task_ids":["backlog-task"]');
+    expect(plannerRuns).toContain('"ran_agent":false');
+  });
+
+  test("short-circuits watchdog-capacity-underfilled wake after first refill assignment even below maxConcurrent", async () => {
+    const { appDir, projectDir } = await makeWorkspace();
+    await writeFile(
+      join(appDir, "tasks", "tree.json"),
+      `${JSON.stringify(
+        {
+          version: 1,
+          project: "aks-rp-e2e",
+          project_lifecycle: "active",
+          root_task_id: "project",
+          updated_at: new Date().toISOString(),
+          active_task_id: null,
+          active_task_ids: [],
+          tasks: {
+            project: {
+              id: "project",
+              state: "backlog",
+              children: ["backlog-task"],
+              goal: "project",
+              outputs: ["tasks/tree.json"],
+              acceptance: ["done"],
+            },
+            "backlog-task": {
+              id: "backlog-task",
+              parent_id: "project",
+              state: "backlog",
+              kind: "domain_leaf",
+              priority: "P1",
+              owner: "aks-explorer",
+              children: [],
+              goal: "Refill underfilled capacity with one bounded task.",
+              outputs: ["evidence/archive/backlog.md"],
+              acceptance: ["done"],
+              conflict_scope: ["backlog"],
+            },
+          },
+        },
+        null,
+        2,
+      )}\n`,
+      "utf8",
+    );
+
+    const prompts: string[] = [];
+    const dispatched: Array<{
+      type: string;
+      payload: Record<string, unknown>;
+    }> = [];
+    const result = await execute({
+      task: [
+        `app: ${appDir}`,
+        `project: ${projectDir}`,
+        "agent: aks-explorer",
+        "maxConcurrent: 5",
+        "## Trigger Event",
+        "```json",
+        JSON.stringify({
+          type: "project.owner.requested",
+          data: {
+            project: "aks-rp-e2e",
+            reason: "watchdog-capacity-underfilled",
+          },
+        }),
+        "```",
+      ].join("\n"),
+      agent: "aks-explorer",
+      done: (message: string) => ({ status: "done", message }),
+      escalate: (message: string) => ({ status: "escalated", message }),
+      emit() {},
+      dispatchEvent(type: string, payload: Record<string, unknown>) {
+        dispatched.push({ type, payload });
+      },
+      runAgent: async () => ({ status: "success" }),
+      runAgentSession: async (_agent: string, task: string) => {
+        prompts.push(task);
+        return { status: "success", message: "should not run" };
+      },
+      summarize: () => "",
+    } as any);
+
+    expect(result.status).toBe("done");
+    expect(result.message).toContain(
+      "watchdog-capacity-underfilled wake already achieved a truthful refill/assignment",
+    );
+    expect(prompts).toHaveLength(0);
+    expect(dispatched).toHaveLength(1);
+
+    const plannerRuns = await readFile(
+      join(appDir, ".state", "planner-runs.jsonl"),
+      "utf8",
+    );
+    expect(plannerRuns).toContain('"steps":["assigned-refill-short-circuit"]');
+    expect(plannerRuns).toContain('"assigned_task_ids":["backlog-task"]');
+    expect(plannerRuns).not.toContain('"steps":["quick-refill"]');
     expect(plannerRuns).toContain('"ran_agent":false');
   });
 
@@ -1361,7 +1568,105 @@ describe("project owner workflow", () => {
     );
     expect(plannerRuns).toContain('"steps":["settled-active-noop"]');
     expect(plannerRuns).toContain('"ran_agent":false');
-    expect(plannerRuns).toContain("completed task no longer exists in the live tree");
+    expect(plannerRuns).toContain(
+      "completed task no longer exists in the live tree",
+    );
+  });
+
+  test("short-circuits planner-timeout-underfilled-frontier wake after first refill assignment", async () => {
+    const { appDir, projectDir } = await makeWorkspace();
+    await writeFile(
+      join(appDir, "tasks", "tree.json"),
+      `${JSON.stringify(
+        {
+          version: 1,
+          project: "aks-rp-e2e",
+          project_lifecycle: "active",
+          root_task_id: "project",
+          updated_at: new Date().toISOString(),
+          active_task_id: null,
+          active_task_ids: [],
+          tasks: {
+            project: {
+              id: "project",
+              state: "backlog",
+              children: ["backlog-task"],
+              goal: "project",
+              outputs: ["tasks/tree.json"],
+              acceptance: ["done"],
+            },
+            "backlog-task": {
+              id: "backlog-task",
+              parent_id: "project",
+              state: "backlog",
+              kind: "domain_leaf",
+              priority: "P1",
+              owner: "aks-explorer",
+              children: [],
+              goal: "One bounded refill leaf.",
+              outputs: ["evidence/archive/backlog.md"],
+              acceptance: ["done"],
+              conflict_scope: ["backlog"],
+            },
+          },
+        },
+        null,
+        2,
+      )}\n`,
+      "utf8",
+    );
+
+    const prompts: string[] = [];
+    const dispatched: Array<{
+      type: string;
+      payload: Record<string, unknown>;
+    }> = [];
+    const result = await execute({
+      task: [
+        `app: ${appDir}`,
+        `project: ${projectDir}`,
+        "agent: aks-explorer",
+        "maxConcurrent: 5",
+        "## Trigger Event",
+        "```json",
+        JSON.stringify({
+          type: "project.owner.requested",
+          data: {
+            project: "aks-rp-e2e",
+            reason: "planner-timeout-underfilled-frontier",
+          },
+        }),
+        "```",
+      ].join("\n"),
+      agent: "aks-explorer",
+      done: (message: string) => ({ status: "done", message }),
+      escalate: (message: string) => ({ status: "escalated", message }),
+      emit() {},
+      dispatchEvent(type: string, payload: Record<string, unknown>) {
+        dispatched.push({ type, payload });
+      },
+      runAgent: async () => ({ status: "success" }),
+      runAgentSession: async (_agent: string, task: string) => {
+        prompts.push(task);
+        return { status: "success", message: "should not run" };
+      },
+      summarize: () => "",
+    } as any);
+
+    expect(result.status).toBe("done");
+    expect(result.message).toContain(
+      "planner-timeout-underfilled-frontier wake already achieved a truthful refill/assignment",
+    );
+    expect(prompts).toHaveLength(0);
+    expect(dispatched).toHaveLength(1);
+
+    const plannerRuns = await readFile(
+      join(appDir, ".state", "planner-runs.jsonl"),
+      "utf8",
+    );
+    expect(plannerRuns).toContain('"steps":["assigned-refill-short-circuit"]');
+    expect(plannerRuns).toContain('"assigned_task_ids":["backlog-task"]');
+    expect(plannerRuns).toContain('"ran_agent":false');
   });
 
   test("does not create model-gap tasks in workflow code when owner review times out under capacity", async () => {

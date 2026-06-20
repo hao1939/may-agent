@@ -34,6 +34,16 @@ export function resolveAppDir(
   return new URL("../..", import.meta.url).pathname;
 }
 
+export function sourceDir(raw: string): string {
+  return (
+    field(raw, "source") ||
+    field(raw, "sourceRoot") ||
+    field(raw, "sourceDir") ||
+    process.env.AKS_RP_SOURCE_DIR ||
+    "/app/sources/aks-rp"
+  );
+}
+
 export function parseTriggerEvent(raw: string): TriggerEvent | null {
   const match = raw.match(/## Trigger Event\s*```json\s*([\s\S]*?)\s*```/);
   if (!match) return null;

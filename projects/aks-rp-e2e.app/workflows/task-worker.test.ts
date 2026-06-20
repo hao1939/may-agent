@@ -127,6 +127,8 @@ describe("task worker", () => {
     expect(observedSessionId).toBe("s_task_spec-task");
     expect(observedPrompt).toContain("task-tree set-outputs");
     expect(observedPrompt).toContain("Never edit tasks/tree.json directly");
+    expect(observedPrompt).toContain("Source workspace: /app/sources/aks-rp");
+    expect(observedPrompt).toContain("first source authority");
 
     const updated = JSON.parse(
       await readFile(join(projectDir, "tasks", "tree.json"), "utf8"),

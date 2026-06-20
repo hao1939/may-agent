@@ -28,6 +28,7 @@ import {
   parseTriggerEvent,
   resolveAppDir,
   resultText,
+  sourceDir,
   triggerString,
   type TriggerEvent,
 } from "./lib/workflow-input.ts";
@@ -70,6 +71,7 @@ function buildTaskTreeConfig(
 function buildWorkerPrompt(input: {
   appDir: string;
   projectDir: string;
+  sourceDir: string;
   task: unknown;
   attemptId: string;
 }): string {
@@ -100,8 +102,16 @@ explains the exact decomposition problem. The project owner reviews the latest t
 state after worker progress and decides whether to accept, retry, repair,
 replace, split, or keep the task blocked.
 
+Mounted AKS RP Go source is available at ${input.sourceDir}. Treat it as the
+first source authority for e2ev3 scenario/source work. If task context says
+"source-holder", "external source", "missing handwritten source", "devbox", or
+"authoritative source" is blocking progress, first inspect this mounted source
+tree with targeted reads/searches. Do not report source unavailable unless the
+relevant files are also absent or insufficient under this source root.
+
 App: ${input.appDir}
 Domain workspace: ${input.projectDir}
+Source workspace: ${input.sourceDir}
 Attempt: ${input.attemptId}
 
 Assigned task:
@@ -249,6 +259,7 @@ async function runAssignedMode(
   ctx: WorkflowContext,
   appDir: string,
   projectDir: string,
+  sourceRoot: string,
   config: TaskTreeConfig,
   trigger: TriggerEvent | null,
 ): Promise<WorkflowResult> {
@@ -276,7 +287,13 @@ async function runAssignedMode(
     worker: config.worker,
     sessionId:
       task.session_id || `s_task_${task.id.replace(/[^A-Za-z0-9_-]+/g, "_")}`,
-    prompt: buildWorkerPrompt({ appDir, projectDir, task, attemptId }),
+    prompt: buildWorkerPrompt({
+      appDir,
+      projectDir,
+      sourceDir: sourceRoot,
+      task,
+      attemptId,
+    }),
   });
   const message = resultText(result);
   const claim = workerResultFromSession(result, message);
@@ -298,6 +315,7 @@ async function runAssignedMode(
 export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
   const projectDir = field(ctx.task, "project") ?? "/app/projects/aks-rp-e2e";
   const appDir = resolveAppDir(projectDir, field(ctx.task, "app"));
+  const sourceRoot = sourceDir(ctx.task);
   const trigger = parseTriggerEvent(ctx.task);
   const configuredMaxConcurrent = maxConcurrent(ctx.task, trigger);
   const config = buildTaskTreeConfig(
@@ -308,7 +326,14 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
   );
 
   if (trigger?.type === "project.task.assigned") {
-    return runAssignedMode(ctx, appDir, projectDir, config, trigger);
+    return runAssignedMode(
+      ctx,
+      appDir,
+      projectDir,
+      sourceRoot,
+      config,
+      trigger,
+    );
   }
 
   return ctx.done(

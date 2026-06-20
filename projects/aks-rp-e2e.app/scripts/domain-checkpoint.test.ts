@@ -99,7 +99,9 @@ describe("domain checkpoint helper", () => {
         "done-derived-slice": {
           id: "done-derived-slice",
           state: "done",
-          outputs: ["model/knowledge-map/derived/test-slice/derived-package.json"],
+          outputs: [
+            "model/knowledge-map/derived/test-slice/derived-package.json",
+          ],
           conflict_scope: ["model-derived:test-slice"],
         },
         "active-global-model": {
@@ -134,10 +136,14 @@ describe("domain checkpoint helper", () => {
     });
 
     const derivedManifest = summary.files.find(
-      (file) => file.path === "model/knowledge-map/derived/test-slice/derived-package.json",
+      (file) =>
+        file.path ===
+        "model/knowledge-map/derived/test-slice/derived-package.json",
     );
     const derivedPathSummary = summary.files.find(
-      (file) => file.path === "model/knowledge-map/derived/test-slice/path-summary.json",
+      (file) =>
+        file.path ===
+        "model/knowledge-map/derived/test-slice/path-summary.json",
     );
     const globalModel = summary.files.find(
       (file) => file.path === "model/knowledge-map/model.json",

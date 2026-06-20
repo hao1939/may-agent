@@ -20,33 +20,36 @@ function testContext(options?: {
   const tree = {
     tasks: {
       "triage-task": { id: "triage-task", state: "blocked" },
-      "secops-identity-role-assignment-validation-live-execute-gate-await-20260620": {
-        id: "secops-identity-role-assignment-validation-live-execute-gate-await-20260620",
+      "secops-identity-role-assignment-validation-live-execute-gate-await-20260620":
+        {
+          id: "secops-identity-role-assignment-validation-live-execute-gate-await-20260620",
+          state: "blocked",
+          blocker:
+            "External execute authorization required: bounded --check evidence in evidence/archive/secops-identity-role-assignment-validation-check-gated-execute-20260620.md and evidence/archive/run_20260620061622467_r0xkqc-secops-identity-role-assignment-validation.json proved the maintained spec/replay pair is ready.",
+        },
+      "live-pass-through-task": {
+        id: "live-pass-through-task",
         state: "blocked",
-        blocker:
-          "External execute authorization required: bounded --check evidence in evidence/archive/secops-identity-role-assignment-validation-check-gated-execute-20260620.md and evidence/archive/run_20260620061622467_r0xkqc-secops-identity-role-assignment-validation.json proved the maintained spec/replay pair is ready.",
       },
-      "live-pass-through-task": { id: "live-pass-through-task", state: "blocked" },
       ...(options?.liveTasks ?? {}),
     },
   };
 
-  const archives =
-    options?.archives ?? [
-      {
-        file: "done-leaves-20260620061901509.json",
-        body: {
-          version: 1,
-          tasks: [
-            {
-              id: "secops-identity-role-assignment-validation-check-gated-execute-20260620",
-              status: "done",
-              resolution: "completed",
-            },
-          ],
-        },
+  const archives = options?.archives ?? [
+    {
+      file: "done-leaves-20260620061901509.json",
+      body: {
+        version: 1,
+        tasks: [
+          {
+            id: "secops-identity-role-assignment-validation-check-gated-execute-20260620",
+            status: "done",
+            resolution: "completed",
+          },
+        ],
       },
-    ];
+    },
+  ];
 
   writeFileSync(join(tasksDir, "tree.json"), JSON.stringify(tree, null, 2));
   for (const archive of archives) {

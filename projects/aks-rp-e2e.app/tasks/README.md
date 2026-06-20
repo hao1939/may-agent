@@ -103,6 +103,17 @@ folder does not keep a parallel task event log.
   `go-e2ev3-source-discovery` for source exploration, feature packets,
   source-grounded spec authoring, replay generation, and model-gap preparation.
   Those backlog leaves are not dispatched until capacity opens.
+- Mounted AKS RP Go source is a first-class project input. The app passes
+  `/app/sources/aks-rp` to planner, worker, and problem-solver workflows as the
+  source workspace. Before keeping any `source-holder`, `devbox`, handwritten
+  source, or authoritative-source blocker, the owner/worker must inspect this
+  mounted tree and convert the branch into source-backed spec/replay/model work
+  when the source answers the question.
+- For VirtualMachine prerelease work, start source discovery from
+  `/app/sources/aks-rp/test/e2ev3/sigs/rp/virtualmachine/suites/prerelease.go`
+  and `/app/sources/aks-rp/test/e2ev3/sigs/rp/virtualmachine/suites/checkin.go`;
+  those files define that prerelease currently reuses the CheckIn scenario set
+  plus its VirtualMachines mutators.
 - The active root lanes are durable responsibilities:
   `feature-knowledge-and-specs`, `spec-runner-and-replays`,
   `evidence-feedback-and-model-update`, and `user-review-workspace`.

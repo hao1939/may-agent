@@ -14,6 +14,7 @@ import {
   parseTriggerEvent,
   resolveAppDir,
   resultText,
+  sourceDir,
   triggerBlock,
   triggerString,
   triggerValue,
@@ -61,6 +62,7 @@ function problemKeyFromTrigger(trigger: ReturnType<typeof parseTriggerEvent>) {
 function buildSolverPrompt(input: {
   appDir: string;
   projectDir: string;
+  sourceDir: string;
   agent: string;
   problemKey: string;
   trigger: string;
@@ -79,6 +81,9 @@ Boundaries:
 - If the problem needs external input, credentials, quota, policy, product
   rollout, or human decision, do not cycle. Produce a concrete escalation with
   exact evidence and resume conditions.
+- For source-related problems, first inspect the mounted AKS RP Go source at
+  ${input.sourceDir}. Do not escalate missing source/devbox/source-holder issues
+  until the relevant mounted source paths have been checked.
 - If you fix something, verify the fix as far as possible and state the exact
   retry event or task the owner should use.
 
@@ -94,6 +99,7 @@ Also include:
 
 App: ${input.appDir}
 Domain workspace: ${input.projectDir}
+Source workspace: ${input.sourceDir}
 Agent: ${input.agent}
 Problem key: ${input.problemKey}
 Affected tasks: ${input.affectedTasks.length ? input.affectedTasks.join(", ") : "unknown"}
@@ -103,6 +109,7 @@ Useful commands:
 - cd ${input.appDir} && bun run task-tree show <task-id>
 - cd ${input.projectDir} && bun run status -- --gaps
 - cd ${input.projectDir} && find runs/executions evidence/archive -maxdepth 2 -type f -mmin -120
+- rg -n "Scenario_|NewScenario|suites.Static" ${input.sourceDir}/test/e2ev3
 
 ${input.trigger}`.trim();
 }
@@ -192,6 +199,7 @@ function appendProblemRun(
 export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
   const projectDir = field(ctx.task, "project") ?? "/app/projects/aks-rp-e2e";
   const appDir = resolveAppDir(projectDir, field(ctx.task, "app"));
+  const sourceRoot = sourceDir(ctx.task);
   const trigger = parseTriggerEvent(ctx.task);
   const agent =
     field(ctx.task, "owner") ?? field(ctx.task, "agent") ?? ctx.agent;
@@ -223,6 +231,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
       prompt: buildSolverPrompt({
         appDir,
         projectDir,
+        sourceDir: sourceRoot,
         agent,
         problemKey,
         trigger: triggerBlock(ctx.task),
