@@ -8,6 +8,11 @@ function agentPath(...parts: string[]): string {
   return [ROOT, "agents", ...parts].join("/");
 }
 
+/** Helper: build an absolute path under projects/<project>.app/agents/ */
+function appAgentPath(projectId: string, ...parts: string[]): string {
+  return [ROOT, "projects", projectId, "agents", ...parts].join("/");
+}
+
 describe("cross-edit-guard", () => {
   // ── May exemption ──────────────────────────────────────
 
@@ -92,6 +97,47 @@ describe("cross-edit-guard", () => {
     it("allows writing LESSONS.md cross-agent (Coach/Bob growth cycle)", () => {
       const r = checkCrossEditGuard(agentPath("coder", "LESSONS.md"), "coach", ROOT);
       expect(r.blocked).toBe(false);
+    });
+  });
+
+  // ── App-local agent roots ──────────────────────────────
+
+  describe("app-local agent roots", () => {
+    it("allows an app-local agent to edit its own AGENTS.md", () => {
+      const r = checkCrossEditGuard(appAgentPath("may-agent.app", "bob", "AGENTS.md"), "bob", ROOT);
+      expect(r.blocked).toBe(false);
+    });
+
+    it("blocks app-local cross-agent identity edits", () => {
+      const r = checkCrossEditGuard(appAgentPath("may-agent.app", "bob", "AGENTS.md"), "optimizer", ROOT);
+      expect(r.blocked).toBe(true);
+      expect(r.message).toContain("projects/may-agent.app/agents/bob/AGENTS.md");
+    });
+
+    it("blocks app-local self agent.json edits", () => {
+      const r = checkCrossEditGuard(appAgentPath("may-agent.app", "bob", "agent.json"), "bob", ROOT);
+      expect(r.blocked).toBe(true);
+      expect(r.message).toContain("P70");
+    });
+
+    it("allows tech-lead to edit app-local agent.json files", () => {
+      const r = checkCrossEditGuard(appAgentPath("may-agent.app", "bob", "agent.json"), "tech-lead", ROOT);
+      expect(r.blocked).toBe(false);
+    });
+
+    it("allows app-local .lab writes", () => {
+      const r = checkCrossEditGuard(appAgentPath("may-agent.app", ".lab", "experiment", "AGENTS.md"), "coach", ROOT);
+      expect(r.blocked).toBe(false);
+    });
+
+    it("recognizes legacy embedded app agent roots", () => {
+      const r = checkCrossEditGuard(
+        [ROOT, "projects", "may-agent", ".app", "agents", "bob", "AGENTS.md"].join("/"),
+        "optimizer",
+        ROOT,
+      );
+      expect(r.blocked).toBe(true);
+      expect(r.message).toContain("projects/may-agent/.app/agents/bob/AGENTS.md");
     });
   });
 

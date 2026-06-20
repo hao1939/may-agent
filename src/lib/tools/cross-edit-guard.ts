@@ -37,6 +37,74 @@ export interface CrossEditGuardResult {
   message?: string;
 }
 
+interface AgentTreePath {
+  displayPrefix: string;
+  relPath: string;
+  parts: string[];
+  targetDir: string;
+  fileName: string;
+}
+
+function isInsidePath(absolutePath: string, parentPath: string): boolean {
+  return absolutePath === parentPath || absolutePath.startsWith(parentPath + sep);
+}
+
+function splitPath(path: string): string[] {
+  return path.split(sep).filter(Boolean);
+}
+
+function agentTreePathFromRoot(
+  absolutePath: string,
+  agentRoot: string,
+  displayPrefix: string,
+): AgentTreePath | undefined {
+  if (!isInsidePath(absolutePath, agentRoot)) return undefined;
+
+  const relPath = relative(agentRoot, absolutePath);
+  const parts = splitPath(relPath);
+  if (parts.length < 2) return undefined;
+
+  return {
+    displayPrefix,
+    relPath,
+    parts,
+    targetDir: parts[0],
+    fileName: parts[parts.length - 1],
+  };
+}
+
+function findAgentTreePath(absolutePath: string, projectRoot: string): AgentTreePath | undefined {
+  const root = resolve(projectRoot);
+
+  const globalAgentPath = agentTreePathFromRoot(absolutePath, resolve(root, "agents"), "agents");
+  if (globalAgentPath) return globalAgentPath;
+
+  const projectsDir = resolve(root, "projects");
+  if (!isInsidePath(absolutePath, projectsDir)) return undefined;
+
+  const projectParts = splitPath(relative(projectsDir, absolutePath));
+
+  // V3 app-local agents: projects/<project>.app/agents/<agent>/...
+  if (projectParts.length >= 4 && projectParts[1] === "agents") {
+    return agentTreePathFromRoot(
+      absolutePath,
+      resolve(projectsDir, projectParts[0], "agents"),
+      ["projects", projectParts[0], "agents"].join(sep),
+    );
+  }
+
+  // Legacy embedded app agents: projects/<project>/.app/agents/<agent>/...
+  if (projectParts.length >= 5 && projectParts[1] === ".app" && projectParts[2] === "agents") {
+    return agentTreePathFromRoot(
+      absolutePath,
+      resolve(projectsDir, projectParts[0], ".app", "agents"),
+      ["projects", projectParts[0], ".app", "agents"].join(sep),
+    );
+  }
+
+  return undefined;
+}
+
 /**
  * Check if a write/edit to the given absolute path should be blocked.
  *
@@ -56,7 +124,6 @@ export function checkCrossEditGuard(
   // May is exempt from all restrictions
   if (agentName.toLowerCase() === "may") return { blocked: false };
 
-  const agentsDir = resolve(projectRoot, "agents");
   const sharedDir = resolve(projectRoot, "shared");
 
   if (absolutePath.startsWith(sharedDir + sep) || absolutePath === sharedDir) {
@@ -70,20 +137,11 @@ export function checkCrossEditGuard(
     return { blocked: false };
   }
 
-  // Check if path is under agents/
-  if (!absolutePath.startsWith(agentsDir + sep) && absolutePath !== agentsDir) {
-    return { blocked: false };
-  }
+  const agentPath = findAgentTreePath(absolutePath, projectRoot);
+  if (!agentPath) return { blocked: false };
 
-  // Get the path relative to agents/
-  const relPath = relative(agentsDir, absolutePath);
-  const parts = relPath.split(sep);
-
-  // Need at least <agentOrShared>/<filename>
-  if (parts.length < 2) return { blocked: false };
-
-  const targetDir = parts[0];
-  const fileName = parts[parts.length - 1];
+  const { displayPrefix, relPath, parts, targetDir, fileName } = agentPath;
+  const displayPath = `${displayPrefix}${sep}${relPath}`;
 
   const targetDirLower = targetDir.toLowerCase();
   const agentNameLower = agentName.toLowerCase();
@@ -96,7 +154,7 @@ export function checkCrossEditGuard(
   if (targetDir === "shared" && protectedSharedFiles.has(relPath)) {
     return {
       blocked: true,
-      message: `⚠️ WRITE BLOCKED: Agent '${agentName}' cannot modify agents/${relPath}. Only May can edit shared system-level guidance.\n\nCan't resolve? Escalate to May via message({ to: "may", content: ... }).`,
+      message: `⚠️ WRITE BLOCKED: Agent '${agentName}' cannot modify ${displayPath}. Only May can edit shared system-level guidance.\n\nCan't resolve? Escalate to May via message({ to: "may", content: ... }).`,
     };
   }
 
@@ -108,7 +166,7 @@ export function checkCrossEditGuard(
     if (EVALUATOR_PROTECTED_PATHS.has(evalRelPath)) {
       return {
         blocked: true,
-        message: `⚠️ WRITE BLOCKED (P98 Evaluation Integrity): Agent '${agentName}' cannot modify agents/evaluator/${evalRelPath}. Evaluation criteria and scoring logic are read-only to prevent reward hacking. Only the evaluator or May can modify evaluation files.\n\nCan't resolve? Escalate to May via message({ to: "may", content: ... }).`,
+        message: `⚠️ WRITE BLOCKED (P98 Evaluation Integrity): Agent '${agentName}' cannot modify ${displayPrefix}${sep}evaluator${sep}${evalRelPath}. Evaluation criteria and scoring logic are read-only to prevent reward hacking. Only the evaluator or May can modify evaluation files.\n\nCan't resolve? Escalate to May via message({ to: "may", content: ... }).`,
       };
     }
   }
@@ -143,7 +201,7 @@ export function checkCrossEditGuard(
       }
       return {
         blocked: true,
-        message: `⚠️ WRITE BLOCKED: Agent '${agentName}' cannot modify agents/${targetDir}/${fileName}. Only the owning agent, May, or tech-lead (for agent.json) can edit another agent's identity files.\n\nCan't resolve? Escalate to May via message({ to: "may", content: ... }).`,
+        message: `⚠️ WRITE BLOCKED: Agent '${agentName}' cannot modify ${displayPrefix}${sep}${targetDir}${sep}${fileName}. Only the owning agent, May, or tech-lead (for agent.json) can edit another agent's identity files.\n\nCan't resolve? Escalate to May via message({ to: "may", content: ... }).`,
       };
     }
   }
