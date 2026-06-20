@@ -4,15 +4,22 @@
  * Runs as a cron task. Reads today.md, formats digest, emits to human
  * (Telegram picks up message.created to="human"), archives, resets.
  */
-import { readFileSync, writeFileSync, existsSync, mkdirSync, renameSync } from "node:fs";
-import { join } from "node:path";
+import {
+  readFileSync,
+  writeFileSync,
+  existsSync,
+  mkdirSync,
+  renameSync,
+} from "node:fs";
+import { join, resolve } from "node:path";
 import type { WorkflowContext, WorkflowResult } from "@may-agent/sdk";
 
 export const name = "scout-daily-digest";
 export const description = "Compile and send daily research digest.";
 
 export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
-  const agentsRoot = ctx.agentsRoot || join(process.cwd(), "agents");
+  const agentsRoot =
+    ctx.agentsRoot || resolve(import.meta.dirname ?? ".", "../..");
   const digestDir = join(agentsRoot, "scout", "workspace", "digest");
   const todayFile = join(digestDir, "today.md");
 
@@ -46,14 +53,19 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     priority: "P2",
   });
 
-  ctx.log(`[scout-daily-digest] Sent digest (${todayContent.length} chars) to human.`);
+  ctx.log(
+    `[scout-daily-digest] Sent digest (${todayContent.length} chars) to human.`,
+  );
 
   // Archive today.md
   const archivePath = join(digestDir, `${dateStr}.md`);
   renameSync(todayFile, archivePath);
 
   // Create fresh today.md
-  writeFileSync(todayFile, `# Scout Findings — ${new Date(now.getTime() + 86400000).toISOString().slice(0, 10)}\n\n`);
+  writeFileSync(
+    todayFile,
+    `# Scout Findings — ${new Date(now.getTime() + 86400000).toISOString().slice(0, 10)}\n\n`,
+  );
 
   return ctx.done(`Daily digest sent (${dateStr}). Archived to ${dateStr}.md.`);
 }

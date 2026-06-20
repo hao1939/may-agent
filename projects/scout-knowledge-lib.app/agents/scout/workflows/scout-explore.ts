@@ -5,10 +5,19 @@
  * No gates, no heartbeat context loading — just runs the agent with the task.
  */
 import type { WorkflowContext, WorkflowResult } from "@may-agent/sdk";
-import { checkCircuitBreaker, recordCircuitOutcome, shouldDispatch, recordDispatch, recordDedupOutcome, cleanupDispatchRecords } from "@may-agent/sdk";
+import {
+  checkCircuitBreaker,
+  recordCircuitOutcome,
+  shouldDispatch,
+  recordDispatch,
+  recordDedupOutcome,
+  cleanupDispatchRecords,
+} from "@may-agent/sdk";
+import { resolve } from "node:path";
 
 export const name = "scout-explore";
-export const description = "Routine discovery — fetch and process a specific source.";
+export const description =
+  "Routine discovery — fetch and process a specific source.";
 
 export function buildExploreTask(task: string): string {
   return `${task}
@@ -26,7 +35,8 @@ Output contract:
 
 export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
   const agent = "scout";
-  const agentsRoot = ctx.agentsRoot || require("path").join(process.cwd(), "agents");
+  const agentsRoot =
+    ctx.agentsRoot || resolve(import.meta.dirname ?? ".", "../..");
 
   // Circuit breaker + dedup
   const circuitBlock = checkCircuitBreaker(agentsRoot, agent);
@@ -49,14 +59,27 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     result = await ctx.runAgent(agent, agentTask);
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
-    recordCircuitOutcome(agentsRoot, agent, true, `explore threw: ${message.slice(0, 200)}`);
+    recordCircuitOutcome(
+      agentsRoot,
+      agent,
+      true,
+      `explore threw: ${message.slice(0, 200)}`,
+    );
     recordDedupOutcome(agent, "explore", "error");
     throw err;
   }
 
-  recordCircuitOutcome(agentsRoot, agent, result.status === "error",
-    result.status === "error" ? "explore error" : undefined);
-  recordDedupOutcome(agent, "explore", result.status === "error" ? "error" : "success");
+  recordCircuitOutcome(
+    agentsRoot,
+    agent,
+    result.status === "error",
+    result.status === "error" ? "explore error" : undefined,
+  );
+  recordDedupOutcome(
+    agent,
+    "explore",
+    result.status === "error" ? "error" : "success",
+  );
 
   return ctx.done(ctx.summarize(result, { maxLength: 500 }));
 }

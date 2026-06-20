@@ -1,5 +1,5 @@
 import type { WorkflowContext, WorkflowResult } from "@may-agent/sdk";
-import { join } from "node:path";
+import { resolve } from "node:path";
 import {
   loadMetrics,
   loadProjects,
@@ -12,10 +12,11 @@ import {
 import { checkCircuitBreaker, recordCircuitOutcome } from "@may-agent/sdk";
 
 export const name = "coach-heartbeat";
-export const description = "coach's 2-phase heartbeat: plan first, then execute.";
+export const description =
+  "coach's 2-phase heartbeat: plan first, then execute.";
 
 function getAgentsRoot(ctx: WorkflowContext): string {
-  return ctx.agentsRoot || join(process.cwd(), "agents");
+  return ctx.agentsRoot || resolve(import.meta.dirname ?? ".", "../..");
 }
 
 export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
@@ -72,7 +73,9 @@ ${guidance}`;
   const hasProjects = !!projects;
   if (!hasRedMetrics && !hasAlerts && !hasInbox && !hasProjects) {
     ctx.emit({ type: "noop_fast_path", agent });
-    return ctx.done("Coach heartbeat: no action needed (fast-path — no red metrics, no alerts, no inbox, no projects).");
+    return ctx.done(
+      "Coach heartbeat: no action needed (fast-path — no red metrics, no alerts, no inbox, no projects).",
+    );
   }
 
   // ── PHASE 1: TRIAGE & PLAN (short LLM session) ──
@@ -108,8 +111,15 @@ Output your plan now. No tool calls.`;
   ctx.emit({ type: "step_done", step: "plan" });
 
   // If plan says no action needed, skip phase 2
-  if (planText.toLowerCase().includes("no action needed") && !hasRedMetrics && !alerts && !inbox) {
-    return ctx.done(`Coach heartbeat: no action needed.\nPlan: ${planText.slice(0, 200)}`);
+  if (
+    planText.toLowerCase().includes("no action needed") &&
+    !hasRedMetrics &&
+    !alerts &&
+    !inbox
+  ) {
+    return ctx.done(
+      `Coach heartbeat: no action needed.\nPlan: ${planText.slice(0, 200)}`,
+    );
   }
 
   // ── PHASE 2: EXECUTE THE PLAN ──
@@ -131,8 +141,12 @@ ${contextBlock}
 - If a step fails, note it and continue with the next step.`;
 
   const execResult = await ctx.runAgent(agent, execPrompt);
-  recordCircuitOutcome(agentsRoot, agent, execResult.status === "error",
-    execResult.status === "error" ? "heartbeat session error" : undefined);
+  recordCircuitOutcome(
+    agentsRoot,
+    agent,
+    execResult.status === "error",
+    execResult.status === "error" ? "heartbeat session error" : undefined,
+  );
 
   return ctx.done(ctx.summarize(execResult, { maxLength: 500 }));
 }
