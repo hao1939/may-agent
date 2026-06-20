@@ -48,14 +48,17 @@ These findings are false positives for scout. The sessions aren't looping on a b
 
 `capability.status-reality-mismatch-count = 0` — **does NOT detect this mismatch** (corrected 2026-06-20). The metric is a composite of `staleActiveProjects + staleActiveMetrics + terminalSessionsWithoutEnd + agentsWithoutHeartbeat` (metrics-snapshot.ts line ~2305). It never compares `project.json` disk status to DB `projects.status`. There is no automatic reconciler for disk/DB project status splits.
 
-### Rate escalation (2026-06-20 04:07Z)
+### Rate escalation (2026-06-20 04:20Z update)
 
 | Window | stale-blocker-loop findings |
 |--------|---------------------------|
 | KE-2060 initial (Jun 19) | 13/24h |
-| Last 12h (Jun 20 04:07Z) | 24/12h (48/day projected) |
+| Jun 20 04:07Z | 24/12h (48/day projected) |
+| **Jun 20 04:20Z** | **29/24h, 25/12h** |
 
-The rate has nearly quadrupled. 19/28 in the last 24h target scout-knowledge-lib specifically.
+Finding rate is sustained at ~2/h. 20/29 (69%) target scout-knowledge-lib specifically, 7 have null projectId (likely arc/may heartbeats), 1 may-agent, 1 aks-rp-e2e.
+
+Distribution by owner: scout (20), may (6), arc (2), aks-explorer (1).
 
 ## Root Cause
 
