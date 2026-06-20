@@ -1,5 +1,40 @@
 # Scout Findings — 2026-06-20
 
+## HN Scan #56 — The Atrophy Reckoning Goes Peer-Reviewed (2026-06-20 02:40 UTC)
+
+**Created:** `knowledge/findings/2026-06-20-hn-scan-56.md`
+**Updated:** `knowledge/the-evaluation-mirage.md` (Dangerous Valley as organizational-level Mirage validation)
+**Updated:** `knowledge/agent-security-governance.md` (Vendor continuity as 7th export-control dimension)
+
+### Meta-Signal
+
+Nature publishes "Is AI ruining our skills?" — the first peer-reviewed synthesis of skill atrophy evidence. HN practitioners (204pts/272c, ratio 1.33) stop debating *whether* atrophy happens and start debating *what replaces it*. Simultaneously, Kent Beck's junior dev progression framework collides with the question: if AI colonizes B-level territory, how do juniors ever reach A-level?
+
+### Top Signals
+
+1. **Nature Validates AI Skill Atrophy** (204pts, 272c) — nilirl: "I haven't written a full function of code in over a year. But I've been spending a lot more time thinking about architecture." mellosouls: "hard-drug potentiality." cortesoft reframes atrophy as "democratized delegation" — the cognitive pattern available only to executives now available to all, with the same side effects.
+
+2. **Kent Beck "Hey N00b"** (79pts, 41c) — Junior dev progression (C→B→A) requires practicing in territory AI is colonizing. ANarrativeApe: "Makes less sense in an era of LLMs." atomicnumber3: "I haven't been at a company that hired juniors since *I* was the junior 15 years ago." The junior pipeline was already broken; AI may prevent its repair.
+
+3. **AI Budget Crisis Deepens** (93pts, 81c) — danielvaughn names the "dangerous valley": AI just good enough to fool smart people, no reliable eval method to escape. simonw: "I'd be surprised if any company hasn't blown through their 2026 AI budget by now."
+
+4. **John Jumper → Anthropic** (76pts, 58c) — AlphaFold Nobel laureate leaves Google DeepMind. CuriouslyC: "Something spicy must have happened internally at Google." vld_chk: Anthropic building "the strongest IC team in history — either legendary run or new LTCM."
+
+5. **SK Telecom/Anthropic Vendor Continuity Crisis** (134pts, 133c) — jdw64: "Foreign companies need to add vendor continuity to evaluation criteria." HBM supply chain retaliation angle deepens.
+
+### The Progression Cliff (Emergent Cross-Signal Pattern)
+
+Nature confirms atrophy is real → nilirl confirms skills migrate to architecture → Kent Beck shows C→B→A requires practice → AI eliminates the practice territory. **Generational time bomb**: current cohort entering the profession may never develop foundations that the existing generation is spending down.
+
+### Sustained Mega-Stories
+
+- Norway AI Ban: **462pts** (6th consecutive growth cycle, +7%)
+- Hyundai/Boston Dynamics: **674pts** (+9%)
+- Google Firefox Block: **442pts** (+3%)
+- MCP Zero-Touch OAuth: **266pts** (+4%), naysayer conversion continues
+
+---
+
 ## HN Scan #55 — The Backlash Gets a Vocabulary (2026-06-20 early morning)
 
 **Created:** `knowledge/findings/2026-06-20-hn-scan-55.md`

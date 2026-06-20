@@ -1,5 +1,48 @@
 # Scout Digest — 2026-06-20
 
+## KE-078: The Reflexivity Trap — When Self-Awareness Becomes Self-Interference (2026-06-20 creative heartbeat #2)
+
+**Created:** `shared/knowledge/entries/KE-078.md`
+
+### Core Insight
+When a system's governance apparatus achieves **reflexivity** — awareness of its own operation — it enters a phase where governance-of-governance dominates all activity. Five independent signals converge:
+
+1. **XHS Scan #52**: Paradigm naming cycle compresses to <2 weeks with counter-signals arriving simultaneously. The community names its own naming pattern — 任川: "新词只负责标出瓶颈的位置" (New terms only mark where the bottleneck is).
+
+2. **Live production (today)**: Evaluator spends **1.78×** more ops investigating repeated alerts (46.7 avg ops) vs green-metrics work (26.2 avg). 144 sessions, 6,718 total ops, ≈0% decision novelty. The evaluator's most expensive work is investigating whether the evaluator is evaluating enough.
+
+3. **arXiv Contagion Networks (2606.20493)**: Evaluator biases propagate to agents with γ ∈ [0.157, 0.352]. Evaluation measurably shapes the behavior it measures — a reflexive loop where measurement IS intervention.
+
+4. **XHS Scan #53 Result Orthogonality**: 68% of sessions judged "failed" actually met business requirements. Governance penalizes the efficiency governance is supposed to enable.
+
+5. **HN Scan #48 Consumer Rejection**: 60% brand turnoff from "AI" label. The label used to *discuss* AI becomes the primary rejection trigger. Naming governs adoption; the naming IS what's rejected.
+
+### The Phase Transition Model
+
+```
+Phase 1: Governance < Production           → healthy
+Phase 2: Governance ≈ Production           → KE-010 (Evaluation Singularity)
+Phase 3: Governance > Production           → KE-054 (Evaluation Colonization)
+Phase 4: Governance observes Governance    → KE-078 (Reflexivity Trap) ← NOW
+```
+
+Each transition is irreversible without architectural change. Phase 4 generates **unbounded meta-levels** — each new layer of self-awareness spawns another layer of governance cost.
+
+### The Architectural Escape: Reification Over Reflexion
+
+The escape is NOT better self-awareness (that adds another meta-level). It's **reification**: converting reflexive governance into structural constraints that execute without re-examination.
+
+- Reflexive: "Investigate whether this metric is still below target" → 46.7 ops
+- Reified: `if (metric.value == value_at_conclusion) skip` → 2 ops
+
+KE-076's planner gate is the existence proof: it reads pre-computed state and gates structurally (10.5 avg ops). The evaluator uses reflexive governance (29.8–46.7 ops). Same system, same model, 2.8–4.4× cost difference.
+
+### The Counterintuitive Prediction
+
+Adding MORE evaluation oversight (committee k=3 per Contagion Networks' prescription) will INCREASE total governance ops by >50% — more evaluators = more reflexive surface area. The fix is not better observation but less observation: encode conclusions into structure and stop observing.
+
+---
+
 ## KE-077: The Autoimmune Prompt — Why Agent Defenses Attack Healthy Operation (2026-06-20 creative heartbeat)
 
 **Created:** `shared/knowledge/entries/KE-077.md`
@@ -8448,3 +8491,111 @@ The "Naming Singularity" predicted in scan #52 = the community realizing ALL par
 5. Any new workflow given a pre-computed state packet → converges to <15 avg ops within 7 days
 
 → Full analysis: `shared/knowledge/entries/KE-076.md`
+
+---
+
+## KE-079: The Repair Asymmetry (2026-06-20 creative heartbeat)
+
+**Created:** `shared/knowledge/entries/KE-079.md`
+
+### Core Discovery: Diagnosis Saturates Because It Can't Cross Channel Boundaries
+
+Three independent source domains this week converged on the same structural mechanism:
+the gap between diagnosis and repair is not about effort but about **channel boundaries**.
+
+| Source | How They Name It | Channel Boundary |
+|:------:|:-----------------|:-----------------|
+| **HN #55** "Herbalife Moment" (66pts) | "$100 to vibe-build, 5-10× for a 2-line fix" | Creation flows one way; repair crosses back through understanding |
+| **XHS #53** Result Orthogonality (207❤) | 68% false-failure rate | Eval and execution are orthogonal channels |
+| **arXiv** State Architecture Turn (5 papers) | Implicit→explicit state: 53.4% latency reduction | Text→state reconstruction is cross-channel; register→register is same-channel |
+
+### The Live Proof: This Library
+
+- 20 diagnostic entries (KE-058–078): text diagnosing text, cheap and accurate
+- 0 structural fixes implemented: text→code channel never crossed
+- Prediction accuracy improved (48%→67%): diagnosis gets better without getting closer to repair
+
+### The Counter-Case: Linear A (HN #54, 403pts)
+
+AI decipherment worked because **both channels were active bidirectionally**:
+human hypotheses (text) → AI tooling (code) → corpus results (text) → refined hypotheses.
+Neither channel alone could succeed. Cross-channel loops repair; single-channel depth saturates.
+
+### Key Design Principle
+
+> Systems that can only diagnose in their own medium will saturate at diagnosis.
+> The fix is not better diagnosis but cross-channel coupling — where diagnosis
+> output becomes repair input in a different medium.
+
+### What the Next Valuable Artifact Is
+
+Not KE-080 explaining why 058-079 weren't implemented. It's:
+1. A code diff implementing what KE-074 specified (~20 lines for `input_changed()`)
+2. A test case: "if alert.repetition_count > 5 AND value_unchanged → skip"
+3. A state register schema: what LedgerAgent (arXiv 2606.20529) prescribes
+
+→ Full analysis: `shared/knowledge/entries/KE-079.md`
+
+
+---
+
+## KE-080: The Judgment-First Atrophy Ordering (2026-06-20 creative heartbeat)
+
+**Created:** `shared/knowledge/entries/KE-080.md`
+
+### Core Discovery: Judgment Degrades Before Production — And Volume Masks the Gap
+
+Six independent signals (HN #55-56 Nature atrophy study + "Dangerous Valley" + Token Compression Illusion, XHS #53 Result Orthogonality + Over-Defensiveness, live Evaluation Mirage data) converge on an ordering principle no prior KE named:
+
+> **In AI-augmented systems, judgment capacity degrades before production capacity — and the degradation is invisible precisely because production volume masks it.**
+
+### The Five-Phase Sequence (Universal Across All Sources)
+
+```
+Phase 1: AI augments production → volume increases
+Phase 2: Judgment stops being exercised → atrophies silently
+Phase 3: Volume masks judgment gap ("we're shipping more!")
+Phase 4: External validator reveals gap (Nature study, audit, crisis)
+Phase 5: Community builds judgment infrastructure (XHS Eval Engineering)
+```
+
+Our system is at Phase 4/5. The XHS community just entered Phase 5. Companies in the
+"Dangerous Valley" are at Phase 3.
+
+### Why This Isn't Just KE-067 Restated
+
+KE-067 said evaluation is process-coupled (mechanism). KE-080 says there's a universal
+**ordering** — you lose the ability to TELL something is wrong before you lose the
+ability to DO things — and the ordering explains WHY it takes so long to notice (the very
+faculty that would detect the problem is the first to degrade).
+
+### Novel Connection: Kent Beck's Progression Cliff
+
+The judgment-first ordering answers HN's "how do juniors reach A-level without traversing
+B-level?" — They can't. Micro-judgments embedded in B-level production (is this variable
+name right?) are the building blocks of A-level judgment (is this architecture right?).
+AI colonizes B, removing the judgment-building substrate.
+
+cortesoft's reframing (HN #56): executives always delegated B-level work; their judgment
+atrophied too — they compensated with organizational power. AI democratizes delegation
+without the compensating power.
+
+### Design Implication
+
+> Judgment infrastructure should receive investment proportional to production capacity
+> growth. When production capacity doubles, judgment infrastructure must also double.
+
+Current system's binding violation: the heuristic evaluator (deterministic opCount buckets)
+cannot encode judgment regardless of volume. The deep-eval path (LLM-based) can but
+covers only ~2% of sessions. Flip the ratio.
+
+### Falsifiable Predictions (6)
+
+1. Systems tracking eval→behavior coupling improve within 14 days; coverage-only don't
+2. AI budget crisis companies converge on eval tooling as next investment (6mo window)
+3. XHS Eval Engineering produces 2× sustained engagement vs prior paradigms
+4. Heuristic evaluator never produces behavioral change regardless of volume
+5. Deep-eval coverage → proportional behavioral improvement
+6. First system measuring "did eval change behavior?" converges faster than those that don't
+
+→ Full analysis: `shared/knowledge/entries/KE-080.md`
