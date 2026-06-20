@@ -152,6 +152,101 @@ describe("task worker", () => {
     });
   });
 
+  test("ignores obsolete completion when owner already removed assigned task", async () => {
+    const projectDir = await makeProject();
+    await writeFile(
+      join(projectDir, "tasks", "tree.json"),
+      `${JSON.stringify(
+        {
+          version: 1,
+          project: "aks-rp-e2e",
+          project_lifecycle: "active",
+          root_task_id: "project",
+          updated_at: new Date().toISOString(),
+          active_task_id: null,
+          active_task_ids: [],
+          tasks: {
+            project: {
+              id: "project",
+              state: "backlog",
+              children: ["spec-task"],
+              goal: "project",
+              outputs: ["tasks/tree.json"],
+              acceptance: ["done"],
+            },
+            "spec-task": {
+              id: "spec-task",
+              parent_id: "project",
+              state: "backlog",
+              kind: "domain_leaf",
+              workflow: "spec-runner",
+              priority: "P1",
+              children: [],
+              goal: "Run one spec.",
+              inputs: [],
+              outputs: ["runs/executions/"],
+              acceptance: ["Spec-runner produces terminal result"],
+              forbidden: [],
+              conflict_scope: ["spec:one"],
+              depends_on: [],
+            },
+          },
+        },
+        null,
+        2,
+      )}\n`,
+      "utf8",
+    );
+
+    const assignment = assignTask(config(projectDir), { taskId: "spec-task" });
+    const dispatched: Array<{
+      type: string;
+      payload: Record<string, unknown>;
+    }> = [];
+    const result = await execute({
+      task: [
+        `app: ${projectDir}`,
+        `project: ${projectDir}`,
+        "agent: aks-explorer",
+        "maxConcurrent: 1",
+        eventBlock(assignedEvent(assignment)),
+      ].join("\n"),
+      agent: "aks-explorer",
+      done: (message: string) => ({ status: "done", message }),
+      escalate: (message: string) => ({ status: "escalated", message }),
+      emit() {},
+      dispatchEvent(type: string, payload: Record<string, unknown>) {
+        dispatched.push({ type, payload });
+      },
+      runAgent: async () => ({ status: "success" }),
+      runAgentSession: async () => {
+        const treePath = join(projectDir, "tasks", "tree.json");
+        const tree = JSON.parse(await readFile(treePath, "utf8"));
+        delete tree.tasks["spec-task"];
+        tree.tasks.project.children = [];
+        tree.active_task_id = null;
+        tree.active_task_ids = [];
+        tree.updated_at = new Date().toISOString();
+        await writeFile(treePath, `${JSON.stringify(tree, null, 2)}\n`, "utf8");
+        return { status: "success", message: "RESULT: done" };
+      },
+      summarize: () => "",
+    } as any);
+
+    expect(result.status).toBe("done");
+    expect(result.message).toContain("ignored obsolete completion");
+    expect(dispatched).toHaveLength(0);
+    const updated = JSON.parse(
+      await readFile(join(projectDir, "tasks", "tree.json"), "utf8"),
+    );
+    expect(updated.tasks["spec-task"]).toBeUndefined();
+    const journal = await readFile(
+      join(projectDir, ".state", "journal.jsonl"),
+      "utf8",
+    );
+    expect(journal).toContain("task_worker_completion_ignored");
+  });
+
   test("keeps blocked worker results reviewable for the owner", async () => {
     const projectDir = await makeProject();
     await writeFile(

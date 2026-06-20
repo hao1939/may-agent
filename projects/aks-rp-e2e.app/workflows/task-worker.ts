@@ -255,6 +255,76 @@ function markAttemptStartedOnce(
   });
 }
 
+function completeStartedAttempt(
+  config: TaskTreeConfig,
+  input: {
+    taskId: string;
+    attemptId: string;
+    claim: TaskCompletionClaim;
+    summary: string;
+  },
+): { ok: true; task: TaskNode } | { ok: false; reason: string } {
+  const completionState = withTreeLock(config, () => {
+    const tree = readTaskTree(config);
+    const task = tree.tasks[input.taskId];
+    if (!task) {
+      return {
+        ok: false as const,
+        reason: `Assigned task ${input.taskId} no longer exists; completion for attempt ${input.attemptId} is obsolete.`,
+      };
+    }
+    if (taskAttemptId(task) !== input.attemptId) {
+      return {
+        ok: false as const,
+        reason: `Assigned task ${input.taskId} attempt ${input.attemptId} is no longer current; completion is obsolete.`,
+      };
+    }
+    if (task.status !== "active") {
+      return {
+        ok: false as const,
+        reason: `Assigned task ${input.taskId} is ${task.status}, not active; completion for attempt ${input.attemptId} is obsolete.`,
+      };
+    }
+    return { ok: true as const };
+  });
+  if (completionState.ok === false) {
+    appendToolJournal(config, {
+      kind: "task_worker_completion_ignored",
+      task_id: input.taskId,
+      attempt_id: input.attemptId,
+      result: input.claim,
+      reason: completionState.reason,
+      summary: input.summary,
+    });
+    return { ok: false, reason: completionState.reason };
+  }
+
+  try {
+    return {
+      ok: true,
+      task: completeTask(config, {
+        taskId: input.taskId,
+        claim: input.claim,
+        summary: input.summary,
+      }),
+    };
+  } catch (error) {
+    const reason =
+      error instanceof Error
+        ? error.message
+        : `Unable to complete task ${input.taskId}`;
+    appendToolJournal(config, {
+      kind: "task_worker_completion_ignored",
+      task_id: input.taskId,
+      attempt_id: input.attemptId,
+      result: input.claim,
+      reason,
+      summary: input.summary,
+    });
+    return { ok: false, reason };
+  }
+}
+
 async function runAssignedMode(
   ctx: WorkflowContext,
   appDir: string,
@@ -297,11 +367,18 @@ async function runAssignedMode(
   });
   const message = resultText(result);
   const claim = workerResultFromSession(result, message);
-  const completedTask = completeTask(config, {
+  const completion = completeStartedAttempt(config, {
     taskId: task.id,
+    attemptId,
     claim,
     summary: message || "Worker session returned without a completion summary.",
   });
+  if (completion.ok === false) {
+    return ctx.done(
+      `Task worker ignored obsolete completion for ${task.id} attempt ${attemptId}; result was ${claim}. ${completion.reason}`,
+    );
+  }
+  const completedTask = completion.task;
   emitTaskCompleted(ctx, completedTask, {
     attemptId,
     result: claim,
