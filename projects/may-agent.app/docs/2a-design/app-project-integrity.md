@@ -265,6 +265,47 @@ rediscovering the blocker from scratch.
 Human notification is for ownership-boundary blockers or repeated owner-loop
 failure, not for routine project state.
 
+## Owner Heartbeat
+
+The owner heartbeat is a low-frequency creative fallback. It is not a schedule
+(those execute known work) and not an event-driven wake (those react to
+completions and breaches). The heartbeat is the owner looking around freely —
+noticing what no schedule or metric would trigger.
+
+Three owner wake mechanisms, each with a different purpose:
+
+| Mechanism | Purpose | Frequency |
+| --- | --- | --- |
+| Schedule | Execute known work on a cadence | Per-task (minutes to hours) |
+| Owner wake (event) | React to completions, problems, metrics | On demand |
+| Owner heartbeat | Discover unknown issues, drive stuck work, creative insight | Low (every 2-4h) |
+
+All three write to the same task tree. None create standalone projects.
+
+What the heartbeat does:
+
+- Notices stuck work that no metric caught
+- Finds cross-domain connections (e.g., "HN and XHS converge this week")
+- Discovers gaps the planner didn't see
+- Challenges stale assumptions in the task tree
+- Proposes creative next steps the schedule wouldn't trigger
+
+What it does NOT do:
+
+- Execute fixed procedures (that's a schedule)
+- Create standalone projects (findings go into the task tree)
+- Run at high frequency (every few hours, not every few minutes)
+- Replace the planner or owner-wake workflow
+
+Bounded output contract:
+
+1. Read task tree + recent activity + metrics
+2. Look for: stale work, missed gaps, creative opportunities, stuck patterns
+3. If something found: create a backlog task, update context, or record finding
+4. If nothing found: no-op — don't force output
+5. Never create standalone projects
+6. Never execute multi-step domain work (create a task for that)
+
 ## Human And UI Interaction
 
 Human steering is also owner input. Project UIs should send

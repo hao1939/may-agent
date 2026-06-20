@@ -2,99 +2,15 @@
 
 > **Status (2026-06-20):** Heartbeat auto-generation is disabled for app-owned
 > agents (scout, evaluator) via `"heartbeat": false` in agent.json. Their apps
-> own deterministic schedules (explore, aftermath-scan, drift, patrol). The
-> heartbeat concept remains valid as a **low-frequency creative fallback** for
-> project owners — see Proposal below. `dev` and `arc` still use the global
-> heartbeat auto-generator (no app yet).
-
-## Proposal: Heartbeat as Creative Fallback (2026-06-20)
-
-Heartbeats and schedules serve different purposes:
-
-| | Schedule | Heartbeat |
-|---|---|---|
-| **Purpose** | Execute known work on a cadence | Discover unknown issues, drive stuck work forward |
-| **Frequency** | Per-task (1h explores, 7min backfill) | Low (every 2-4h) |
-| **Scope** | One specific procedure | Open-ended owner review |
-| **Output** | Specific artifacts, events | Task tree updates, new findings, creative connections |
-| **Trigger** | Timer or event | Timer (infrequent) |
-
-Schedules handle what the system KNOWS needs doing. Heartbeats handle
-what the system DOESN'T KNOW it needs — the owner looking around freely
-without being told what to look at.
-
-### What a project-owner heartbeat does
-
-- Notices stuck work that no metric caught
-- Finds cross-domain connections (scout: "HN and XHS converge on this pattern")
-- Discovers gaps the planner didn't see
-- Challenges stale assumptions in the task tree
-- Proposes creative next steps the schedule wouldn't trigger
-
-### What it does NOT do
-
-- Execute fixed procedures (that's a schedule)
-- Create standalone projects (that's the old broken pattern)
-- Run at high frequency (5min heartbeat = noise factory)
-- Replace the planner/owner-wake workflow (that's event-driven)
-
-### Bounded output contract
-
-The heartbeat works WITHIN the app's task tree:
-
-1. Read task tree + recent activity + metrics
-2. Look for: stale work, missed gaps, creative opportunities, stuck patterns
-3. If something found: create a backlog task, update context, or record finding
-4. If nothing found: no-op — don't force output
-5. Never create standalone projects
-6. Never execute multi-step domain work (create a task for that)
-
-### Recommended cadence per app
-
-| App | Heartbeat interval | Why |
-|-----|-------------------|-----|
-| scout-knowledge-lib.app | 4h | Cross-source synthesis, library gaps |
-| evaluation.app | 4h | Criteria staleness, quality drift, missed patterns |
-| aks-rp-e2e.app | 6h | Frontier gaps, blocked work review, source expansion |
-| may-agent.app | 4h | Platform health, design alignment, ops drift |
-
-### Implementation
-
-Each app adds a schedule for the owner heartbeat:
-
-```typescript
-{
-  id: "owner-heartbeat",
-  enabled: true,
-  intervalMs: 14_400_000, // 4h
-  event: {
-    type: "project.owner.heartbeat",
-    project: projectId,
-  },
-}
-```
-
-The workflow handler receives `project.owner.heartbeat`, reads the task
-tree packet, and runs a bounded creative session. The prompt is NOT
-`genericHeartbeat` — it's a focused owner-review prompt that says:
-
-- "Look at your task tree. Anything stuck? Anything missed?"
-- "Any cross-cutting insight from recent work?"
-- "Any creative next step the planner wouldn't see?"
-- "If nothing: say nothing. Don't force output."
-
-The session has the same tools as the owner workflow but is bounded to
-observation and task-tree updates, not full execution.
-
-### Relationship to existing schedules
-
-```
-Schedules (deterministic)      → known work on a cadence
-Owner wake (event-driven)      → react to completions, problems, metrics
-Owner heartbeat (low-freq)     → creative fallback, discovery, stuck-work audit
-```
-
-All three write to the same task tree. None create standalone projects.
+> own deterministic schedules (explore, aftermath-scan, drift, patrol).
+>
+> The owner heartbeat concept (low-frequency creative fallback) is now part of
+> the unified app model in [app-project-integrity.md](app-project-integrity.md)
+> §Owner Heartbeat. That section defines how heartbeats relate to schedules and
+> event-driven wakes within the same task tree.
+>
+> `dev` and `arc` still use the global heartbeat auto-generator (no app yet).
+> The design below applies to standalone agents without a project-app.
 
 ## Design Rationale
 
