@@ -124,10 +124,21 @@ agents through project-app loading:
 - legacy project-local agents at
   `PROJECTS_ROOT/<project>/agents/<agent>/agent.json` for compatibility
 
+Directories without `agent.json` are not agents. They may be leftover runtime
+workspace folders or legacy artifacts, but discovery must ignore them for
+registration, heartbeat generation, routing, and UI/runtime agent lists.
+
 App-local and legacy project-local agents are not a separate runtime mode. They
 are registered in the same manager and must use globally unique names. Their
 coding tools are scoped to the owning app/domain workspace according to the app
 loader or legacy project loader.
+
+When a project-app workflow runs for an app-local agent, `WorkflowContext`
+paths must describe that app-local agent root. In particular,
+`ctx.agentsRoot` is `projects/<id>.app/agents`, not global `agents/`.
+Workflow code can then write `join(ctx.agentsRoot, ctx.agent, "workspace", ...)`
+without recreating legacy global agent directories. Global agents keep
+`ctx.agentsRoot = AGENTS_ROOT`.
 
 ## Implementation
 

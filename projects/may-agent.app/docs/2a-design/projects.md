@@ -309,6 +309,12 @@ domain repair logic. The runtime supplies the event bus, scheduler, session
 execution, persistence, and default owner fallback; it does not supervise the
 task tree or decide project strategy.
 
+For workflow handlers owned by an app-local agent, the workflow runtime uses the
+app-local `agents/` directory as `ctx.agentsRoot`. This keeps runtime artifacts
+such as `workspace/`, `last-session.md`, and workflow-produced handoff files
+with the app that owns the agent. Code should not hard-code global
+`agents/<agent>/...` paths for app-owned workers.
+
 Legacy project-local agents under `projects/<project>/agents/<agent>/` and
 legacy embedded apps under `projects/<project>/.app/` are compatibility paths.
 Do not use them for new projects.
