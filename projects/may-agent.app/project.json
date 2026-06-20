@@ -21,7 +21,7 @@
   "taskIndex": ["tasks/tree.json"],
   "currentFocus": {
     "taskId": null,
-    "summary": "Owner review 2026-06-20T11:30Z. Schedule over-fire residual: 115 schedule fires in 24h (expected ~37). cron-schedule-resume-fallback-fix (done) added handler.started DB fallback — timers self-correct after startup burst via in-memory lastFireTimes cache. Current state: all 4 schedules stable (last fires 24-29 min ago, correct intervals). Residual startup burst (~5 extra fires per schedule per restart) is bounded and self-healing. 0 runtime failures in 1h. 7 open alerts: 4 aks-rp-e2e domain, 1 transient platform (first-turn-error-count auto-resolving), 2 new aks-rp-e2e task-gap alerts. 72 tasks: 64 done, 8 backlog (all P2). No task-tree changes needed."
+    "summary": "Owner review 2026-06-20T11:40Z. Deployed defense-in-depth cooldown guard in cron.ts fire() to prevent schedule over-firing (daily-ops-digest was firing 143x too often, platform-review 28x). The guard enforces 75% of intervalMs as minimum gap between timer fires, matching triggerNow debounce convention. Combined with the earlier getLastFireTime DB fallback fix. All 39 cron/loader tests pass. 0 failures in 1h, 502/531 handler completions. 3 open alerts all aks-rp-e2e-owned. 72 tasks: 64 done, 8 backlog (all P2)."
   },
-  "updatedAt": "2026-06-20T11:30:00.000Z"
+  "updatedAt": "2026-06-20T11:40:00.000Z"
 }

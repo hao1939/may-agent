@@ -171,6 +171,7 @@ const DEFERRED_METRIC_IDS = new Set([
   "escalation.pending-count",
   "metric.stale-active-count",
   "session.first-turn-error-count-1h",
+  "handler.heartbeat-coverage",
 ]);
 
 function buildPacket(ctx: WorkflowContext): { packet: Row; signals: Signal[] } {

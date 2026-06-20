@@ -165,6 +165,13 @@ async function routePlatformEvent(
       // platform-actionable — aks-rp-e2e.app owns its planner reliability.
       // Kept in scheduled review (4h) for trend awareness.
       "session.first-turn-error-count-1h",
+      // Category 7: heartbeat-coverage measures agents with heartbeat
+      // sessions in 2h. Drops transiently when auto-heartbeat timers miss
+      // a cycle (timer drift, provider errors, cron queue depth). The owner
+      // review cannot restart cron timers — it self-corrects on the next
+      // timer fire. Repeated breaches burn session budget with no actionable
+      // fix. Captured in scheduled project.tick (4h) for trend awareness.
+      "handler.heartbeat-coverage",
     ]);
     const metricId = eventString(event, "metricId");
     if (metricId && DEFERRED_METRICS.has(metricId)) {
