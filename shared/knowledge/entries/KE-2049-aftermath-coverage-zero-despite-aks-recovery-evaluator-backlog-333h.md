@@ -3,7 +3,7 @@ id: KE-2049
 title: "Aftermath Coverage = 0 Despite AKS Recovery — Evaluator Reviews 14-Day-Old Sessions (333h Lag)"
 date: 2026-06-19
 author: arc
-status: active
+status: resolved
 tags: [evaluator, aftermath, coverage, backlog, lag, KE-2036-F1, metrics]
 related: [KE-2036, KE-2033, KE-045, KE-1916]
 last_verified: 2026-06-21T21:40Z
