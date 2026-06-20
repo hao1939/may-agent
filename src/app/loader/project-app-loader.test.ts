@@ -196,6 +196,63 @@ describe("project app loader", () => {
     }
   });
 
+  it("syncs the runtime project read model from project.json", async () => {
+    const root = tempRoot();
+    const persistDir = join(root, ".state");
+    try {
+      const projectsRoot = join(root, "projects");
+      const appDir = join(projectsRoot, "sample.app");
+      writeApp(
+        appDir,
+        `{
+        id: "sample",
+        owner: "old-owner"
+      }`,
+      );
+      writeFileSync(
+        join(appDir, "project.json"),
+        JSON.stringify({
+          id: "sample.app",
+          owner: "tech-lead",
+          status: "active",
+          type: "project-app",
+          priority: "P0",
+        }),
+      );
+
+      const db = getDb(persistDir);
+      db.run(
+        "INSERT INTO projects (id, path, name, owner, status, type, priority, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+        ["sample.app", "projects/sample.app", "sample.app", "may", "active", "project-app", "P1", 1],
+      );
+
+      await installProjectApps({
+        projectsRoot,
+        projectRoot: root,
+        persistDir,
+        manager: { hasAgent: (name: string) => name === "old-owner" } as any,
+        bus: new EventBus(),
+        agentCrons: new Map(),
+      });
+
+      const row = db
+        .prepare("SELECT id, path, name, owner, status, type, priority FROM projects WHERE id = ?")
+        .get("sample.app") as Record<string, unknown>;
+      expect(row).toMatchObject({
+        id: "sample.app",
+        path: "projects/sample.app",
+        name: "sample.app",
+        owner: "tech-lead",
+        status: "active",
+        type: "project-app",
+        priority: "P0",
+      });
+    } finally {
+      closeDb(persistDir);
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
   it("routes unhandled project-scoped events to the inferred owner", async () => {
     const root = tempRoot();
     try {

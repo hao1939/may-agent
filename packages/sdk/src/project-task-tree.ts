@@ -33,6 +33,7 @@ export type TaskTreeSummary = {
   counts: Record<string, number>;
   frontier: {
     runnable: string[];
+    waiting: string[];
     active: string[];
     review: string[];
     blocked: string[];
@@ -80,6 +81,7 @@ export type TaskPlanningSnapshot = {
   conflict_scope: string[];
   depends_on: string[];
   blocker?: string;
+  readiness_reasons?: string[];
   trace?: Record<string, unknown>;
 };
 
@@ -102,11 +104,55 @@ export type ModelStatusSummary = {
 export type TaskPlanningPacket = TaskTreeSummary & {
   frontier_details: {
     runnable: TaskPlanningSnapshot[];
+    waiting: TaskPlanningSnapshot[];
     active: TaskPlanningSnapshot[];
     review: TaskPlanningSnapshot[];
     blocked: TaskPlanningSnapshot[];
   };
+  blocked_frontier_summary?: TaskBlockedFrontierSummary;
+  task_tree_hygiene?: TaskTreeHygieneSummary;
   model_status_summary?: ModelStatusSummary;
+};
+
+export type TaskTreeCompactionCandidate = {
+  parent_id: string;
+  child_count: number;
+  open_child_count: number;
+  done_child_count: number;
+  safe_done_leaf_count: number;
+  archived_done_leaf_count?: number;
+  rollup_summary?: string;
+  sample_done_leaf_ids: string[];
+};
+
+export type TaskTreeHygieneSummary = {
+  safe_done_leaf_count: number;
+  protected_done_leaf_count: number;
+  compaction_candidates: TaskTreeCompactionCandidate[];
+};
+
+export type TaskBlockedParentGroup = {
+  parent_id: string;
+  parent_goal?: string;
+  blocked_leaf_count: number;
+  total_child_count: number;
+  open_child_count: number;
+  sample_blocked_leaf_ids: string[];
+  sample_blockers: string[];
+};
+
+export type TaskBlockedSignatureGroup = {
+  signature: string;
+  blocked_leaf_count: number;
+  parent_ids: string[];
+  sample_blocked_leaf_ids: string[];
+  sample_blocker?: string;
+};
+
+export type TaskBlockedFrontierSummary = {
+  blocked_leaf_count: number;
+  parent_groups: TaskBlockedParentGroup[];
+  repeated_blocker_groups: TaskBlockedSignatureGroup[];
 };
 
 export type TaskCompletionClaim = "done" | "partial" | "blocked";
@@ -815,6 +861,27 @@ function isRunnableBacklogLeaf(tree: TaskTree, task: TaskNode): boolean {
   return !activeLeaves(tree).some((active) => conflictScopesOverlap(active, task));
 }
 
+function waitingBacklogReasons(tree: TaskTree, task: TaskNode): string[] {
+  const reasons: string[] = [];
+  if (!isClearEnough(task)) reasons.push("missing goal, acceptance, or output");
+
+  for (const dependencyId of normalizeStringArray(task.depends_on)) {
+    const dependency = tree.tasks[dependencyId];
+    if (!dependency) {
+      reasons.push(`depends_on '${dependencyId}' is missing`);
+    } else if (taskState(dependency) !== "done") {
+      reasons.push(`depends_on '${dependencyId}' is ${taskState(dependency)}, not done`);
+    }
+  }
+
+  const conflicts = activeLeaves(tree)
+    .filter((active) => active.id !== task.id && conflictScopesOverlap(active, task))
+    .map((active) => active.id);
+  if (conflicts.length > 0) reasons.push(`conflicts with active task(s): ${conflicts.join(", ")}`);
+
+  return reasons;
+}
+
 function frontierAssignableIds(tree: TaskTree): string[] {
   return Object.values(tree.tasks)
     .filter((task) => isRunnableBacklogLeaf(tree, task))
@@ -858,7 +925,7 @@ function compactTrace(trace: TaskNode["trace"]): Record<string, unknown> {
   );
 }
 
-function compactTask(task: TaskNode): TaskPlanningSnapshot {
+function compactTask(task: TaskNode, readinessReasons?: string[]): TaskPlanningSnapshot {
   const trace = compactTrace(task.trace);
   const state = taskState(task);
   return {
@@ -877,7 +944,99 @@ function compactTask(task: TaskNode): TaskPlanningSnapshot {
     conflict_scope: compactArray(task.conflict_scope),
     depends_on: compactArray(task.depends_on),
     blocker: truncate(task.blocker, 700),
+    readiness_reasons: readinessReasons?.slice(0, 6).map((reason) => truncate(reason, 260) ?? ""),
     trace: Object.keys(trace).length ? trace : undefined,
+  };
+}
+
+function openChildCount(tree: TaskTree, parent: TaskNode): number {
+  return normalizeStringArray(parent.children).filter((childId) => {
+    const child = tree.tasks[childId];
+    return child && taskState(child) !== "done";
+  }).length;
+}
+
+function blockerSourceText(task: TaskNode): string {
+  if (typeof task.blocker === "string" && task.blocker.trim()) return task.blocker;
+  return [task.goal, compactArray(task.acceptance, 2).join(" ")]
+    .filter((value): value is string => typeof value === "string" && value.trim().length > 0)
+    .join(" ");
+}
+
+function blockerSignature(text: string): string {
+  return text
+    .toLowerCase()
+    .replace(/\b20\d{6,}\b/g, "date")
+    .replace(/\b20\d{2}-\d{2}-\d{2}(t[0-9:.z-]+)?\b/g, "date")
+    .replace(/[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}/g, "email")
+    .replace(/[^a-z0-9]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim()
+    .slice(0, 180);
+}
+
+function blockedFrontierSummary(tree: TaskTree): TaskBlockedFrontierSummary | undefined {
+  const blockedLeaves = Object.values(tree.tasks)
+    .filter((task) => isLeaf(task) && taskState(task) === "blocked")
+    .sort(taskSort);
+  if (blockedLeaves.length === 0) return undefined;
+
+  const byParent = new Map<string, TaskNode[]>();
+  const bySignature = new Map<string, TaskNode[]>();
+  const sampleBlockerBySignature = new Map<string, string>();
+
+  for (const task of blockedLeaves) {
+    const parentId = task.parent_id ?? "(root)";
+    byParent.set(parentId, [...(byParent.get(parentId) ?? []), task]);
+
+    const source = blockerSourceText(task);
+    const signature = blockerSignature(source);
+    if (!signature) continue;
+    bySignature.set(signature, [...(bySignature.get(signature) ?? []), task]);
+    if (!sampleBlockerBySignature.has(signature)) {
+      sampleBlockerBySignature.set(signature, truncate(source, 500) ?? "");
+    }
+  }
+
+  return {
+    blocked_leaf_count: blockedLeaves.length,
+    parent_groups: [...byParent.entries()]
+      .map(([parentId, tasks]) => {
+        const parent = tree.tasks[parentId];
+        return {
+          parent_id: parentId,
+          ...(parent?.goal ? { parent_goal: truncate(parent.goal, 300) } : {}),
+          blocked_leaf_count: tasks.length,
+          total_child_count: parent ? normalizeStringArray(parent.children).length : tasks.length,
+          open_child_count: parent ? openChildCount(tree, parent) : tasks.length,
+          sample_blocked_leaf_ids: tasks.slice(0, 8).map((task) => task.id),
+          sample_blockers: [
+            ...new Set(
+              tasks
+                .map((task) => truncate(blockerSourceText(task), 300))
+                .filter((value): value is string => Boolean(value)),
+            ),
+          ].slice(0, 3),
+        };
+      })
+      .sort(
+        (a, b) =>
+          b.blocked_leaf_count - a.blocked_leaf_count ||
+          b.open_child_count - a.open_child_count ||
+          a.parent_id.localeCompare(b.parent_id),
+      )
+      .slice(0, 10),
+    repeated_blocker_groups: [...bySignature.entries()]
+      .filter(([, tasks]) => tasks.length >= 2)
+      .map(([signature, tasks]) => ({
+        signature,
+        blocked_leaf_count: tasks.length,
+        parent_ids: [...new Set(tasks.map((task) => task.parent_id ?? "(root)"))].sort().slice(0, 8),
+        sample_blocked_leaf_ids: tasks.slice(0, 8).map((task) => task.id),
+        sample_blocker: sampleBlockerBySignature.get(signature),
+      }))
+      .sort((a, b) => b.blocked_leaf_count - a.blocked_leaf_count || a.signature.localeCompare(b.signature))
+      .slice(0, 10),
   };
 }
 
@@ -886,7 +1045,7 @@ function frontierDetails(tree: TaskTree, status: string): TaskPlanningSnapshot[]
     .filter((task) => isLeaf(task) && task.status === status)
     .sort(taskSort)
     .slice(0, 8)
-    .map(compactTask);
+    .map((task) => compactTask(task));
 }
 
 function frontierAssignableDetails(tree: TaskTree): TaskPlanningSnapshot[] {
@@ -894,7 +1053,102 @@ function frontierAssignableDetails(tree: TaskTree): TaskPlanningSnapshot[] {
     .filter((task) => isRunnableBacklogLeaf(tree, task))
     .sort(taskSort)
     .slice(0, 8)
-    .map(compactTask);
+    .map((task) => compactTask(task));
+}
+
+export function waitingBacklogTaskSnapshots(tree: TaskTree): TaskPlanningSnapshot[] {
+  return Object.values(tree.tasks)
+    .map((task) => ({ task, reasons: waitingBacklogReasons(tree, task) }))
+    .filter(({ task, reasons }) => isWorkerExecutableBacklogLeaf(task) && reasons.length > 0)
+    .sort((a, b) => taskSort(a.task, b.task))
+    .map(({ task, reasons }) => compactTask(task, reasons));
+}
+
+function taskTreeHygieneSummary(tree: TaskTree): TaskTreeHygieneSummary | undefined {
+  const dependencyRefs = dependencyReferences(tree);
+  const leaves = Object.values(tree.tasks).filter((task) => isLeaf(task));
+  const safeDoneLeaves = leaves.filter((task) => isSafeDoneLeaf(tree, task, dependencyRefs));
+  const protectedDoneLeafCount = leaves.filter(
+    (task) => task.id !== tree.root_task_id && task.status === "done" && dependencyRefs.has(task.id),
+  ).length;
+
+  if (safeDoneLeaves.length === 0 && protectedDoneLeafCount === 0) return undefined;
+
+  const byParent = new Map<
+    string,
+    {
+      parent: TaskNode;
+      safeDoneLeaves: TaskNode[];
+      doneChildCount: number;
+      openChildCount: number;
+      childCount: number;
+    }
+  >();
+
+  for (const leaf of safeDoneLeaves) {
+    const parentId = leaf.parent_id ?? "";
+    const parent = parentId ? tree.tasks[parentId] : undefined;
+    if (!parent) continue;
+    const existing =
+      byParent.get(parent.id) ??
+      ({
+        parent,
+        safeDoneLeaves: [],
+        doneChildCount: 0,
+        openChildCount: 0,
+        childCount: normalizeStringArray(parent.children).length,
+      } satisfies {
+        parent: TaskNode;
+        safeDoneLeaves: TaskNode[];
+        doneChildCount: number;
+        openChildCount: number;
+        childCount: number;
+      });
+    existing.safeDoneLeaves.push(leaf);
+    byParent.set(parent.id, existing);
+  }
+
+  for (const entry of byParent.values()) {
+    for (const childId of normalizeStringArray(entry.parent.children)) {
+      const child = tree.tasks[childId];
+      if (!child) continue;
+      if (taskState(child) === "done") entry.doneChildCount++;
+      else entry.openChildCount++;
+    }
+  }
+
+  return {
+    safe_done_leaf_count: safeDoneLeaves.length,
+    protected_done_leaf_count: protectedDoneLeafCount,
+    compaction_candidates: [...byParent.values()]
+      .map((entry) => {
+        const context = contextObject(entry.parent);
+        const archivedCount =
+          typeof context.archived_done_leaf_count === "number" ? context.archived_done_leaf_count : undefined;
+        const rollupSummary =
+          typeof context.rollup_summary === "string" ? truncate(context.rollup_summary, 500) : undefined;
+        return {
+          parent_id: entry.parent.id,
+          child_count: entry.childCount,
+          open_child_count: entry.openChildCount,
+          done_child_count: entry.doneChildCount,
+          safe_done_leaf_count: entry.safeDoneLeaves.length,
+          ...(archivedCount !== undefined ? { archived_done_leaf_count: archivedCount } : {}),
+          ...(rollupSummary ? { rollup_summary: rollupSummary } : {}),
+          sample_done_leaf_ids: entry.safeDoneLeaves
+            .sort(taskSort)
+            .slice(0, 8)
+            .map((task) => task.id),
+        };
+      })
+      .sort(
+        (a, b) =>
+          b.safe_done_leaf_count - a.safe_done_leaf_count ||
+          b.done_child_count - a.done_child_count ||
+          a.parent_id.localeCompare(b.parent_id),
+      )
+      .slice(0, 8),
+  };
 }
 
 function summarizeLoadedTree(tree: TaskTree): TaskTreeSummary {
@@ -923,6 +1177,9 @@ function summarizeLoadedTree(tree: TaskTree): TaskTreeSummary {
     counts,
     frontier: {
       runnable: frontierAssignableIds(tree),
+      waiting: waitingBacklogTaskSnapshots(tree)
+        .slice(0, 20)
+        .map((task) => task.id),
       active: frontierIds(tree, "active"),
       review: frontierIds(tree, "review"),
       blocked: frontierIds(tree, "blocked"),
@@ -941,6 +1198,7 @@ export function summarizeTaskTree(config: ToolConfig): TaskTreeSummary {
       counts: {},
       frontier: {
         runnable: [],
+        waiting: [],
         active: [],
         review: [],
         blocked: [],
@@ -1018,15 +1276,24 @@ export function planningPacket(config: ToolConfig): TaskPlanningPacket {
     const tree = readTaskTree(config);
     const summary = summarizeLoadedTree(tree);
     const modelSummary = loadModelStatusSummary(config);
+    const blockedSummary = blockedFrontierSummary(tree);
     const packet: TaskPlanningPacket = {
       ...summary,
       frontier_details: {
         runnable: frontierAssignableDetails(tree),
+        waiting: waitingBacklogTaskSnapshots(tree).slice(0, 8),
         active: frontierDetails(tree, "active"),
         review: frontierDetails(tree, "review"),
         blocked: frontierDetails(tree, "blocked"),
       },
     };
+    if (blockedSummary) {
+      packet.blocked_frontier_summary = blockedSummary;
+    }
+    const hygiene = taskTreeHygieneSummary(tree);
+    if (hygiene) {
+      packet.task_tree_hygiene = hygiene;
+    }
     if (modelSummary) {
       packet.model_status_summary = modelSummary;
     }

@@ -20,6 +20,7 @@ services:
       - "${WEB_PORT:-8080}:8080"
     volumes:
       - /app:/app
+      - /home/hao/aks-rp:/app/sources/aks-rp:ro
       - /home/hao/litellm/github_copilot:/app/.copilot:ro
     environment:
       - INSTANCE=${INSTANCE:-background}
