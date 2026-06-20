@@ -204,7 +204,7 @@ export type CreateTaskInput = {
   id: string;
   parentId: string;
   state?: "backlog" | "blocked";
-  status?: "proposed" | "backlog" | "ready" | "blocked";
+  status?: "backlog" | "blocked";
   kind?: string;
   priority?: "P0" | "P1" | "P2" | "P3";
   owner?: string;
