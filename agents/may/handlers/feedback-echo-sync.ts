@@ -1,6 +1,6 @@
 /**
  * feedback-echo-sync — Inline handler that syncs evaluator feedback into
- * agents/<name>/last-eval.md files.
+ * registered agent last-eval.md files.
  *
  * Previously this spawned `bun agents/shared/feedback-echo.ts` as a
  * subprocess, but the spawn would intermittently hang past the 30s internal
@@ -12,9 +12,19 @@
  * no second DB connection. Runs in <1s.
  */
 
-import type { EventEnvelope, HandlerContext, HandlerModule } from "@may-agent/sdk";
+import type {
+  EventEnvelope,
+  HandlerContext,
+  HandlerModule,
+} from "@may-agent/sdk";
 import type { CronEntry } from "@may-agent/sdk";
-import { existsSync, writeFileSync, unlinkSync } from "node:fs";
+import {
+  existsSync,
+  readdirSync,
+  readFileSync,
+  writeFileSync,
+  unlinkSync,
+} from "node:fs";
 import { join } from "node:path";
 
 interface EvalRow {
@@ -25,23 +35,67 @@ interface EvalRow {
   createdAt: number;
 }
 
+function configuredName(agentDir: string, fallback: string): string | null {
+  const configPath = join(agentDir, "agent.json");
+  if (!existsSync(configPath)) return null;
+  try {
+    const config = JSON.parse(readFileSync(configPath, "utf-8")) as {
+      name?: string;
+      disabled?: boolean;
+    };
+    if (config.disabled) return null;
+    return config.name ?? fallback;
+  } catch {
+    return fallback;
+  }
+}
+
+function resolveAgentDir(projectRoot: string, agent: string): string | null {
+  const projectsRoot = join(projectRoot, "projects");
+  if (existsSync(projectsRoot)) {
+    for (const entry of readdirSync(projectsRoot, { withFileTypes: true })) {
+      if (!entry.isDirectory() || !entry.name.endsWith(".app")) continue;
+      const appAgentsRoot = join(projectsRoot, entry.name, "agents");
+      if (!existsSync(appAgentsRoot)) continue;
+      for (const candidate of readdirSync(appAgentsRoot, {
+        withFileTypes: true,
+      })) {
+        if (!candidate.isDirectory()) continue;
+        const candidateDir = join(appAgentsRoot, candidate.name);
+        if (configuredName(candidateDir, candidate.name) === agent)
+          return candidateDir;
+      }
+    }
+  }
+
+  const globalDir = join(projectRoot, "agents", agent);
+  return configuredName(globalDir, agent) === agent ? globalDir : null;
+}
+
 function generateForAgent(
-  db: { prepare(sql: string): { get(...params: unknown[]): Record<string, unknown> | null; all(...params: unknown[]): Record<string, unknown>[] } },
+  db: {
+    prepare(sql: string): {
+      get(...params: unknown[]): Record<string, unknown> | null;
+      all(...params: unknown[]): Record<string, unknown>[];
+    };
+  },
   agent: string,
-  agentsDir: string,
+  projectRoot: string,
 ): boolean {
-  const agentDir = join(agentsDir, agent);
-  if (!existsSync(agentDir)) return false;
+  const agentDir = resolveAgentDir(projectRoot, agent);
+  if (!agentDir) return false;
 
   const evalFile = join(agentDir, "last-eval.md");
 
   // Get latest evaluation with issues
-  const latest = db.prepare(
-    `SELECT sessionId, quality, verdict, issues, createdAt
+  const latest = db
+    .prepare(
+      `SELECT sessionId, quality, verdict, issues, createdAt
      FROM evaluations
      WHERE agent = ? AND issues IS NOT NULL AND issues != '[]'
-     ORDER BY createdAt DESC LIMIT 1`
-  ).get(agent) as EvalRow | null;
+     ORDER BY createdAt DESC LIMIT 1`,
+    )
+    .get(agent) as EvalRow | null;
 
   if (!latest) {
     // No negative evaluation — clean up stale file
@@ -50,25 +104,31 @@ function generateForAgent(
   }
 
   // Get recent distinct issues for pattern visibility (time-bound to 7d)
-  const recentRows = db.prepare(
-    `SELECT DISTINCT issues FROM evaluations
+  const recentRows = db
+    .prepare(
+      `SELECT DISTINCT issues FROM evaluations
      WHERE agent = ? AND issues IS NOT NULL AND issues != '[]'
        AND createdAt > ?
-     ORDER BY createdAt DESC LIMIT 5`
-  ).all(agent, Date.now() - 7 * 86400000) as { issues: string }[];
+     ORDER BY createdAt DESC LIMIT 5`,
+    )
+    .all(agent, Date.now() - 7 * 86400000) as { issues: string }[];
 
   const issuesList: string[] = [];
   try {
     const parsed = JSON.parse(latest.issues) as string[];
     issuesList.push(...parsed);
-  } catch { /* skip */ }
+  } catch {
+    /* skip */
+  }
 
   const recentIssues = new Set<string>();
   for (const row of recentRows) {
     try {
       const parsed = JSON.parse(row.issues) as string[];
-      parsed.forEach(i => recentIssues.add(i));
-    } catch { /* skip */ }
+      parsed.forEach((i) => recentIssues.add(i));
+    } catch {
+      /* skip */
+    }
   }
 
   const ts = new Date(latest.createdAt).toISOString();
@@ -82,11 +142,11 @@ function generateForAgent(
 
 ## Issues Flagged
 
-${issuesList.map(i => `- ${i}`).join("\n")}
+${issuesList.map((i) => `- ${i}`).join("\n")}
 
 ## Recent Issue Patterns (last 5 evaluations)
 
-${[...recentIssues].map(i => `- ${i}`).join("\n")}
+${[...recentIssues].map((i) => `- ${i}`).join("\n")}
 
 ## Action Required
 
@@ -98,21 +158,26 @@ prioritize avoiding it in this session. Acknowledge in your plan if relevant.
   return true;
 }
 
-export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: CronEntry) => {
+export const create: HandlerModule["create"] = (
+  ctx: HandlerContext,
+  _entry: CronEntry,
+) => {
   return async (_event?: EventEnvelope) => {
     const db = ctx.sdk.getDb();
-    const agentsDir = join(process.cwd(), "agents");
+    const projectRoot = ctx.sdk.paths.root;
 
     // Get all agents with recent negative evaluations (7d window)
-    const agents = db.prepare(
-      `SELECT DISTINCT agent FROM evaluations
+    const agents = db
+      .prepare(
+        `SELECT DISTINCT agent FROM evaluations
        WHERE issues IS NOT NULL AND issues != '[]'
-         AND createdAt > ?`
-    ).all(Date.now() - 7 * 86400000) as { agent: string }[];
+         AND createdAt > ?`,
+      )
+      .all(Date.now() - 7 * 86400000) as { agent: string }[];
 
     let updatedCount = 0;
     for (const { agent } of agents) {
-      if (generateForAgent(db, agent, agentsDir)) {
+      if (generateForAgent(db, agent, projectRoot)) {
         updatedCount++;
       }
     }

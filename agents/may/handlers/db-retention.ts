@@ -20,27 +20,34 @@
  * Always VACUUMs if any oversized rows are deleted (they can be 200MB+ each).
  *
  * Approved via work-queue.md (2026-06-04):
- *   agents/arc/workspace/proposals/2026-05-27-db-retention-policy.md
+ *   projects/may-agent.app/agents/arc/workspace/proposals/2026-05-27-db-retention-policy.md
  * Extended via work-queue.md (2026-06-15):
- *   agents/arc/workspace/proposals/2026-06-15-extend-db-retention-to-uncapped-tables.md
+ *   projects/may-agent.app/agents/arc/workspace/proposals/2026-06-15-extend-db-retention-to-uncapped-tables.md
  * Size-based retention added (2026-06-14):
- *   agents/arc/workspace/proposals/2026-06-14-size-based-event-retention.md
+ *   projects/may-agent.app/agents/arc/workspace/proposals/2026-06-14-size-based-event-retention.md
  *   shared/knowledge/entries/KE-1986-platform-owner-review-context-cascade-db-bloat.md
  */
 
-import type { EventEnvelope, HandlerContext, HandlerModule } from "@may-agent/sdk";
+import type {
+  EventEnvelope,
+  HandlerContext,
+  HandlerModule,
+} from "@may-agent/sdk";
 import type { CronEntry } from "@may-agent/sdk";
 
 const EVENT_RETENTION_DAYS = 7;
 const SESSION_RETENTION_DAYS = 14;
-const DIGEST_RETENTION_DAYS = 14;       // session_digests: matches session retention
-const WORKFLOW_RETENTION_DAYS = 14;     // workflow_runs: matches session retention
+const DIGEST_RETENTION_DAYS = 14; // session_digests: matches session retention
+const WORKFLOW_RETENTION_DAYS = 14; // workflow_runs: matches session retention
 const SNAPSHOT_RETENTION_DAYS = 14;
-const EVALUATION_RETENTION_DAYS = 30;   // evaluations: analytical value, retain longer
+const EVALUATION_RETENTION_DAYS = 30; // evaluations: analytical value, retain longer
 const VACUUM_THRESHOLD = 1000; // Run VACUUM if total deletions exceed this
-const OVERSIZED_ROW_BYTES = 1_048_576;  // 1 MB — KE-1986: platform-owner-review context cascade
+const OVERSIZED_ROW_BYTES = 1_048_576; // 1 MB — KE-1986: platform-owner-review context cascade
 
-export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: CronEntry) => {
+export const create: HandlerModule["create"] = (
+  ctx: HandlerContext,
+  _entry: CronEntry,
+) => {
   return async (_event?: EventEnvelope) => {
     const db = ctx.sdk.getDb();
     const now = Date.now();
@@ -50,13 +57,15 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
     // ── Tier 1: Delete old events (>7 days) ──────────────────────────────
     const eventCutoff = now - EVENT_RETENTION_DAYS * 86_400_000;
     try {
-      const result = db.run(
-        "DELETE FROM events WHERE timestamp < ?",
-        [eventCutoff]
-      );
+      const result = db.run("DELETE FROM events WHERE timestamp < ?", [
+        eventCutoff,
+      ]);
       const deleted = (result as any)?.changes ?? 0;
       totalDeleted += deleted;
-      ctx.sdk.log("info", `[db-retention] Deleted ${deleted} events older than ${EVENT_RETENTION_DAYS}d`);
+      ctx.sdk.log(
+        "info",
+        `[db-retention] Deleted ${deleted} events older than ${EVENT_RETENTION_DAYS}d`,
+      );
     } catch (e) {
       ctx.sdk.log("info", `[db-retention] Error deleting old events: ${e}`);
     }
@@ -64,13 +73,15 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
     // ── Tier 1: Delete old sessions (>14 days) ───────────────────────────
     const sessionCutoff = now - SESSION_RETENTION_DAYS * 86_400_000;
     try {
-      const result = db.run(
-        "DELETE FROM sessions WHERE startedAt < ?",
-        [sessionCutoff]
-      );
+      const result = db.run("DELETE FROM sessions WHERE startedAt < ?", [
+        sessionCutoff,
+      ]);
       const deleted = (result as any)?.changes ?? 0;
       totalDeleted += deleted;
-      ctx.sdk.log("info", `[db-retention] Deleted ${deleted} sessions older than ${SESSION_RETENTION_DAYS}d`);
+      ctx.sdk.log(
+        "info",
+        `[db-retention] Deleted ${deleted} sessions older than ${SESSION_RETENTION_DAYS}d`,
+      );
     } catch (e) {
       ctx.sdk.log("info", `[db-retention] Error deleting old sessions: ${e}`);
     }
@@ -80,12 +91,15 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
     try {
       const result = db.run(
         "DELETE FROM metric_snapshots WHERE measured_at < ?",
-        [snapshotCutoff]
+        [snapshotCutoff],
       );
       const deleted = (result as any)?.changes ?? 0;
       totalDeleted += deleted;
       if (deleted > 0) {
-        ctx.sdk.log("info", `[db-retention] Deleted ${deleted} metric_snapshots older than ${SNAPSHOT_RETENTION_DAYS}d`);
+        ctx.sdk.log(
+          "info",
+          `[db-retention] Deleted ${deleted} metric_snapshots older than ${SNAPSHOT_RETENTION_DAYS}d`,
+        );
       }
     } catch (e) {
       ctx.sdk.log("info", `[db-retention] Error deleting old snapshots: ${e}`);
@@ -96,41 +110,57 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
     try {
       const result = db.run(
         "DELETE FROM session_digests WHERE created_at < ?",
-        [digestCutoff]
+        [digestCutoff],
       );
       const deleted = (result as any)?.changes ?? 0;
       totalDeleted += deleted;
-      ctx.sdk.log("info", `[db-retention] Deleted ${deleted} session_digests older than ${DIGEST_RETENTION_DAYS}d`);
+      ctx.sdk.log(
+        "info",
+        `[db-retention] Deleted ${deleted} session_digests older than ${DIGEST_RETENTION_DAYS}d`,
+      );
     } catch (e) {
-      ctx.sdk.log("info", `[db-retention] Error deleting old session_digests: ${e}`);
+      ctx.sdk.log(
+        "info",
+        `[db-retention] Error deleting old session_digests: ${e}`,
+      );
     }
 
     // ── Tier 2: Delete old workflow_runs (>14 days) ──────────────────────
     const workflowCutoff = now - WORKFLOW_RETENTION_DAYS * 86_400_000;
     try {
-      const result = db.run(
-        "DELETE FROM workflow_runs WHERE startedAt < ?",
-        [workflowCutoff]
-      );
+      const result = db.run("DELETE FROM workflow_runs WHERE startedAt < ?", [
+        workflowCutoff,
+      ]);
       const deleted = (result as any)?.changes ?? 0;
       totalDeleted += deleted;
-      ctx.sdk.log("info", `[db-retention] Deleted ${deleted} workflow_runs older than ${WORKFLOW_RETENTION_DAYS}d`);
+      ctx.sdk.log(
+        "info",
+        `[db-retention] Deleted ${deleted} workflow_runs older than ${WORKFLOW_RETENTION_DAYS}d`,
+      );
     } catch (e) {
-      ctx.sdk.log("info", `[db-retention] Error deleting old workflow_runs: ${e}`);
+      ctx.sdk.log(
+        "info",
+        `[db-retention] Error deleting old workflow_runs: ${e}`,
+      );
     }
 
     // ── Tier 2: Delete old evaluations (>30 days) ────────────────────────
     const evalCutoff = now - EVALUATION_RETENTION_DAYS * 86_400_000;
     try {
-      const result = db.run(
-        "DELETE FROM evaluations WHERE createdAt < ?",
-        [evalCutoff]
-      );
+      const result = db.run("DELETE FROM evaluations WHERE createdAt < ?", [
+        evalCutoff,
+      ]);
       const deleted = (result as any)?.changes ?? 0;
       totalDeleted += deleted;
-      ctx.sdk.log("info", `[db-retention] Deleted ${deleted} evaluations older than ${EVALUATION_RETENTION_DAYS}d`);
+      ctx.sdk.log(
+        "info",
+        `[db-retention] Deleted ${deleted} evaluations older than ${EVALUATION_RETENTION_DAYS}d`,
+      );
     } catch (e) {
-      ctx.sdk.log("info", `[db-retention] Error deleting old evaluations: ${e}`);
+      ctx.sdk.log(
+        "info",
+        `[db-retention] Error deleting old evaluations: ${e}`,
+      );
     }
 
     // ── Size-based retention (KE-1986): delete oversized rows ────────────
@@ -141,62 +171,84 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
 
     // Oversized events.data
     try {
-      const result = db.run(
-        "DELETE FROM events WHERE LENGTH(data) > ?",
-        [OVERSIZED_ROW_BYTES]
-      );
+      const result = db.run("DELETE FROM events WHERE LENGTH(data) > ?", [
+        OVERSIZED_ROW_BYTES,
+      ]);
       const deleted = (result as any)?.changes ?? 0;
       oversizedDeleted += deleted;
       if (deleted > 0) {
-        ctx.sdk.log("info", `[db-retention] Deleted ${deleted} oversized events (data > 1MB)`);
+        ctx.sdk.log(
+          "info",
+          `[db-retention] Deleted ${deleted} oversized events (data > 1MB)`,
+        );
       }
     } catch (e) {
-      ctx.sdk.log("info", `[db-retention] Error deleting oversized events: ${e}`);
+      ctx.sdk.log(
+        "info",
+        `[db-retention] Error deleting oversized events: ${e}`,
+      );
     }
 
     // Oversized sessions.task
     try {
-      const result = db.run(
-        "DELETE FROM sessions WHERE LENGTH(task) > ?",
-        [OVERSIZED_ROW_BYTES]
-      );
+      const result = db.run("DELETE FROM sessions WHERE LENGTH(task) > ?", [
+        OVERSIZED_ROW_BYTES,
+      ]);
       const deleted = (result as any)?.changes ?? 0;
       oversizedDeleted += deleted;
       if (deleted > 0) {
-        ctx.sdk.log("info", `[db-retention] Deleted ${deleted} oversized sessions (task > 1MB)`);
+        ctx.sdk.log(
+          "info",
+          `[db-retention] Deleted ${deleted} oversized sessions (task > 1MB)`,
+        );
       }
     } catch (e) {
-      ctx.sdk.log("info", `[db-retention] Error deleting oversized sessions: ${e}`);
+      ctx.sdk.log(
+        "info",
+        `[db-retention] Error deleting oversized sessions: ${e}`,
+      );
     }
 
     // Oversized session_digests.task
     try {
       const result = db.run(
         "DELETE FROM session_digests WHERE LENGTH(task) > ?",
-        [OVERSIZED_ROW_BYTES]
+        [OVERSIZED_ROW_BYTES],
       );
       const deleted = (result as any)?.changes ?? 0;
       oversizedDeleted += deleted;
       if (deleted > 0) {
-        ctx.sdk.log("info", `[db-retention] Deleted ${deleted} oversized session_digests (task > 1MB)`);
+        ctx.sdk.log(
+          "info",
+          `[db-retention] Deleted ${deleted} oversized session_digests (task > 1MB)`,
+        );
       }
     } catch (e) {
-      ctx.sdk.log("info", `[db-retention] Error deleting oversized session_digests: ${e}`);
+      ctx.sdk.log(
+        "info",
+        `[db-retention] Error deleting oversized session_digests: ${e}`,
+      );
     }
 
     // Oversized workflow_runs.task
     try {
       const result = db.run(
         "DELETE FROM workflow_runs WHERE LENGTH(task) > ?",
-        [OVERSIZED_ROW_BYTES]
+        [OVERSIZED_ROW_BYTES],
       );
       const deleted = (result as any)?.changes ?? 0;
       oversizedDeleted += deleted;
       if (deleted > 0) {
-        ctx.sdk.log("info", `[db-retention] Deleted ${deleted} oversized workflow_runs (task > 1MB)`);
+        ctx.sdk.log(
+          "info",
+          `[db-retention] Deleted ${deleted} oversized workflow_runs (task > 1MB)`,
+        );
       }
     } catch (e) {
-      ctx.sdk.log("info", `[db-retention] Error deleting oversized workflow_runs: ${e}`);
+      ctx.sdk.log(
+        "info",
+        `[db-retention] Error deleting oversized workflow_runs: ${e}`,
+      );
     }
 
     totalDeleted += oversizedDeleted;
@@ -210,14 +262,20 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
     try {
       const result = db.run(
         `UPDATE session_digests SET task = SUBSTR(task, 1, ?) || '... [truncated by db-retention]' WHERE LENGTH(task) > ?`,
-        [DIGEST_TASK_MAX_BYTES, DIGEST_TASK_MAX_BYTES + 100]
+        [DIGEST_TASK_MAX_BYTES, DIGEST_TASK_MAX_BYTES + 100],
       );
       truncatedDigestTasks = (result as any)?.changes ?? 0;
       if (truncatedDigestTasks > 0) {
-        ctx.sdk.log("info", `[db-retention] Truncated ${truncatedDigestTasks} session_digests.task columns (>${DIGEST_TASK_MAX_BYTES}B)`);
+        ctx.sdk.log(
+          "info",
+          `[db-retention] Truncated ${truncatedDigestTasks} session_digests.task columns (>${DIGEST_TASK_MAX_BYTES}B)`,
+        );
       }
     } catch (e) {
-      ctx.sdk.log("info", `[db-retention] Error truncating session_digests.task: ${e}`);
+      ctx.sdk.log(
+        "info",
+        `[db-retention] Error truncating session_digests.task: ${e}`,
+      );
     }
 
     // ── WAL checkpoint to reclaim WAL disk space (KE-2016) ────────────────
@@ -225,20 +283,32 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
     // TRUNCATE mode resets WAL to zero bytes if no readers are active; PASSIVE
     // at least checkpoints committed frames without blocking.
     try {
-      ctx.sdk.log("info", `[db-retention] Running PRAGMA wal_checkpoint(TRUNCATE)...`);
+      ctx.sdk.log(
+        "info",
+        `[db-retention] Running PRAGMA wal_checkpoint(TRUNCATE)...`,
+      );
       db.run("PRAGMA wal_checkpoint(TRUNCATE)");
       ctx.sdk.log("info", `[db-retention] WAL checkpoint complete`);
     } catch (e) {
-      ctx.sdk.log("info", `[db-retention] WAL checkpoint failed (non-critical): ${e}`);
+      ctx.sdk.log(
+        "info",
+        `[db-retention] WAL checkpoint failed (non-critical): ${e}`,
+      );
     }
 
     // ── VACUUM if significant deletions/truncations occurred ───────────────
     // Always VACUUM if oversized rows were deleted — they can be 200MB+ each.
     // Also VACUUM when many digest tasks were truncated — reclaims ~500MB.
-    const needsVacuum = totalDeleted >= VACUUM_THRESHOLD || oversizedDeleted > 0 || truncatedDigestTasks > 1000;
+    const needsVacuum =
+      totalDeleted >= VACUUM_THRESHOLD ||
+      oversizedDeleted > 0 ||
+      truncatedDigestTasks > 1000;
     if (needsVacuum) {
       try {
-        ctx.sdk.log("info", `[db-retention] Running VACUUM (${totalDeleted} rows deleted)...`);
+        ctx.sdk.log(
+          "info",
+          `[db-retention] Running VACUUM (${totalDeleted} rows deleted)...`,
+        );
         db.run("VACUUM");
         ctx.sdk.log("info", `[db-retention] VACUUM complete`);
         // Post-VACUUM checkpoint: VACUUM in WAL mode rewrites the entire DB
@@ -246,12 +316,21 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
         // metrics-snapshot. Checkpoint immediately to reclaim that space.
         try {
           db.run("PRAGMA wal_checkpoint(TRUNCATE)");
-          ctx.sdk.log("info", `[db-retention] Post-VACUUM WAL checkpoint complete`);
+          ctx.sdk.log(
+            "info",
+            `[db-retention] Post-VACUUM WAL checkpoint complete`,
+          );
         } catch (e2) {
-          ctx.sdk.log("info", `[db-retention] Post-VACUUM WAL checkpoint failed (non-critical): ${e2}`);
+          ctx.sdk.log(
+            "info",
+            `[db-retention] Post-VACUUM WAL checkpoint failed (non-critical): ${e2}`,
+          );
         }
       } catch (e) {
-        ctx.sdk.log("info", `[db-retention] VACUUM failed (non-critical): ${e}`);
+        ctx.sdk.log(
+          "info",
+          `[db-retention] VACUUM failed (non-critical): ${e}`,
+        );
       }
     }
 
@@ -264,6 +343,9 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
       vacuumed: needsVacuum,
     });
 
-    ctx.sdk.log("info", `[db-retention] Complete. Total deleted: ${totalDeleted}`);
+    ctx.sdk.log(
+      "info",
+      `[db-retention] Complete. Total deleted: ${totalDeleted}`,
+    );
   };
 };

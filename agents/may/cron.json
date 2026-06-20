@@ -26,9 +26,7 @@
       "task": "persistent-task: skip\n[heartbeat] You are running inside the may-heartbeat workflow. Read agents/may/heartbeat.md for your agent-specific guidance. You have full authority to act — dispatch approved work, fix issues, don't wait for permission.",
       "timeoutMs": 1800000
     },
-    "on": [
-      "heartbeat.trigger"
-    ],
+    "on": ["heartbeat.trigger"],
     "context": [
       "agents/may/heartbeat.md",
       "projects/may-agent.app/project.json"
@@ -49,9 +47,7 @@
       "timeoutMs": 1800000
     },
     "offsetMs": 600000,
-    "on": [
-      "heartbeat.trigger"
-    ],
+    "on": ["heartbeat.trigger"],
     "context": [
       "projects/evaluation.app/project.json",
       "projects/may-agent.app/project.json"
@@ -117,10 +113,7 @@
       "maxProjectsPerRun": 1
     },
     "offsetMs": 420000,
-    "on": [
-      "project.blocked",
-      "project.health.finding"
-    ],
+    "on": ["project.blocked", "project.health.finding"],
     "context": [
       "projects/may-agent.app/project.json",
       "projects/may-agent.app/docs/2a-design/projects.md"
@@ -135,10 +128,7 @@
     "enabled": true,
     "description": "React to metric.breach and metric.stalled events by forking the owning agent with a remediation task. P0 breaches get immediate fork; P1/P2 get explicit triage after grace period. P3 alerts stay visible through metric context. Polls unresolved alerts every 5min.",
     "intervalMs": 300000,
-    "on": [
-      "metric.breach",
-      "metric.stalled"
-    ],
+    "on": ["metric.breach", "metric.stalled"],
     "context": [
       "projects/may-agent.app/project.json",
       "projects/may-agent.app/docs/2a-design/metrics.md"
@@ -173,9 +163,7 @@
     "enabled": true,
     "intervalMs": 300000,
     "description": "React to failed sessions by dispatching the session-recovery workflow; timer fallback auto-closes stale immediate sessions with no assistant activity.",
-    "on": [
-      "session.completed"
-    ],
+    "on": ["session.completed"],
     "context": [
       "projects/may-agent.app/project.json",
       "projects/may-agent.app/docs/2a-design/sessions.md"
@@ -192,9 +180,7 @@
       "timeoutMs": 900000
     },
     "enabled": false,
-    "on": [
-      "session.completed"
-    ],
+    "on": ["session.completed"],
     "description": "Run evaluator aftermath workflow when a session ends.",
     "context": [
       "projects/may-agent.app/project.json",
@@ -252,9 +238,7 @@
     "agent": "may",
     "enabled": true,
     "description": "Route canonical escalation.created events to their owner.",
-    "on": [
-      "escalation.created"
-    ],
+    "on": ["escalation.created"],
     "context": [
       "projects/may-agent.app/project.json",
       "projects/may-agent.app/docs/2a-design/escalation.md"
@@ -299,9 +283,7 @@
       "timeoutMs": 900000
     },
     "description": "Disabled after replacement by projects/may-agent.app daily-ops-digest schedule with replay coverage.",
-    "context": [
-      "projects/may-agent.app/project.json"
-    ]
+    "context": ["projects/may-agent.app/project.json"]
   },
   {
     "name": "feedback-echo-sync",
@@ -310,7 +292,7 @@
     "enabled": true,
     "description": "Hourly sync of evaluator feedback into agent last-eval.md files (direct handler, no LLM session)",
     "context": [
-      "agents/shared/feedback-echo.ts",
+      "agents/may/handlers/feedback-echo-sync.ts",
       "projects/may-agent.app/project.json"
     ],
     "lastModified": "2026-06-05T17:09:42.095Z"

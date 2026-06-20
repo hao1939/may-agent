@@ -48,6 +48,8 @@ shared/tools/
 
 # Agent scratch/runtime, not shared knowledge
 agents/*/last-session.md
+**/agents/*/last-session.md
+**/agents/*/last-eval.md
 **/workspace/**
 !**/workspace/.gitkeep
 
