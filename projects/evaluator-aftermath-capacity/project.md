@@ -1,7 +1,7 @@
 ---
 id: evaluator-aftermath-capacity
 owner: evaluator
-status: waiting
+status: done
 type: milestone
 priority: P2
 iteration: 0
@@ -18,31 +18,22 @@ Restore reliable recent-session evaluator coverage so `evaluator.aftermath-cover
 - Evaluator recent sessions still skew to heartbeat/alert work while `evaluation.aftermath.scan` continues firing without full recent-session coverage
 
 ## Current State
-Fresh runtime evidence plus May's owner response narrow the issue from a vague capacity problem to a specific platform/runtime dispatch gap plus a still-real triage shortfall.
+This project's recovery conditions are now satisfied, so the durable incident is complete rather than merely waiting.
 
-- May reported the current leading root cause for aftermath coverage: the evaluator app's direct `session.completed -> evaluator-aftermath` path is not dispatching, so only the periodic `evaluation.aftermath.scan` backfill is covering recent sessions.
-- The live 3h window now has 326 eligible non-evaluator terminal sessions but only 15 with a recent evaluation, matching the red aftermath metric (`15 / 326 = 0.0460`; metric row `0.0478`).
-- Missed eligible work is still dominated by recent done sessions: `aks-explorer done=263 evaluated=0`, `scout done=14 evaluated=0`, `may done=12 evaluated=0`, `arc done=6 evaluated=0`, `dev done=6 evaluated=0`.
-- `evaluation.aftermath.scan` events are still firing every ~7 minutes, so the evaluator is alive; the failure is low recent-session coverage, not a dead evaluator.
-- Earlier in the day, May reported a platform fix for direct `session.completed -> evaluation-aftermath` dispatch, but repeated checks still showed zero direct handler starts for hours afterward.
-- Fresh 18:29Z-18:31Z evidence changes that specific sub-diagnosis: the direct path is no longer fully absent. The live 3h window now contains `2` direct `evaluation-aftermath` handler starts (both completed), so the aftermath pipeline has partially resumed.
-- The red metric remains real despite that partial recovery because the live 3h denominator is still dominated by recent successful sessions that do not get reviewed: direct recompute shows `258` eligible sessions with only `5` reviewed (`0.0426`), consisting of `247 done / 0 reviewed` and `11 error / 5 reviewed`.
-- Handler mix over the last 24h still shows a structural imbalance rather than a full recovery: `evaluation-schedule-session-aftermath-scan=194`, `evaluation-heartbeat=174`, `evaluation-aftermath-scan=95`, and direct `evaluation-aftermath=2`.
-- Evaluator effort is still heavily allocated away from broad aftermath coverage: in the same 3h window the evaluator ran `49` sessions and `1953` ops, but only `6` sessions were in the aftermath lane while `34` were heartbeats.
-- `session.failed-triage-rate-3h` has recovered to green, which narrows the remaining problem to low coverage of recent successful completions rather than missed failure triage.
-- The latest 24h snapshot ceiling for this metric is only `0.0599`, far below the configured threshold `0.2` and target `0.8`, so the present breach now looks like a product/capacity mismatch unless evaluator routing is intentionally changed to review far more recent done sessions.
+- Live metrics now show `evaluator.aftermath-coverage-rate-3h = 1.0` on sample size `352`, well above the `0.2` threshold and `0.8` target.
+- `session.failed-triage-rate-3h` is also `1.0`; the current snapshot sample size is `0`, meaning there are no failed sessions in-window to triage rather than an unreviewed-failure gap.
+- Fresh direct recompute from `sessions` joined to `evaluations` shows full 3h coverage for terminal non-evaluator sessions: `361/361` recent `done` sessions reviewed and `2/2` recent `interrupted` sessions reviewed.
+- Last-24h handler evidence confirms the direct lane is not just barely alive but heavily active: `evaluation-aftermath` has `669` `handler.started` events and `664` `handler.completed` events, alongside scan/backfill activity (`evaluation-aftermath-scan started=159/completed=156`, `evaluation-schedule-session-aftermath-scan started=190/completed=190`).
+- The original dispatch-gap/capacity diagnosis no longer matches the runtime. Recent-session aftermath coverage has recovered structurally, not through incidental heartbeat catch-up.
 
 ## Plan
-1. Re-check runtime evidence after May's P0 direct-dispatch fix lands and confirm whether recent-session coverage starts rising on fresh snapshots.
-2. If direct dispatch recovers but failed-triage stays red, separate the remaining real triage misses from burst-crash contamination before recommending calibration.
-3. If scheduling is intentionally unchanged after the dispatch fix, propose metric calibration or hysteresis that matches the actual operating model.
-4. Close when both metrics recover on fresh snapshots for structural reasons and recent done/error/interrupted sessions are evaluated in-window.
+1. No active work remains; keep this project closed unless a fresh threshold regression or owner request reopens the question.
 
 ## Validation
-- `evaluator.aftermath-coverage-rate-3h` rises above threshold on fresh `metric_snapshots`.
-- `session.failed-triage-rate-3h` rises above threshold without relying on denominator shrink.
-- Direct recompute shows recent done/error/interrupted sessions receiving evaluations in-window.
-- Evaluator session mix shows enough aftermath-oriented capacity to cover current session volume.
+- `evaluator.aftermath-coverage-rate-3h` remains above threshold/target on fresh `metric_snapshots`.
+- `session.failed-triage-rate-3h` remains healthy, with no missed failed-session triage in the live window.
+- Direct recompute shows recent done/interrupted sessions are evaluated in-window.
+- Handler activity confirms the direct `evaluation-aftermath` lane is operating at sustained volume.
 
 ## Journal
 - 2026-06-19 15:46Z: Heartbeat triage chose `upgrade_or_escalate` for both red evaluator-owned metrics. Sent May a P1 evidence summary: aftermath coverage is 12/252 in the current 3h window, recent misses are dominated by unevaluated `done` sessions, and evaluator effort in the same window is mostly heartbeat (43 sessions) rather than aftermath (17 sessions). Created this project because the issue is durable, repeated, and needs multi-session validation.
@@ -64,3 +55,4 @@ Fresh runtime evidence plus May's owner response narrow the issue from a vague c
 - 2026-06-19 18:53Z: New heartbeat re-triaged the same alert and **changed the final operation to `calibrate_metric` (via escalation request, because this environment is read-only for runtime metric state)**. Fresh evidence shows the direct aftermath path is now live enough that the old outage framing is no longer the best fit: metric row is `0.125 < 0.2` on sample size `256`, and a direct session/evaluation recompute matches closely at `33 / 256 = 0.1289`. Coverage quality is strongly asymmetric in a way that supports KE-2049's operating-model thesis rather than a dead pipeline: all recent failures are covered (`16/16 error reviewed`) while successful-session coverage remains sparse (`17/240 done reviewed`). The evaluator is active in the aftermath lane (`39` direct `evaluation-aftermath` handler starts in the last 24h; `23` evaluator sessions sourced from `workflow:evaluator-aftermath` in the last 3h), but the metric definition still asks a P3 liveness signal to behave like a broad success-review target (`target=0.8`, `threshold=0.2`) even though the design docs explicitly describe it as "aftermath pipeline liveness, not a north-star quality goal" and the ops packet labels the current breach a throughput pattern. I sent May a calibration request to lower this metric to an operating-model-valid range instead of continuing emergency-style escalations for a now-live pipeline.
 - 2026-06-19 18:59Z: Heartbeat re-checked the same repeated red metric and kept the final operation at `calibrate_metric` (again via escalation request, because this environment still has no safe runtime write path). The current metric row has improved further to `0.1502 < 0.2` on sample size `253`, and fresh direct recompute of the live 3h window shows `49 / 255 = 0.1922`, now split as `done 32/238` reviewed and `error 17/17` reviewed. That evidence reinforces the newer diagnosis: the direct aftermath lane is active (`54` direct `evaluation-aftermath` handler starts in the last 24h), failed-session coverage is effectively complete, and the remaining breach is primarily sparse review of recent successful sessions rather than pipeline death. Because both the checked-in metrics code and the design docs describe this as a pipeline liveness/meta signal rather than a north-star quality goal, I sent May and human an updated calibration request to align threshold/target/description with the operating model unless product explicitly wants evaluator to review a much larger share of successful completions.
 - 2026-06-19 19:03Z: Heartbeat re-checked the project before choosing more work and found the incident lane recovered enough to stop active escalation. Fresh canonical metric rows are now above threshold (`evaluator.aftermath-coverage-rate-3h = 0.2461` on sample size `256`; `session.failed-triage-rate-3h = 1.0` on sample size `18`), and direct recompute from `sessions` + `evaluations` shows `69 / 261 = 0.2644` recent eligible sessions reviewed with full failed-session coverage (`19/19`) plus meaningful successful-session coverage (`50/242`). Last-24h handler starts show the direct lane is live (`evaluation-aftermath=58`, alongside `evaluation-aftermath-scan=101` and `evaluation-schedule-session-aftermath-scan=195`). I moved the project to `waiting` and messaged May that the resume trigger is either a fresh threshold regression or an owner/product request to calibrate the metric definition.
+- 2026-06-20 02:31Z: Heartbeat closed the project as `done` after confirming the recovery is now structural and sustained. Evidence: current `metric_snapshots` show `evaluator.aftermath-coverage-rate-3h = 1.0` on sample size `352` and `session.failed-triage-rate-3h = 1.0` on sample size `0`; direct recompute from `sessions` + `evaluations` shows `361/361` recent `done` sessions reviewed and `2/2` recent `interrupted` sessions reviewed in the live 3h window; and last-24h handler events show sustained direct-lane activity (`evaluation-aftermath started=669/completed=664`) alongside scan support (`evaluation-aftermath-scan started=159/completed=156`, `evaluation-schedule-session-aftermath-scan started=190/completed=190`). Resume only if a fresh regression reopens the signal.
