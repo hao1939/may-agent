@@ -21,7 +21,7 @@
   "taskIndex": ["tasks/tree.json"],
   "currentFocus": {
     "taskId": null,
-    "summary": "Owner review 2026-06-20T11:40Z. Deployed defense-in-depth cooldown guard in cron.ts fire() to prevent schedule over-firing (daily-ops-digest was firing 143x too often, platform-review 28x). The guard enforces 75% of intervalMs as minimum gap between timer fires, matching triggerNow debounce convention. Combined with the earlier getLastFireTime DB fallback fix. All 39 cron/loader tests pass. 0 failures in 1h, 502/531 handler completions. 3 open alerts all aks-rp-e2e-owned. 72 tasks: 64 done, 8 backlog (all P2)."
+    "summary": "Owner review 2026-06-20T17:30Z. Platform stable: 0 handler.failed/session.resume_failed/agent.config_invalid/message.delivery_failed in 2h. 3 open alerts all aks-rp-e2e-owned (duplicate-group-count, slow-count-24h, timeout-24h) — not platform-actionable. Key metrics healthy: handler.success-rate=0.9997, heartbeat-coverage=1.0, first-turn-error=0. Committed ops-health cross-project signal leak fix: blocked-workflow and event-pair signals now scoped to projectId=may-agent|NULL only (evaluation.app blocked runs no longer trigger platform wakes). DB size at 2119MB (threshold 2500MB), disk 93% — within bounds. 14/14 app tests pass, integrity clean. 72 tasks: 64 done, 8 backlog (all P2). No new task-tree work needed."
   },
-  "updatedAt": "2026-06-20T11:40:00.000Z"
+  "updatedAt": "2026-06-20T17:30:00.000Z"
 }
