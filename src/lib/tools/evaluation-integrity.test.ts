@@ -28,6 +28,14 @@ describe("P98 Evaluation Integrity — Immutable Ruler", () => {
     "agents/evaluator/knowledge/INDEX.md",
   ];
 
+  const APP_LOCAL_PROTECTED_EVAL_PATHS = [
+    "projects/evaluation.app/agents/evaluator/knowledge/criteria.md",
+    "projects/evaluation.app/agents/evaluator/skills/score.md",
+    "projects/evaluation.app/agents/evaluator/skills/monitor-session.md",
+    "projects/evaluation.app/agents/evaluator/knowledge/adversarial-evaluation.md",
+    "projects/evaluation.app/agents/evaluator/knowledge/INDEX.md",
+  ];
+
   describe("blocks non-evaluator agents from modifying evaluation files", () => {
     for (const path of PROTECTED_EVAL_PATHS) {
       const filename = path.split("/").pop();
@@ -57,6 +65,24 @@ describe("P98 Evaluation Integrity — Immutable Ruler", () => {
       const filename = path.split("/").pop();
 
       it(`allows evaluator to modify ${filename}`, () => {
+        const result = guardPath(path, "evaluator");
+        expect(result.blocked).toBe(false);
+      });
+    }
+  });
+
+  describe("protects app-local evaluator files", () => {
+    for (const path of APP_LOCAL_PROTECTED_EVAL_PATHS) {
+      const filename = path.split("/").pop();
+
+      it(`blocks bob from modifying app-local ${filename}`, () => {
+        const result = guardPath(path, "bob");
+        expect(result.blocked).toBe(true);
+        expect(result.message).toContain("P98 Evaluation Integrity");
+        expect(result.message).toContain("projects/evaluation.app/agents/evaluator");
+      });
+
+      it(`allows evaluator to modify app-local ${filename}`, () => {
         const result = guardPath(path, "evaluator");
         expect(result.blocked).toBe(false);
       });
