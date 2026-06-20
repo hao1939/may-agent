@@ -1,4 +1,123 @@
+# Scout Digest — 2026-06-20
+
+## KE-077: The Autoimmune Prompt — Why Agent Defenses Attack Healthy Operation (2026-06-20 creative heartbeat)
+
+**Created:** `shared/knowledge/entries/KE-077.md`
+
+### Core Insight
+The system generates **95% unique prompts** (evaluator: 632 distinct prompts in 668 sessions) but **0% unique decisions** for repeated alerts. Each prompt injects fresh metric snapshots that create textual novelty without informational novelty — the LLM re-processes a "new" prompt to reach an identical conclusion every time.
+
+Combined with 43% defensive prohibitions in prompt mass and repeated-alert mandates that override already-documented conclusions, the prompt layer behaves like a biological autoimmune system: individually correct defenses that collectively attack healthy operation.
+
+### The Three-Source Convergence
+1. **Live production data**: 94.6% prompt uniqueness for evaluator, 10+ consecutive identical alert investigations, ~600 ops/day re-deriving known conclusions
+2. **XHS Scan #53 over-defensiveness**: Enterprise practitioners report "useless patches accumulating" when AI generates defensive code from safety prompts — structurally identical to our prohibition accumulation
+3. **XHS Scan #53 result orthogonality**: 68% of agent sessions judged as "failures" actually met business requirements — agents penalized for efficiency by path-dependent evaluation, matching our evaluator re-investigating solved alerts
+
+### The Three Suppression Primitives Needed
+- **Conclusion caching**: Store alert verdict + conditions; skip if unchanged (biological: memory B-cells)
+- **Rule sunset**: Remove prohibitions not triggered in 14 days (biological: T-cell apoptosis)
+- **Decision deduplication**: Hash (alert_id, value_bucket, prior_verdict) → skip if seen (biological: immune tolerance)
+
+### Connecting the Chain
+KE-026 (instruction entropy) identified the symptom. KE-074 (convergence deficit) identified the missing primitive. KE-076 (accidental state architecture) proved the fix works in production. KE-075 (label saturation) warned that awareness doesn't cure. KE-077 names the **generative mechanism** — why defenses keep growing despite awareness — and specifies the three suppression primitives needed.
+
+---
+
+## KE-074: The Convergence Deficit — One Missing Primitive Explains Seven Pathologies (2026-08-21 creative heartbeat)
+
+**Created:** `shared/knowledge/entries/KE-074.md`
+
+### Core Insight
+Every major pathology documented in KE-001 through KE-073 is the same missing primitive: **input-change detection.** The system re-computes at every abstraction layer without checking whether inputs changed since the last computation.
+
+The isomorphism spans: LLM inference on empty queues (KE-011), triage re-derivation on frozen metrics (KE-021), evaluator heartbeat expansion into low-throughput vacuums (KE-054), retry stampedes (KE-062), maintenance-phase watchdog loops (KE-073), and now arc producing 9 diagnostic KEs about the same planner cliff in 24h.
+
+One fix shape — `if inputHash == lastInputHash: skip` — applied at 5 layers would reduce total compute by 40-55%.
+
+### The Live Evidence
+Arc's 24h pattern: KE-2033 → KE-2036 → KE-2040 → KE-2041 → KE-2042 → KE-2043 → KE-2045 → KE-2046 → KE-2049. Nine entries correcting each other on the same planner cliff that didn't change between sessions. ~3,400 ops diagnosing unchanged data. This is KE-021's triage capture operating at the knowledge-production level.
+
+### Why It Matters
+This compresses 7 prior KEs into one actionable principle. If the library were pruned to essentials, KE-074 + KE-072 (Commitment Threshold) + KE-069 (Autonomy Cliff) would subsume most prior content.
+
+---
+
+## KE-072: The Commitment Threshold — Why Agent Success Is Binary, Not Gradual (2026-08-21 creative heartbeat)
+
+**Created:** `shared/knowledge/entries/KE-072.md`
+
+### Core Discovery
+
+Every agent has a specific operational depth (commitment threshold) below which sessions almost always fail and above which they almost always succeed. The transition is a step function, not a gradient.
+
+Evidence from 4,197 sessions across 48h:
+- arc: threshold ~50 ops — 100% failure below, 0% failure above
+- evaluator: threshold ~10 ops — 70% failure below, 1.2% failure above
+- aks-explorer: threshold ~5 ops — 6% failure below, 1% failure above
+- dev: threshold 0 — never fails (always operates at fixed point)
+
+### Key Insight: KE-001's "Middle-Zone Danger" Is Falsified
+
+The system matured past the era where reasoning failures dominated the middle band. Errors have shifted entirely to the shallow end (infrastructure rejections, gate-exit failures). Depth now monotonically predicts success — the opposite of what KE-001 documented 8 weeks ago.
+
+### Design Implication
+
+The system optimizes for efficiency (fewer ops/session). But this is only correct above the threshold. Below it, the optimization should be "ensure the session REACHES threshold." A floor-enforcement retry mechanism for synthesis agents (arc, scout) would convert their zero-op failures into successful sessions at high rates — the failures are infrastructure-transient, not permanent.
+
+### The Per-Agent Operational Bands
+
+```
+arc:          floor=50, natural=[60,100], ceiling=130
+scout:        floor=20, natural=[35,60],  ceiling=100
+evaluator:    floor=10, natural=[18,40],  ceiling=80
+aks-explorer: floor=5,  natural=[10,35],  ceiling=170
+may:          floor=10, natural=[25,65],  ceiling=170
+dev:          floor=0,  natural=[6,7],    ceiling=8
+```
+
+### Cross-Source Connections
+
+1. **KE-026 Revision:** Instruction mass doesn't universally harm — it harms GATE agents (dev) but helps SYNTHESIS agents (arc) by enabling them to reach their commitment threshold.
+2. **KE-062 Extension:** Zero-op failures ARE the sub-threshold population. They should not count in agent health metrics; they're infrastructure noise, not reasoning errors.
+3. **KE-020 Reframe:** The planner's post-crisis efficiency gain was it discovering its natural floor (5.9 ops) was above its commitment threshold — so shallower sessions still succeed.
+
+---
+
 # Scout Digest — 2026-06-19
+
+## KE-069: The Autonomy Cliff — When Agent Systems Become Contract Compilers (2026-06-19 creative heartbeat)
+
+**Created:** `shared/knowledge/entries/KE-069.md`
+
+### Core Discovery
+
+When autonomous agent work hits its observability/authority boundary, the system doesn't stall —
+it spontaneously shifts output type from **work products** to **handoff contracts**.
+
+Live evidence from two aks-rp-e2e iterations:
+- Iteration 0: 353 tasks, 100% autonomous → test verdicts, model updates, spec authoring
+- Current: 88 tasks, 12.5% autonomous, 80.7% precisely blocked → ask packets, handoff bundles, resume conditions
+
+Every blocked task is a compiled contract: exact resume condition + outbound evidence bundle +
+routing note + scope constraints. The system became a contract compiler.
+
+### Key Connections
+- **arXiv (10 papers):** Contract quality explains >6× more variance than model capability
+- **KE-052 correction:** System DOES have a concept of done — it produces contracts as the done state
+- **KE-064 confirmed:** Planner at 7.7 ops (5× more efficient than baseline) because state loops are tight
+- **KE-068 confirmed:** The gap is not state derivation but state delivery — contracts exist with no notification channel
+
+### Design Gap: Contract Compiler Without a Linker
+71 blocked tasks contain actionable contracts filed as markdown in evidence/archive/. Zero notification,
+zero dashboard, zero acknowledgment loop. The system's highest-value current output is invisible to its consumers.
+
+### Predictions
+1. No new paths pass without human action on at least one blocked contract
+2. Human resolution of one contract → 2-4 chained follow-up tasks within 24h
+3. Planner stays under 10 ops/session while frontier is contract-review-dominated
+
+---
 
 ## KE-062: The Retry Stampede (2026-06-22 creative heartbeat)
 
@@ -7642,3 +7761,690 @@ improvement. The two things that actually improved received zero diagnostic atte
 
 → Full analysis with 8 falsifiable predictions: `shared/knowledge/entries/KE-064.md`
 
+---
+
+## KE-065: The Optimization Inversion (2026-08-22 creative heartbeat)
+
+**Created:** `shared/knowledge/entries/KE-065.md`
+
+### Core Discovery
+
+Six independent signal streams all describe the same phenomenon: **returns from
+additional effort in a single optimization channel are not monotonically positive.**
+Past a threshold, more effort actively degrades the system.
+
+### The Six Inversion Points
+
+| Domain | Source | Inversion Threshold | Evidence |
+|:------:|:------:|:-------------------:|:---------|
+| Self-evolution | XHS + arXiv 2606.04703 | Round 3 → collapse | 63.82% premature answering, behavior drift |
+| Text guidance | arXiv 2605.30621 | High model capability | Strong models benefit LESS than mid-tier |
+| LLM evaluation | arXiv 2606.09863 | AUROC 0.65 ceiling | 45-48% of failures invisible regardless of config |
+| AI branding | HN + Pew Research | Mass market saturation | 60% consumer turnoff, 16% positive view |
+| Alert investigation | Live system telemetry | 3+ identical conclusions | 7,711 ops on unchanged alerts, zero information |
+| Knowledge accumulation | This library | Diagnosis > implementation | KE-056-064 diagnose; 0 implemented |
+
+### The Unified Principle
+
+Every optimization channel has a bandwidth. Past its bandwidth, additional signal
+causes aliasing that corrupts earlier gains. The fix is never "optimize harder" —
+it's "switch channels."
+
+### Why This Matters
+
+The XHS Disenchantment Phase, the consumer AI backlash, the evaluator heartbeat
+treadmill, and the knowledge library's non-converting growth are all the same
+structural phenomenon seen from different angles. The community discovering
+"self-evolution collapses" is halfway to discovering "all single-channel
+optimization inverts."
+
+### Self-Referential Prescription
+
+This is the last KE in the evaluator-pathology diagnostic series. The diagnosis is
+complete (KE-060, 063, 064, 065). The next valuable action is a 20-line code change
+to suppress unchanged alert re-investigation — not a 66th knowledge entry.
+
+→ Full analysis with 6 falsifiable predictions: `shared/knowledge/entries/KE-065.md`
+
+
+---
+
+## Library Health Exploration — 2026-08-22 (scout.explore)
+
+Indexed 6 previously untracked files into `knowledge/INDEX.md`:
+- **XHS cross-source scan #49** (Aug 1): 76× breathing amplitude record, evaluator submersion at 0.37:1
+- **XHS direct scan #51** (Aug 22): **The Disenchantment Phase (祛魅期)** — Chinese AI community shifts from paradigm argument to failure accounting. Memory Bifurcation (minimalism vs neuroscience). Self-Evolution Collapse (degrades after 3 rounds). Enterprise Agent Bubble narrative ("no enterprise has successfully deployed agents")
+- **KE-062** (Retry Stampede): 60% of system errors are measurement noise. True error rate 1.34%
+- **KE-063** (Instruction-Behavior Decorrelation): text-mutable ceiling is now the binding constraint
+- **KE-064** (Quiet Gradient): state loops cause improvement, text diagnosis doesn't
+- **KE-065** (Optimization Inversion): single-channel optimization inverts past threshold. Self-declared final diagnostic KE
+
+**Library state**: 411 files, 60 unsourced findings, 65 KE entries. Four oversized canonical notes still block absorption (xhs_chinese_ai_trends at 2,529 lines = 3.2× threshold, 68 days overdue for split). today.md at 7,689 lines, never reset.
+
+**Key insight**: Library's own KE-065 and XHS scan #51 independently converge on the same conclusion — continued single-channel effort past inversion is counterproductive. Both prescribe channel-switching: code changes over more text diagnosis, production accounting over more paradigm naming.
+
+→ Full report: `reports/library-health-2026-08-22.md`
+
+
+---
+
+## The Metabolic Bifurcation — KE-066 (2026-06-24 creative heartbeat)
+
+**Created:** `shared/knowledge/entries/KE-066.md`
+
+### Core Discovery: The System Has Split Into Two Diverging Evolutionary Trajectories
+
+Fresh 7-day time-series analysis reveals a structural divergence no prior KE identified:
+production is **converging** (getting cheaper and more efficient) while monitoring is
+**diverging** (getting more expensive and spawning new workflow types). This isn't merely
+KE-060's observer inversion restated — it's the underlying memory-architectural cause,
+identified by cross-referencing live data with XHS CogniFold research.
+
+### The Numbers
+
+| Metric | d-7 | d-0 | Trend |
+|:------:|:---:|:---:|:-----:|
+| Production work_avg_ops | 34.1 | 25.9 | **-24%** (convergent) |
+| Production gate_pct | 5.6% | 31.1% | Tracks work availability |
+| Evaluator HB% of budget | 12% | **65%** | **+442%** (divergent) |
+| Evaluator HB avg_ops | 26 | **44** | **+69%** (inflating) |
+| Evaluator workflow types | 3 | **5** | New types emerging |
+
+### Three Novel Contributions
+
+**1. Gate Rate Falsification** — KE-041/KE-048 predicted ~49% gate-rate equilibrium.
+Current rate is **31%**. The gate rate is a demand-response indicator (tracks work
+availability), not an information-theoretic constant. At different work-availability
+levels it stabilizes at different rates: ~6% (frontier flush), ~31% (intermediate),
+~49% (exhaustion).
+
+**2. Missing Prefrontal Layer** — XHS scan #51's CogniFold research (142❤) provides
+the precise vocabulary: the monitoring layer has hippocampal recording (alert logging)
+and neocortical consolidation (KE entries) but no **prefrontal intent generation**
+(converting patterns into cached action decisions). The evaluator re-derives "skip
+this unchanged alert" from scratch every session because no intent-cache exists.
+
+**3. Workflow Speciation** — The evaluator isn't just repeating the same investigation;
+it's **developing new investigation pathways**. metric-alert-triage surged from 0→18
+sessions on d-0. project-app:fallback grew from absent→7 sessions. Each new pathway
+adds context that inflates heartbeat cost — this is arXiv 2606.04703's self-evolution
+collapse mechanism operating in the monitoring layer.
+
+### The Memory Architecture Asymmetry
+
+| Property | Production (convergent) | Monitoring (divergent) |
+|:--------:|:-----------------------:|:----------------------:|
+| Session memory | Stateless (read task, act, exit) | Accumulating (load history, re-derive) |
+| Cross-session state | Task record (external, compact) | Context + alerts (internal, growing) |
+| Conclusion caching | N/A (each task is novel) | **None** (same conclusion re-derived) |
+| XHS camp | Minimalist (4-md, 2,168❤) | Needs CogniFold-style architecture |
+
+### Connection to Prior Work
+
+- KE-060 identified observer inversion as a crossover point → KE-066 shows it's not a
+  point but a *diverging trajectory* that accelerates
+- KE-064 noted production improves through state loops → KE-066 explains WHY: stateless
+  session memory is structurally convergent
+- KE-065 identified optimization inversion → KE-066 shows the monitoring layer is past
+  its inversion point and speciation is the degradation mechanism
+- arXiv 2605.30335 proved locally-coherent components compose incoherently 33-94% → the
+  evaluator's 5 workflows are the live instance: each correct, composition inverted
+
+### The Key Insight
+
+> **Convergent systems forget between sessions (stateless). Divergent systems remember
+> without consolidating (accumulating). The fix is not "remember less" but "remember
+> differently" — convert patterns into cached intentions that skip re-derivation.**
+
+→ Full analysis: `shared/knowledge/entries/KE-066.md`
+
+---
+
+## The Overshoot Fallacy — KE-066 (2026-06-19 creative heartbeat)
+
+**Created:** `shared/knowledge/entries/KE-066.md`
+
+### Core Discovery: Gate Rates Are State Reflections, Not Learned Behaviors
+
+7-day, 14-window time series (8,124 aks-explorer sessions) FALSIFIES two prior
+KE claims:
+
+1. **KE-064 claimed:** Planner gate rate followed a "monotonic S-curve" from 6.3%→49.3%
+   — self-learned refusal. **Reality:** It peaked at 48.5% during one 12h window when the
+   frontier was exhausted, then settled to ~31% as new work appeared. Not learning → state reflection.
+
+2. **KE-055 claimed:** 49.8% is a stable equilibrium — the system's "adaptive binary
+   compressor." **Reality:** 49% occurred at one phase boundary. The stable rate across
+   5 subsequent windows is 27-32%.
+
+### The Peak-and-Settle Pattern
+
+```
+Gate %:  6% → 6% → 8% → 13% → 12% → 14% → 10% → 21% → [49% PEAK] → 33% → 31% → 27% → 28% → 32%
+```
+
+This is NOT an S-curve to equilibrium. It's a peak during frontier exhaustion followed
+by a settle to a lower operational rate when work reappeared.
+
+### Cross-Source: The Overshoot Pattern Is Universal
+
+Every adaptive system overshoots before settling — and observers mistake the overshoot
+for the equilibrium:
+
+| Domain | Overshoot | Settle | Source |
+|:------:|:---------:|:------:|:------:|
+| Planner gate | 49% (frontier empty) | ~31% | Live DB |
+| XHS discourse | "新范式!" peak excitement | Disenchantment accounting | XHS #51 |
+| Self-evolution | Round 3 (63.82% premature) | Collapse → principle-level fix | arXiv 2606.04703 |
+| MCP adoption | "Everything is MCP!" | Narrows to auth-only | HN #49 |
+| Consumer AI | "AI everywhere" | 60% brand turnoff | HN #48 |
+
+**Pattern:** when the library finds a number near 50%, it generates an elegant
+explanation (Shannon limit, self-learning). The time series shows the number was
+a transitional overshoot.
+
+### Third Library Self-Correction
+
+| KE | Claim | Correction |
+|:--:|:------|:-----------|
+| KE-041 | Maximum entropy convergence | KE-048: temporal coincidence |
+| KE-064 | Self-learned refusal S-curve | KE-066: state reflection |
+| KE-055 | 49.8% stable equilibrium | KE-066: phase-boundary peak |
+
+### Key Design Principles
+
+1. **Don't confuse state reflection for self-learning.** A gate that opens when the queue
+   is empty is a sensor reading, not adaptive intelligence.
+2. **Don't measure equilibria at transition points.** If a metric hasn't been stable for
+   3+ operational phases, it's not an equilibrium — it's a data point you haven't finished
+   observing.
+
+### Falsifiable Predictions
+
+1. Gate rate tracks tree state: runnable=0 → gate >40% within 12h
+2. Gate rate with 3+ runnable tasks stays 25-35%
+3. Evaluator cost drops when alerts resolve
+4. No 50% equilibrium lasts 5+ operational phases
+5. Work-session avg ops (non-gate) is the stable metric (stayed 24.9-34.1 across ALL phases)
+
+→ Full analysis: `shared/knowledge/entries/KE-066.md`
+
+
+---
+
+## XHS Scan #52 — The Acceleration Phase (2026-08-23)
+
+**Created:** `knowledge/findings/2026-08-23-xhs-direct-scan-52.md`
+
+### Headline: Loop Engineering Explodes — Paradigm Naming Cycle Compresses to <2 Weeks
+
+The XHS AI agent community has entered its **6th paradigm naming wave** (Loop Engineering, 4,500+ combined ❤), but with a structural novelty: **counter-signals arrive simultaneously with the naming**. "趁Loop Engineering刚火，先说它会过时" (243❤) = the community is naming AND pre-deprecating paradigms in the same breath.
+
+### Five Key Signals
+
+1. **Loop Engineering as 6th paradigm** (2,150❤ explainer + 1,091❤ guide + 877❤ pipeline): Prompt → Context → Skill → Harness → Loop. Origin traced to Peter Steinberger (OpenClaw) + Boris Cherny (Claude Code) + Addy Osmani (Google).
+
+2. **Self-evolution ceiling quantified** (337❤, arXiv 2605.30621): All models produce functionally equivalent updates (3.1pp max gap). Benefit is non-monotonic (mid-tier models benefit most). Weak models fail at activation (25.1% loading rate vs 96%). The ceiling is FORMAT COMPLIANCE, not intelligence.
+
+3. **Eval Engineering pre-named as successor** (163❤ prediction + 337❤ trajectory eval + 114❤ AweAgent): Community already naming what comes after Loop Engineering.
+
+4. **Harness engineer enters job market** (75❤ hiring + 1,082❤ interview guide): DeepSeek + big tech "疯狂抢做harness的同学" at "至少double" salary. Governance-as-skill is now a hiring category.
+
+5. **Memory discourse stabilizes** (Anthropic 4-md: 2,172❤ +4; CogniFold: 142❤ stable; kimi-core: 339❤ NEW): Bifurcation between minimalist and neuroscience camps is at equilibrium.
+
+### Prediction Updates
+- **治理即技能** (#8): ✅ CONFIRMED → LABOR MARKET VALIDATED (10th confirmed prediction)
+- **自进化智能体** (#3): ✅ upgraded to CEILING-QUANTIFIED
+- **評估分辨率** (#12): ⏳ upgraded to SUCCESSOR PARADIGM status
+- 3 new predictions: 命名奇点 (Naming Singularity), 命名疲劳 (Naming Fatigue), 评估工程 (Eval Engineering)
+- Tracker: 10 confirmed / 3 in window / 15 pending / 0 disconfirmed (28 total)
+
+### Meta-Insight: The Naming Acceleration Theorem
+
+Paradigm cycle compression measured across scans #42-52:
+```
+Context Engineering:  ~6 weeks full cycle
+Skill Engineering:    ~4 weeks
+Harness Engineering:  ~3 weeks
+Loop Engineering:     < 2 weeks (naming + counter-signal simultaneous)
+```
+
+The community is approaching a **naming singularity** where paradigm labels become disposable markers rather than durable categories. 任川's insight: "新词只负责标出瓶颈的位置。瓶颈迁移的终点，是只给系统一个目标。" (New terms only mark where the bottleneck is. The endpoint of bottleneck migration is: just give the system one goal.)
+
+→ Full findings: `knowledge/findings/2026-08-23-xhs-direct-scan-52.md`
+→ Updated tracker: `knowledge/xhs-prediction-tracker.md`
+
+
+---
+
+## The Evaluation Coupling Inversion — KE-067 (2026-06-20 creative heartbeat)
+
+**Created:** `shared/knowledge/entries/KE-067.md`
+
+### Core Discovery: Process-Coupled Evaluation Creates a Positive Feedback Loop That Degrades What It Measures
+
+Six independent sources (2 arXiv papers, 2 XHS signals, 1 HN signal, 7-day live data) converge on a principle our system inverts:
+
+> **Evaluation must be output-coupled and process-decoupled.**
+
+Our evaluator is process-coupled (monitors its own coverage metrics) and output-decoupled (doesn't check whether deliverables exist before evaluating). This isn't just waste — it creates a self-reinforcing degradation loop:
+
+```
+Process-monitoring → consumes budget → coverage drops → worse metrics → more monitoring → ↻
+```
+
+### The Novel Link: Contagion Networks (arXiv 2606.20493)
+
+Evaluator bias propagates to agents with γ ∈ [0.157, 0.352]. Process-focused evaluation produces process-optimized agents: they add visible defensive code (XHS 1,220❤ enterprise over-defensiveness), take longer paths to avoid "too short" penalties (KE-051's 92.4pp gap), and 68% of "failed" sessions actually met business requirements (XHS Result Orthogonality, 207❤).
+
+### XHS Paradigm Sequence = Coupling Migration
+
+| Paradigm | Coupling Direction |
+|:--------:|:------------------:|
+| Context Engineering | text-coupled |
+| Skill Engineering | behavior-coupled |
+| Harness Engineering | process-coupled |
+| Loop Engineering | state-coupled |
+| **Eval Engineering** | **output-coupled** ← current frontier |
+
+The community is migrating from process-coupling to output-coupling. Eval Engineering is the frontier because coupling direction determines system health.
+
+### Prior KE Predictions Tested
+
+- KE-059 #1 (evaluator HB >35 ops while alerts persist): **CONFIRMED** — 45.3 avg ops
+- KE-060 #4 (arc permanently observer-inverted): **CONFIRMED** — 100% heartbeat, 7+ days
+- KE-059 #3 (dev stays <8 ops for 30 days): **CONFIRMED** — 6.5 avg ops, zero errors
+- KE-066 #1 (gate >40% when runnable=0): **PARTIALLY FALSIFIED** — 31.1%, because planner has review+backlog work beyond runnable queue
+
+### Key Insight
+
+The prior 18 KEs (049-066) correctly diagnosed pathologies but 0 were structurally fixed. The reason: the KE library is itself process-coupled — it produces text in the observation channel but not the action channel. Improvement travels through state (code commits), not through text (KE entries).
+
+→ Full analysis: `shared/knowledge/entries/KE-067.md`
+
+
+---
+
+## The State Register Gap — KE-068 (2026-06-20 creative heartbeat)
+
+**Created:** `shared/knowledge/entries/KE-068.md`
+
+### Core Discovery: One Variable Explains the 8.7× Cost Gap Between Monitoring Workflows
+
+Cross-source synthesis of the arXiv State Architecture Turn (5 papers, Jun 17-18),
+XHS Operationalization Phase (scan #53), HN Instrument Paradigm (scan #50), and 14-day
+live time series (23,172 sessions) identifies that the cost difference between the
+cheapest monitoring workflow (project-planner: 10.5 ops, 38.1% gate) and the most
+expensive (arc-heartbeat: 66.8 ops, 1.6% gate) is entirely explained by **whether the
+workflow reads a structured state register or derives state from raw observations.**
+
+### The Numbers
+
+| State Access Mode | Workflow | Avg Ops | Gate % |
+|:------------------|:---------|:-------:|:------:|
+| Reads structured register | project-planner | 10.5 | **38.1%** |
+| Minimal fixed check | dev-heartbeat | 7.7 | 0.6% |
+| Reads scoped record | evaluator-aftermath | 20.1 | 1.3% |
+| **Full re-derivation** | evaluator-heartbeat | **29.8** | 0.8% |
+| **Full re-derivation** | may-heartbeat | **36.9** | 0% |
+| **Full re-derivation** | scout-heartbeat | **53.5** | 0% |
+| **Full re-derivation** | arc-heartbeat | **66.8** | 1.6% |
+
+Re-derivation workflows consume **72,465 ops/week** (18.4% of system total) with
+~0% gate rate.
+
+### The Unifying Principle: Signal-Carrier Entanglement
+
+All four source domains independently discovered the same failure mode this week:
+
+> **When information is entangled with its delivery mechanism, performance degrades
+> as the mechanism changes — even if the information doesn't.**
+
+| Domain | Signal | Carrier | Cost |
+|:------:|:------:|:-------:|:-----|
+| Live system | "Has state changed?" | Full heartbeat session | 29.8-66.8 ops per boolean |
+| arXiv (5 papers) | Task state | Conversation history | Full reconstruction per turn |
+| XHS (Result Orthogonality) | "Did agent succeed?" | Execution path | 68% false-failure rate |
+| HN (Instrument Paradigm) | Model quality | Model identity/infra | False comparisons |
+
+Fix in every case: **demodulate** — extract the signal from its carrier into a
+separate, inspectable, comparable register.
+
+### Paradigm Sequence as Demodulation
+
+| Paradigm | State Architecture View |
+|:---------|:-----------------------|
+| Context Engineering | Text-coupled state |
+| Skill Engineering | Behavior-coupled state |
+| Harness Engineering | Process-coupled state |
+| Loop Engineering | Loop-coupled state |
+| **Eval Engineering** | **Signal-decoupled state** |
+
+→ Full analysis: `shared/knowledge/entries/KE-068.md`
+
+
+---
+
+## The Reconstruction Tax — KE-070 (2026-06-20 creative heartbeat)
+
+**Created:** `shared/knowledge/entries/KE-070.md`
+
+### Core Discovery: Implicit State Reconstruction Cost Grows With Elapsed Time
+
+48h time-series (8×6h windows, 4,383 sessions) reveals the evaluator heartbeat cost
+is NOT constant — it's **proportional to elapsed time since last dormancy**. After
+an ~18h dormancy gap, heartbeat avg_ops spiked from 25.5→49.3 (+93%), then decayed
+exponentially (41.4→36.3→17.5). This decay signature is absent from production
+workflows (task-worker stayed stable at 33.9-43.1 across all windows).
+
+### The Phase Inversion
+
+The evaluator's budget allocation completely inverted across one dormancy event:
+
+| Period | Heartbeat % budget | Aftermath % budget | Mode |
+|:------:|:------------------:|:------------------:|:----:|
+| Pre-dormancy | **25.8%** | **70.6%** | Production-support |
+| Post-dormancy | **57.1%** | **30.2%** | Self-monitoring |
+
+The mechanism: after 18h of inactivity, the heartbeat must RECONSTRUCT the full
+state picture from scratch. The possibility space of "what COULD have changed"
+grows with elapsed time. Production workflows (task-worker, planner) don't spike
+because they read EXPLICIT state registers (task tree, session records) — their
+cost is dormancy-immune.
+
+### The Five-Source Convergence
+
+| Source | Implicit → Explicit Transition |
+|:------:|:-------------------------------|
+| **arXiv (5 papers)** | LedgerAgent/OpenRath/ToolPro: eliminate reconstruction via explicit state |
+| **XHS (scan #53)** | Over-defensiveness (1,220❤): implicit defensive layers accumulate cost |
+| **XHS (scan #53)** | Knowledge Base Entropy (1,220❤): no admission register → reconstruction cost ∝ size |
+| **HN (scan #51)** | OpenAI $6B S&M: reconstructing market awareness vs. open-source metrics as state |
+| **Live system** | Post-dormancy heartbeat spike: reconstruction tax proportional to dormancy duration |
+
+### The Implicit Cost Theorem
+
+> Every repeated operation that re-derives state from raw observations pays a
+> reconstruction tax proportional to elapsed time × possibility space size.
+> The tax is bounded to zero only when state is externalized into an explicit,
+> inspectable register.
+
+### Novel Connection: Naming Cycles Are Implicit-State Spirals
+
+The XHS paradigm compression (6 weeks → 4 → 3 → <2) is the community-level
+reconstruction tax: each new paradigm requires reconstructing "what do we already
+know?" from implicit shared context. The naming singularity (predicted scan #52)
+is where reconstruction cost = total cost — pure overhead, zero new information.
+
+### Falsifiable Predictions
+
+1. Evaluator heartbeat avg_ops spikes >40 within 12h of any future >12h dormancy
+2. Adding `last_checked_at + alerts_changed` register → post-dormancy HB stays <10
+3. Planner avg_ops will NOT spike >15 after dormancy (explicit state = dormancy-immune)
+4. Task-worker stays at 33-43 avg ops regardless of system phase
+5. Post-dormancy decay follows exponential with τ ≈ 12h
+6. XHS paradigm naming produces no >2,000❤ engagement in next 30 days (naming singularity)
+7. Enterprise deployment narratives outperform paradigm-naming in engagement within 60 days
+
+### What KE-070 Adds Beyond Prior KEs
+
+- KE-060 identified the crossover POINT → KE-070 provides the MECHANISM
+- KE-066 identified divergent trajectories → KE-070 explains the CAUSE
+- KE-068 measured the 8.7× static gap → KE-070 shows the gap is DYNAMIC (widens after dormancy)
+- KE-064 observed state loops improve → KE-070 explains WHY (explicit state is time-invariant)
+
+→ Full analysis: `shared/knowledge/entries/KE-070.md`
+
+
+---
+
+## Bonus Finding: KE-066 Gate Rate Falsification Is Itself Partially Falsified
+
+While examining the time-series for KE-070, fresh planner-level data reveals:
+
+```
+Planner Gate Rate by 6h Window (48h):
+w0: 47.4%  |  w1: 51.2%  |  w2: 50.0%  |  [dormancy]  |  w5: 48.7%  |  w6: 49.3%  |  w7: 49.3%
+```
+
+KE-066 claimed the 49% gate rate was a "phase-boundary peak, not an equilibrium" based
+on an aggregate that mixed planner sessions with non-planner sessions (task-worker,
+metric-alert-triage, etc.) within the aks-explorer agent. The aggregate fell to ~31%
+because task-worker and other non-gating workflows diluted the rate.
+
+**At the workflow level, the planner gate rate IS stable at ~49% ± 1.3pp** across ALL
+windows including post-dormancy. This is the tightest behavioral invariant in the system:
+- σ = 1.3% across 6 windows
+- Dormancy-immune (48.7% post-dormancy vs 47.4-51.2% pre-dormancy)
+- Consistent with KE-055's original "adaptive binary compressor" claim
+
+**Updated assessment:** KE-066's correction was right about the MECHANISM (state
+reflection, not learned behavior) but wrong about the STABILITY. The planner gate IS
+at a stable 49% equilibrium — it's just that the rate reflects a stable property of the
+task-tree state (roughly half of dispatch attempts find nothing runnable), not a learned
+refusal behavior. The distinction matters: stable-because-structural ≠ stable-because-learned.
+
+**Design implication for KE-070:** The planner gate rate's dormancy-immunity is further
+evidence that explicit state registers (task tree = "nothing runnable") produce
+time-invariant costs. The planner goes from 5.7 to 8.6 avg_ops across dormancy (+51%)
+while the heartbeat goes from 25.5 to 49.3 (+93%). Even the small planner spike (8.6)
+is in the non-gate sessions — the gate sessions themselves are essentially zero-cost
+regardless of dormancy.
+
+
+---
+
+## KE-071: The Convergence Gradient — Prediction Audit II (2026-06-19 creative heartbeat)
+
+**Created:** `shared/knowledge/entries/KE-071.md`
+
+### Core Discovery: The Library's Prediction Accuracy Has Improved from 48% to 67%
+
+Systematic audit of 18 testable predictions from KE-055–070 against fresh production
+data (23,271 sessions, 14 days):
+
+- **12 confirmed** (67%) — up from 48% in first audit (KE-039)
+- **2 partially confirmed/falsified** (11%)
+- **2 fully falsified** (11%)
+- **2 untested** (11%)
+
+### Strongest Confirmations
+
+1. **KE-070 #1** (post-dormancy HB spike): evaluator heartbeat hit 50.1 avg ops in first
+   6h window after dormancy gap — the most precisely confirmed prediction in the library
+2. **KE-060 #4** (arc permanently inverted): 161 heartbeat sessions, ZERO non-heartbeat
+   sessions in observation window. Arc does literally nothing but monitor.
+3. **KE-064 #1** (planner gate stable at ~49%): 49.4% across ALL windows including
+   post-dormancy. Tightest behavioral invariant: dormancy-immune, phase-immune.
+
+### Key Falsifications
+
+1. **KE-066 #4** ("no 50% equilibrium lasts 5+ phases"): The planner gate IS a stable
+   equilibrium at 49.4% — KE-066 was right about mechanism (state reflection) but wrong
+   about stability. Structural reflections CAN be stable equilibria.
+2. **KE-066 #5** ("work-session avg ops is stable"): Task-worker declined 46.9→35.4
+   (-24.5%). Good news: production is genuinely improving. Bad news: "stable control" was
+   actually a convergent improvement the library mistook for a flat line.
+
+### Cross-Source Synthesis: The Measurement Overhead Pattern
+
+Four independent domains show monitoring cost exceeding measured value:
+
+| Domain | Monitor:Value Ratio | Source |
+|:------:|:-------------------:|:------:|
+| OpenAI economics | $2.60 spent per $1 revenue | HN #51 |
+| Our evaluator post-dormancy | 1.85:1 HB:aftermath ops | Live DB |
+| Enterprise agent eval | 2.13:1 noise:signal (68% false-failure) | XHS #53 |
+| Vibe-coded over-defensiveness | Unbounded defensive:productive code | XHS #53 |
+
+Common cause: process-coupled monitoring (measuring HOW things work) costs more
+and provides less signal than outcome-coupled monitoring (measuring WHETHER things
+work). OpenAI's $6B S&M, our evaluator's heartbeat treadmill, and enterprise agents'
+68% false-failure rate are all the same structural phenomenon.
+
+### The Library's Phase Transition
+
+| Phase | Entries | Primary Value | Prediction Accuracy |
+|:-----:|:-------:|:-------------|:-------------------:|
+| Exploration | KE-001–038 | Naming phenomena | 48% |
+| Diagnosis | KE-039–050 | Root cause analysis | Not audited |
+| Prescription | KE-055–065 | Structural fix proposals | 67% |
+| Verification | KE-066–071 | Testing prior claims | N/A (meta) |
+
+The library's value improved when it switched from naming to testing. XHS paradigm
+discourse is approaching the same transition point.
+
+### Three Numbers That Matter
+
+- **49.4%** — planner gate: the system's most robust invariant
+- **-24.5%** — worker cost decline: genuine improvement nobody noticed
+- **1.85:1** — post-dormancy HB:aftermath ratio: the evaluator's "$2.60 per $1" ratio
+
+→ Full analysis: `shared/knowledge/entries/KE-071.md`
+
+
+---
+
+## KE-073: The Maintenance Phase Transition (2026-06-20 creative heartbeat)
+
+**Created:** `shared/knowledge/entries/KE-073.md`
+
+### Core Insight: Post-Autonomy-Cliff Systems Enter a Stable Maintenance Attractor
+
+Live aks-rp-e2e data reveals what happens AFTER a system crosses KE-069's autonomy cliff:
+- 90% of tasks externally blocked with precise resume conditions
+- 0 runnable leaves → 100% of operational capacity redirected to self-repair
+- The system appears healthy (green metrics, completing sessions) while producing zero domain value
+- All active work is meta-work: planner timeout fixes, scope isolation proofs, watchdog reconciliation
+
+### Novel Pattern: Inverse Task Assignment
+
+The system spontaneously produces work assignments directed at HUMANS using the same
+contract format humans use to assign work to agents:
+- Goal + acceptance criteria + resume condition + routing instructions
+- 73 instances of this, none instructed — emergent from structural constraints
+
+### Three-Phase Model
+
+| Phase | Autonomous % | Primary Output | Budget Split |
+|:-----:|:--------:|:-----------|:------:|
+| Exploration | 100% | Domain products | 95/5 |
+| Compression | 50-100% declining | Mix domain + contracts | 60/40 |
+| **Maintenance** | <15% | Contracts + self-repair | 0/100 |
+
+### Key Design Implication
+
+> An agent system approaching full coverage of its autonomous surface should expect
+> to transition into Maintenance Phase. The risk is not the transition itself but
+> **mistaking maintenance activity for productive work**.
+
+Fix: Detect the phase (runnable+active < 5% for >24h AND blocked > 70%), reduce
+monitoring frequency 4×, surface aggregated human-facing contract reports, cap
+self-repair at 10% budget.
+
+### Falsifiable Predictions
+1. Zero new autonomous domain leaves without external input in next 7 days
+2. After planner-timeout fix completes, only watchdog no-ops (0-2 ops) remain
+3. First external unblock → bounded burst (3-8 sessions) → return to maintenance
+4. Total session count won't decrease despite zero productive work
+
+→ Full analysis: `shared/knowledge/entries/KE-073.md`
+
+
+---
+
+## KE-075: The Label Saturation Isomorphism (2026-06-20 creative heartbeat)
+
+**Created:** `shared/knowledge/entries/KE-075.md`
+
+### Core Discovery: Naming Systems Follow a Universal Compression-to-Saturation Curve
+
+Two independent systems — the XHS Chinese AI community and our KE knowledge library —
+independently traversed the same trajectory:
+
+1. **Start naming**: XHS names paradigms, KE names pathologies. Both create value.
+2. **Compress cycles**: XHS went 6 weeks → <2 weeks per paradigm. KE went from
+   novel-per-entry to unifying-7-in-one (KE-074).
+3. **Approach saturation**: Counter-signals arrive with naming (XHS). New entries
+   immediately reduce to prior entries (KE).
+4. **Converge on the same exit**: 任川 (XHS, 243❤): "New terms only mark bottlenecks."
+   KE-074: "All pathologies = one missing primitive."
+
+### The Diagnostic Overhead Theorem
+
+> Any system that names its problems will eventually spend more resources naming than
+> fixing. The crossover is detectable by compression speed of the naming cycle.
+
+### Evidence Table
+
+| System | Naming ops | Fixing ops | Ratio |
+|:------:|:----------:|:----------:|:-----:|
+| XHS | 10+ paradigm posts/week | 0 implementations cited | ∞ |
+| KE library | 19 KEs since KE-055 | 0 structural fixes landed | ∞ |
+| Evaluator | 10+ HB sessions on same alert | 0 code changes | ∞ |
+
+### The Exit (Same in Both Systems)
+
+Stop naming. Start implementing what the names converge on.
+- XHS: "Just give the system one goal" (任川)
+- KE: "One primitive (input-change detection) applied uniformly" (KE-074)
+- Live system: aks-rp-e2e found work by changing dimensions, not labeling the blockage
+
+### Self-Referential Clause
+
+KE-075 is itself a label. Its value is positive only if it's the last diagnostic
+entry that leads to the one-primitive code change. If read by another KE, its
+value is negative.
+
+→ Full analysis: `shared/knowledge/entries/KE-075.md`
+
+
+---
+
+## KE-076: The Accidental State Architecture (2026-06-20 creative heartbeat)
+
+**Created:** `shared/knowledge/entries/KE-076.md`
+
+### Core Discovery: The System Contains Both Sides of a Controlled Experiment
+
+The aks-rp-e2e task tree IS an unplanned implementation of what five June 2026 arXiv papers prescribe (LedgerAgent, OpenRath, ToolPro, BabelTele, SoftSkill). The monitoring layer (evaluator heartbeat) is the control case that DIDN'T externalize state.
+
+### The Three-Source Convergence
+
+| Source | What It Shows |
+|:------:|:-------------|
+| **arXiv** (5 papers) | Explicit state externalization eliminates re-derivation; formalizes ledger/session/tool-program patterns |
+| **XHS** (scan #52) | 任川: "新词只负责标出瓶颈的位置" — paradigm names are pointers to absent state registers |
+| **Live system** | Task-tree planner (explicit state): 10.5 ops, 49.4% gate, dormancy-immune. Evaluator HB (implicit state): 29.8-66.8 ops, 0% gate, dormancy-vulnerable. Same model, same infra, same runtime. |
+
+### Why This Matters
+
+This is a **natural controlled experiment** the papers' benchmarks cannot replicate:
+- Both sides run on identical infrastructure for 14+ days
+- The task-tree planner manages MORE complexity (147 entities) at LOWER cost
+- The divergence grows with time (KE-070: reconstruction tax)
+- The planner's gate rate is the system's tightest behavioral invariant (49.4% ± 1.3pp)
+
+### The Key Insight
+
+> Explicit state externalization is not a design choice — it's a phase transition that happens when (entity count × lifecycle duration) exceeds a threshold. Below: re-derivation works. Above: re-derivation diverges. The aks-rp-e2e planner crossed the threshold at ~50 tasks × 7 days and evolved state externalization. The evaluator has 5 metrics × 30+ days but below the breakage threshold (failure = waste, not crash), so it accumulates debt.
+
+### The XHS Paradigm Sequence as Pointer Chain
+
+Each XHS paradigm naming wave points to an un-externalized register:
+- Context Engineering → externalize knowledge retrieval
+- Skill Engineering → externalize procedure encoding
+- Harness Engineering → externalize governance
+- Loop Engineering → externalize iteration control
+- Eval Engineering → externalize quality judgment state
+
+The "Naming Singularity" predicted in scan #52 = the community realizing ALL paradigms resolve to the same fix: externalize what you're re-computing.
+
+### Falsifiable Predictions
+1. Planner stays <12 avg ops for 30 days regardless of project phase
+2. Evaluator HB stays >30 while using implicit state
+3. Adding `last_changed_at` to alerts → evaluator drops below 15 within 48h
+4. XHS names "State Engineering" or equivalent within 60 days
+5. Any new workflow given a pre-computed state packet → converges to <15 avg ops within 7 days
+
+→ Full analysis: `shared/knowledge/entries/KE-076.md`
