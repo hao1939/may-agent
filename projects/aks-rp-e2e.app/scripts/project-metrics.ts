@@ -697,9 +697,11 @@ function duplicateArtifactCount(): number {
       continue;
     }
     const key = base
-      .replace(/-\d{8}T\d{6}Z.*$/, "")
-      .replace(/-\d{8,}.*$/, "")
-      .replace(/-iteration\d+.*$/, "");
+      .replace(/-\d{8}T\d{6}Z(?=-|\.|$)/g, "")
+      .replace(/-\d{8,}(?=-|\.|$)/g, "")
+      .replace(/-iteration\d+(?=-|\.|$)/g, "")
+      .replace(/--+/g, "-")
+      .replace(/-\./g, ".");
     groups.set(key, (groups.get(key) ?? 0) + 1);
   }
   return [...groups.values()].filter((count) => count > 3).length;

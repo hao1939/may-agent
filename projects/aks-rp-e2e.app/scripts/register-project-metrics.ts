@@ -386,7 +386,7 @@ const metrics: MetricDef[] = [
     alertOp: ">",
     priority: "P2",
     description:
-      "Loop hygiene signal: repeated same-purpose artifacts indicate agents may be cycling. Threshold 30→40→45→50: the current distribution has 46 groups over the >3-file cutoff, with 34 groups sitting exactly at 4 files and only 12 groups above that. Reopened active verification work now creates a structural floor just below 50 from legitimate frontier/exec evidence bursts; only a jump above 50 is a useful interrupting signal. Calibrated 2026-06-17.",
+      "Loop hygiene signal: repeated same-purpose artifacts indicate agents may be cycling. Threshold 30→40→45→50: the current distribution has 46 groups over the >3-file cutoff, with 34 groups sitting exactly at 4 files and only 12 groups above that. Reopened active verification work now creates a structural floor just below 50 from legitimate frontier/exec evidence bursts; only a jump above 50 is a useful interrupting signal. Filename normalization was tightened on 2026-06-21 to remove timestamp/attempt tokens in place while preserving the semantic suffix, so unrelated source-spec/probe families no longer collapse into synthetic duplicate buckets.",
   },
 ];
 
