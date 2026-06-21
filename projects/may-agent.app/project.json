@@ -21,7 +21,7 @@
   "taskIndex": ["tasks/tree.json"],
   "currentFocus": {
     "taskId": null,
-    "summary": "Owner review 2026-06-21T03:05Z. Platform stable: 0 failures in 1h window, handler.success-rate=1.0, heartbeat-coverage=1.0. 3 open alerts all aks-rp-e2e-owned (duplicate-group-count #2018, slow-count-24h #2011, timeout-24h #2010) — not platform-actionable. 9 error sessions in 1h all aks-explorer/evaluator opCount=0 provider burst errors, not platform bugs. session.first-turn-error-count-1h=8 (deferred metric, aks-rp-e2e-owned). Key fix: diagnosed owner session budget overrun (18 sessions/24h against 6/day budget). Root cause: platform-review (4h, 6/day) + owner-heartbeat (4h, 6/day) = 12 guaranteed wakes/day, plus ops-health-signal wakes from evaluator/legacy blocked workflows with projectId=NULL. Fix: platform-review → 6h (4/day), owner-heartbeat → 12h (2/day) = 6/day matching budget. 14/14 app tests pass, TypeScript clean, integrity check passes. 72 tasks: 64 done, 8 backlog (all P2 design/documentation/tooling). No task-tree changes needed."
+    "summary": "Owner review 2026-06-21T03:35Z. Committed budget overrun fix: platform-review 4h→6h, owner-heartbeat 4h→12h (total 6/day matching sessionsPerDay budget). Previous session diagnosed but left uncommitted. Also committed: workflow lifecycle drain for agent:may messages, design doc updates (session ID reuse, stale-attempt watchdog, integrity checks). 14/14 tests pass, TypeScript clean. 3 open alerts all aks-rp-e2e-owned — not platform-actionable. 0 handler failures in 1h. 72 tasks: 64 done, 8 backlog (all P2). No task-tree changes needed."
   },
-  "updatedAt": "2026-06-21T03:05:00.000Z"
+  "updatedAt": "2026-06-21T03:35:00.000Z"
 }
