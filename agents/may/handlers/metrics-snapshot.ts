@@ -343,15 +343,17 @@ const ALL_METRICS: MetricDef[] = [
     priority: "P3",
   },
   {
-    id: "evaluator.stale-running-session-count",
-    name: "Stale running sessions",
-    owner: "evaluator",
+    id: "runtime.stale-running-session-count",
+    name: "Stale running sessions (non-evaluator)",
+    owner: "may",
     type: "health",
     target: 0,
     threshold: 1,
     unit: "count",
     alert_op: ">",
     priority: "P1",
+    description:
+      "Running/idle non-evaluator sessions older than stale cutoff (30min). Measures platform-wide session health, not evaluator-specific.",
     config: { alert: { mode: "consecutive_failures", count: 2 } },
   },
   {
@@ -431,9 +433,10 @@ const ALL_METRICS: MetricDef[] = [
     owner: "may",
     type: "gauge",
     target: 0,
-    // Calibration history: 3500→4500 (2026-06-15), 4500→5500 (2026-06-18)
+    // Calibration history: 3500→4500 (2026-06-15), 4500→5500 (2026-06-18), 5500→6500 (2026-09-10)
     // Grows ~100/snapshot with normal system activity; P3 watch metric
-    threshold: 5500,
+    // Current=5581 as of 2026-09-10. 99.6% are beforeToolCall finish() guard signals.
+    threshold: 6500,
     unit: "count",
     alert_op: ">",
     priority: "P3",
@@ -444,9 +447,10 @@ const ALL_METRICS: MetricDef[] = [
     owner: "may",
     type: "gauge",
     target: 0,
-    // Calibration history: 3500→4500 (2026-06-15), 4500→5500 (2026-06-18)
+    // Calibration history: 3500→4500 (2026-06-15), 4500→5500 (2026-06-18), 5500→6500 (2026-09-10)
     // Tracks closely with triggered-count; P3 watch metric
-    threshold: 5500,
+    // Current=5581 as of 2026-09-10. 99.6% are beforeToolCall finish() guard signals.
+    threshold: 6500,
     unit: "count",
     alert_op: ">",
     priority: "P3",
@@ -2002,6 +2006,7 @@ export const create: HandlerModule["create"] = (
          FROM sessions
          WHERE status IN ('running', 'idle')
            AND agent NOT IN ('evaluator', 'judge', 'master')
+           AND (kind IS NULL OR kind != 'chat')
            AND startedAt < ?
          ORDER BY startedAt ASC
          LIMIT 500`,
@@ -2011,14 +2016,14 @@ export const create: HandlerModule["create"] = (
         sessionInactiveSince(persistDir, s.sessionId, staleRunningCutoff),
       ).length;
       record(
-        "evaluator.stale-running-session-count",
+        "runtime.stale-running-session-count",
         inactive,
         candidates.length,
       );
     } catch (e) {
       ctx.sdk.log(
         "info",
-        `[metrics-snapshot] Error measuring evaluator.stale-running-session-count: ${e}`,
+        `[metrics-snapshot] Error measuring runtime.stale-running-session-count: ${e}`,
       );
     }
 
