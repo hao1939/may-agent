@@ -8,6 +8,10 @@ export const description =
 
 const ownerAgent = "tech-lead";
 const ownerEventOwner = `agent:${ownerAgent}`;
+// Messages may be addressed to either the project owner (agent:tech-lead) or
+// the platform agent (agent:may). Both land in the may-agent.app owner inbox
+// via routing, so lifecycle drain must cover both to prevent accumulation.
+const platformOwnerAliases = new Set([ownerEventOwner, "agent:may"]);
 
 type TaskNode = {
   id?: string;
@@ -148,14 +152,15 @@ function recentEvents(
         Record<string, unknown>
       >;
       // Track message.created event IDs so the caller can record owner review.
-      // CRITICAL: only collect IDs for this app owner — otherwise we steal
-      // messages belonging to other agents (aks-explorer, scout, etc.).
+      // CRITICAL: only collect IDs for this app's owner aliases — otherwise we
+      // steal messages belonging to other agents (aks-explorer, scout, etc.).
       if (type === "message.created") {
         for (const row of rows) {
           if (
             typeof row.id === "number" &&
             row.status === "pending" &&
-            row.owner === ownerEventOwner
+            typeof row.owner === "string" &&
+            platformOwnerAliases.has(row.owner)
           ) {
             consumedMessageIds.push(row.id);
           }
@@ -227,22 +232,26 @@ function buildReviewPacket(
   // The review packet shows recent events (1h, limit 8) for owner context,
   // but lifecycle needs to mark ALL pending messages as handled to prevent
   // accumulation between the 1h lookback and 24h expiry threshold.
+  // Query both owner aliases (agent:tech-lead and agent:may) since external
+  // agents (evaluator) address messages to agent:may.
   const allPendingMessageIds = [...abnormalEvents.consumedMessageIds];
   try {
     const LIFECYCLE_LOOKBACK_MS = 25 * 60 * 60_000; // 25h — slightly wider than expiry to catch edge cases
-    const allPendingMessages = ctx.query.events({
-      type: "message.created",
-      owner: ownerEventOwner,
-      since: Date.now() - LIFECYCLE_LOOKBACK_MS,
-      limit: 200,
-    }).rows as Array<Record<string, unknown>>;
-    for (const row of allPendingMessages) {
-      if (
-        typeof row.id === "number" &&
-        row.status === "pending" &&
-        !allPendingMessageIds.includes(row.id)
-      ) {
-        allPendingMessageIds.push(row.id);
+    for (const ownerAlias of platformOwnerAliases) {
+      const allPendingMessages = ctx.query.events({
+        type: "message.created",
+        owner: ownerAlias,
+        since: Date.now() - LIFECYCLE_LOOKBACK_MS,
+        limit: 200,
+      }).rows as Array<Record<string, unknown>>;
+      for (const row of allPendingMessages) {
+        if (
+          typeof row.id === "number" &&
+          row.status === "pending" &&
+          !allPendingMessageIds.includes(row.id)
+        ) {
+          allPendingMessageIds.push(row.id);
+        }
       }
     }
   } catch {
@@ -256,15 +265,17 @@ function buildReviewPacket(
   const pendingEscalationIds: number[] = [];
   try {
     const ESCALATION_LOOKBACK_MS = 48 * 60 * 60_000; // 48h to catch any backlog
-    const pendingEscalations = ctx.query.events({
-      type: "escalation.created",
-      owner: ownerEventOwner,
-      since: Date.now() - ESCALATION_LOOKBACK_MS,
-      limit: 200,
-    }).rows as Array<Record<string, unknown>>;
-    for (const row of pendingEscalations) {
-      if (typeof row.id === "number" && row.status === "pending") {
-        pendingEscalationIds.push(row.id);
+    for (const ownerAlias of platformOwnerAliases) {
+      const pendingEscalations = ctx.query.events({
+        type: "escalation.created",
+        owner: ownerAlias,
+        since: Date.now() - ESCALATION_LOOKBACK_MS,
+        limit: 200,
+      }).rows as Array<Record<string, unknown>>;
+      for (const row of pendingEscalations) {
+        if (typeof row.id === "number" && row.status === "pending") {
+          pendingEscalationIds.push(row.id);
+        }
       }
     }
   } catch {
@@ -287,15 +298,17 @@ function buildReviewPacket(
       "handler.failed",
     ];
     for (const type of signalTypes) {
-      const pendingSignals = ctx.query.events({
-        type,
-        owner: ownerEventOwner,
-        since: Date.now() - SIGNAL_LOOKBACK_MS,
-        limit: 200,
-      }).rows as Array<Record<string, unknown>>;
-      for (const row of pendingSignals) {
-        if (typeof row.id === "number" && row.status === "pending") {
-          pendingSignalEventIds.push(row.id);
+      for (const ownerAlias of platformOwnerAliases) {
+        const pendingSignals = ctx.query.events({
+          type,
+          owner: ownerAlias,
+          since: Date.now() - SIGNAL_LOOKBACK_MS,
+          limit: 200,
+        }).rows as Array<Record<string, unknown>>;
+        for (const row of pendingSignals) {
+          if (typeof row.id === "number" && row.status === "pending") {
+            pendingSignalEventIds.push(row.id);
+          }
         }
       }
     }

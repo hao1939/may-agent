@@ -226,7 +226,7 @@ export default defineProjectApp({
     {
       id: "platform-review",
       enabled: true,
-      intervalMs: 14_400_000, // 4h design/planning cadence
+      intervalMs: 21_600_000, // 6h — budget-aware: 4/day from this + 2/day from heartbeat = 6/day
       event: {
         type: "project.tick",
         project: projectId,
@@ -236,7 +236,7 @@ export default defineProjectApp({
     {
       id: "owner-heartbeat",
       enabled: true,
-      intervalMs: 14_400_000,
+      intervalMs: 43_200_000, // 12h — budget-aware: platform-review (6h, 4/day) + heartbeat (12h, 2/day) = 6/day matching sessionsPerDay budget
       event: projectOwnerEvent("owner-heartbeat", {
         instruction:
           "Low-frequency platform owner heartbeat: look for missed platform integrity, runtime, UI, or app-design issues that fixed ops-health metrics did not catch. Check recent heartbeat/platform-review/ops-health findings before creating work. Prefer one to three task-tree actions or no-op with reason; do not run multi-step implementation work from the owner session.",

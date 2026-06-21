@@ -899,6 +899,12 @@ must not reshape sibling branches, roll up parents, create planning/control
 nodes, or mutate task-tree completion state. The app event layer maps
 `project.task.completed` to the next `project.owner.requested` wake.
 
+The task id is durable; the worker session is an attempt detail. When the owner
+rejects an error review or requeues a stale active attempt, the next assignment
+should use a fresh worker session id and append it to `session_history`. Reusing
+a terminal/error session is not retry; it risks an immediate zero-op failure and
+should be treated as a runtime defect.
+
 Repeated stale active attempts are not progress. A watchdog should observe
 missing or dead runtime attempts and wake the owner with stale-attempt evidence.
 The owner decides whether to retry, repair, replace, split, or block the

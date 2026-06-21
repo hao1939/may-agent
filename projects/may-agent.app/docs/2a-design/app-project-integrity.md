@@ -144,6 +144,11 @@ Only `done` is final. Every other state must have a driver:
 | `blocked` | Owner rechecks resume conditions, unblocks, creates problem-solving work, sends/escalates an ask, or records terminal `done`.                  |
 | `done`    | Final project knowledge; may be rolled up or compacted.                                                                                        |
 
+Fresh session means a fresh worker attempt, not a new task concept. If an
+attempt ended in an error review or the runtime session went stale, the owner
+can retry the same task while the assignment tool gives it a new worker session
+id and keeps the old id in `session_history`.
+
 Every non-done task must either:
 
 1. be actively executing,

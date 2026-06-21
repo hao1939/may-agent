@@ -99,6 +99,12 @@ Every non-done task must either:
 | `blocked` | Owner periodically rechecks, unblocks, creates problem-solving work, sends/escalates an ask, or records a terminal `done` disposition. |
 | `done`    | Final project knowledge. It may be rolled up or compacted, but not worked again as open work.                                          |
 
+Worker sessions are runtime attempts, not durable task identity. A first
+assignment may use a stable task session id for traceability, but a retry after
+an error review or stale active attempt should use a fresh task session and keep
+the old id in `session_history`. This prevents a task from looping through a
+terminal/error session while preserving the owner-visible handoff trail.
+
 Parent nodes use the same five states. A parent with children is not in a
 special "decomposed" state. Its state is the owner's current rollup judgment for
 that branch:
