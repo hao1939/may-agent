@@ -35,7 +35,7 @@ import type {
 } from "@may-agent/sdk";
 import type { CronEntry } from "@may-agent/sdk";
 
-const EVENT_RETENTION_DAYS = 7;
+const EVENT_RETENTION_DAYS = 5; // reduced from 7d: DB at 2506MB > 2500MB threshold (2026-06-21)
 const SESSION_RETENTION_DAYS = 14;
 const DIGEST_RETENTION_DAYS = 14; // session_digests: matches session retention
 const WORKFLOW_RETENTION_DAYS = 14; // workflow_runs: matches session retention

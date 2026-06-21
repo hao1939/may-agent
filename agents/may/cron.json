@@ -6,7 +6,7 @@
     "handler": "db-retention",
     "agent": "may",
     "enabled": true,
-    "description": "Daily DB retention: DELETE events >7d, sessions >14d, snapshots >30d, then VACUUM if significant. Keeps DB under control.",
+    "description": "Hourly DB retention: DELETE events >5d, sessions >14d, snapshots >14d, workflow_runs >14d, evaluations >30d, then VACUUM if significant. Keeps DB under control.",
     "context": [
       "agents/may/handlers/db-retention.ts",
       "projects/may-agent.app/project.json"
