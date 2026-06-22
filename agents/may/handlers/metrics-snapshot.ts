@@ -2508,6 +2508,20 @@ export const create: HandlerModule["create"] = (
       );
     }
 
+    // ── WAL checkpoint (runs every snapshot cycle to keep WAL from growing unbounded) ──
+    // The WAL can grow to DB-size (~1.9 GB) between hourly retention windows.
+    // PASSIVE mode checkpoints committed frames without blocking active readers,
+    // keeping total on-disk footprint (DB + WAL) closer to actual data size.
+    // This runs unconditionally (not gated by minute check) — it's lightweight.
+    try {
+      db.exec("PRAGMA wal_checkpoint(PASSIVE)");
+    } catch (e) {
+      ctx.sdk.log(
+        "info",
+        `[metrics-snapshot] WAL checkpoint (passive) failed: ${e}`,
+      );
+    }
+
     // ── DB row retention for large tables (events, sessions, workflow_runs, session_digests, evaluations) ──
     // These tables grow without bound and are the primary drivers of DB bloat.
     // As of 2026-06-22: events ~1156 MB (5 days), sessions ~446 MB (14 days),
