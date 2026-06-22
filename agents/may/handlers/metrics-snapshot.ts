@@ -2600,45 +2600,78 @@ export const create: HandlerModule["create"] = (
         // Reclaim disk space from deleted rows.
         // `PRAGMA auto_vacuum = INCREMENTAL` only takes effect AFTER a full VACUUM
         // on databases created with auto_vacuum=NONE (the SQLite default).
-        // Strategy: if the DB file is significantly larger than its live data warrants
-        // (>1500 MB and we just deleted rows), run a one-time full VACUUM to both
-        // shrink the file and enable incremental mode for future runs.
+        // Strategy: use total on-disk footprint (DB + WAL + SHM) as the trigger,
+        // not just main DB size. The WAL can grow as large as the DB itself after
+        // bulk deletes, so checking only the main file misses the real problem.
+        // First checkpoint WAL to merge it back, then VACUUM if still oversized.
         // Guard: only VACUUM if enough disk free space exists (need ~DB size for temp).
         try {
           const dbFilePath = join(ctx.sdk.paths.root, ".state", "may.db");
-          const dbSizeBytes = existsSync(dbFilePath) ? statSync(dbFilePath).size : 0;
-          const dbSizeMb = dbSizeBytes / (1024 * 1024);
+          const walPath = dbFilePath + "-wal";
+          const shmPath = dbFilePath + "-shm";
+          const getOnDiskMb = () => {
+            let total = 0;
+            if (existsSync(dbFilePath)) total += statSync(dbFilePath).size;
+            if (existsSync(walPath)) total += statSync(walPath).size;
+            if (existsSync(shmPath)) total += statSync(shmPath).size;
+            return total / (1024 * 1024);
+          };
+          let onDiskMb = getOnDiskMb();
 
-          if (dbSizeMb > 1500 && totalDeleted > 1000) {
-            // Check available disk space via df
+          // Trigger on total on-disk footprint > 1500 MB, regardless of how many
+          // rows were deleted this cycle. Prior retention runs may have deleted rows
+          // but VACUUM never fired (e.g., code deployed after the retention window).
+          if (onDiskMb > 1500) {
+            // Step 1: checkpoint WAL to merge it back into the main DB file.
+            // This alone can dramatically shrink total footprint when WAL is large.
             try {
-              const { stdout: dfOut } = await execAsync(
-                `df -m "${join(ctx.sdk.paths.root, ".state")}" | tail -1 | awk '{print $4}'`,
-                { timeout: 5000 },
-              );
-              const freeMb = parseInt(dfOut.trim(), 10);
-              // Need at least DB size + 500 MB headroom for safe VACUUM
-              if (!isNaN(freeMb) && freeMb > dbSizeMb + 500) {
-                ctx.sdk.log(
-                  "info",
-                  `[metrics-snapshot] Running full VACUUM (DB=${dbSizeMb.toFixed(0)}MB, free=${freeMb}MB, deleted=${totalDeleted} rows)`,
-                );
-                db.exec("VACUUM");
-                ctx.sdk.log(
-                  "info",
-                  `[metrics-snapshot] VACUUM complete. New size: ${(statSync(dbFilePath).size / (1024 * 1024)).toFixed(0)}MB`,
-                );
-              } else {
-                ctx.sdk.log(
-                  "info",
-                  `[metrics-snapshot] Skipping VACUUM: insufficient free space (free=${freeMb}MB, need>${dbSizeMb.toFixed(0)}MB+500MB)`,
-                );
-              }
-            } catch (dfErr) {
+              db.exec("PRAGMA wal_checkpoint(TRUNCATE)");
+              const postCheckpointMb = getOnDiskMb();
               ctx.sdk.log(
                 "info",
-                `[metrics-snapshot] Skipping VACUUM: could not determine free space: ${dfErr}`,
+                `[metrics-snapshot] WAL checkpoint complete. On-disk: ${onDiskMb.toFixed(0)}MB → ${postCheckpointMb.toFixed(0)}MB`,
               );
+              onDiskMb = postCheckpointMb;
+            } catch (cpErr) {
+              ctx.sdk.log(
+                "info",
+                `[metrics-snapshot] WAL checkpoint failed (readers active?): ${cpErr}`,
+              );
+            }
+
+            // Step 2: if still oversized after checkpoint, run full VACUUM.
+            const currentDbMb = existsSync(dbFilePath) ? statSync(dbFilePath).size / (1024 * 1024) : 0;
+            if (currentDbMb > 1500) {
+              try {
+                const { stdout: dfOut } = await execAsync(
+                  `df -m "${join(ctx.sdk.paths.root, ".state")}" | tail -1 | awk '{print $4}'`,
+                  { timeout: 5000 },
+                );
+                const freeMb = parseInt(dfOut.trim(), 10);
+                // Need at least current DB size + 500 MB headroom for safe VACUUM
+                if (!isNaN(freeMb) && freeMb > currentDbMb + 500) {
+                  ctx.sdk.log(
+                    "info",
+                    `[metrics-snapshot] Running full VACUUM (DB=${currentDbMb.toFixed(0)}MB, free=${freeMb}MB, deleted=${totalDeleted} rows)`,
+                  );
+                  db.exec("VACUUM");
+                  const newMb = getOnDiskMb();
+                  ctx.sdk.log(
+                    "info",
+                    `[metrics-snapshot] VACUUM complete. On-disk: ${currentDbMb.toFixed(0)}MB → ${newMb.toFixed(0)}MB`,
+                  );
+                } else {
+                  ctx.sdk.log(
+                    "info",
+                    `[metrics-snapshot] Skipping VACUUM: insufficient free space (free=${freeMb}MB, need>${currentDbMb.toFixed(0)}MB+500MB)`,
+                  );
+                }
+              } catch (dfErr) {
+                ctx.sdk.log(
+                  "info",
+                  `[metrics-snapshot] Skipping VACUUM: could not determine free space: ${dfErr}`,
+                );
+              }
             }
           }
           // After a successful VACUUM, set incremental mode for future lightweight reclaim
