@@ -2510,15 +2510,17 @@ export const create: HandlerModule["create"] = (
 
     // ── WAL checkpoint (runs every snapshot cycle to keep WAL from growing unbounded) ──
     // The WAL can grow to DB-size (~1.9 GB) between hourly retention windows.
-    // PASSIVE mode checkpoints committed frames without blocking active readers,
-    // keeping total on-disk footprint (DB + WAL) closer to actual data size.
+    // TRUNCATE mode checkpoints committed frames and truncates the WAL file to
+    // zero when it can acquire exclusive access; otherwise falls back to PASSIVE
+    // behavior (checkpoint without truncation). This prevents the WAL from
+    // accumulating unboundedly between the hourly retention/VACUUM windows.
     // This runs unconditionally (not gated by minute check) — it's lightweight.
     try {
-      db.exec("PRAGMA wal_checkpoint(PASSIVE)");
+      db.exec("PRAGMA wal_checkpoint(TRUNCATE)");
     } catch (e) {
       ctx.sdk.log(
         "info",
-        `[metrics-snapshot] WAL checkpoint (passive) failed: ${e}`,
+        `[metrics-snapshot] WAL checkpoint (truncate) failed: ${e}`,
       );
     }
 
