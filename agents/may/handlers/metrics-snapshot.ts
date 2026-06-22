@@ -2597,14 +2597,62 @@ export const create: HandlerModule["create"] = (
           );
         }
 
-        // Incremental VACUUM to reclaim freed pages — full VACUUM locks the DB
-        // for too long on large files; incremental_vacuum frees N pages per call.
-        // 2000 pages × 4096 bytes = ~8 MB reclaimed per run.
+        // Reclaim disk space from deleted rows.
+        // `PRAGMA auto_vacuum = INCREMENTAL` only takes effect AFTER a full VACUUM
+        // on databases created with auto_vacuum=NONE (the SQLite default).
+        // Strategy: if the DB file is significantly larger than its live data warrants
+        // (>1500 MB and we just deleted rows), run a one-time full VACUUM to both
+        // shrink the file and enable incremental mode for future runs.
+        // Guard: only VACUUM if enough disk free space exists (need ~DB size for temp).
         try {
-          db.exec("PRAGMA auto_vacuum = INCREMENTAL");
-          db.exec("PRAGMA incremental_vacuum(2000)");
-        } catch {
-          /* incremental vacuum best-effort — may not be supported if auto_vacuum was never set */
+          const dbFilePath = join(ctx.sdk.paths.root, ".state", "may.db");
+          const dbSizeBytes = existsSync(dbFilePath) ? statSync(dbFilePath).size : 0;
+          const dbSizeMb = dbSizeBytes / (1024 * 1024);
+
+          if (dbSizeMb > 1500 && totalDeleted > 1000) {
+            // Check available disk space via df
+            try {
+              const { stdout: dfOut } = await execAsync(
+                `df -m "${join(ctx.sdk.paths.root, ".state")}" | tail -1 | awk '{print $4}'`,
+                { timeout: 5000 },
+              );
+              const freeMb = parseInt(dfOut.trim(), 10);
+              // Need at least DB size + 500 MB headroom for safe VACUUM
+              if (!isNaN(freeMb) && freeMb > dbSizeMb + 500) {
+                ctx.sdk.log(
+                  "info",
+                  `[metrics-snapshot] Running full VACUUM (DB=${dbSizeMb.toFixed(0)}MB, free=${freeMb}MB, deleted=${totalDeleted} rows)`,
+                );
+                db.exec("VACUUM");
+                ctx.sdk.log(
+                  "info",
+                  `[metrics-snapshot] VACUUM complete. New size: ${(statSync(dbFilePath).size / (1024 * 1024)).toFixed(0)}MB`,
+                );
+              } else {
+                ctx.sdk.log(
+                  "info",
+                  `[metrics-snapshot] Skipping VACUUM: insufficient free space (free=${freeMb}MB, need>${dbSizeMb.toFixed(0)}MB+500MB)`,
+                );
+              }
+            } catch (dfErr) {
+              ctx.sdk.log(
+                "info",
+                `[metrics-snapshot] Skipping VACUUM: could not determine free space: ${dfErr}`,
+              );
+            }
+          }
+          // After a successful VACUUM, set incremental mode for future lightweight reclaim
+          try {
+            db.exec("PRAGMA auto_vacuum = INCREMENTAL");
+            db.exec("PRAGMA incremental_vacuum(2000)");
+          } catch {
+            /* incremental vacuum best-effort */
+          }
+        } catch (vacErr) {
+          ctx.sdk.log(
+            "info",
+            `[metrics-snapshot] Error during VACUUM: ${vacErr}`,
+          );
         }
       }
     } catch (e) {
