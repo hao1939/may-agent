@@ -2508,6 +2508,112 @@ export const create: HandlerModule["create"] = (
       );
     }
 
+    // ── DB row retention for large tables (events, sessions, workflow_runs, session_digests, evaluations) ──
+    // These tables grow without bound and are the primary drivers of DB bloat.
+    // As of 2026-06-22: events ~1156 MB (5 days), sessions ~446 MB (14 days),
+    // workflow_runs ~356 MB (14 days), session_digests ~131 MB (14 days).
+    // Total DB size: 2504 MB. Target: ≤1200 MB.
+    // Retention windows chosen to get below target while preserving adequate history.
+    // Runs only during minute 0-4 of each hour (same as session history cleanup).
+    try {
+      const minuteForRetention = new Date(now).getMinutes();
+      if (minuteForRetention < 5) {
+        const EVENT_RETENTION_MS = 3 * 86400000; // 3 days
+        const SESSION_RETENTION_MS = 7 * 86400000; // 7 days
+        const WORKFLOW_RETENTION_MS = 7 * 86400000; // 7 days
+        const DIGEST_RETENTION_MS = 7 * 86400000; // 7 days
+        const EVAL_RETENTION_MS = 14 * 86400000; // 14 days
+
+        const eventCutoff = now - EVENT_RETENTION_MS;
+        const sessionCutoff = now - SESSION_RETENTION_MS;
+        const workflowCutoff = now - WORKFLOW_RETENTION_MS;
+        const digestCutoff = now - DIGEST_RETENTION_MS;
+        const evalCutoff = now - EVAL_RETENTION_MS;
+
+        // Delete in batches of 5000 to avoid long write-locks
+        const BATCH = 5000;
+        let totalDeleted = 0;
+
+        // Events: largest table, 3-day retention
+        let batch: any;
+        do {
+          batch = db.run(
+            `DELETE FROM events WHERE rowid IN (
+              SELECT rowid FROM events WHERE timestamp < ? LIMIT ?
+            )`,
+            [eventCutoff, BATCH],
+          );
+          totalDeleted += (batch as any)?.changes ?? 0;
+        } while (((batch as any)?.changes ?? 0) >= BATCH);
+
+        // Sessions: 7-day retention
+        do {
+          batch = db.run(
+            `DELETE FROM sessions WHERE rowid IN (
+              SELECT rowid FROM sessions WHERE startedAt < ? LIMIT ?
+            )`,
+            [sessionCutoff, BATCH],
+          );
+          totalDeleted += (batch as any)?.changes ?? 0;
+        } while (((batch as any)?.changes ?? 0) >= BATCH);
+
+        // Workflow runs: 7-day retention
+        do {
+          batch = db.run(
+            `DELETE FROM workflow_runs WHERE rowid IN (
+              SELECT rowid FROM workflow_runs WHERE startedAt < ? LIMIT ?
+            )`,
+            [workflowCutoff, BATCH],
+          );
+          totalDeleted += (batch as any)?.changes ?? 0;
+        } while (((batch as any)?.changes ?? 0) >= BATCH);
+
+        // Session digests: 7-day retention
+        do {
+          batch = db.run(
+            `DELETE FROM session_digests WHERE rowid IN (
+              SELECT rowid FROM session_digests WHERE created_at < ? LIMIT ?
+            )`,
+            [digestCutoff, BATCH],
+          );
+          totalDeleted += (batch as any)?.changes ?? 0;
+        } while (((batch as any)?.changes ?? 0) >= BATCH);
+
+        // Evaluations: 14-day retention
+        do {
+          batch = db.run(
+            `DELETE FROM evaluations WHERE rowid IN (
+              SELECT rowid FROM evaluations WHERE createdAt < ? LIMIT ?
+            )`,
+            [evalCutoff, BATCH],
+          );
+          totalDeleted += (batch as any)?.changes ?? 0;
+        } while (((batch as any)?.changes ?? 0) >= BATCH);
+
+        if (totalDeleted > 0) {
+          ctx.sdk.log(
+            "info",
+            `[metrics-snapshot] DB row retention: deleted ${totalDeleted} expired rows (events:3d, sessions/workflows/digests:7d, evals:14d)`,
+          );
+        }
+
+        // Incremental VACUUM to reclaim freed pages — full VACUUM locks the DB
+        // for too long on large files; incremental_vacuum frees N pages per call.
+        // 2000 pages × 4096 bytes = ~8 MB reclaimed per run.
+        try {
+          db.exec("PRAGMA auto_vacuum = INCREMENTAL");
+          db.exec("PRAGMA incremental_vacuum(2000)");
+        } catch {
+          /* incremental vacuum best-effort — may not be supported if auto_vacuum was never set */
+        }
+      }
+    } catch (e) {
+      ctx.sdk.log(
+        "info",
+        `[metrics-snapshot] Error during DB row retention cleanup: ${e}`,
+      );
+    }
+
     // ── Session history filesystem retention (keep last 14 days) ─────
     // The DB retains session rows for 14 days, but the filesystem session
     // transcripts in .state/sessions/history/ accumulated without bound
