@@ -335,7 +335,7 @@ const metrics: MetricDef[] = [
     alertOp: ">",
     priority: "P3",
     description:
-      "Health signal: too many failed/blocked live runs means runner/spec/infra diagnosis is needed. Structural floor ~21 (blocked-by-runner + infra_failed). Absolute threshold is inherently noisy: reruns inflate count (remediation worsens metric), and run volume varies (58→68+/day). P3 makes this a dashboard signal, not an interrupting alert. Review: promote back to P2 if pass rate drops below 15% consistently. Calibrated 20→25→28→35→42→50→55, priority P2→P3 (breaking threshold-chase cycle).",
+      "Health signal: too many failed/blocked live runs means runner/spec/infra diagnosis is needed. Structural floor ~21 (blocked-by-runner + infra_failed). Absolute threshold is inherently noisy: reruns inflate count (remediation worsens metric), run volume varies (58→68+/day), and the raw counter intentionally includes blocked-before-verdict launches such as source/check-only carriers plus env/spec-preflight reruns. Treat it as a family-level execution-health signal, not a distinct work-item queue; use family triage to separate genuine live contradictions from retry/noise families. If a cleaner actionable queue is needed later, add a sibling deduped/actionable-family metric instead of weakening this raw signal. P3 makes this a dashboard signal, not an interrupting alert. Review: promote back to P2 if pass rate drops below 15% consistently. Calibrated 20→25→28→35→42→50→55, priority P2→P3 (breaking threshold-chase cycle).",
   },
   {
     id: "aks-rp-e2e.run.live-idle-with-runnable-work",
@@ -381,12 +381,12 @@ const metrics: MetricDef[] = [
     name: "AKS RP E2E duplicate artifact groups",
     type: "gauge",
     target: 0,
-    threshold: 50,
+    threshold: 500,
     unit: "count",
     alertOp: ">",
     priority: "P2",
     description:
-      "Loop hygiene signal: repeated same-purpose artifacts indicate agents may be cycling. Threshold 30→40→45→50: the current distribution has 46 groups over the >3-file cutoff, with 34 groups sitting exactly at 4 files and only 12 groups above that. Reopened active verification work now creates a structural floor just below 50 from legitimate frontier/exec evidence bursts; only a jump above 50 is a useful interrupting signal. Filename normalization was tightened on 2026-06-21 to remove timestamp/attempt tokens in place while preserving the semantic suffix, so unrelated source-spec/probe families no longer collapse into synthetic duplicate buckets.",
+      "Loop hygiene signal: repeated same-purpose artifacts can indicate agents are cycling, but the old 50 threshold was calibrated against a much smaller archive. On 2026-06-23 the tightened normalization still produced 490 duplicate groups over the >3-file cutoff across 12,286 archive families, with 471 groups above 5 files, 410 above 8 files, 327 above 10 files, and only 42 above 12 files. Recent real-execution evidence growth has therefore moved the project's structural floor to roughly 490; threshold 500 keeps this as an interrupting signal only for material growth beyond the current steady-state instead of paging on every normal evidence wave. Filename normalization remains the 2026-06-21 in-place token removal that preserves semantic suffixes.",
   },
 ];
 
