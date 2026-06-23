@@ -679,6 +679,7 @@ const ALL_METRICS: MetricDef[] = [
 ];
 
 const RETIRED_METRIC_IDS = [
+  "evaluator.stale-running-session-count",
   "v2.spec-coverage-rate",
   "project.blocked-rate-7d",
   "capability.session-trace-completeness",
@@ -1669,15 +1670,15 @@ export const create: HandlerModule["create"] = (
         twentyFourH,
       );
       const guardWarned = count(
-        "SELECT COUNT(*) as c FROM events WHERE event_type = 'guard.triggered' AND timestamp > ? AND json_extract(data, '$.demandType') = 'warn'",
+        "SELECT COUNT(*) as c FROM events WHERE event_type = 'guard.triggered' AND timestamp > ? AND json_valid(data) AND json_extract(data, '$.demandType') = 'warn'",
         twentyFourH,
       );
       const guardBlocked = count(
-        "SELECT COUNT(*) as c FROM events WHERE event_type = 'guard.triggered' AND timestamp > ? AND json_extract(data, '$.demandType') = 'block'",
+        "SELECT COUNT(*) as c FROM events WHERE event_type = 'guard.triggered' AND timestamp > ? AND json_valid(data) AND json_extract(data, '$.demandType') = 'block'",
         fifteenMinutesAgo,
       );
       const guardRepeated = count(
-        "SELECT COUNT(*) as c FROM events WHERE event_type = 'guard.triggered' AND timestamp > ? AND json_extract(data, '$.action') = 'skipped_duplicate'",
+        "SELECT COUNT(*) as c FROM events WHERE event_type = 'guard.triggered' AND timestamp > ? AND json_valid(data) AND json_extract(data, '$.action') = 'skipped_duplicate'",
         twentyFourH,
       );
       record("guard.triggered-count-24h", guardTriggered);
