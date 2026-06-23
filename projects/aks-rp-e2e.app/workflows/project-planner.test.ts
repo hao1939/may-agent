@@ -1479,6 +1479,106 @@ describe("project owner workflow", () => {
     expect(plannerRuns).toContain('"ran_agent":false');
   });
 
+  test("skips owner session for already-settled task completion when completedTaskId is nested under trigger data.params", async () => {
+    const { appDir, projectDir } = await makeWorkspace();
+    await writeFile(
+      join(appDir, "tasks", "tree.json"),
+      `${JSON.stringify(
+        {
+          version: 1,
+          project: "aks-rp-e2e",
+          project_lifecycle: "active",
+          root_task_id: "project",
+          updated_at: new Date().toISOString(),
+          active_task_id: "active-task",
+          active_task_ids: ["active-task"],
+          tasks: {
+            project: {
+              id: "project",
+              state: "active",
+              children: ["active-task", "completed-parent"],
+              goal: "project",
+              outputs: ["tasks/tree.json"],
+              acceptance: ["done"],
+            },
+            "active-task": {
+              id: "active-task",
+              parent_id: "project",
+              state: "active",
+              kind: "domain_leaf",
+              priority: "P1",
+              owner: "aks-explorer",
+              session_id: "s_task_active-task",
+              children: [],
+              goal: "Keep doing real work.",
+              outputs: ["evidence/archive/active-task.md"],
+              acceptance: ["done"],
+            },
+            "completed-parent": {
+              id: "completed-parent",
+              parent_id: "project",
+              state: "done",
+              kind: "work",
+              children: [],
+              goal: "Already rolled up.",
+              outputs: ["evidence/archive/completed.md"],
+              acceptance: ["done"],
+            },
+          },
+        },
+        null,
+        2,
+      )}\n`,
+      "utf8",
+    );
+
+    const prompts: string[] = [];
+    const result = await execute({
+      task: [
+        `app: ${appDir}`,
+        `project: ${projectDir}`,
+        "agent: aks-explorer",
+        "maxConcurrent: 5",
+        "## Trigger Event",
+        "```json",
+        JSON.stringify({
+          type: "project.owner.requested",
+          data: {
+            project: "aks-rp-e2e",
+            reason: "task-completed",
+            params: {
+              completedTaskId: "archived-review-task",
+            },
+          },
+        }),
+        "```",
+      ].join("\n"),
+      agent: "aks-explorer",
+      done: (message: string) => ({ status: "done", message }),
+      escalate: (message: string) => ({ status: "escalated", message }),
+      emit() {},
+      dispatchEvent() {},
+      runAgent: async () => ({ status: "success" }),
+      runAgentSession: async (_agent: string, task: string) => {
+        prompts.push(task);
+        return { status: "success", message: "should not run" };
+      },
+      summarize: () => "",
+    } as any);
+
+    expect(result.status).toBe("done");
+    expect(result.message).toContain("already settled");
+    expect(prompts).toHaveLength(0);
+
+    const plannerRuns = await readFile(
+      join(appDir, ".state", "planner-runs.jsonl"),
+      "utf8",
+    );
+    expect(plannerRuns).toContain('"steps":["settled-active-noop"]');
+    expect(plannerRuns).toContain("Task-completed wake is already settled");
+    expect(plannerRuns).toContain('"ran_agent":false');
+  });
+
   test("skips owner session for already-settled task completion when only blocked frontier remains", async () => {
     const { appDir, projectDir } = await makeWorkspace();
     await writeFile(

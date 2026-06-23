@@ -56,11 +56,22 @@ export function parseTriggerEvent(raw: string): TriggerEvent | null {
 }
 
 export function triggerValue(event: TriggerEvent | null, key: string): unknown {
-  return event?.data && typeof event.data === "object" && key in event.data
-    ? event.data[key]
-    : event?.params && typeof event.params === "object" && key in event.params
-      ? event.params[key]
-      : event?.[key];
+  if (event?.data && typeof event.data === "object") {
+    const data = event.data as Record<string, unknown>;
+    if (key in data) return data[key];
+    const nestedParams = data.params;
+    if (
+      nestedParams &&
+      typeof nestedParams === "object" &&
+      !Array.isArray(nestedParams) &&
+      key in nestedParams
+    ) {
+      return (nestedParams as Record<string, unknown>)[key];
+    }
+  }
+  return event?.params && typeof event.params === "object" && key in event.params
+    ? event.params[key]
+    : event?.[key];
 }
 
 function triggerNumber(
