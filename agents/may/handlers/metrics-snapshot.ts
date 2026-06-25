@@ -2342,16 +2342,20 @@ export const create: HandlerModule["create"] = (
       );
     }
 
-    // I2: infra.persist.db-size-mb — DB file size (includes WAL + SHM per KE-2016)
+    // I2: infra.persist.db-size-mb — Logical DB size via PRAGMA (stable, ignores WAL checkpoint transients)
+    //
+    // Previous approach used statSync(db) + statSync(wal) + statSync(shm) which
+    // caught transient WAL checkpoint spikes (~2x actual size) every ~3h when
+    // SQLite checkpoints the WAL back into the main file. This caused 17+
+    // breach→recover oscillations per day despite the DB being stable at ~2.2GB.
+    //
+    // PRAGMA page_count * page_size gives the committed logical size which is
+    // what matters for capacity planning and doesn't oscillate during checkpoints.
     try {
-      const dbPath = join(ctx.sdk.paths.root, ".state", "may.db");
-      if (existsSync(dbPath)) {
-        let totalBytes = statSync(dbPath).size;
-        const walPath = dbPath + "-wal";
-        const shmPath = dbPath + "-shm";
-        if (existsSync(walPath)) totalBytes += statSync(walPath).size;
-        if (existsSync(shmPath)) totalBytes += statSync(shmPath).size;
-        const sizeMb = parseFloat((totalBytes / (1024 * 1024)).toFixed(2));
+      const pageCount = (db.prepare("PRAGMA page_count").get() as any)?.page_count ?? 0;
+      const pageSize = (db.prepare("PRAGMA page_size").get() as any)?.page_size ?? 4096;
+      const sizeMb = parseFloat(((pageCount * pageSize) / (1024 * 1024)).toFixed(2));
+      if (sizeMb > 0) {
         record("infra.persist.db-size-mb", sizeMb);
       }
     } catch (e) {
