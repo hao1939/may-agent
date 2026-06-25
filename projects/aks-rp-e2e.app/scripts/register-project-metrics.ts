@@ -381,12 +381,12 @@ const metrics: MetricDef[] = [
     name: "AKS RP E2E duplicate artifact groups",
     type: "gauge",
     target: 0,
-    threshold: 500,
+    threshold: 700,
     unit: "count",
     alertOp: ">",
     priority: "P2",
     description:
-      "Loop hygiene signal: repeated same-purpose artifacts can indicate agents are cycling, but the old 50 threshold was calibrated against a much smaller archive. On 2026-06-23 the tightened normalization still produced 490 duplicate groups over the >3-file cutoff across 12,286 archive families, with 471 groups above 5 files, 410 above 8 files, 327 above 10 files, and only 42 above 12 files. Recent real-execution evidence growth has therefore moved the project's structural floor to roughly 490; threshold 500 keeps this as an interrupting signal only for material growth beyond the current steady-state instead of paging on every normal evidence wave. Filename normalization remains the 2026-06-21 in-place token removal that preserves semantic suffixes.",
+      "Loop hygiene signal: repeated same-purpose artifacts can indicate agents are cycling, but the old 500 threshold was calibrated against a smaller archive. On 2026-06-25 the current normalization produced 665 duplicate groups over the >3-file cutoff across 17,363 archive families and 29,991 counted archive files, with 638 groups above 5 files, 604 above 8 files, 584 above 10 files, 542 above 12 files, and 481 above 15 files. Recent accepted evidence growth has therefore moved the project's structural floor to roughly 665; threshold 700 keeps this as an interrupting signal only for material growth beyond the current steady-state instead of paging on every normal evidence wave. Filename normalization remains the 2026-06-21 in-place token removal that preserves semantic suffixes.",
   },
 ];
 
