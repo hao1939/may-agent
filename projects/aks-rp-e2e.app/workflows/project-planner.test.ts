@@ -665,6 +665,127 @@ describe("project owner workflow", () => {
     expect(plannerRuns).toContain('"ran_agent":false');
   });
 
+  test("short-circuits blocked-frontier review when all blocked leaves are future-dated exact waits", async () => {
+    const { appDir, projectDir } = await makeWorkspace();
+    await writeFile(
+      join(appDir, "tasks", "tree.json"),
+      `${JSON.stringify(
+        {
+          version: 1,
+          project: "aks-rp-e2e",
+          project_lifecycle: "active",
+          root_task_id: "project",
+          updated_at: new Date().toISOString(),
+          active_task_id: null,
+          active_task_ids: [],
+          tasks: {
+            project: {
+              id: "project",
+              state: "backlog",
+              children: ["blocked-a", "blocked-b"],
+              goal: "project",
+              outputs: ["tasks/tree.json"],
+              acceptance: ["done"],
+            },
+            "blocked-a": {
+              id: "blocked-a",
+              parent_id: "project",
+              state: "blocked",
+              kind: "domain_leaf",
+              priority: "P2",
+              owner: "aks-explorer",
+              children: [],
+              goal: "Wait for returned proof.",
+              outputs: ["evidence/archive/blocked-a.md"],
+              acceptance: ["done"],
+              blocker:
+                "Blocked only on returned authoritative proof or the first owner follow-up on or after 2099-06-26.",
+            },
+            "blocked-b": {
+              id: "blocked-b",
+              parent_id: "project",
+              state: "blocked",
+              kind: "domain_leaf",
+              priority: "P2",
+              owner: "aks-explorer",
+              children: [],
+              goal: "Wait for approval.",
+              outputs: ["evidence/archive/blocked-b.md"],
+              acceptance: ["done"],
+              blocker:
+                "Exact external approval wait; resume on returned approval proof or on/after 2099-06-27.",
+            },
+          },
+        },
+        null,
+        2,
+      )}\n`,
+      "utf8",
+    );
+
+    const prompts: string[] = [];
+    const result = await execute({
+      task: [
+        `app: ${appDir}`,
+        `project: ${projectDir}`,
+        "agent: aks-explorer",
+        "maxConcurrent: 3",
+        "## Trigger Event",
+        "```json",
+        JSON.stringify({
+          type: "project.owner.requested",
+          data: {
+            project: "aks-rp-e2e",
+            reason: "watchdog-blocked-frontier-review",
+            blockedTasks: [
+              {
+                taskId: "blocked-a",
+                blocker:
+                  "Blocked only on returned authoritative proof or the first owner follow-up on or after 2099-06-26.",
+              },
+              {
+                taskId: "blocked-b",
+                blocker:
+                  "Exact external approval wait; resume on returned approval proof or on/after 2099-06-27.",
+              },
+            ],
+            blockedCount: 2,
+          },
+        }),
+        "```",
+      ].join("\n"),
+      agent: "aks-explorer",
+      done: (message: string) => ({ status: "done", message }),
+      escalate: (message: string) => ({ status: "escalated", message }),
+      emit() {},
+      dispatchEvent() {},
+      runAgent: async () => ({ status: "success" }),
+      runAgentSession: async (_agent: string, task: string) => {
+        prompts.push(task);
+        return { status: "success", message: "should not run" };
+      },
+      summarize: () => "",
+    } as any);
+
+    expect(result.status).toBe("done");
+    expect(result.message).toContain(
+      "Blocked-frontier wake is already represented by exact future-dated external waits",
+    );
+    expect(result.message).toContain("blocked-a");
+    expect(result.message).toContain("blocked-b");
+    expect(result.message).toContain("2099-06-26T00:00:00.000Z");
+    expect(prompts).toHaveLength(0);
+
+    const plannerRuns = await readFile(
+      join(appDir, ".state", "planner-runs.jsonl"),
+      "utf8",
+    );
+    expect(plannerRuns).toContain(
+      '"steps":["blocked-frontier-future-wait-noop"]',
+    );
+    expect(plannerRuns).toContain('"ran_agent":false');
+  });
+
   test("runs owner review instead of seeding model-gap tasks in workflow code", async () => {
     const { appDir, projectDir } = await makeWorkspace();
     await writeFile(

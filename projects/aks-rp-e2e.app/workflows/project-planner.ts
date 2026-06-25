@@ -634,6 +634,83 @@ function staleRunnableBacklogNoopResult(input: {
   return `Watchdog runnable-backlog wake is stale: trigger IDs ${JSON.stringify(triggerIds)} are no longer confirm-runnable in the live frontier. ${freshnessParts.join("; ")}.`;
 }
 
+type TriggerBlockedTask = {
+  taskId: string;
+  blocker: string;
+};
+
+function triggerBlockedTasks(rawTask: string): TriggerBlockedTask[] {
+  const trigger = parseTriggerEvent(rawTask);
+  const value = triggerValue(trigger, "blockedTasks");
+  if (!Array.isArray(value)) return [];
+  return value
+    .map((entry) => {
+      if (!entry || typeof entry !== "object") return null;
+      const taskId =
+        (entry as { taskId?: unknown; task_id?: unknown }).taskId ??
+        (entry as { task_id?: unknown }).task_id;
+      if (typeof taskId !== "string" || !taskId.trim()) return null;
+      const blocker =
+        typeof (entry as { blocker?: unknown }).blocker === "string"
+          ? ((entry as { blocker?: string }).blocker ?? "")
+          : "";
+      return { taskId, blocker };
+    })
+    .filter((entry): entry is TriggerBlockedTask => Boolean(entry));
+}
+
+function futureResumeDates(text: string): number[] {
+  const matches = [
+    ...text.matchAll(/\b(20\d{2}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?Z)\b/g),
+    ...text.matchAll(/\b(20\d{2}-\d{2}-\d{2})\b/g),
+  ];
+  const now = Date.now();
+  const parsed = matches
+    .map((match) => {
+      const value = match[1];
+      const iso = value.includes("T") ? value : `${value}T00:00:00.000Z`;
+      const ts = Date.parse(iso);
+      return Number.isFinite(ts) ? ts : Number.NaN;
+    })
+    .filter((ts) => Number.isFinite(ts) && ts > now)
+    .sort((a, b) => a - b);
+  return parsed;
+}
+
+function blockedFrontierFutureWaitNoopResult(input: {
+  rawTask: string;
+  packet: TaskPlanningPacket;
+  humanSteering: Record<string, unknown>[];
+  quickAssignments: TaskAssignment[];
+}): string | null {
+  const reason = triggerValue(parseTriggerEvent(input.rawTask), "reason");
+  if (reason !== "watchdog-blocked-frontier-review") return null;
+  if (input.humanSteering.length > 0) return null;
+  if (input.quickAssignments.length > 0) return null;
+  if (input.packet.active_task_ids.length > 0) return null;
+  if (input.packet.frontier.runnable.length > 0) return null;
+  if (input.packet.frontier.review.length > 0) return null;
+  if ((input.packet.frontier.waiting ?? []).length > 0) return null;
+
+  const blockedTasks = triggerBlockedTasks(input.rawTask);
+  if (blockedTasks.length === 0) return null;
+
+  const liveBlocked = new Set(input.packet.frontier.blocked);
+  const triggerIds = blockedTasks.map((task) => task.taskId);
+  if (triggerIds.length !== input.packet.frontier.blocked.length) return null;
+  if (triggerIds.some((taskId) => !liveBlocked.has(taskId))) return null;
+
+  const nearestFutureDates = blockedTasks
+    .map((task) => futureResumeDates(task.blocker)[0] ?? Number.NaN)
+    .filter((ts) => Number.isFinite(ts));
+  if (nearestFutureDates.length !== blockedTasks.length) return null;
+
+  const earliestResumeAt = new Date(
+    Math.min(...nearestFutureDates),
+  ).toISOString();
+  return `Blocked-frontier wake is already represented by exact future-dated external waits (${triggerIds.join(", ")}). No local runnable/review work exists, and the earliest cited follow-up window is ${earliestResumeAt}. Skipping owner-agent planning until returned proof arrives or that window opens.`;
+}
+
 function singleAssignmentShortCircuitResult(input: {
   rawTask: string;
   packet: TaskPlanningPacket;
@@ -756,6 +833,23 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
       assignedTaskIds: quickAssignments.map((assignment) => assignment.taskId),
     });
     return ctx.done(singleAssignmentNoop);
+  }
+
+  const blockedFrontierFutureWaitNoop = blockedFrontierFutureWaitNoopResult({
+    rawTask: ctx.task,
+    packet,
+    humanSteering,
+    quickAssignments,
+  });
+  if (blockedFrontierFutureWaitNoop) {
+    appendNoopPlannerRun({
+      appDir,
+      result: blockedFrontierFutureWaitNoop,
+      steps: ["blocked-frontier-future-wait-noop"],
+      packet,
+      initialRepair,
+    });
+    return ctx.done(blockedFrontierFutureWaitNoop);
   }
 
   if (
