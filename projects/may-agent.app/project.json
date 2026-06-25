@@ -21,7 +21,7 @@
   "taskIndex": ["tasks/tree.json"],
   "currentFocus": {
     "taskId": null,
-    "summary": "Owner review 2026-06-21T03:35Z. Committed budget overrun fix: platform-review 4h→6h, owner-heartbeat 4h→12h (total 6/day matching sessionsPerDay budget). Previous session diagnosed but left uncommitted. Also committed: workflow lifecycle drain for agent:may messages, design doc updates (session ID reuse, stale-attempt watchdog, integrity checks). 14/14 tests pass, TypeScript clean. 3 open alerts all aks-rp-e2e-owned — not platform-actionable. 0 handler failures in 1h. 72 tasks: 64 done, 8 backlog (all P2). No task-tree changes needed."
+    "summary": "Owner review 2026-06-25T07:00Z. Fixed root cause of DB size metric oscillation: metrics-snapshot used statSync(db+wal+shm) which caught WAL checkpoint transients (~4.4GB spikes every 3h). Replaced with PRAGMA page_count * page_size for stable logical size (~2.2GB). This eliminates 17+ breach→recover cycles/day. Open alert #2119 (aks-rp-e2e.planner.slow-count-24h) owned by aks-explorer — not platform-actionable. 0 handler.failed/session.resume_failed in 24h. DB stable at 2229MB. Tests: 14/14 app pass. 73 tasks: 65 done, 8 backlog (all P2)."
   },
-  "updatedAt": "2026-06-21T03:35:00.000Z"
+  "updatedAt": "2026-06-25T07:00:00.000Z"
 }
