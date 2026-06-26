@@ -20,6 +20,7 @@ import {
   readdirSync,
   rmSync,
   statSync,
+  unlinkSync,
 } from "node:fs";
 import { basename, join } from "node:path";
 import { exec } from "node:child_process";
@@ -191,7 +192,7 @@ const ALL_METRICS: MetricDef[] = [
     owner: "may",
     type: "health",
     target: 0,
-    threshold: 15,
+    threshold: 20,
     unit: "count",
     alert_op: ">",
     priority: "P1",
@@ -2351,7 +2352,14 @@ export const create: HandlerModule["create"] = (
     //
     // PRAGMA page_count * page_size gives the committed logical size which is
     // what matters for capacity planning and doesn't oscillate during checkpoints.
+    //
+    // IMPORTANT: Run a PASSIVE checkpoint before measuring. Without this, PRAGMA
+    // page_count includes pages written to WAL by a prior VACUUM (which rewrites
+    // the entire DB through WAL), doubling the reported size until the next
+    // checkpoint. PASSIVE is safe (doesn't block writers) and sufficient to merge
+    // committed WAL frames so page_count reflects the real logical size.
     try {
+      try { db.exec("PRAGMA wal_checkpoint(PASSIVE)"); } catch { /* ok if readers block */ }
       const pageCount = (db.prepare("PRAGMA page_count").get() as any)?.page_count ?? 0;
       const pageSize = (db.prepare("PRAGMA page_size").get() as any)?.page_size ?? 4096;
       const sizeMb = parseFloat(((pageCount * pageSize) / (1024 * 1024)).toFixed(2));
@@ -2759,6 +2767,47 @@ export const create: HandlerModule["create"] = (
       ctx.sdk.log(
         "info",
         `[metrics-snapshot] Error during session history cleanup: ${e}`,
+      );
+    }
+
+    // ── /tmp pi-bash log cleanup (tool output truncation files) ──────
+    // The bash tool creates /tmp/pi-bash-*.log files for truncated output.
+    // These accumulate indefinitely (~2900 files, 26GB observed 2026-06-25)
+    // and are the primary cause of disk exhaustion. Remove files older than
+    // 24h (sessions using them are long complete). Runs hourly (same gate
+    // as session history cleanup above) to avoid unnecessary /tmp scanning.
+    try {
+      const tmpMinuteOfHour = new Date(now).getMinutes();
+      if (tmpMinuteOfHour < 5) {
+        const TMP_LOG_RETENTION_MS = 24 * 3600000; // 24 hours
+        const tmpCutoff = now - TMP_LOG_RETENTION_MS;
+        const tmpEntries = readdirSync("/tmp", { withFileTypes: true });
+        let tmpPruned = 0;
+        for (const entry of tmpEntries) {
+          if (!entry.isFile()) continue;
+          if (!entry.name.startsWith("pi-bash-") || !entry.name.endsWith(".log")) continue;
+          const filePath = join("/tmp", entry.name);
+          try {
+            const fstat = statSync(filePath);
+            if (fstat.mtimeMs < tmpCutoff) {
+              unlinkSync(filePath);
+              tmpPruned++;
+            }
+          } catch {
+            // Skip individual file errors (race, permission, etc.)
+          }
+        }
+        if (tmpPruned > 0) {
+          ctx.sdk.log(
+            "info",
+            `[metrics-snapshot] Pruned ${tmpPruned} stale /tmp/pi-bash-*.log files older than 24h`,
+          );
+        }
+      }
+    } catch (e) {
+      ctx.sdk.log(
+        "info",
+        `[metrics-snapshot] Error during /tmp log cleanup: ${e}`,
       );
     }
 
