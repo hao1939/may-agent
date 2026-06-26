@@ -145,6 +145,11 @@ const TRANSCRIPT_SECRET_PATTERNS: Array<{ pattern: RegExp; replacement: string }
     pattern: /(accessToken["']?\s*[:=]\s*["']?)([A-Za-z0-9_\-.~+/]{40,})(["']?)/g,
     replacement: "$1[REDACTED-ACCESS-TOKEN]$3",
   },
+  // Authenticated Git/GitHub URLs with embedded tokens (https://<token>@github.com/...)
+  {
+    pattern: /https:\/\/[A-Za-z0-9_\-.~+/]{8,}@github\.com\/[^\s"'\\]*/g,
+    replacement: "https://[REDACTED-GIT-TOKEN]@github.com/[REDACTED-REPO]",
+  },
   // Generic long secrets in key=value contexts (password, secret, token, key assignments)
   {
     pattern: /((?:password|secret|token|api[_-]?key)\s*[=:]\s*["']?)([^\s"']{20,})(["']?)/gi,
@@ -203,6 +208,7 @@ function sanitizeMessageForTranscript(message: AgentMessage): AgentMessage {
     !serialized.includes("eyJ") &&
     !/bearer/i.test(serialized) &&
     !serialized.includes("accessToken") &&
+    !serialized.includes("@github.com/") &&
     !/(?:password|secret|token|api[_-]?key)["']?\s*[=:]/i.test(serialized)
   ) {
     return message;
