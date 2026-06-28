@@ -2537,17 +2537,18 @@ export const create: HandlerModule["create"] = (
       );
     }
 
-    // ── DB row retention for large tables (events, sessions, workflow_runs, session_digests, evaluations) ──
+    // ── DB row retention for large tables (events, sessions, workflow_runs, session_digests, evaluations, event_pair_runs) ──
     // These tables grow without bound and are the primary drivers of DB bloat.
-    // As of 2026-06-22: events ~1156 MB (5 days), sessions ~446 MB (14 days),
-    // workflow_runs ~356 MB (14 days), session_digests ~131 MB (14 days).
-    // Total DB size: 2504 MB. Target: ≤1200 MB.
-    // Retention windows chosen to get below target while preserving adequate history.
+    // As of 2026-06-28: events ~1116 MB (3 days), sessions ~546 MB (7 days),
+    // workflow_runs ~473 MB (7 days), event_pair_runs ~7 MB (10 days unbounded).
+    // Total DB size: 2506 MB. Target: ≤1200 MB.
+    // Retention windows: events 2d (~740MB), sessions/workflows 7d (~1019MB).
+    // Combined with VACUUM, expected steady-state ~1800-2000MB declining over time.
     // Runs only during minute 0-4 of each hour (same as session history cleanup).
     try {
       const minuteForRetention = new Date(now).getMinutes();
       if (minuteForRetention < 5) {
-        const EVENT_RETENTION_MS = 3 * 86400000; // 3 days
+        const EVENT_RETENTION_MS = 2 * 86400000; // 2 days (reduced from 3d; events avg 370MB/day)
         const SESSION_RETENTION_MS = 7 * 86400000; // 7 days
         const WORKFLOW_RETENTION_MS = 7 * 86400000; // 7 days
         const DIGEST_RETENTION_MS = 7 * 86400000; // 7 days
@@ -2563,7 +2564,7 @@ export const create: HandlerModule["create"] = (
         const BATCH = 5000;
         let totalDeleted = 0;
 
-        // Events: largest table, 3-day retention
+        // Events: largest table, 2-day retention
         let batch: any;
         do {
           batch = db.run(
@@ -2619,10 +2620,23 @@ export const create: HandlerModule["create"] = (
           totalDeleted += (batch as any)?.changes ?? 0;
         } while (((batch as any)?.changes ?? 0) >= BATCH);
 
+        // Event pair runs: 7-day retention (missed in original implementation)
+        const EVENT_PAIR_RETENTION_MS = 7 * 86400000; // 7 days
+        const eventPairCutoff = now - EVENT_PAIR_RETENTION_MS;
+        do {
+          batch = db.run(
+            `DELETE FROM event_pair_runs WHERE rowid IN (
+              SELECT rowid FROM event_pair_runs WHERE opened_at < ? LIMIT ?
+            )`,
+            [eventPairCutoff, BATCH],
+          );
+          totalDeleted += (batch as any)?.changes ?? 0;
+        } while (((batch as any)?.changes ?? 0) >= BATCH);
+
         if (totalDeleted > 0) {
           ctx.sdk.log(
             "info",
-            `[metrics-snapshot] DB row retention: deleted ${totalDeleted} expired rows (events:3d, sessions/workflows/digests:7d, evals:14d)`,
+            `[metrics-snapshot] DB row retention: deleted ${totalDeleted} expired rows (events:2d, sessions/workflows/digests:7d, evals:14d, event_pairs:7d)`,
           );
         }
 
