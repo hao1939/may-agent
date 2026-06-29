@@ -72,6 +72,26 @@ describe("event envelope helpers", () => {
     });
   });
 
+  it("keeps action on the envelope for selector routing", () => {
+    expect(
+      buildCanonicalEventEnvelope("project.task.tick", {
+        source: "agent:worker",
+        target: { project: "aks-rp-e2e", taskId: "loop-a" },
+        action: "spec-loop",
+        reason: "child-task-completed",
+      }),
+    ).toEqual({
+      type: "project.task.tick",
+      source: "agent:worker",
+      owner: "project:aks-rp-e2e",
+      target: { project: "aks-rp-e2e", taskId: "loop-a" },
+      action: "spec-loop",
+      data: {
+        reason: "child-task-completed",
+      },
+    });
+  });
+
   it("infers project owner from target before fallback owner", () => {
     expect(
       buildCanonicalEventEnvelope(

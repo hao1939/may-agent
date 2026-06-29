@@ -77,6 +77,7 @@ export interface EventEnvelopeOptions {
   owner?: string;
   source?: string;
   target?: Record<string, unknown>;
+  action?: string;
   urgency?: "low" | "normal" | "high" | "immediate";
   ttl_ms?: number;
 }
