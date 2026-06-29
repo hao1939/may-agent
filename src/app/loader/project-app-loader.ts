@@ -295,7 +295,6 @@ const envelopeFieldNames = new Set([
 function normalizeEvent(event: AppEvent, defaults: { source: string; owner: string }): EventEnvelope {
   const type = typeof event.type === "string" ? event.type : "project.event";
   const source = typeof event.source === "string" ? event.source : defaults.source;
-  const owner = typeof event.owner === "string" ? event.owner : defaults.owner;
   const timestamp = typeof event.timestamp === "number" ? event.timestamp : Date.now();
   const urgency = typeof event.urgency === "string" ? event.urgency : undefined;
   const ttlMs =
@@ -310,6 +309,7 @@ function normalizeEvent(event: AppEvent, defaults: { source: string; owner: stri
   if (target?.taskId && typeof data.taskId !== "string") data.taskId = target.taskId;
   if (target?.taskId && typeof data.task_id !== "string") data.task_id = target.taskId;
   if (target && !isRecord(data.target)) data.target = target;
+  const owner = inferEventOwner(event.owner, target, defaults.owner);
   return {
     type,
     source,
@@ -320,6 +320,38 @@ function normalizeEvent(event: AppEvent, defaults: { source: string; owner: stri
     ...(target ? { target } : {}),
     data,
   };
+}
+
+function normalizeOwnerIdentity(owner: unknown, fallback: unknown = "may"): string {
+  const value =
+    typeof owner === "string" && owner.trim()
+      ? owner.trim()
+      : typeof fallback === "string" && fallback.trim()
+        ? fallback.trim()
+        : "may";
+  if (
+    value.startsWith("agent:") ||
+    value.startsWith("human:") ||
+    value.startsWith("project:") ||
+    value.startsWith("task:")
+  ) {
+    return value;
+  }
+  if (value.toLowerCase() === "human") return "human:operator";
+  return `agent:${value}`;
+}
+
+function ownerFromTarget(target: EventTarget | undefined): string | undefined {
+  if (target?.human === true) return "human:operator";
+  if (target?.project && typeof target.project === "string" && target.project.trim()) {
+    return `project:${target.project.trim()}`;
+  }
+  return undefined;
+}
+
+function inferEventOwner(owner: unknown, target: EventTarget | undefined, fallback: unknown): string {
+  if (typeof owner === "string" && owner.trim()) return normalizeOwnerIdentity(owner);
+  return ownerFromTarget(target) ?? normalizeOwnerIdentity(fallback);
 }
 
 function requireWorkflowRuntimeOptions(opts: ProjectAppLoaderOptions): {
@@ -407,7 +439,7 @@ function matchesSelector(selector: EventSelector, event: Record<string, unknown>
   const project = selectorProject(selector);
   if (project && projectValue(event) !== project) return false;
   if (selector.target?.taskId && taskIdValue(event) !== selector.target.taskId) return false;
-  if (selector.owner && ownerAgentValue(event) !== selector.owner.replace(/^agent:/, "")) return false;
+  if (selector.owner && ownerValue(event) !== selector.owner.replace(/^agent:/, "")) return false;
   if (selector.urgency && event.urgency !== selector.urgency) return false;
   if (selector.actions?.length) {
     const action = typeof event.action === "string" ? event.action : "";
@@ -444,7 +476,7 @@ function isProjectScopedForApp(event: Record<string, unknown>, appId: string): b
   return project === appId || project === `${appId}.app`;
 }
 
-function ownerAgentValue(event: Record<string, unknown>): string {
+function ownerValue(event: Record<string, unknown>): string {
   const owner = typeof event.owner === "string" ? event.owner.trim() : "";
   return owner.startsWith("agent:") ? owner.slice("agent:".length) : owner;
 }
@@ -464,7 +496,9 @@ function metricAlertId(event: Record<string, unknown>): number | string | null {
 }
 
 function isOwnerMetricFeedbackForApp(event: Record<string, unknown>, appOwner: string): boolean {
-  return isMetricFeedbackEvent(event) && ownerAgentValue(event) === appOwner;
+  const owner = ownerValue(event);
+  const project = projectValue(event);
+  return isMetricFeedbackEvent(event) && (owner === appOwner || (!!project && owner === `project:${project}`));
 }
 
 function shouldOfferToApp(app: ProjectApp, event: Record<string, unknown>, appId: string, appOwner: string): boolean {
@@ -473,12 +507,13 @@ function shouldOfferToApp(app: ProjectApp, event: Record<string, unknown>, appId
   return typeof event.type === "string" && event.type.startsWith("project.") && isProjectScopedForApp(event, appId);
 }
 
-function hasExplicitWorkflowHandler(app: ProjectApp, eventType: unknown): boolean {
+function hasExplicitWorkflowHandler(app: ProjectApp, event: Record<string, unknown>, appId: string): boolean {
   return (
-    typeof eventType === "string" &&
-    (app.workflowHandlers ?? []).some(
-      (handler) => handler.enabled !== false && handlerAcceptedEventTypes(handler).includes(eventType),
-    )
+    typeof event.type === "string" &&
+    (app.workflowHandlers ?? []).some((handler) => {
+      if (handler.enabled === false) return false;
+      return handlerAccepts(handler).some((selector) => matchesSelector(selector, event, appId));
+    })
   );
 }
 
@@ -757,7 +792,7 @@ function attachAppEventRouter(opts: ProjectAppLoaderOptions, descriptors: Projec
       if (!shouldOfferToApp(descriptor.app, event, descriptor.id, descriptor.owner)) continue;
       const ownerMetricFeedback = isOwnerMetricFeedbackForApp(event, descriptor.owner);
       const hasAppEventHandler = typeof descriptor.app.onEvent === "function";
-      const hasWorkflowHandler = hasExplicitWorkflowHandler(descriptor.app, event.type);
+      const hasWorkflowHandler = hasExplicitWorkflowHandler(descriptor.app, event, descriptor.id);
       if (hasWorkflowHandler) continue;
       const shouldOwnerFallback =
         !hasWorkflowHandler && (isProjectScopedForApp(event, descriptor.id) || ownerMetricFeedback);
