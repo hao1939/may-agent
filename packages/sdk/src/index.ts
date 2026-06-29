@@ -920,6 +920,9 @@ export type {
   ProjectApp,
   ProjectAppAction,
   ProjectAppContext,
+  ProjectAppEvent,
+  ProjectAppEventTarget,
+  ProjectAppEventUrgency,
   ProjectAppOnEvent,
   ProjectWorkflowHandler,
 } from "./project-app.js";
