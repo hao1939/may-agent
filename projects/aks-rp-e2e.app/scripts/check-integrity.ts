@@ -26,6 +26,7 @@ type WorkflowHandler = {
   name?: string;
   enabled?: boolean;
   on?: unknown;
+  emits?: unknown;
   handler?: {
     workflow?: string;
     agent?: string;
@@ -60,18 +61,6 @@ type AppAction = {
 };
 
 type EventGraph = {
-  handlers?: Record<
-    string,
-    {
-      emits?: string[];
-      description?: string;
-    }
-  >;
-  adapters?: Array<{
-    event?: string;
-    emits?: string[];
-    description?: string;
-  }>;
   externalEvents?: string[];
   intentionalCycles?: Array<{
     id?: string;
@@ -79,8 +68,7 @@ type EventGraph = {
     reason?: string;
   }>;
   limits?: {
-    maxDirectHandlersPerEvent?: number;
-    maxAdapterEmits?: number;
+    maxHandlersPerEvent?: number;
   };
 };
 
@@ -109,6 +97,7 @@ type TaskNode = {
   gates?: unknown;
   gate_status?: unknown;
   workflow?: string | null;
+  context?: unknown;
 };
 
 type TaskTree = {
@@ -123,6 +112,33 @@ const appDir = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const domainWorkflowNames = new Set(["spec-runner"]);
 const errors: string[] = [];
 const warnings: string[] = [];
+
+const durableLoopContracts = [
+  {
+    name: "spec verification loop",
+    stateRef: ".state/spec-loop/state.json",
+    taskId: "aks-spec-verification-loop",
+    workflow: "spec-loop-controller",
+    collectionKey: "specs",
+    required: true,
+  },
+  {
+    name: "feature reference loop",
+    stateRef: ".state/feature-reference-loop/state.json",
+    taskId: "aks-feature-reference-loop",
+    workflow: "feature-reference-loop-controller",
+    collectionKey: "features",
+    required: true,
+  },
+  {
+    name: "feature compact loop",
+    stateRef: ".state/feature-compact-loop/state.json",
+    taskId: "aks-feature-compact-loop",
+    workflow: "feature-compact-loop-controller",
+    collectionKey: "features",
+    required: true,
+  },
+] as const;
 
 function taskState(task: TaskNode | undefined): string {
   const raw = task?.state ?? task?.status ?? "";
@@ -142,8 +158,27 @@ function warn(message: string): void {
   warnings.push(message);
 }
 
+function record(value: unknown): Record<string, unknown> {
+  return value && typeof value === "object" && !Array.isArray(value)
+    ? (value as Record<string, unknown>)
+    : {};
+}
+
 function readJson<T>(relativePath: string): T | null {
   const absolutePath = join(appDir, relativePath);
+  try {
+    return JSON.parse(readFileSync(absolutePath, "utf-8")) as T;
+  } catch (err) {
+    fail(
+      `${relativePath} is not valid JSON: ${err instanceof Error ? err.message : String(err)}`,
+    );
+    return null;
+  }
+}
+
+function readOptionalJson<T>(relativePath: string): T | null {
+  const absolutePath = join(appDir, relativePath);
+  if (!existsSync(absolutePath)) return null;
   try {
     return JSON.parse(readFileSync(absolutePath, "utf-8")) as T;
   } catch (err) {
@@ -282,6 +317,16 @@ function validateProjectAndApp(
   if (domainPath && !existsSync(join(domainPath, "runner", "spec-runner.ts"))) {
     fail(
       "domain workspace missing runner/spec-runner.ts required by spec-runner tasks",
+    );
+  }
+  if (domainPath && existsSync(join(domainPath, "tasks"))) {
+    warn(
+      "domain workspace still contains tasks/; app-control task trees belong in aks-rp-e2e.app/tasks/",
+    );
+  }
+  if (domainPath && existsSync(join(domainPath, "agents"))) {
+    warn(
+      "domain workspace still contains agents/; app-control agent workspace belongs in aks-rp-e2e.app/agents/",
     );
   }
 }
@@ -437,71 +482,28 @@ function validateEventGraph(projectApp: ProjectApp): void {
     }
   }
 
-  const maxDirectHandlers = graph.limits?.maxDirectHandlersPerEvent ?? 1;
+  const maxDirectHandlers = graph.limits?.maxHandlersPerEvent ?? 1;
   for (const [event, handlers] of handlerConsumers) {
     if (handlers.length > maxDirectHandlers) {
       fail(
-        `event ${event} has ${handlers.length} direct workflow handlers (${handlers.join(", ")}); max is ${maxDirectHandlers}`,
+        `event ${event} has ${handlers.length} generated handlers (${handlers.join(", ")}); max is ${maxDirectHandlers}`,
       );
     }
-  }
-
-  const adapterConsumers = new Map<string, string[]>();
-  for (const adapter of graph.adapters ?? []) {
-    if (!adapter.event) {
-      fail("eventGraph adapter missing event");
-      continue;
-    }
-    if (!Array.isArray(adapter.emits)) {
-      fail(`eventGraph adapter ${adapter.event} missing emits[]`);
-      continue;
-    }
-    if (adapter.emits.length === 0) {
-      fail(`eventGraph adapter ${adapter.event} must emit at least one event`);
-      continue;
-    }
-    if (adapter.emits.length > (graph.limits?.maxAdapterEmits ?? 3)) {
-      fail(
-        `eventGraph adapter ${adapter.event} emits ${adapter.emits.length} events; keep adapter fan-out simple`,
-      );
-    }
-    addMapValue(adapterConsumers, adapter.event, "adapter");
-  }
-
-  for (const event of adapterConsumers.keys()) {
-    const handlers = handlerConsumers.get(event);
-    if (!handlers?.length) continue;
-    fail(
-      `event ${event} is both a workflow trigger (${handlers.join(", ")}) and an app adapter; keep workflow events routed directly and adapt only distinct input events`,
-    );
   }
 
   for (const handler of projectApp.workflowHandlers ?? []) {
     if (handler.enabled === false || !handler.name) continue;
-    const graphHandler = graph.handlers?.[handler.name];
-    if (!graphHandler) {
-      fail(`eventGraph missing handler entry for ${handler.name}`);
+    if (!Array.isArray(handler.emits)) {
+      fail(`generated handler ${handler.name} missing emits[]`);
       continue;
     }
-    if (!Array.isArray(graphHandler.emits)) {
-      fail(`eventGraph handler ${handler.name} missing emits[]`);
-      continue;
+    if (handler.emits.length === 0) {
+      fail(`generated handler ${handler.name} must emit at least one event`);
     }
-    if (graphHandler.emits.length === 0) {
-      fail(`eventGraph handler ${handler.name} must emit at least one event`);
-    }
-  }
-  for (const handlerName of Object.keys(graph.handlers ?? {})) {
-    const exists = (projectApp.workflowHandlers ?? []).some(
-      (handler) => handler.enabled !== false && handler.name === handlerName,
-    );
-    if (!exists)
-      fail(`eventGraph handler ${handlerName} has no enabled workflow handler`);
   }
 
   const consumed = new Set([
     ...handlerConsumers.keys(),
-    ...adapterConsumers.keys(),
     ...(graph.externalEvents ?? []),
   ]);
 
@@ -511,10 +513,8 @@ function validateEventGraph(projectApp: ProjectApp): void {
       fail("app.ts events entry missing event type");
       continue;
     }
-    if (!adapterConsumers.has(event) && !handlerConsumers.has(event)) {
-      fail(
-        `app.ts subscribes to event ${event}, but eventGraph has no adapter or workflow route for it`,
-      );
+    if (!handlerConsumers.has(event)) {
+      fail(`app.ts custom event selector ${event} has no generated handler`);
     }
   }
 
@@ -542,16 +542,11 @@ function validateEventGraph(projectApp: ProjectApp): void {
 
   for (const handler of projectApp.workflowHandlers ?? []) {
     if (handler.enabled === false || !handler.name) continue;
-    const emits = graph.handlers?.[handler.name]?.emits ?? [];
+    const emits = Array.isArray(handler.emits) ? handler.emits : [];
     for (const input of Array.isArray(handler.on) ? handler.on : []) {
       if (typeof input !== "string") continue;
       for (const output of emits) edge(input, output);
     }
-  }
-
-  for (const adapter of graph.adapters ?? []) {
-    if (!adapter.event || !Array.isArray(adapter.emits)) continue;
-    for (const output of adapter.emits) edge(adapter.event, output);
   }
 
   for (const [from, outputs] of edges) {
@@ -732,6 +727,83 @@ function validateTaskTree(
   }
 }
 
+function loopStateCounts(
+  state: Record<string, unknown>,
+  collectionKey: string,
+): Record<string, number> {
+  const collection = record(state[collectionKey]);
+  const counts: Record<string, number> = {};
+  for (const item of Object.values(collection)) {
+    const status =
+      typeof record(item).status === "string"
+        ? String(record(item).status)
+        : "unknown";
+    counts[status] = (counts[status] ?? 0) + 1;
+  }
+  return counts;
+}
+
+function validateDurableLoopTasks(tree: TaskTree | null): void {
+  if (!tree) return;
+  const tasks = tree.tasks ?? {};
+
+  for (const contract of durableLoopContracts) {
+    const task = tasks[contract.taskId];
+    if (contract.required && !task) {
+      fail(
+        `${contract.name} task ${contract.taskId} must remain in tasks/tree.json until the loop is explicitly retired`,
+      );
+    }
+    if (task && task.workflow !== contract.workflow) {
+      fail(
+        `${contract.name} task ${contract.taskId} uses workflow ${task.workflow ?? "missing"}; expected ${contract.workflow}`,
+      );
+    }
+
+    const state = readOptionalJson<Record<string, unknown>>(contract.stateRef);
+    if (!state) continue;
+
+    const stateLoopTaskId =
+      typeof state.loopTaskId === "string" ? state.loopTaskId : "";
+    if (stateLoopTaskId && stateLoopTaskId !== contract.taskId) {
+      fail(
+        `${contract.name} state ${contract.stateRef} has loopTaskId ${stateLoopTaskId}; expected ${contract.taskId}`,
+      );
+    }
+
+    const counts = loopStateCounts(state, contract.collectionKey);
+    const pending = counts.pending ?? 0;
+    const running = counts.running ?? 0;
+    const incomplete = pending + running;
+    if (incomplete === 0) continue;
+
+    if (!task) {
+      fail(
+        `${contract.name} has ${incomplete} pending/running item(s) in ${contract.stateRef}, but ${contract.taskId} is missing from tasks/tree.json`,
+      );
+      continue;
+    }
+    if (!["active", "backlog", "blocked", "review"].includes(taskState(task))) {
+      fail(
+        `${contract.name} task ${contract.taskId} is ${taskState(task)} while ${incomplete} item(s) remain pending/running`,
+      );
+    }
+
+    const context = record(task.context);
+    if (context.stateRef !== contract.stateRef) {
+      fail(
+        `${contract.name} task ${contract.taskId} context.stateRef must be ${contract.stateRef}`,
+      );
+    }
+    const progress = record(context.workflowProgress);
+    if (progress.completionReady === true) {
+      fail(
+        `${contract.name} task ${contract.taskId} marks workflowProgress.completionReady=true while ${pending} pending and ${running} running item(s) remain`,
+      );
+    }
+  }
+}
+
 validatePackageJson();
 const projectApp = app as ProjectApp;
 const projectJson = readJson<ProjectJson>("project.json");
@@ -744,6 +816,7 @@ validateWorkflowHandlers(projectApp, workflowNames);
 validateSchedules(projectApp);
 validateEventGraph(projectApp);
 validateTaskTree(taskTree, workflowNames);
+validateDurableLoopTasks(taskTree);
 
 for (const message of warnings) {
   console.warn(`[warn] ${message}`);

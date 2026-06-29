@@ -1,15 +1,11 @@
-import { existsSync, readdirSync, readFileSync } from "node:fs";
 import {
   defineProjectApp,
-  eventData,
-  eventDetails,
-  eventString,
   projectOwnerEvent as sdkProjectOwnerEvent,
-  type ProjectAppContext,
+  workflowHandlers,
 } from "@may-agent/sdk";
 
 const projectId = "aks-rp-e2e";
-const projectAppPath = "projects/aks-rp-e2e.app";
+const projectPolicyMaxConcurrent = 80;
 const appTaskContext =
   "app: /app/projects/aks-rp-e2e.app\nproject: /app/projects/aks-rp-e2e\nsource: /app/sources/aks-rp";
 
@@ -26,698 +22,18 @@ function projectOwnerEvent(
   params: unknown = {},
 ): Record<string, unknown> {
   return sdkProjectOwnerEvent(projectId, reason, {
-    maxConcurrent: 5,
+    maxConcurrent: projectPolicyMaxConcurrent,
     ...(params && typeof params === "object" && !Array.isArray(params)
       ? (params as Record<string, unknown>)
       : {}),
   });
 }
 
-function problemKeyForTask(taskId: string): string {
-  const safeTaskId =
-    taskId.replace(/[^A-Za-z0-9_-]+/g, "-").replace(/^-+|-+$/g, "") ||
-    "unknown-task";
-  return `aks-rp-e2e:task-problem:${safeTaskId}`;
-}
-
-type TaskTreeNode = {
-  id?: string;
-  context?: unknown;
-  acceptance?: unknown;
-  blocker?: unknown;
-  goal?: unknown;
-  inputs?: unknown;
-  outputs?: unknown;
-  state?: unknown;
-  status?: unknown;
-};
-
-type ProblemTaskLinkNormalization = {
-  problemKey?: string;
-  problem_key?: string;
-  taskId?: string;
-  task_id?: string;
-  affectedTasks?: string[];
-  affected_tasks?: string[];
-  originalProblemKey?: string;
-  original_problem_key?: string;
-  originalTaskId?: string;
-  original_task_id?: string;
-  originalAffectedTasks?: string[];
-  original_affected_tasks?: string[];
-  normalization?: {
-    reason:
-      | "live-task-pass-through"
-      | "archived-task-relinked-to-live-successor"
-      | "archived-task-has-no-live-successor";
-    archiveTaskId?: string;
-    archivedTaskIds?: string[];
-    liveSuccessorTaskId?: string;
-    liveSuccessorTaskIds?: string[];
-    disposition?: "active" | "superseded";
-  };
-};
-
-function stringList(value: unknown): string[] {
-  if (Array.isArray(value)) {
-    return value.filter((item): item is string => typeof item === "string");
-  }
-  if (typeof value === "string" && value.trim()) return [value.trim()];
-  return [];
-}
-
-function recordText(value: unknown): string {
-  if (typeof value === "string") return value;
-  if (Array.isArray(value)) return value.map(recordText).join("\n");
-  if (value && typeof value === "object") return JSON.stringify(value);
-  return "";
-}
-
-function taskNodeText(task: TaskTreeNode): string {
-  return [
-    task.id,
-    recordText(task.goal),
-    recordText(task.context),
-    recordText(task.acceptance),
-    recordText(task.blocker),
-    recordText(task.inputs),
-    recordText(task.outputs),
-    recordText(task.state),
-    recordText(task.status),
-  ]
-    .filter(Boolean)
-    .join("\n")
-    .toLowerCase();
-}
-
-function loadTaskTree(
-  projectAppContext: ProjectAppContext,
-): Record<string, TaskTreeNode> {
-  const path = projectAppContext.projectPath("tasks/tree.json");
-  const raw = readFileSync(path, "utf8");
-  const parsed = JSON.parse(raw) as {
-    tasks?: Record<string, TaskTreeNode>;
-  };
-  return parsed.tasks ?? {};
-}
-
-function listTaskArchiveFiles(projectAppContext: ProjectAppContext): string[] {
-  const archiveDir = projectAppContext.projectPath("tasks/archive");
-  if (!existsSync(archiveDir)) return [];
-  return readdirSync(archiveDir)
-    .filter((name) => name.endsWith(".json"))
-    .map((name) => `${archiveDir}/${name}`)
-    .sort();
-}
-
-function isArchivedAcceptedTask(
-  archiveTask: Record<string, unknown> | undefined,
-): boolean {
-  if (!archiveTask || typeof archiveTask !== "object") return false;
-  const status = String(
-    archiveTask.status ?? archiveTask.state ?? "",
-  ).toLowerCase();
-  const resolution = String(archiveTask.resolution ?? "").toLowerCase();
-  const doneByReview =
-    typeof archiveTask.done_at === "string" ||
-    typeof archiveTask.doneAt === "string" ||
-    resolution === "completed";
-  return status === "done" || doneByReview;
-}
-
-function findArchivedTask(
-  projectAppContext: ProjectAppContext,
-  taskId: string,
-): { archivePath: string; task: Record<string, unknown> } | null {
-  for (const archivePath of listTaskArchiveFiles(projectAppContext)) {
-    try {
-      const parsed = JSON.parse(readFileSync(archivePath, "utf8")) as {
-        tasks?: Array<Record<string, unknown>>;
-      };
-      const task = (parsed.tasks ?? []).find((entry) => entry?.id === taskId);
-      if (task && isArchivedAcceptedTask(task)) {
-        return { archivePath, task };
-      }
-    } catch {
-      continue;
-    }
-  }
-  return null;
-}
-
-function findUniqueLiveSuccessorTaskId(
-  liveTasks: Record<string, TaskTreeNode>,
-  archivedTaskId: string,
-): string | null {
-  const archivedEvidence =
-    `evidence/archive/${archivedTaskId}.md`.toLowerCase();
-  const archivedRunStem = archivedTaskId.toLowerCase();
-  const matches = Object.values(liveTasks)
-    .filter((task) => {
-      const candidateId = typeof task.id === "string" ? task.id : "";
-      if (!candidateId || candidateId === archivedTaskId) return false;
-      const text = taskNodeText(task);
-      return (
-        text.includes(archivedTaskId.toLowerCase()) ||
-        text.includes(archivedEvidence) ||
-        text.includes(archivedRunStem)
-      );
-    })
-    .map((task) => task.id)
-    .filter((id): id is string => typeof id === "string");
-  return matches.length === 1 ? matches[0] : null;
-}
-
-function normalizeProblemTaskLinks(
-  projectAppContext: ProjectAppContext,
-  problem: Record<string, unknown>,
-): ProblemTaskLinkNormalization {
-  const liveTasks = loadTaskTree(projectAppContext);
-  const originalProblemKey =
-    eventString(problem, "problemKey") || eventString(problem, "problem_key");
-  const originalTaskId =
-    eventString(problem, "taskId") || eventString(problem, "task_id");
-  const originalAffectedTasks = [
-    ...new Set([
-      ...stringList(problem.affectedTasks),
-      ...stringList(problem.affected_tasks),
-      ...(originalTaskId ? [originalTaskId] : []),
-    ]),
-  ];
-
-  const stillLive = originalAffectedTasks.filter((taskId) =>
-    Boolean(liveTasks[taskId]),
-  );
-  const archivedRelinks = new Map<string, string>();
-  const archivedWithoutSuccessor: string[] = [];
-
-  for (const taskId of originalAffectedTasks) {
-    if (liveTasks[taskId]) continue;
-    const archived = findArchivedTask(projectAppContext, taskId);
-    if (!archived) continue;
-    const successor = findUniqueLiveSuccessorTaskId(liveTasks, taskId);
-    if (successor) archivedRelinks.set(taskId, successor);
-    else archivedWithoutSuccessor.push(taskId);
-  }
-
-  if (
-    archivedWithoutSuccessor.length > 0 &&
-    stillLive.length === 0 &&
-    archivedRelinks.size === 0
-  ) {
-    return {
-      problemKey: undefined,
-      problem_key: undefined,
-      taskId: undefined,
-      task_id: undefined,
-      affectedTasks: [],
-      affected_tasks: [],
-      originalProblemKey: originalProblemKey || undefined,
-      original_problem_key: originalProblemKey || undefined,
-      originalTaskId: originalTaskId || undefined,
-      original_task_id: originalTaskId || undefined,
-      originalAffectedTasks,
-      original_affected_tasks: originalAffectedTasks,
-      normalization: {
-        reason: "archived-task-has-no-live-successor",
-        archivedTaskIds: archivedWithoutSuccessor,
-        archiveTaskId: archivedWithoutSuccessor[0],
-        disposition: "superseded",
-      },
-    };
-  }
-
-  const normalizedAffectedTasks = [
-    ...new Set([
-      ...stillLive,
-      ...originalAffectedTasks
-        .map((taskId) => archivedRelinks.get(taskId))
-        .filter((taskId): taskId is string => typeof taskId === "string"),
-    ]),
-  ];
-
-  const normalizedTaskId = originalTaskId
-    ? liveTasks[originalTaskId]
-      ? originalTaskId
-      : archivedRelinks.get(originalTaskId)
-    : normalizedAffectedTasks[0];
-
-  if (archivedRelinks.size > 0) {
-    const relinkedTaskId = [...archivedRelinks.keys()][0];
-    const liveSuccessorTaskId = [...archivedRelinks.values()][0];
-    const normalizedProblemKey =
-      originalProblemKey && originalTaskId === relinkedTaskId
-        ? problemKeyForTask(liveSuccessorTaskId)
-        : originalProblemKey || undefined;
-    return {
-      problemKey: normalizedProblemKey,
-      problem_key: normalizedProblemKey,
-      taskId: normalizedTaskId,
-      task_id: normalizedTaskId,
-      affectedTasks: normalizedAffectedTasks,
-      affected_tasks: normalizedAffectedTasks,
-      originalProblemKey: originalProblemKey || undefined,
-      original_problem_key: originalProblemKey || undefined,
-      originalTaskId: originalTaskId || undefined,
-      original_task_id: originalTaskId || undefined,
-      originalAffectedTasks,
-      original_affected_tasks: originalAffectedTasks,
-      normalization: {
-        reason: "archived-task-relinked-to-live-successor",
-        archiveTaskId: relinkedTaskId,
-        archivedTaskIds: [...archivedRelinks.keys()],
-        liveSuccessorTaskId,
-        liveSuccessorTaskIds: [...new Set(archivedRelinks.values())],
-        disposition: "active",
-      },
-    };
-  }
-
-  return {
-    problemKey: originalProblemKey || undefined,
-    problem_key: originalProblemKey || undefined,
-    taskId: originalTaskId || undefined,
-    task_id: originalTaskId || undefined,
-    affectedTasks: originalAffectedTasks,
-    affected_tasks: originalAffectedTasks,
-    originalProblemKey: originalProblemKey || undefined,
-    original_problem_key: originalProblemKey || undefined,
-    originalTaskId: originalTaskId || undefined,
-    original_task_id: originalTaskId || undefined,
-    originalAffectedTasks,
-    original_affected_tasks: originalAffectedTasks,
-    normalization: {
-      reason: "live-task-pass-through",
-      disposition: "active",
-    },
-  };
-}
-
-function isProblemClaim(event: Record<string, unknown>): boolean {
-  const status = eventString(event, "status").toLowerCase();
-  const result =
-    eventString(event, "result").toLowerCase() ||
-    eventString(event, "claim").toLowerCase() ||
-    eventString(event, "outcome").toLowerCase();
-  const verificationVerdict =
-    eventString(event, "verification_verdict").toLowerCase() ||
-    eventString(event, "verificationVerdict").toLowerCase();
-
-  // Filter: when status=review and result=blocked, check whether the worker
-  // summary indicates completed deliverables vs genuine inability to proceed.
-  // Workers that completed all deliverables but report blocked due to external
-  // gates (TLS provisioning, API version, patch availability) should go to
-  // owner review, not problem-solver. Workers genuinely stuck (no ARM token,
-  // crash, timeout without results) should still trigger problem solving.
-  if (status === "review" && result === "blocked") {
-    // Check summary at multiple nesting levels — task completion events
-    // nest summary under params.task.summary, not at the top level.
-    const directSummary = eventString(event, "summary");
-    const taskObj = (eventData(event).params as Record<string, unknown>)
-      ?.task as Record<string, unknown> | undefined;
-    const nestedSummary =
-      typeof taskObj?.summary === "string" ? taskObj.summary : "";
-    const summary = (directSummary || nestedSummary).toLowerCase();
-    const completionSignals = [
-      "all artifacts",
-      "assertions pass",
-      "already exist",
-      "all complete",
-      "acceptance criteria met",
-      "cleaned up",
-      "model path updated",
-      "model updated",
-      "model already",
-      "reconciled",
-      "regenerated views",
-      "introduced no new",
-      "did not introduce",
-      "unrelated pre-existing",
-      "pre-existing model issues",
-      "validation still fails because",
-      "validator still fails because",
-      "repo-wide knowledge-map validator still fails",
-      "repo-wide model validator still fails",
-      "whole-model validator still fails",
-      "check passes",
-      "check mode passes",
-      "check exit",
-      "execution-gated",
-      "environment-gate",
-      "superseded",
-      "source-spec frontier",
-      "spec/replay frontier",
-      "frontier artifacts",
-      "frontier evidence",
-      "verified",
-      "verification",
-      "claims passed",
-      "preflights pass",
-      "preflight assertions",
-      "claim assertions",
-      "failure classified",
-      "classified as",
-      "diagnosis recorded",
-      "model-update proposal",
-      "execution record",
-      "no resources were created",
-      "producing a complete run",
-      "run result",
-      "run completed",
-      "runner artifacts",
-      "wrote the requested",
-      "requested checkpoint artifact",
-      "documented blocker",
-      "recorded the precise blocker",
-      "exact repo-local blocker",
-      "exact slicing blocker",
-      "artifact lists the exact",
-      "documented all",
-      "model/archive/run references",
-      "no single bounded",
-      "safe next decomposition",
-      "infra_block",
-      "product_constraint",
-      "product-gap",
-      "product gap",
-      "product verdict",
-      "environment_version_ceiling",
-      "staging-inconclusive",
-      "staging-verified",
-      "ready for runner",
-      "fully documented",
-      "structurally sound",
-      "owner-facing checkpoint evidence",
-      "owner review path",
-      "owner-review output",
-      "worker-mode",
-      "live task tree",
-      "task-tree set-outputs",
-      "set-outputs commands",
-      "supported task-tree tooling path",
-      "owner-side command",
-      "owner-side commands",
-      "owner-authorized app session",
-      "owner-owned commit",
-      "owner checkpoint packet",
-      "owner-only",
-      "worker mode",
-      "must be landed by the owner review path",
-      "must not commit",
-      "policy reserves domain repo commits",
-    ];
-    const ownerCheckpointSignals =
-      summary.includes("checkpoint") &&
-      [
-        "owner-owned",
-        "owner-only",
-        "owner review path",
-        "must not commit",
-        "reserves domain repo commits",
-        "worker may modify",
-      ].some((s) => summary.includes(s));
-    const ownerHandoffSignals =
-      (summary.includes("handoff packet") ||
-        summary.includes("send-ready") ||
-        summary.includes("outbound packet")) &&
-      [
-        "source holder",
-        "owner handoff",
-        "missing authoritative",
-        "resume",
-      ].some((s) => summary.includes(s));
-    if (
-      completionSignals.some((s) => summary.includes(s)) ||
-      ownerCheckpointSignals ||
-      ownerHandoffSignals
-    ) {
-      return false;
-    }
-  }
-
-  return (
-    ["blocked", "failed", "failure", "error"].includes(result) ||
-    ["blocked", "failed", "failure", "error"].includes(status) ||
-    ["rejected", "failed", "failure"].includes(verificationVerdict)
-  );
-}
-
-function projectProblemEvent(
-  event: Record<string, unknown>,
-  taskId: string,
-): Record<string, unknown> {
-  const problemKey =
-    eventString(event, "problemKey") ||
-    eventString(event, "problem_key") ||
-    problemKeyForTask(taskId);
-  return {
-    type: "project.problem.requested",
-    project: projectId,
-    urgency: "high",
-    problemKey,
-    problem_key: problemKey,
-    taskId,
-    task_id: taskId,
-    affectedTasks: taskId ? [taskId] : [],
-    affected_tasks: taskId ? [taskId] : [],
-    sourceEventType: event.type,
-    source_event_type: event.type,
-    params: {
-      problemKey,
-      taskId,
-      task: eventDetails(event),
-      reason: "task-blocked-or-failed",
-    },
-  };
-}
-
-function metricId(event: Record<string, unknown>): string {
-  return eventString(event, "metricId") || eventString(event, "metric_id");
-}
-
-function isAksProjectMetric(event: Record<string, unknown>): boolean {
-  return metricId(event).startsWith("aks-rp-e2e.");
-}
-
-function blockedFrontierReviewEvent(
-  event: Record<string, unknown>,
-): Record<string, unknown> {
-  const id = metricId(event);
-  return {
-    ...projectOwnerEvent("blocked-frontier-review", {
-      metricId: id,
-      metric: eventDetails(event),
-      instruction:
-        "Review the blocked and dependency-waiting task frontier and push sampled blockers toward final state. Classify blocked leaves into true external waits, local/tooling/environment problems, stale/dependency mismatches, already-resolved blockers, or terminal/product/environment dispositions. Create or link one visible problem/unblock task for each local shared root cause, unblock/requeue tasks whose resume condition is satisfied, mark proven terminal dispositions done with evidence, and leave a task blocked only after the external ask/escalation owner, exact resume condition, and next review trigger are explicit.",
-      reviewChecklist: [
-        "Do not treat blocked as final.",
-        "Do not assign blocked leaves back to the same worker unchanged.",
-        "Prefer one shared problem task for a shared root cause.",
-        "Dependency-waiting backlog is owner work when the dependency is done, missing, stale, or has a locally fixable blocker.",
-        "True source-holder/operator/product waits should be converted into sent/escalated asks or precise response-await tasks, then revisited.",
-      ],
-    }),
-    urgency: "high",
-  };
-}
-
-function metricOwnerReviewEvent(
-  event: Record<string, unknown>,
-): Record<string, unknown> {
-  const id = metricId(event);
-  const staleActive = id === "aks-rp-e2e.task.stale-active-with-gaps";
-  const noWork = id === "aks-rp-e2e.task.no-work-with-gaps";
-  return {
-    ...projectOwnerEvent("metric-breach", {
-      metricId: id,
-      metric: eventDetails(event),
-      instruction: staleActive
-        ? "Metric breach shows active task-tree work has unhealthy worker sessions while gaps remain. Review the stale active tasks, requeue or split only when needed, create/link problem-solving work for local runtime causes, and keep unrelated runnable work moving."
-        : noWork
-          ? "Metric breach shows no runnable or active project work while gaps remain. Treat this as an owner-loop reconciliation incident: accept/reject review work, unblock or repair stale blockers/dependencies, create concrete next leaves, or escalate only if the next action crosses an ownership boundary."
-          : "Review this project metric breach as owner context. Repair the task tree, create concrete work, calibrate the metric, or escalate only if the issue crosses an ownership boundary.",
-    }),
-    urgency:
-      staleActive || noWork || eventString(event, "priority") === "P0"
-        ? "high"
-        : "normal",
-  };
-}
-
-async function routeAksRpE2eEvent(
-  ctx: ProjectAppContext,
-  event: Record<string, unknown>,
-): Promise<unknown> {
-  if (event.type === "project.comment.created") {
-    return ctx.emit({
-      ...projectOwnerEvent("human-steering", eventDetails(event)),
-      urgency: "high",
-    });
-  }
-
-  if (event.type === "project.tick" && event.lane === "learning") {
-    return ctx.emit(
-      projectOwnerEvent("regular-learning-tick", eventData(event)),
-    );
-  }
-
-  if (event.type === "project.action.invoked") {
-    return ctx.emit(projectOwnerEvent("project-action", eventDetails(event)));
-  }
-
-  if (event.type === "project.focus.approval.submitted") {
-    return ctx.emit(
-      projectOwnerEvent("focus-approval-submitted", {
-        approval: eventDetails(event),
-        instruction:
-          "Fold the human focus-plan approval/adjustment/hold decision into the current focus branch, then continue the owner/worker loop.",
-      }),
-    );
-  }
-
-  if (event.type === "project.task.completed") {
-    const taskId =
-      eventString(event, "taskId") || eventString(event, "task_id");
-    const status = eventString(event, "status");
-    const verificationVerdict =
-      eventString(event, "verification_verdict") ||
-      eventString(event, "verificationVerdict");
-    if (isProblemClaim(event)) {
-      ctx.emit(projectProblemEvent(event, taskId));
-    }
-    return ctx.emit(
-      projectOwnerEvent("task-completed", {
-        completedTaskId: taskId,
-        status,
-        verificationVerdict,
-        task: eventDetails(event),
-      }),
-    );
-  }
-
-  if (
-    event.type === "project.problem.resolved" ||
-    event.type === "project.problem.escalated" ||
-    event.type === "project.problem.unknown"
-  ) {
-    const eventProblemKey =
-      eventString(event, "problemKey") || eventString(event, "problem_key");
-    const normalizedProblem = normalizeProblemTaskLinks(
-      ctx,
-      eventDetails(event),
-    );
-    const problemKey = normalizedProblem.problemKey ?? eventProblemKey;
-    const problem = {
-      ...eventDetails(event),
-      ...normalizedProblem,
-    };
-
-    if (
-      normalizedProblem.normalization?.reason ===
-        "archived-task-has-no-live-successor" &&
-      event.type === "project.problem.unknown"
-    ) {
-      return ctx.noop(
-        `retired stale archived problem wake for ${problemKey || normalizedProblem.normalization.archiveTaskId || "unknown-problem"}`,
-      );
-    }
-
-    return ctx.emit(
-      projectOwnerEvent(
-        event.type === "project.problem.resolved"
-          ? "problem-resolved"
-          : event.type === "project.problem.escalated"
-            ? "problem-escalated"
-            : "problem-unknown",
-        {
-          problemKey,
-          problem,
-        },
-      ),
-    );
-  }
-
-  if (event.type === "task.requeued") {
-    const taskId =
-      eventString(event, "taskId") || eventString(event, "task_id");
-    return ctx.emit(
-      projectOwnerEvent("task-requeued", {
-        task: {
-          taskId,
-          ...eventDetails(event),
-        },
-      }),
-    );
-  }
-
-  if (
-    event.type === "escalation.resolved" ||
-    event.type === "escalation.dismissed"
-  ) {
-    const project =
-      eventString(event, "project") || eventString(event, "projectId");
-    const escalationId =
-      eventString(event, "escalationId") || eventString(event, "escalation_id");
-    const projectPath =
-      eventString(event, "projectPath") || eventString(event, "project_path");
-    const isAksProject =
-      project === projectId ||
-      project === `${projectId}.app` ||
-      project === projectAppPath ||
-      projectPath === projectAppPath ||
-      escalationId.startsWith("esc_aks_rp_e2e_");
-    if (!isAksProject) {
-      return ctx.noop(
-        `ignored ${event.type} without aks-rp-e2e project marker`,
-      );
-    }
-    return ctx.emit(
-      projectOwnerEvent(
-        event.type === "escalation.resolved"
-          ? "escalation-resolved"
-          : "escalation-dismissed",
-        eventDetails(event),
-      ),
-    );
-  }
-
-  if (event.type === "metric.breach" && isAksProjectMetric(event)) {
-    const id = metricId(event);
-    if (id === "aks-rp-e2e.task.blocked-count") {
-      return ctx.emit(blockedFrontierReviewEvent(event));
-    }
-    if (
-      id === "aks-rp-e2e.task.no-work-with-gaps" ||
-      id === "aks-rp-e2e.task.stale-active-with-gaps"
-    ) {
-      return ctx.emit(metricOwnerReviewEvent(event));
-    }
-    return ctx.emit(metricOwnerReviewEvent(event));
-  }
-
-  if (event.type === "metric.recovered" && isAksProjectMetric(event)) {
-    return ctx.emit(
-      projectOwnerEvent("metric-recovered", {
-        metricId: metricId(event),
-        metric: eventDetails(event),
-      }),
-    );
-  }
-
-  if (event.type === "coverage.gap.detected") {
-    return ctx.emit(
-      projectOwnerEvent("coverage-gap-detected", eventDetails(event)),
-    );
-  }
-
-  return undefined;
-}
-
 export default defineProjectApp({
   id: projectId,
   version: 1,
   description:
-    "AKS RP e2e input/expectation knowledge-map, probe, evidence, and owner-review app.",
+    "AKS RP e2e feature knowledge, spec verification, and owner-review app.",
   workspace: {
     kind: "git",
     repo: "git@github.com:hao1939/aks-rp-e2e.git",
@@ -726,9 +42,9 @@ export default defineProjectApp({
   },
 
   budget: {
-    sessionsPerDay: 10,
-    tokensPerDay: 500_000,
-    maxConcurrent: 5,
+    sessionsPerDay: 200,
+    tokensPerDay: 5_000_000,
+    maxConcurrent: projectPolicyMaxConcurrent,
   },
 
   schedules: [
@@ -759,12 +75,12 @@ export default defineProjectApp({
         type: "project.owner.requested",
         project: projectId,
         reason: "owner-heartbeat",
-        maxConcurrent: 5,
+        maxConcurrent: projectPolicyMaxConcurrent,
         params: {
           instruction:
-            "Low-frequency owner heartbeat: look for missed project motion opportunities that fixed schedules and metrics did not catch. Check recent heartbeat/focus/watchdog findings before creating work. Prefer one to three task-tree actions: create or refresh concrete backlog work, record a finding/context update, request problem-solving, or no-op with reason. Do not run multi-step domain work from the owner session.",
+            "Low-frequency owner heartbeat: look for missed project motion opportunities that fixed schedules and metrics did not catch. Check recent heartbeat/focus/watchdog findings before creating work. In aggressive-push mode, refill safe runnable work up to policy capacity, materialize grouped follow-up work for drained non-pass loops, record a finding/context update, request problem-solving, or no-op only with exact external-wait evidence. Do not run multi-step domain work from the owner session.",
           reviewChecklist: [
-            "Check VM prerelease coverage/spec/replay gaps and whether the current feature set can be planned with bun run plan --features ...",
+            "Check VM prerelease coverage, feature/spec/test gaps, and whether the current feature set can be planned with bun run plan --features ...",
             "Challenge stale source-holder, devbox, or authoritative-source blockers now that /app/sources/aks-rp is mounted.",
             "Look for stale blocked families, underfilled worker capacity, task-tree bloat needing owner rollup, and repeated owner-loop/planner failures.",
             "Avoid duplicate heartbeat tasks by inspecting recent heartbeat/focus/watchdog outputs first.",
@@ -817,7 +133,7 @@ export default defineProjectApp({
     },
   ],
 
-  workflowHandlers: [
+  onEvent: workflowHandlers([
     {
       name: "aks-rp-e2e-project-planner",
       type: "job",
@@ -827,10 +143,28 @@ export default defineProjectApp({
       handler: {
         workflow: "project-planner",
         includeEvent: true,
-        task: `${appTaskContext}\nmaxConcurrent: 5`,
+        task: `${appTaskContext}\nmaxConcurrent: ${projectPolicyMaxConcurrent}`,
         timeoutMs: 3_600_000,
       },
-      on: ["project.owner.requested", "project.planning.requested"],
+      on: [
+        "project.owner.requested",
+        "project.planning.requested",
+        "project.comment.created",
+        "project.tick",
+        "project.action.invoked",
+        "project.focus.approval.submitted",
+        "project.task.completed",
+        "project.problem.resolved",
+        "project.problem.escalated",
+        "project.problem.unknown",
+        "task.requeued",
+        "escalation.resolved",
+        "escalation.dismissed",
+        "metric.breach",
+        "metric.recovered",
+        "coverage.gap.detected",
+      ],
+      emits: ["project.task.assigned"],
       context: taskTreeContext,
     },
     {
@@ -839,14 +173,20 @@ export default defineProjectApp({
       enabled: true,
       description:
         "Worker execution. Executes one task assigned by the project owner and emits task completion.",
-      maxConcurrentTriggers: 5,
+      maxConcurrentTriggers: projectPolicyMaxConcurrent,
       handler: {
         workflow: "task-worker",
         includeEvent: true,
-        task: `${appTaskContext}\nmaxAttempts: 1\nmaxConcurrent: 1`,
+        task: `${appTaskContext}\nmaxAttempts: 1\nmaxConcurrent: ${projectPolicyMaxConcurrent}`,
         timeoutMs: 3_600_000,
       },
       on: ["project.task.assigned"],
+      emits: [
+        "project.task.completed",
+        "project.spec-loop.tick",
+        "project.feature-reference-loop.tick",
+        "project.feature-compact-loop.tick",
+      ],
       context: taskTreeContext,
     },
     {
@@ -863,6 +203,11 @@ export default defineProjectApp({
         timeoutMs: 1_800_000,
       },
       on: ["project.problem.requested"],
+      emits: [
+        "project.problem.resolved",
+        "project.problem.escalated",
+        "project.problem.unknown",
+      ],
       context: taskTreeContext,
     },
     {
@@ -876,10 +221,77 @@ export default defineProjectApp({
       on: ["project.watchdog.tick"],
       handler: {
         workflow: "project-execution-watchdog",
-        task: `${appTaskContext}\nmaxAttempts: 2\nmaxConcurrent: 5`,
+        task: `${appTaskContext}\nmaxAttempts: 2\nmaxConcurrent: ${projectPolicyMaxConcurrent}`,
         timeoutMs: 1_800_000,
       },
+      emits: ["project.owner.requested"],
       context: taskTreeContext,
+    },
+    {
+      name: "aks-rp-e2e-spec-loop-controller",
+      type: "job",
+      enabled: true,
+      description:
+        "Deterministic task controller. Pulses long-lived spec verification loop tasks and keeps their bounded child frontier filled.",
+      maxConcurrentTriggers: 1,
+      handler: {
+        workflow: "spec-loop-controller",
+        includeEvent: true,
+        task: `${appTaskContext}\nmaxConcurrent: ${projectPolicyMaxConcurrent}`,
+        timeoutMs: 600_000,
+      },
+      on: ["project.spec-loop.tick"],
+      emits: ["project.task.assigned"],
+      context: [
+        ...taskTreeContext,
+        "projects/aks-rp-e2e/.github/workflows/feature-sets/dev-infra-core.txt",
+        "projects/aks-rp-e2e/features/",
+        "projects/aks-rp-e2e/design/specs/README.md",
+      ],
+    },
+    {
+      name: "aks-rp-e2e-feature-reference-loop-controller",
+      type: "job",
+      enabled: true,
+      description:
+        "Deterministic task controller. Pulses long-lived feature reference loop tasks and keeps their bounded child frontier filled.",
+      maxConcurrentTriggers: 1,
+      handler: {
+        workflow: "feature-reference-loop-controller",
+        includeEvent: true,
+        task: `${appTaskContext}\nmaxConcurrent: 30`,
+        timeoutMs: 600_000,
+      },
+      on: ["project.feature-reference-loop.tick"],
+      emits: ["project.task.assigned"],
+      context: [
+        ...taskTreeContext,
+        "projects/aks-rp-e2e/features/README.md",
+        "projects/aks-rp-e2e/features/SCHEMA.md",
+        "projects/aks-rp-e2e/features/",
+      ],
+    },
+    {
+      name: "aks-rp-e2e-feature-compact-loop-controller",
+      type: "job",
+      enabled: true,
+      description:
+        "Deterministic task controller. Pulses long-lived feature compact loop tasks and keeps their bounded child frontier filled.",
+      maxConcurrentTriggers: 1,
+      handler: {
+        workflow: "feature-compact-loop-controller",
+        includeEvent: true,
+        task: `${appTaskContext}\nmaxConcurrent: 20`,
+        timeoutMs: 600_000,
+      },
+      on: ["project.feature-compact-loop.tick"],
+      emits: ["project.task.assigned"],
+      context: [
+        ...taskTreeContext,
+        "projects/aks-rp-e2e/design/feature-compact-loop.md",
+        "projects/aks-rp-e2e/features/",
+        "projects/aks-rp-e2e/runner/feature-compact.ts",
+      ],
     },
     {
       name: "aks-rp-e2e-focus-plan",
@@ -895,146 +307,40 @@ export default defineProjectApp({
         timeoutMs: 1_800_000,
       },
       on: ["project.focus.plan.requested", "project.focus.review.requested"],
+      emits: ["project.owner.requested", "message.created"],
       context: [
         ...taskTreeContext,
         "projects/aks-rp-e2e.app/project.json",
         "projects/aks-rp-e2e/README.md",
       ],
     },
-  ],
-
-  events: [
-    { type: "project.comment.created", project: projectId },
-    { type: "project.tick", project: projectId },
-    { type: "project.action.invoked", project: projectId },
-    { type: "project.owner.requested", project: projectId },
-    { type: "project.planning.requested", project: projectId },
-    { type: "project.watchdog.tick", project: projectId },
-    { type: "project.focus.plan.requested", project: projectId },
-    { type: "project.focus.review.requested", project: projectId },
-    { type: "project.focus.approval.submitted", project: projectId },
-    { type: "project.task.assigned", project: projectId },
-    { type: "project.task.completed", project: projectId },
-    { type: "project.problem.requested", project: projectId },
-    { type: "project.problem.resolved", project: projectId },
-    { type: "project.problem.escalated", project: projectId },
-    { type: "project.problem.unknown", project: projectId },
-    { type: "task.requeued", project: projectId },
-    "escalation.resolved",
-    "escalation.dismissed",
-    { type: "metric.breach", project: projectId },
-    { type: "metric.recovered", project: projectId },
-    { type: "coverage.gap.detected", project: projectId },
-  ],
+    {
+      name: "aks-rp-e2e-approval-dispatch",
+      type: "job",
+      enabled: true,
+      description:
+        "Dispatches one packet-linked human-facing approval message using the proven message.created path.",
+      maxConcurrentTriggers: 1,
+      handler: {
+        workflow: "approval-dispatch",
+        includeEvent: true,
+        task: `${appTaskContext}\nagent: aks-explorer\nmaxAttempts: 1`,
+        timeoutMs: 600_000,
+      },
+      on: [
+        "project.approval.dispatch.requested",
+        "project.approval.dispatch.submitted",
+      ],
+      emits: ["message.created"],
+      context: [
+        ...taskTreeContext,
+        "projects/aks-rp-e2e.app/project.json",
+        "projects/aks-rp-e2e/runs/test-results/",
+      ],
+    },
+  ]),
 
   eventGraph: {
-    handlers: {
-      "aks-rp-e2e-project-planner": {
-        emits: ["project.task.assigned"],
-        description:
-          "Planner reviews task state and assigns executable leaves when capacity is available.",
-      },
-      "aks-rp-e2e-task-execution-worker": {
-        emits: ["project.task.completed"],
-        description:
-          "Worker executes one assigned leaf and returns a reviewable completion claim.",
-      },
-      "aks-rp-e2e-problem-solver": {
-        emits: [
-          "project.problem.resolved",
-          "project.problem.escalated",
-          "project.problem.unknown",
-        ],
-        description:
-          "Problem solver diagnoses blocked/failed work and reports the result to the owner.",
-      },
-      "aks-rp-e2e-project-watchdog": {
-        emits: ["project.owner.requested"],
-        description:
-          "Watchdog observes liveness and asks the owner to reconcile stale or underfilled work.",
-      },
-      "aks-rp-e2e-focus-plan": {
-        emits: ["project.owner.requested", "message.created"],
-        description:
-          "Focus-plan workflow reviews mid-term progress, updates the focus branch, and asks for human approval when direction/risk changes or progress is off track.",
-      },
-    },
-    adapters: [
-      {
-        event: "project.comment.created",
-        emits: ["project.owner.requested"],
-        description:
-          "Human steering wakes the project owner with the comment context.",
-      },
-      {
-        event: "project.tick",
-        emits: ["project.owner.requested"],
-        description: "Regular learning tick wakes the project owner.",
-      },
-      {
-        event: "project.action.invoked",
-        emits: ["project.owner.requested"],
-        description: "UI or API project action becomes owner context.",
-      },
-      {
-        event: "project.focus.approval.submitted",
-        emits: ["project.owner.requested"],
-        description:
-          "A direct focus-plan approval/adjust/hold decision wakes the owner with the decision context.",
-      },
-      {
-        event: "project.task.completed",
-        emits: ["project.problem.requested", "project.owner.requested"],
-        description:
-          "Worker completion wakes the owner; blocked/failed claims also wake the problem solver.",
-      },
-      {
-        event: "project.problem.resolved",
-        emits: ["project.owner.requested"],
-        description: "Resolved problem returns to owner reconciliation.",
-      },
-      {
-        event: "project.problem.escalated",
-        emits: ["project.owner.requested"],
-        description: "Escalated problem returns to owner reconciliation.",
-      },
-      {
-        event: "project.problem.unknown",
-        emits: ["project.owner.requested"],
-        description: "Unknown problem result returns to owner reconciliation.",
-      },
-      {
-        event: "task.requeued",
-        emits: ["project.owner.requested"],
-        description: "Runtime requeue returns the task to owner review.",
-      },
-      {
-        event: "escalation.resolved",
-        emits: ["project.owner.requested"],
-        description: "Human unblock result wakes the owner.",
-      },
-      {
-        event: "escalation.dismissed",
-        emits: ["project.owner.requested"],
-        description: "Human dismissal wakes the owner for cleanup.",
-      },
-      {
-        event: "metric.breach",
-        emits: ["project.owner.requested"],
-        description:
-          "Project metric breach wakes the owner with metric context. The owner repairs the tree or escalates only when the issue crosses an ownership boundary.",
-      },
-      {
-        event: "metric.recovered",
-        emits: ["project.owner.requested"],
-        description: "Metric recovery wakes the owner to close stale concern.",
-      },
-      {
-        event: "coverage.gap.detected",
-        emits: ["project.owner.requested"],
-        description: "Coverage gaps become owner context.",
-      },
-    ],
     externalEvents: ["message.created", "escalation.created"],
     intentionalCycles: [
       {
@@ -1043,6 +349,9 @@ export default defineProjectApp({
           "project.owner.requested",
           "project.task.assigned",
           "project.task.completed",
+          "project.spec-loop.tick",
+          "project.feature-reference-loop.tick",
+          "project.feature-compact-loop.tick",
           "project.problem.requested",
           "project.problem.resolved",
           "project.problem.escalated",
@@ -1055,63 +364,11 @@ export default defineProjectApp({
       },
     ],
     limits: {
-      maxDirectHandlersPerEvent: 1,
-      maxAdapterEmits: 3,
+      maxHandlersPerEvent: 1,
     },
   },
 
   actions: {
-    "list-paths": {
-      type: "sync",
-      readOnly: true,
-      description: "List normalized feature paths and available test specs.",
-      async run(ctx) {
-        const replan = await ctx.importModule<{
-          loadJsonFile<T>(path: string): T;
-        }>(ctx.projectPath("model/tools/src/replan-feature-paths.ts"));
-        const pathSummary = replan.loadJsonFile(
-          ctx.projectPath("model/knowledge-map/views/path-summary.json"),
-        );
-        const specs = replan.loadJsonFile(ctx.projectPath("specs/index.json"));
-        return { pathSummary, specs };
-      },
-    },
-    replan: {
-      type: "sync",
-      readOnly: true,
-      description: "Compute a dry-run-safe replan for selected feature paths.",
-      async run(ctx, params) {
-        const selectedPathIds = Array.isArray(
-          (params as { selectedPathIds?: unknown })?.selectedPathIds,
-        )
-          ? (params as { selectedPathIds: unknown[] }).selectedPathIds.filter(
-              (item): item is string => typeof item === "string",
-            )
-          : [];
-        if (!selectedPathIds.length)
-          throw new Error("selectedPathIds required");
-
-        const replan = await ctx.importModule<{
-          loadJsonFile<T>(path: string): T;
-          createReplan(input: {
-            pathSummary: unknown;
-            specs: unknown[];
-            selectedPathIds: string[];
-          }): unknown;
-        }>(ctx.projectPath("model/tools/src/replan-feature-paths.ts"));
-        const pathSummary = replan.loadJsonFile(
-          ctx.projectPath("model/knowledge-map/views/path-summary.json"),
-        );
-        const index = replan.loadJsonFile<{
-          specFiles?: Array<string | { file?: string | null }>;
-        }>(ctx.projectPath("specs/index.json"));
-        const specs = (index.specFiles ?? [])
-          .map((entry) => (typeof entry === "string" ? entry : entry.file))
-          .filter((file): file is string => Boolean(file))
-          .map((file) => replan.loadJsonFile(ctx.projectPath(`specs/${file}`)));
-        return replan.createReplan({ pathSummary, specs, selectedPathIds });
-      },
-    },
     "execute-run": {
       type: "async",
       description: "Request live execution for selected replanned paths.",
@@ -1150,6 +407,19 @@ export default defineProjectApp({
         };
       },
     },
+    "dispatch-approval-packet": {
+      type: "async",
+      description:
+        "Create one packet-linked human-facing approval message record using the proven message.created path.",
+      event(params) {
+        return {
+          type: "project.approval.dispatch.requested",
+          project: projectId,
+          reason: "manual-approval-packet-dispatch-request",
+          params: params && typeof params === "object" ? params : {},
+        };
+      },
+    },
     "review-focus-progress": {
       type: "async",
       description:
@@ -1163,9 +433,77 @@ export default defineProjectApp({
         };
       },
     },
-  },
-
-  async onEvent(ctx, event) {
-    return routeAksRpE2eEvent(ctx, event);
+    "pulse-spec-loop": {
+      type: "async",
+      description:
+        "Pulse the targeted long-lived spec verification loop task controller.",
+      event(params) {
+        const input =
+          params && typeof params === "object"
+            ? (params as Record<string, unknown>)
+            : {};
+        const taskId =
+          typeof input.taskId === "string" && input.taskId.trim()
+            ? input.taskId.trim()
+            : "aks-spec-verification-loop";
+        return {
+          type: "project.spec-loop.tick",
+          project: projectId,
+          taskId,
+          task_id: taskId,
+          target: { taskId },
+          reason: "manual-spec-loop-pulse",
+          params: input,
+        };
+      },
+    },
+    "pulse-feature-reference-loop": {
+      type: "async",
+      description:
+        "Pulse the targeted long-lived feature reference loop task controller.",
+      event(params) {
+        const input =
+          params && typeof params === "object"
+            ? (params as Record<string, unknown>)
+            : {};
+        const taskId =
+          typeof input.taskId === "string" && input.taskId.trim()
+            ? input.taskId.trim()
+            : "aks-feature-reference-loop";
+        return {
+          type: "project.feature-reference-loop.tick",
+          project: projectId,
+          taskId,
+          task_id: taskId,
+          target: { taskId },
+          reason: "manual-feature-reference-loop-pulse",
+          params: input,
+        };
+      },
+    },
+    "pulse-feature-compact-loop": {
+      type: "async",
+      description:
+        "Pulse the targeted long-lived feature compact loop task controller.",
+      event(params) {
+        const input =
+          params && typeof params === "object"
+            ? (params as Record<string, unknown>)
+            : {};
+        const taskId =
+          typeof input.taskId === "string" && input.taskId.trim()
+            ? input.taskId.trim()
+            : "aks-feature-compact-loop";
+        return {
+          type: "project.feature-compact-loop.tick",
+          project: projectId,
+          taskId,
+          task_id: taskId,
+          target: { taskId },
+          reason: "manual-feature-compact-loop-pulse",
+          params: input,
+        };
+      },
+    },
   },
 });

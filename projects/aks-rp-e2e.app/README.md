@@ -6,7 +6,7 @@ workspace.
 The boundary is:
 
 ```text
-aks-rp-e2e/      # domain repo: features, specs, suites, replays, runner, model
+aks-rp-e2e/      # domain repo: features, specs, scenario tests, runner, model
 aks-rp-e2e.app/  # May-agent app: tasks, workflows, agents, UI, steering
 ```
 
@@ -31,12 +31,13 @@ App code should treat paths intentionally:
   `.state/planner-runs.jsonl`, `.state/discussion.jsonl`, `.state/tmp/`,
   and `.state/cache/`;
 - domain workspace files: `../aks-rp-e2e/features/`,
-  `../aks-rp-e2e/specs/`, `../aks-rp-e2e/replays/`,
-  `../aks-rp-e2e/runner/`, `../aks-rp-e2e/model/`.
+  `../aks-rp-e2e/runner/`, `../aks-rp-e2e/model/`,
+  `../aks-rp-e2e/runs/test-results/`.
 
 ## Runtime Files
 
-- `app.ts` - Project app declaration, schedules, actions, and event behavior.
+- `app.ts` - Project app declaration, schedules, generated event handlers, and
+  operator actions.
 - `package.json` - app-local command surface for bundle, check, test, format,
   and inspection tools.
 - `tsconfig.json` - TypeScript check boundary for the app.
@@ -54,6 +55,7 @@ App code should treat paths intentionally:
   and caches.
 - `archive/` - retired app-control files kept for reference only; code here is
   not bundled, typechecked, or used as an active workflow.
+- `design/` - active app-control design proposals and review notes.
 
 May-agent infrastructure owns durable event, session, workflow, and intent
 history. This app does not keep a parallel `events/` or `runs/` directory.
@@ -78,12 +80,37 @@ The active execution model is deliberately small:
 - `task-worker` handles `project.task.assigned`.
 - `project-execution-watchdog` observes task/session liveness and wakes the
   project owner when review is needed.
-- App-level `onEvent` handles audit/wake events such as `task.started`,
-  legacy task execution requests, and `project.task.completed`.
+- `app.ts` uses `onEvent: workflowHandlers([...])` as the event surface. The
+  helper is sugar for generated workflow-backed event handlers; it is not a
+  second router.
+- Each generated handler declares the event types it consumes in `on` and the
+  event types it may produce in `emits`. There is no top-level `events` list for
+  generated handlers.
+- `eventGraph` is audit metadata only: external event outputs, intentional
+  cycles, and limits. It must not duplicate handler routing.
+
+Task completion is not accepted work. The contract is:
+
+1. The planner assigns a concrete task.
+2. The worker or task-specific workflow handles that task and emits a structured
+   `project.task.completed` envelope when its attempt ends.
+3. The worker or workflow emits any explicit target follow-up, such as a loop
+   tick for a known loop parent.
+4. The owner/review step judges the result and requests `project.problem.requested`
+   only when focused problem solving is actually needed.
+
+App routing does not inspect task state, build completion envelopes, or compare
+free-form summary text. Worker summaries are review material, not control-flow
+protocol.
+
+`app.ts` actions are operator/API shortcuts that emit ordinary target events.
+They should stay small and should not become domain planners, spec indexers, or
+test runners. If an action needs project-specific judgment, it should emit an
+event for a workflow.
 
 Deleting `.state/` must not lose the project goal, task decomposition, feature
-knowledge, specs, replay scripts, evidence, or durable steering decisions. If
-an app needs those facts to reason correctly, they belong in checked-in
+knowledge, specs, scenario tests, test results, or durable steering decisions.
+If an app needs those facts to reason correctly, they belong in checked-in
 app/domain files, not `.state/`.
 
 ## App Commands
@@ -128,9 +155,7 @@ human owner does not need to poll status and steer repeatedly.
 
 ### Live status authority order
 
-Per the accepted stale-surface scan in
-`../aks-rp-e2e/evidence/archive/planner-status-surface-live-frontier-preference-scan-20260619.md`,
-app-facing planner/status consumers must read current project state in this
+App-facing planner/status consumers must read current project state in this
 order:
 
 1. `tasks/tree.json` live frontier and counts.
@@ -149,6 +174,20 @@ Manual actions exposed by `app.ts`:
 
 - `request-focus-plan` - ask for a new or refreshed focus proposal.
 - `review-focus-progress` - ask for an immediate progress review.
+- `pulse-spec-loop` - wake the long-lived spec verification controller task.
+- `pulse-feature-reference-loop` - wake the official feature-reference loop.
+- `pulse-feature-compact-loop` - wake the feature compact-package loop.
+
+Spec-loop operator commands:
+
+- `bun run spec-loop status` - inspect loop task/state and dev-infra-core
+  priority coverage.
+- `bun run spec-loop seed` - create the long-lived loop task if it is missing.
+
+## Active Design Proposals
+
+- `design/spec-verification-loop.md` - proposal for a task-workflow-routed
+  single-spec verification loop over the AKS RP E2E spec set.
 
 ## Runtime Reload
 
@@ -157,15 +196,15 @@ The app has separate reload surfaces:
 - Editing `workflows/*.ts` is picked up on the next workflow dispatch.
 - Editing an existing named platform handler is picked up on that handler's next
   fire.
-- Editing `app.ts` changes schedules, `workflowHandlers`, actions, event
-  selectors, and `onEvent`. The platform re-installs project app manifests via
-  the project-app manifest watcher; `/reload` or `runtime.reload.requested` is
-  the immediate operator path.
+- Editing `app.ts` changes schedules, `onEvent` generated handlers, actions,
+  and event selectors. The platform re-installs project app manifests via the
+  project-app manifest watcher; `/reload` or `runtime.reload.requested` is the
+  immediate operator path.
 
 To add or update a project workflow handler, add or edit the workflow file under
-`workflows/`, update the `workflowHandlers` entry in `app.ts`, then let the
-watcher reload it or issue `/reload`. Existing running sessions are not
-cancelled by this reload; new triggers use the updated manifest.
+`workflows/`, update the `onEvent: workflowHandlers([...])` entry in `app.ts`,
+then let the watcher reload it or issue `/reload`. Existing running sessions are
+not cancelled by this reload; new triggers use the updated manifest.
 
 ## Domain Execution
 
@@ -177,11 +216,11 @@ app should invoke a command in `../aks-rp-e2e` such as:
 bun run spec <spec-id> --target=staging-rest --surface=REST --host=devbox
 ```
 
-The domain runner writes run artifacts under `../aks-rp-e2e/runs/` and durable
-evidence under `../aks-rp-e2e/evidence/`.
+The domain runner writes test results under `../aks-rp-e2e/runs/test-results/`
+and durable reviewed knowledge under checked-in feature/model files.
 
 ## Tests
 
 Workflow unit tests live beside workflow code in `workflows/*.test.ts`.
-Cross-surface UI/app tests live in `e2e/`. Domain runner, replay, and spec tests
+Cross-surface UI/app tests live in `e2e/`. Domain runner and scenario/spec tests
 belong in `../aks-rp-e2e`.
