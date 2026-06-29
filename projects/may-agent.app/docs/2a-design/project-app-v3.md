@@ -112,13 +112,9 @@ Recommended ownership:
 aks-rp-e2e repo
   README.md
   features/
-  specs/
-  suites/
-  replays/
   runner/
   model/
-  evidence/
-  reports/
+  runs/
   design/
 
 agents repo
@@ -270,7 +266,7 @@ export default defineProjectApp({
     localPath: "../aks-rp-e2e",
     branch: "main",
   },
-  workflowHandlers: [
+  onEvent: workflowHandlers([
     {
       name: "aks-rp-e2e-project-planner",
       enabled: true,
@@ -283,10 +279,7 @@ export default defineProjectApp({
       },
       context: ["projects/aks-rp-e2e.app/tasks/tree.json"],
     },
-  ],
-  async onEvent(ctx, event) {
-    // App-owned event behavior.
-  },
+  ]),
 });
 ```
 
@@ -306,11 +299,13 @@ workspace under `projects/<name>/` and leaving a short-lived compatibility
 symlink at the old agent path. The project path then becomes canonical and the
 agent path remains only a migration bridge.
 
-`workflowHandlers` replaces project-local `agents/*/cron.json`. The app owns
-which events wake which workflows; infra owns delivery, scheduling, sessions,
-dedup, and workflow-run audit.
+`onEvent` is the project app's event surface. `workflowHandlers(...)` is syntax
+sugar for generated event handlers backed by workflows, and replaces
+project-local `agents/*/cron.json`. The app owns which events wake which
+workflows; infra owns delivery, scheduling, sessions, dedup, and workflow-run
+audit.
 
-A `workflowHandlers` route must run the named workflow module through the
+A generated workflow handler must run the named workflow module through the
 workflow runtime. It is not a raw owner-agent session with a
 `source=workflow:<name>` label. The runtime adapter may append the trigger event
 to the workflow task packet, but it still must create a workflow run, load
@@ -319,21 +314,20 @@ emit follow-up events. A handler that only starts an agent session with a
 workflow-looking label bypasses app-local policy and makes capacity/session
 metrics misleading.
 
-## Event Graph Manifest
+## Event Handler Manifest
 
-`app.ts` should read primarily as an event graph:
+`app.ts` should read primarily as an event-handler manifest:
 
 ```text
-events  -> handlers
-events  -> adapters -> events
+onEvent -> generated workflow handlers
 actions -> events
 schedules -> events
 ```
 
-The normal case is declarative routing:
+The normal case is declarative handler generation:
 
 ```ts
-workflowHandlers: [
+onEvent: workflowHandlers([
   {
     name: "aks-rp-e2e-project-planner",
     on: ["project.owner.requested"],
@@ -344,20 +338,19 @@ workflowHandlers: [
     on: ["project.task.assigned"],
     handler: { workflow: "task-worker", ... },
   },
-]
+])
 ```
 
-The current runtime field is still called `workflowHandlers`, but the design
-meaning is "routes": static event-to-handler wiring. Future syntax may expose a
-`routes` helper, but it should compile to the same runtime shape.
+There is one event-handling model: an event is accepted through `onEvent`.
+`workflowHandlers(...)` is a helper that returns generated event handlers whose
+implementation is "run this workflow with this task/context." App code should
+not also implement an imperative router for the same events.
 
-`onEvent` is only for adapter behavior: filtering, translation, fan-out, or
-small compatibility boundaries. It should not hide ordinary route tables. If the
-behavior is `event A -> handler B`, declare it as a route. If the behavior is
-`event A -> inspect payload -> emit event B and maybe C`, keep the adapter switch
-visible in `app.ts` while it remains small. Move it to a helper module only
-after size, reuse, or testing pressure makes that simpler than reading it in the
-manifest.
+A custom `async onEvent(ctx, event) { ... }` function is a lower-level escape
+hatch for truly deterministic event translation that cannot be expressed as a
+generated handler. It must stay rare, bounded, and free of planning/task/problem
+judgment. If the behavior is `event A -> workflow B`, use
+`onEvent: workflowHandlers([...])`.
 
 Recommended app structure:
 
@@ -366,11 +359,10 @@ app.ts
   identity
   workspace
   schedules
-  workflowHandlers / routes
-  events subscribed for adapters
+  onEvent: workflowHandlers(...)
   eventGraph audit metadata
   actions
-  onEvent: small adapter switch
+  no custom imperative onEvent unless small deterministic translation is genuinely needed
 
 workflows/*
   real behavior
@@ -382,24 +374,7 @@ visualization:
 
 ```ts
 eventGraph: {
-  handlers: {
-    "aks-rp-e2e-project-planner": {
-      emits: ["project.task.assigned"],
-      description: "Project owner assigns executable leaves.",
-    },
-    "aks-rp-e2e-task-execution-worker": {
-      emits: ["project.task.completed"],
-      description: "Worker returns reviewable task completion.",
-    },
-  },
-  adapters: [
-    {
-      event: "project.task.completed",
-      emits: ["project.problem.requested", "project.owner.requested"],
-      description: "Blocked/failed completions wake problem solving; all completions wake the owner.",
-    },
-  ],
-  externalEvents: ["escalation.created"],
+  externalEvents: ["message.created", "escalation.created"],
   intentionalCycles: [
     {
       id: "owner-worker-review-loop",
@@ -411,26 +386,29 @@ eventGraph: {
       reason: "The owner is the review boundary before assigning more work.",
     },
   ],
+  limits: {
+    maxHandlersPerEvent: 1,
+  },
 }
 ```
 
 This lets the app be reviewed as a state machine:
 
-- produced events from schedules, actions, adapters, and workflows
-- consumed events through direct workflow routes or adapters
+- produced events from schedules, actions, and workflows
+- consumed events through generated handlers
 - external events intentionally handed to the platform
 - declared cycles that are expected control loops
 - undeclared cycles that are likely tight loops
-- route conflicts such as multiple direct handlers for one event
-- complexity signals such as adapters with too much fan-out
+- conflicts such as multiple generated handlers for one event
 
 The movement invariant is intentionally strict:
 
-1. **Every event triggers a handler or adapter.**
-2. **Every handler emits at least one event.**
-3. **Every adapter emits at least one event.**
-4. **Every emitted event is handled by a route, handled by an adapter, or
-   explicitly marked as an external platform event.**
+1. **Every generated handler declares the event types it consumes in `on`.**
+2. **Every generated handler declares the event types it may emit in `emits`.**
+3. **Every schedule/action output is handled by a generated handler or marked as
+   an external platform event.**
+4. **Every generated handler output is handled by a generated handler or marked
+   as an external platform event.**
 
 This avoids dead ends where a project appears active but no next event is
 created. A handler may decide at runtime that no domain mutation is appropriate,
@@ -438,15 +416,22 @@ but it should still emit a state/event outcome such as completion, planning,
 resolved, escalated, or a platform-owned notification. If an event truly leaves
 the app, declare it in `externalEvents`.
 
+Do not add a top-level app `events` list for generated handlers. That creates a
+second place to name the same event and makes review harder. Event names such as
+`escalation.resolved` or `metric.breach` are normal when they appear in a
+handler's `on` list: they are platform events that target the app's owner
+workflow. They are not a separate event registry.
+
+Do not put handler edges under `eventGraph.handlers` or
+`eventGraph.adapters`. Those fields duplicate derivable information. A generated
+handler's `on` and `emits` fields are the source of truth for event flow.
+
 Integrity checks should fail on:
 
-- a schedule, action, handler, or adapter producing an event nobody consumes
-- a subscribed event with no route or adapter
-- more than one direct handler for an event unless explicitly allowed
-- a handler missing from the event graph
-- a handler or adapter without any outbound event
+- a schedule, action, or handler producing an event nobody consumes or exports
+- more than one generated handler for an event unless explicitly allowed
+- a generated handler without `emits`
 - an event cycle not covered by an `intentionalCycles` entry
-- adapter fan-out above the app's declared limit
 
 This is how we keep the event-native design simple: events are the state-machine
 edges, handlers are the state-machine actors, and `app.ts` is the readable map.
@@ -478,8 +463,8 @@ Owner-based defaults:
 - A review/verifier without an explicit assignee uses the project owner.
 - A blocker/escalation without a clearly classified external owner returns to
   the project owner for judgment.
-- A project-scoped event that has no matching workflow handler and is not
-  intentionally suppressed by `app.onEvent` is dispatched to the project owner.
+- A project-scoped event that has no generated handler and is not intentionally
+  suppressed by a custom `onEvent` function is dispatched to the project owner.
 
 Dedicated handlers are still useful for deterministic paths such as owner
 wakes, assigned-task execution, native spec execution, watchdog observation,
@@ -512,12 +497,12 @@ V3 discovery:
 1. Scan configured app roots for `*.app/app.ts`.
 2. Import each `app.ts` side-effect free.
 3. Infer and validate the project owner from the app-local `agents/` folder.
-4. Validate app id, workspace binding, schedules, workflow handlers, event
+4. Validate app id, workspace binding, schedules, generated handlers, event
    subscriptions, and resource limits.
 5. Resolve the domain workspace path.
 6. Expand convention defaults such as handler agent, handler project id, task
    owner, reviewer, and fallback event owner.
-7. Register app event handlers, workflow handlers, and schedules.
+7. Register generated app event handlers and schedules.
 8. Serve app UI and shared project task views.
 
 Discovery should support legacy embedded apps during migration:
@@ -537,10 +522,11 @@ Project app runtime reload has three main surfaces:
 - Workflow files in `workflows/*.ts` are resolved and imported when a
   workflow-backed handler dispatches a workflow run. Editing workflow code is
   picked up by the next dispatch.
-- Project app manifests (`projects/*.app/app.ts`) declare workflow handlers,
-  schedules, event selectors, actions, and app-level `onEvent` behavior. They
+- Project app manifests (`projects/*.app/app.ts`) declare `onEvent`,
+  schedules, event selectors, and actions. The normal `onEvent` value is
+  `workflowHandlers([...])`, which generates workflow-backed handlers. Manifests
   are re-installed by explicit runtime reload and by the project-app manifest
-  watcher. Adding, deleting, or changing a `workflowHandlers` entry, schedule,
+  watcher. Adding, deleting, or changing a generated handler entry, schedule,
   action, or event selector is therefore a manifest reload, not a plain handler
   hot-reload.
 
@@ -561,7 +547,9 @@ App code should not use ad hoc relative paths.
 
 ```ts
 ctx.appPath("tasks/tree.json"); // aks-rp-e2e.app/tasks/tree.json
-ctx.workspacePath("specs/index.json"); // aks-rp-e2e/specs/index.json
+ctx.workspacePath(
+  "features/managedsystem-pool/specs/managedsystem-rest-add-existing.json",
+);
 ctx.workspaceCwd(); // aks-rp-e2e/
 ```
 
@@ -835,11 +823,11 @@ The owner workflow is also the non-final-state driver. The app should not let
 owner wake should push sampled non-final tasks toward `done` or toward an exact
 next wake condition:
 
-| State | App/project driver |
-| --- | --- |
-| `backlog` | Owner assigns runnable leaves. Dependency-waiting backlog is still owner-visible; stale, missing, done, or locally fixable dependencies should be repaired instead of left invisible. |
-| `active` | Worker completion emits `project.task.completed`; stale active attempts wake owner for requeue, fresh session, replacement, or problem-solving work. |
-| `review` | Owner accepts, rejects, follows up, or records a precise blocker. Stale review is owner backlog and should wake owner. |
+| State     | App/project driver                                                                                                                                                                                                   |
+| --------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `backlog` | Owner assigns runnable leaves. Dependency-waiting backlog is still owner-visible; stale, missing, done, or locally fixable dependencies should be repaired instead of left invisible.                                |
+| `active`  | Worker completion emits `project.task.completed`; stale active attempts wake owner for requeue, fresh session, replacement, or problem-solving work.                                                                 |
+| `review`  | Owner accepts, rejects, follows up, or records a precise blocker. Stale review is owner backlog and should wake owner.                                                                                               |
 | `blocked` | Blocked-frontier review wakes owner to recheck resume conditions, create/link one problem task for local root causes, send/escalate external asks, unblock/retry changed work, or mark terminal dispositions `done`. |
 
 The app mechanism is simple: signals and events wake the owner; the owner uses
@@ -864,9 +852,9 @@ gaps remain.
 
 For slow verification projects, backlog depth matters even when worker capacity
 is full. If all active slots are occupied by long live execution and the
-backlog is empty, the app may seed non-dispatched source/spec/replay-building
+backlog is empty, the app may seed non-dispatched source/spec/test-building
 leaves so execution latency does not stall learning. These leaves should favor
-source exploration, feature packets, spec authoring, replay generation, and
+source exploration, feature packets, spec authoring, test generation, and
 model-gap preparation; they are assigned only when capacity opens.
 
 When runnable backlog plus active work is zero and `review`, `blocked`, or
@@ -1033,8 +1021,8 @@ Task leaves may reference domain files:
   "id": "managedsystem-golden-path-gap-audit",
   "workspaceRefs": [
     "features/managedsystem-pool.yaml",
-    "specs/managedsystem-rest-add-existing.json",
-    "replays/managedsystem-rest-add-existing.ts"
+    "features/managedsystem-pool/specs/managedsystem-rest-add-existing.json",
+    "features/managedsystem-pool/tests/managedsystem-rest-add-existing.test.ts"
   ]
 }
 ```
@@ -1110,8 +1098,6 @@ Current embedded layout:
 aks-rp-e2e/
   .app/
   features/
-  specs/
-  replays/
   runner/
 ```
 
@@ -1120,8 +1106,6 @@ Target V3 layout:
 ```text
 aks-rp-e2e/
   features/
-  specs/
-  replays/
   runner/
 
 agents-repo/projects/aks-rp-e2e.app/
@@ -1210,14 +1194,14 @@ aks-rp-e2e.app is how May-agent drives aks-rp-e2e.
 Agents write files but never commit. 69 uncommitted files accumulated across
 the agents repo in a single day:
 
-| Area | Files | Owner |
-|------|-------|-------|
-| agents/may/handlers | 9 | may (code changes to handlers, tests) |
-| aks-rp-e2e.app | 28 | aks-explorer (workflows, scripts, tree, UI) |
-| shared/lib/task-tree | 3 | may/dev (engine improvements) |
-| scout-knowledge-lib | 5+ | scout (knowledge updates) |
-| evaluation.app/tasks | 1 | evaluator (tree updates) |
-| may-agent.app | 5 | may (design docs, app config) |
+| Area                 | Files | Owner                                       |
+| -------------------- | ----- | ------------------------------------------- |
+| agents/may/handlers  | 9     | may (code changes to handlers, tests)       |
+| aks-rp-e2e.app       | 28    | aks-explorer (workflows, scripts, tree, UI) |
+| shared/lib/task-tree | 3     | may/dev (engine improvements)               |
+| scout-knowledge-lib  | 5+    | scout (knowledge updates)                   |
+| evaluation.app/tasks | 1     | evaluator (tree updates)                    |
+| may-agent.app        | 5     | may (design docs, app config)               |
 
 The design says "domain commits are owner checkpoints" (§Core Boundary) and
 the owner "commits a coherent done slice when safe." But no workflow actually
@@ -1271,12 +1255,12 @@ decides:
 
 Each app checkpoints its own scope:
 
-| App | Checkpoint scope |
-|-----|-----------------|
-| aks-rp-e2e.app | `projects/aks-rp-e2e.app/` + domain workspace |
-| evaluation.app | `projects/evaluation.app/` |
+| App                     | Checkpoint scope                                                      |
+| ----------------------- | --------------------------------------------------------------------- |
+| aks-rp-e2e.app          | `projects/aks-rp-e2e.app/` + domain workspace                         |
+| evaluation.app          | `projects/evaluation.app/`                                            |
 | scout-knowledge-lib.app | `projects/scout-knowledge-lib.app/` + `projects/scout-knowledge-lib/` |
-| may-agent.app | `projects/may-agent.app/` + `agents/may/` + `shared/` |
+| may-agent.app           | `projects/may-agent.app/` + `agents/may/` + `shared/`                 |
 
 The agents repo is shared — multiple apps commit to it. The checkpoint must
 scope its `git add` to the app's own files, never `git add -A`.

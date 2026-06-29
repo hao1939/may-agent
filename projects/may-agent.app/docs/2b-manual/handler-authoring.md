@@ -11,25 +11,27 @@ For project-app behavior, configure workflow-backed handlers in the app's
 ```typescript
 export default defineProjectApp({
   // ...
-  workflowHandlers: [
+  onEvent: workflowHandlers([
     {
       name: "my-project-owner",
       type: "job",
       enabled: true,
-      description: "Owner loop. Reviews events, updates the task tree, and assigns work.",
+      description:
+        "Owner loop. Reviews events, updates the task tree, and assigns work.",
       on: ["project.owner.requested"],
+      emits: ["project.task.assigned"],
       handler: {
         workflow: "project-planner",
         includeEvent: true,
         task: "app: /app/projects/my-project.app\nproject: /app/projects/my-project",
-        timeoutMs: 3_600_000
+        timeoutMs: 3_600_000,
       },
       context: [
         "projects/my-project.app/project.json",
-        "projects/my-project.app/tasks/tree.json"
-      ]
-    }
-  ]
+        "projects/my-project.app/tasks/tree.json",
+      ],
+    },
+  ]),
 });
 ```
 
@@ -57,9 +59,17 @@ TypeScript handler lives in `handlers/` beside the `cron.json` that registers
 it and exports a `create` function:
 
 ```typescript
-import type { CronEntry, EventEnvelope, HandlerContext, HandlerModule } from "@may-agent/sdk";
+import type {
+  CronEntry,
+  EventEnvelope,
+  HandlerContext,
+  HandlerModule,
+} from "@may-agent/sdk";
 
-export const create: HandlerModule["create"] = (ctx: HandlerContext, entry: CronEntry) => {
+export const create: HandlerModule["create"] = (
+  ctx: HandlerContext,
+  entry: CronEntry,
+) => {
   return async (event?: EventEnvelope) => {
     const sdk = ctx.sdk;
     // ... your code here ...
@@ -85,20 +95,23 @@ collection in the workflow.
 
 ## Typical Scenarios
 
-| Scenario | Handler should do | Usually avoid |
-|----------|-------------------|---------------|
-| Timer measures a fact | Read bounded state, update metrics, emit/resolve metric events if needed | Starting an agent just to count rows |
-| Event needs judgment | Validate the event payload, build a compact task, run the owning workflow | Doing multi-step reasoning inside the handler |
-| Event is missing required fields | Emit `handler.skipped` with the reason and return | Guessing fields from subscriber-specific shortcuts |
-| Owner action is needed | Use a workflow-backed handler, or route to a workflow with `sdk.runWorkflow(...)` when deterministic preflight is needed | Calling many agents directly from handler code |
-| External blocker is clear | Use `sdk.escalate(...)` with owner, evidence, and requested action | Sending an informal message and calling it escalation |
-| Operator manually fires a job | Treat `trigger.<entry-name>` as a control shortcut for that trigger entry | Treating `trigger.*` as a domain lifecycle event |
+| Scenario                         | Handler should do                                                                                                        | Usually avoid                                         |
+| -------------------------------- | ------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------- |
+| Timer measures a fact            | Read bounded state, update metrics, emit/resolve metric events if needed                                                 | Starting an agent just to count rows                  |
+| Event needs judgment             | Validate the event payload, build a compact task, run the owning workflow                                                | Doing multi-step reasoning inside the handler         |
+| Event is missing required fields | Emit `handler.skipped` with the reason and return                                                                        | Guessing fields from subscriber-specific shortcuts    |
+| Owner action is needed           | Use a workflow-backed handler, or route to a workflow with `sdk.runWorkflow(...)` when deterministic preflight is needed | Calling many agents directly from handler code        |
+| External blocker is clear        | Use `sdk.escalate(...)` with owner, evidence, and requested action                                                       | Sending an informal message and calling it escalation |
+| Operator manually fires a job    | Treat `trigger.<entry-name>` as a control shortcut for that trigger entry                                                | Treating `trigger.*` as a domain lifecycle event      |
 
 ## Registering Trigger Entries
 
-For V3 project-apps, add entries to `workflowHandlers` or `schedules` in
-`projects/<id>.app/app.ts`. The app owns the event mapping and the workflow
-files usually live in `projects/<id>.app/workflows/`.
+For V3 project-apps, add generated handler entries to
+`onEvent: workflowHandlers([...])` or add `schedules` in
+`projects/<id>.app/app.ts`. Each generated handler declares both `on` and
+`emits`; do not add a duplicate top-level event registry or duplicate handler
+edges under `eventGraph`. The app owns the event mapping and the workflow files
+usually live in `projects/<id>.app/workflows/`.
 
 Use `cron.json` for standalone agents and legacy compatibility. The filename
 is historical; each entry describes triggers plus the handler to run.
@@ -208,6 +221,7 @@ through `node_modules` are cached normally.
 ## What You Have Access To
 
 Via `ctx.sdk` (preferred):
+
 - `sdk.emit(type, data, envelope?)` — emit canonical events
 - `sdk.runWorkflow(name, task)` — dispatch pre-orchestrated sessions/functions
 - `sdk.runAgent(agent, task)` — exceptional from handlers; prefer workflow-backed handlers
@@ -220,6 +234,7 @@ Via `ctx.sdk` (preferred):
 - `sdk.paths` — system directories
 
 Via `ctx` (handler-specific):
+
 - `ctx.agentName` — the agent that owns this handler
 - `ctx.triggerNow(name)` — fire another handler immediately
 
@@ -244,9 +259,8 @@ For event subscriptions, the handler receives the original event unchanged. Read
 domain fields from `event.data`:
 
 ```typescript
-const sessionId = typeof event?.data?.sessionId === "string"
-  ? event.data.sessionId
-  : null;
+const sessionId =
+  typeof event?.data?.sessionId === "string" ? event.data.sessionId : null;
 ```
 
 Do not expect the trigger runtime to add shortcut fields to `event` for a specific subscriber.
@@ -259,9 +273,8 @@ live under `event.data`.
 
 ```typescript
 const owner = typeof event?.owner === "string" ? event.owner : null;
-const metricId = typeof event?.data?.metricId === "string"
-  ? event.data.metricId
-  : null;
+const metricId =
+  typeof event?.data?.metricId === "string" ? event.data.metricId : null;
 
 if (!owner || !metricId) {
   ctx.sdk.emit("handler.skipped", {
@@ -285,6 +298,7 @@ Workflow-backed handlers have two reload surfaces:
 ## Lifecycle Events
 
 The trigger runtime automatically emits:
+
 - `handler.started` when your handler fires
 - `handler.completed` when it finishes
 - `handler.failed` if it throws
@@ -304,15 +318,29 @@ fires only inside `sdk.metrics.record()`/`evaluate()`. If you go through raw
 SQL you'll see the value change but never see `metric.breach` events.
 
 ```typescript
-import type { CronEntry, EventEnvelope, HandlerContext, HandlerModule } from "@may-agent/sdk";
+import type {
+  CronEntry,
+  EventEnvelope,
+  HandlerContext,
+  HandlerModule,
+} from "@may-agent/sdk";
 
-export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: CronEntry) => {
+export const create: HandlerModule["create"] = (
+  ctx: HandlerContext,
+  _entry: CronEntry,
+) => {
   return async (_event?: EventEnvelope) => {
     const sdk = ctx.sdk;
     const db = sdk.getDb();
 
-    const count = (db.prepare("SELECT COUNT(*) as c FROM sessions WHERE status = 'error' AND startedAt > ?")
-      .get(Date.now() - 3600000) as any)?.c || 0;
+    const count =
+      (
+        db
+          .prepare(
+            "SELECT COUNT(*) as c FROM sessions WHERE status = 'error' AND startedAt > ?",
+          )
+          .get(Date.now() - 3600000) as any
+      )?.c || 0;
 
     // Record + evaluate. record() updates current; evaluate() runs the
     // breach/recovery pipeline and emits metric.breach / metric.recovered
@@ -328,15 +356,25 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
 ## Example: TypeScript Event-To-Workflow Bridge
 
 ```typescript
-import type { CronEntry, EventEnvelope, HandlerContext, HandlerModule } from "@may-agent/sdk";
+import type {
+  CronEntry,
+  EventEnvelope,
+  HandlerContext,
+  HandlerModule,
+} from "@may-agent/sdk";
 
-export const create: HandlerModule["create"] = (ctx: HandlerContext, entry: CronEntry) => {
+export const create: HandlerModule["create"] = (
+  ctx: HandlerContext,
+  entry: CronEntry,
+) => {
   return async (event?: EventEnvelope) => {
     const task = [
       `Trigger: ${event?.type ?? "timer"}`,
       `Entry: ${entry.name}`,
       event?.data ? `Event: ${JSON.stringify(event.data)}` : "",
-    ].filter(Boolean).join("\n");
+    ]
+      .filter(Boolean)
+      .join("\n");
 
     await ctx.sdk.runWorkflow("metric-alert-triage", task, {
       source: entry.name,
@@ -375,6 +413,7 @@ skips dispatch and emits `handler.skipped`.
 ## Testing
 
 Run your handler's tests:
+
 ```bash
 bun test agents/<name>/handlers/__tests__/my-handler.test.ts
 ```
