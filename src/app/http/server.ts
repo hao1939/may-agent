@@ -42,7 +42,7 @@ const LIVE_VITAL_METRIC_IDS = [
   "message.delivery-failed-count-1h",
   "escalation.pending-count",
   "capability.zombie-session-count",
-  "evaluator.stale-running-session-count",
+  "runtime.stale-running-session-count",
   "eval.llm-coverage-lag-h",
   "project.iterations-24h",
 ];

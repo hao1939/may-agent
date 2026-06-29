@@ -18,7 +18,7 @@ import { createMetricService } from "./metrics.js";
 import { createQueryService } from "./query-service.js";
 import { existsSync } from "node:fs";
 import { basename, join } from "node:path";
-import { normalizeEventOwner } from "../../packages/control/src/event-envelope.js";
+import { buildCanonicalEventEnvelope, normalizeEventOwner } from "../../packages/control/src/event-envelope.js";
 
 // ── Dependencies (injected, not imported directly) ────────────────────
 
@@ -147,7 +147,9 @@ export function buildAgentSDK(deps: SDKDeps): AgentSDK {
       // When a project app owns the agent (e.g. scout in scout-knowledge-lib.app/agents/scout/),
       // workflows live in the project-app agent dir, not the global agents/ dir.
       const projectAppAgentWorkflowDir = agentWorkflowDirForProjectApp(
-        deps.projectsRoot, opts?.projectId, agentForWorkflow,
+        deps.projectsRoot,
+        opts?.projectId,
+        agentForWorkflow,
       );
       const workflowDir = existsSync(globalWorkflowDir)
         ? globalWorkflowDir
@@ -175,16 +177,28 @@ export function buildAgentSDK(deps: SDKDeps): AgentSDK {
     emit(
       type: string,
       data?: Record<string, unknown>,
-      envelope?: { owner?: string; source?: string; urgency?: string; ttl_ms?: number },
+      envelope?: {
+        owner?: string;
+        source?: string;
+        target?: Record<string, unknown>;
+        urgency?: string;
+        ttl_ms?: number;
+      },
     ): void {
-      deps.bus.emit({
-        type,
-        source: envelope?.source ?? `agent:${deps.agentName}`,
-        owner: normalizeEventOwner(envelope?.owner, deps.agentName),
-        ...(envelope?.urgency ? { urgency: envelope.urgency } : {}),
-        ...(typeof envelope?.ttl_ms === "number" ? { ttl_ms: envelope.ttl_ms } : {}),
-        data: data ?? {},
-      } as any);
+      deps.bus.emit(
+        buildCanonicalEventEnvelope(
+          type,
+          {
+            source: envelope?.source ?? `agent:${deps.agentName}`,
+            owner: envelope?.owner,
+            target: envelope?.target,
+            urgency: envelope?.urgency,
+            ttl_ms: envelope?.ttl_ms,
+            data: data ?? {},
+          },
+          { owner: deps.agentName },
+        ) as any,
+      );
     },
 
     getDb(): SqliteDb {
@@ -198,14 +212,20 @@ export function buildAgentSDK(deps: SDKDeps): AgentSDK {
     metrics: createMetricService({
       getDb: () => getDb(deps.persistDir),
       emit: (type, data, envelope) =>
-        deps.bus.emit({
-          type,
-          source: envelope?.source ?? `agent:${deps.agentName}`,
-          owner: normalizeEventOwner(envelope?.owner, deps.agentName),
-          ...(envelope?.urgency ? { urgency: envelope.urgency } : {}),
-          ...(typeof envelope?.ttl_ms === "number" ? { ttl_ms: envelope.ttl_ms } : {}),
-          data: data ?? {},
-        } as any),
+        deps.bus.emit(
+          buildCanonicalEventEnvelope(
+            type,
+            {
+              source: envelope?.source ?? `agent:${deps.agentName}`,
+              owner: envelope?.owner,
+              target: envelope?.target,
+              urgency: envelope?.urgency,
+              ttl_ms: envelope?.ttl_ms,
+              data: data ?? {},
+            },
+            { owner: deps.agentName },
+          ) as any,
+        ),
       measuredBy: `agent:${deps.agentName}`,
       log: (msg) => globalLog("info", `[${deps.agentName}] ${msg}`),
     }),

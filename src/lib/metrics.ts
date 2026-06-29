@@ -79,6 +79,7 @@ export interface MetricServiceOptions {
     envelope?: {
       owner?: string;
       source?: string;
+      target?: Record<string, unknown>;
       urgency?: "low" | "normal" | "high" | "immediate";
       ttl_ms?: number;
     },
@@ -145,6 +146,7 @@ function defaultOwnerForMetric(
 ): string {
   const explicit = metric.explicitOwner?.trim();
   if (explicit) return explicit;
+  if (metric.project?.trim()) return `project:${metric.project.trim()}`;
   const projectOwner = metric.projectOwner?.trim();
   if (projectOwner) return projectOwner;
   if (metric.project && hasTable(db, "projects")) {
@@ -239,14 +241,17 @@ export function createMetricService(options: MetricServiceOptions): MetricServic
     envelope?: {
       owner?: string;
       source?: string;
+      target?: Record<string, unknown>;
       urgency?: "low" | "normal" | "high" | "immediate";
       ttl_ms?: number;
     },
   ) => options.emit?.(type, data, envelope);
   const emitMetricEvent = (type: string, owner: string, data: Record<string, unknown>) => {
+    const project = typeof data.project === "string" && data.project.trim() ? data.project.trim() : "";
     emit(type, data, {
       owner: normalizeEventOwner(owner),
       source: options.measuredBy ?? "metrics",
+      ...(project ? { target: { project } } : {}),
       urgency: urgencyForPriority(data.priority),
     });
   };

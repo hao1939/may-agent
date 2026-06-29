@@ -13,11 +13,15 @@ import { createMetricService, type MetricService } from "./metrics.js";
 import { createQueryService, type QueryAPI } from "./query-service.js";
 import { readSessionMeta as _readSessionMeta, readSessionMessages as _readSessionMessages } from "./persistence.js";
 import { classifyError as _classifyError } from "./classify-error.js";
-import { getLastDigest as _getLastDigest, upsertDigest as _upsertDigest, classifyDigest as _classifyDigest } from "./session-digest.js";
+import {
+  getLastDigest as _getLastDigest,
+  upsertDigest as _upsertDigest,
+  classifyDigest as _classifyDigest,
+} from "./session-digest.js";
 import type { PersistedSession } from "./persistence.js";
 import type { DigestRow, DigestInput, DigestAction } from "./session-digest.js";
 import type { ErrorClass } from "./classify-error.js";
-import { buildCanonicalEventEnvelope, normalizeEventOwner } from "../../packages/control/src/event-envelope.js";
+import { buildCanonicalEventEnvelope } from "../../packages/control/src/event-envelope.js";
 
 /**
  * RuntimeCtx — internal type for workflow/sdk infra.
@@ -52,7 +56,10 @@ function isSocketCommandType(type: string): boolean {
   return type.startsWith("trigger.");
 }
 
-function runtimeEventEnvelope(event: { type: string; [key: string]: unknown }, agentName: string): { type: string; [key: string]: unknown } {
+function runtimeEventEnvelope(
+  event: { type: string; [key: string]: unknown },
+  agentName: string,
+): { type: string; [key: string]: unknown } {
   if (!event.type.includes(".") || isSocketCommandType(event.type)) return event;
   return buildCanonicalEventEnvelope(event.type, event, {
     source: `agent:${agentName}`,
@@ -63,10 +70,13 @@ function runtimeEventEnvelope(event: { type: string; [key: string]: unknown }, a
 export function buildRuntimeCtx(opts: RuntimeCtxOptions): RuntimeCtx {
   return {
     emit: (event) => opts.bus.emit(runtimeEventEnvelope(event, opts.agentName) as any),
-    dispatchEvent: (eventType, data) => opts.bus.emit(buildCanonicalEventEnvelope(eventType, data ?? {}, {
-      source: `agent:${opts.agentName}`,
-      owner: opts.agentName,
-    }) as any),
+    dispatchEvent: (eventType, data) =>
+      opts.bus.emit(
+        buildCanonicalEventEnvelope(eventType, data ?? {}, {
+          source: `agent:${opts.agentName}`,
+          owner: opts.agentName,
+        }) as any,
+      ),
     getDb: () => getDb(opts.persistDir),
     query: createQueryService({
       getDb: () => getDb(opts.persistDir),
@@ -88,14 +98,21 @@ export function buildRuntimeCtx(opts: RuntimeCtxOptions): RuntimeCtx {
     },
     metrics: createMetricService({
       getDb: () => getDb(opts.persistDir),
-      emit: (type, data, envelope) => opts.bus.emit({
-        type,
-        source: envelope?.source ?? `agent:${opts.agentName}`,
-        owner: normalizeEventOwner(envelope?.owner, opts.agentName),
-        ...(envelope?.urgency ? { urgency: envelope.urgency } : {}),
-        ...(typeof envelope?.ttl_ms === "number" ? { ttl_ms: envelope.ttl_ms } : {}),
-        data: data ?? {},
-      } as any),
+      emit: (type, data, envelope) =>
+        opts.bus.emit(
+          buildCanonicalEventEnvelope(
+            type,
+            {
+              source: envelope?.source ?? `agent:${opts.agentName}`,
+              owner: envelope?.owner,
+              target: envelope?.target,
+              urgency: envelope?.urgency,
+              ttl_ms: envelope?.ttl_ms,
+              data: data ?? {},
+            },
+            { owner: opts.agentName },
+          ) as any,
+        ),
       measuredBy: `agent:${opts.agentName}`,
       log: (msg) => globalLog("info", `[${opts.agentName}] ${msg}`),
     }),
@@ -115,7 +132,10 @@ export function buildSessionHelpers(opts: RuntimeCtxOptions) {
     classifyError: (error: string | undefined | null): ErrorClass => _classifyError(error),
     getLastDigest: (sessionId: string): DigestRow | null => _getLastDigest(opts.persistDir, sessionId),
     upsertDigest: (input: DigestInput): Promise<DigestRow | null> => _upsertDigest(opts.persistDir, input),
-    classifyDigest: (digest: { outcome: string; still_open: string | null; what_happened: string }, trigger: string): { action: DigestAction; reason: string } => _classifyDigest(digest, trigger),
+    classifyDigest: (
+      digest: { outcome: string; still_open: string | null; what_happened: string },
+      trigger: string,
+    ): { action: DigestAction; reason: string } => _classifyDigest(digest, trigger),
     readSessionMeta: (sessionId: string): PersistedSession | null => _readSessionMeta(opts.persistDir, sessionId),
     readSessionMessages: (sessionId: string): unknown[] => _readSessionMessages(opts.persistDir, sessionId),
   };
