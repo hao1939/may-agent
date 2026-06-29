@@ -1,8 +1,34 @@
+export type ProjectAppEventUrgency = "low" | "normal" | "high" | "immediate";
+
+export type ProjectAppEventTarget = {
+  project?: string;
+  taskId?: string;
+  owner?: string;
+  sessionId?: string;
+  human?: boolean;
+};
+
+export type ProjectAppEvent<TData extends Record<string, unknown> = Record<string, unknown>> = {
+  type: string;
+  target?: ProjectAppEventTarget;
+  source?: string;
+  owner?: string;
+  urgency?: ProjectAppEventUrgency;
+  ttlMs?: number;
+  ttl_ms?: number;
+  data?: TData;
+  params?: Record<string, unknown>;
+  [key: string]: unknown;
+};
+
 export type EventSelector =
   | string
   | {
       type: string;
+      target?: ProjectAppEventTarget;
       project?: string;
+      owner?: string;
+      urgency?: ProjectAppEventUrgency;
       actions?: string[];
       metricIds?: string[];
     };
@@ -27,7 +53,7 @@ export type ProjectAppAction =
   | {
       type: "async";
       description: string;
-      event(params: unknown): Record<string, unknown>;
+      event(params: unknown): ProjectAppEvent;
     };
 
 export type ProjectWorkflowHandler = {
@@ -36,7 +62,17 @@ export type ProjectWorkflowHandler = {
   enabled: boolean;
   description: string;
   maxConcurrentTriggers?: number;
-  on: string[];
+  /**
+   * Declarative selectors accepted by this generated workflow handler.
+   * Use this for new project apps. Runtime lowers these selectors to cron
+   * event-type subscriptions while preserving target intent in the manifest.
+   */
+  accepts?: EventSelector[];
+  /**
+   * Compatibility shorthand for accepts: ["event.type"].
+   * Prefer accepts[] in new manifests.
+   */
+  on?: string[];
   emits?: string[];
   handler: {
     workflow: string;
@@ -79,7 +115,9 @@ export type ProjectApp = {
     enabled: boolean;
     intervalMs?: number;
     cron?: string;
-    event: Record<string, unknown>;
+    emits?: ProjectAppEvent[];
+    /** Compatibility shorthand for emits: [event]. Prefer emits[]. */
+    event?: ProjectAppEvent;
   }>;
   /**
    * Runtime compatibility field. Prefer declaring generated workflow-backed
