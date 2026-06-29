@@ -62,7 +62,9 @@ type ProjectApp = {
     context?: string[];
   }>;
   events?: EventSelector[];
-  onEvent?: (ctx: ProjectAppContext, event: Record<string, unknown>) => Promise<unknown> | unknown;
+  onEvent?:
+    | ((ctx: ProjectAppContext, event: Record<string, unknown>) => Promise<unknown> | unknown)
+    | { kind: "generated-workflow-handlers"; handlers?: unknown[] };
 };
 
 type ProjectReadModel = {
@@ -568,6 +570,7 @@ function installWorkflowHandlers(opts: ProjectAppLoaderOptions, cron: Cron, desc
         sharedGuardsDir: paths.sharedGuardsDir,
         projectId,
       });
+      // Always emit the dispatch event for observability — even on failure.
       opts.bus.emit({
         type: "handler.workflow_dispatched",
         source: `agent:${agentName}`,
@@ -583,6 +586,17 @@ function installWorkflowHandlers(opts: ProjectAppLoaderOptions, cron: Cron, desc
           reason: result.type === "blocked" ? result.reason : undefined,
         },
       } as AgentEvent);
+      // When the workflow did not complete successfully (blocked, escalated,
+      // interrupted), throw so cron's .catch() path fires. This triggers
+      // handler.failed + exponential backoff in drainQueuedEventTrigger,
+      // preventing tight error→drain→error cascades for opCount=0 session
+      // errors that runWorkflowDirect resolves instead of rejecting.
+      if (result.type !== "done") {
+        const reason = result.type === "blocked" ? (result as { reason?: string }).reason : result.type;
+        throw new Error(
+          `Workflow "${workflowName}" did not complete: type=${result.type}${reason ? `, reason=${reason}` : ""}`,
+        );
+      }
     });
     cron.addSyntheticEntry(entry);
     count++;
@@ -675,7 +689,8 @@ function attachAppEventRouter(opts: ProjectAppLoaderOptions, descriptors: Projec
       void Promise.resolve()
         .then(async () => {
           const ctx = makeContext(opts, descriptor);
-          const result = descriptor.app.onEvent ? await descriptor.app.onEvent(ctx, event) : undefined;
+          const result =
+            typeof descriptor.app.onEvent === "function" ? await descriptor.app.onEvent(ctx, event) : undefined;
           if (result !== undefined) return;
           if (!isProjectScopedForApp(event, descriptor.id) && !ownerMetricFeedback) return;
 
