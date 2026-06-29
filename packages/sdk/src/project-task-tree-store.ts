@@ -21,7 +21,16 @@ export type TaskNode = {
   acceptance?: string[];
   forbidden?: string[];
   context?: Record<string, unknown>;
-  blocker?: string;
+  result?: string;
+  evidence?: string[];
+  blocker?:
+    | string
+    | {
+        condition?: string;
+        category?: string;
+        owner?: string;
+        resume_condition?: string;
+      };
   verification?: unknown;
   trace?: Record<string, unknown>;
   resolution?: string;
@@ -151,8 +160,40 @@ export function readTaskTree(config: TaskTreeConfig): TaskTree {
   return tree;
 }
 
-export function saveTaskTree(config: TaskTreeConfig, tree: TaskTree): void {
+export type SaveTaskTreeOptions = {
+  /** Set to true to bypass the shrinkage guard (e.g. intentional tree reset). */
+  allowShrinkage?: boolean;
+};
+
+export function saveTaskTree(config: TaskTreeConfig, tree: TaskTree, options?: SaveTaskTreeOptions): void {
   normalizeTaskTreeInPlace(tree);
+
+  // Shrinkage guard: reject writes that reduce task count by >80%.
+  // This prevents agent-caused data loss from whole-file overwrites.
+  if (!options?.allowShrinkage && existsSync(config.treePath)) {
+    try {
+      const existing = JSON.parse(readFileSync(config.treePath, "utf-8")) as { tasks?: Record<string, unknown> | unknown[] };
+      const existingCount = Array.isArray(existing.tasks)
+        ? existing.tasks.length
+        : typeof existing.tasks === "object" && existing.tasks !== null
+          ? Object.keys(existing.tasks).length
+          : 0;
+      const newCount = Object.keys(tree.tasks ?? {}).length;
+      // Only guard when existing tree has enough tasks to be meaningful (>=5)
+      // and the new tree drops by more than 80%.
+      if (existingCount >= 5 && newCount < existingCount * 0.2) {
+        throw new Error(
+          `saveTaskTree shrinkage guard: refusing to overwrite ${existingCount} tasks with ${newCount} tasks ` +
+          `(${Math.round((1 - newCount / existingCount) * 100)}% reduction). ` +
+          `Pass { allowShrinkage: true } to override if this is intentional.`
+        );
+      }
+    } catch (e) {
+      // Re-throw shrinkage guard errors; swallow file read/parse errors
+      if (e instanceof Error && e.message.startsWith("saveTaskTree shrinkage guard")) throw e;
+    }
+  }
+
   tree.updated_at = new Date().toISOString();
   ensureDir(dirname(config.treePath));
   const tempPath = `${config.treePath}.${process.pid}.${Date.now()}.tmp`;

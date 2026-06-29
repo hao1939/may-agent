@@ -13,6 +13,7 @@ import {
   markTaskDone,
   peekTaskAssignments,
   planningPacket,
+  pruneMissingChildren,
   readTaskTree,
   rejectTaskReview,
   repairTaskTreeRollups,
@@ -91,6 +92,47 @@ describe("project task tree SDK", () => {
     expect(persisted.tasks["done-leaf"].status).toBeUndefined();
   });
 
+  test("prunes missing child references from a named parent", async () => {
+    const appDir = await makeApp();
+    await writeTree(appDir, {
+      root_task_id: "project",
+      active_task_id: null,
+      active_task_ids: [],
+      tasks: {
+        project: {
+          id: "project",
+          state: "review",
+          children: ["live-child", "missing-child"],
+          goal: "project",
+          outputs: ["tasks/tree.json"],
+          acceptance: ["complete"],
+        },
+        "live-child": {
+          id: "live-child",
+          parent_id: "project",
+          state: "done",
+          children: [],
+          goal: "still present",
+          outputs: ["artifact"],
+          acceptance: ["done"],
+        },
+      },
+    });
+
+    const result = pruneMissingChildren(config(appDir), { parentId: "project" });
+
+    expect(result).toMatchObject({
+      changed: true,
+      parentId: "project",
+      removedChildIds: ["missing-child"],
+      remainingChildIds: ["live-child"],
+      active_task_ids: [],
+    });
+
+    const persisted = JSON.parse(await readFile(join(appDir, "tasks", "tree.json"), "utf8"));
+    expect(persisted.tasks.project.children).toEqual(["live-child"]);
+  });
+
   test("creates, assigns, completes, and accepts generic task leaves", async () => {
     const appDir = await makeApp();
     await writeTree(appDir, {
@@ -125,16 +167,74 @@ describe("project task tree SDK", () => {
       taskId: "leaf",
       claim: "done",
       summary: "worker completed the artifact",
+      evidence: ["artifact"],
     });
+
+    let tree = readTaskTree(config(appDir));
+    expect(tree.tasks.leaf.status).toBe("review");
+    expect(tree.tasks.leaf.result).toBe("worker completed the artifact");
+    expect(tree.tasks.leaf.evidence).toEqual(["artifact"]);
+    expect(tree.tasks.project.status).toBe("review");
+    expect(tree.tasks.project.result).toBe("Child review pending: leaf.");
+
     markTaskDone(config(appDir), {
       taskId: "leaf",
       summary: "owner accepted the artifact",
     });
 
-    const tree = readTaskTree(config(appDir));
+    tree = readTaskTree(config(appDir));
     expect(tree.tasks.leaf.status).toBe("done");
     expect(tree.tasks.project.status).toBe("done");
     expect(tree.active_task_ids).toEqual([]);
+  });
+
+  test("rolls blocked parents with a structured blocker condition", async () => {
+    const appDir = await makeApp();
+    await writeTree(appDir, {
+      root_task_id: "project",
+      active_task_id: null,
+      active_task_ids: [],
+      tasks: {
+        project: {
+          id: "project",
+          state: "active",
+          children: ["lane"],
+          goal: "project",
+          outputs: ["tasks/tree.json"],
+          acceptance: ["complete"],
+        },
+        lane: {
+          id: "lane",
+          parent_id: "project",
+          state: "active",
+          children: ["blocked-leaf"],
+          goal: "lane",
+          outputs: ["artifact"],
+          acceptance: ["complete"],
+        },
+        "blocked-leaf": {
+          id: "blocked-leaf",
+          parent_id: "lane",
+          state: "blocked",
+          children: [],
+          goal: "blocked work",
+          outputs: ["artifact"],
+          acceptance: ["complete"],
+          blocker: {
+            condition: "external dependency",
+          },
+        },
+      },
+    });
+
+    repairTaskTreeRollups(config(appDir));
+
+    const tree = readTaskTree(config(appDir));
+    expect(tree.tasks.lane.status).toBe("blocked");
+    expect(tree.tasks.lane.blocker).toMatchObject({
+      condition: "Child blocked: blocked-leaf.",
+      category: "child-blocked",
+    });
   });
 
   test("unblocks a blocked leaf back to backlog", async () => {
@@ -242,6 +342,60 @@ describe("project task tree SDK", () => {
     expect(retryTree.tasks.leaf.trace?.current_attempt_id).toBe("attempt-2");
   });
 
+  test("uses a fresh retry session after an error review even when caller did not request one", async () => {
+    const appDir = await makeApp();
+    await writeTree(appDir, {
+      root_task_id: "project",
+      active_task_id: null,
+      active_task_ids: [],
+      tasks: {
+        project: {
+          id: "project",
+          state: "backlog",
+          children: [],
+          goal: "project",
+          outputs: ["tasks/tree.json"],
+          acceptance: ["complete"],
+        },
+      },
+    });
+
+    createTask(config(appDir), {
+      id: "leaf",
+      parentId: "project",
+      goal: "produce reviewed artifact",
+      outputs: ["artifact"],
+      acceptance: ["artifact has evidence"],
+    });
+    assignTask(config(appDir), {
+      taskId: "leaf",
+      attemptId: "attempt-1",
+    });
+    completeTask(config(appDir), {
+      taskId: "leaf",
+      claim: "blocked",
+      summary: "error",
+    });
+
+    rejectTaskReview(config(appDir), {
+      taskId: "leaf",
+      reason: "worker errored before producing evidence",
+    });
+
+    const retry = assignTask(config(appDir), {
+      taskId: "leaf",
+      attemptId: "attempt-2",
+    });
+
+    expect(retry.sessionId).not.toBe("s_task_leaf");
+    expect(retry.sessionId.startsWith("s_task_leaf_retry_")).toBe(true);
+
+    const retryTree = readTaskTree(config(appDir));
+    expect(retryTree.tasks.leaf.session_history).toEqual(["s_task_leaf", retry.sessionId]);
+    expect(retryTree.tasks.leaf.trace?.review_reject_fresh_session).toBe(false);
+    expect(retryTree.tasks.leaf.trace?.last_session).toBe(retry.sessionId);
+  });
+
   test("planningPacket includes model_status_summary when model.json exists", async () => {
     const appDir = await makeApp();
     const projectDir = await mkdtemp(join(tmpdir(), "may-sdk-model-"));
@@ -326,6 +480,82 @@ describe("project task tree SDK", () => {
     expect(gapPath).toBeDefined();
     expect(gapPath!.status).toBe("product-gap");
     expect(gapPath!.rootCauseClass).toBe("product");
+  });
+
+  test("planningPacket prefers featurePaths over stale mirror paths for model_status_summary", async () => {
+    const appDir = await makeApp();
+    const projectDir = await mkdtemp(join(tmpdir(), "may-sdk-model-"));
+    await mkdir(join(projectDir, "model", "knowledge-map"), { recursive: true });
+
+    await writeTree(appDir, {
+      root_task_id: "project",
+      active_task_id: null,
+      active_task_ids: [],
+      tasks: {
+        project: {
+          id: "project",
+          state: "backlog",
+          children: [],
+          goal: "project root",
+          outputs: ["tasks/tree.json"],
+          acceptance: ["complete"],
+        },
+      },
+    });
+
+    const modelData = {
+      version: 1,
+      featurePaths: [
+        {
+          id: "path.serverless-virtual-nodes.multi-pod-burst",
+          status: "blocked",
+          rootCauseClass: "runtime",
+          retestCondition: "Retry only after virtual-node readiness changes.",
+        },
+        {
+          id: "path.private-cluster-none-dns-zone-v3",
+          status: "unknown",
+          rootCauseClass: "none",
+        },
+      ],
+      paths: [
+        {
+          id: "path.serverless-virtual-nodes.multi-pod-burst",
+          status: "unknown",
+          rootCauseClass: "source-grounded-check-replay-execute-capable",
+        },
+        {
+          id: "path.private-cluster-none-dns-zone-v3",
+          status: "unknown",
+          rootCauseClass: "none",
+        },
+      ],
+    };
+    await writeFile(
+      join(projectDir, "model", "knowledge-map", "model.json"),
+      JSON.stringify(modelData, null, 2),
+      "utf8",
+    );
+
+    const packet = planningPacket(config(appDir, projectDir));
+    const summary = packet.model_status_summary!;
+    expect(summary).toBeDefined();
+    expect(summary.total).toBe(2);
+    expect(summary.non_passing).toBe(2);
+
+    const burstPath = summary.non_passing_paths.find(
+      (p) => p.id === "path.serverless-virtual-nodes.multi-pod-burst",
+    );
+    expect(burstPath).toBeDefined();
+    expect(burstPath!.status).toBe("blocked");
+    expect(burstPath!.rootCauseClass).toBe("runtime");
+
+    const privateClusterPath = summary.non_passing_paths.find(
+      (p) => p.id === "path.private-cluster-none-dns-zone-v3",
+    );
+    expect(privateClusterPath).toBeDefined();
+    expect(privateClusterPath!.status).toBe("unknown");
+    expect(privateClusterPath!.rootCauseClass).toBe("none");
   });
 
   test("planningPacket omits model_status_summary when model.json is absent", async () => {

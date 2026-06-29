@@ -372,6 +372,7 @@ export interface WorkflowSDK extends AgentSDK {
 export interface EventEnvelopeOptions {
   owner?: string;
   source?: string;
+  target?: Record<string, unknown>;
   urgency?: "low" | "normal" | "high" | "immediate";
   ttl_ms?: number;
 }
@@ -942,6 +943,7 @@ export {
   taskState,
   withTreeLock,
 } from "./project-task-tree-store.js";
+export type { SaveTaskTreeOptions } from "./project-task-tree-store.js";
 export type { TaskNode, TaskTree, TaskTreeConfig } from "./project-task-tree-store.js";
 
 export {
@@ -959,6 +961,7 @@ export {
   markTaskDone,
   peekTaskAssignments,
   planningPacket,
+  pruneMissingChildren,
   readTask,
   rejectTaskReview,
   requeueStaleActiveTasks,
@@ -992,6 +995,7 @@ export type {
   ModelStatusSummary,
   RejectTaskReviewInput,
   RollupParentInput,
+  TaskTreePruneMissingChildrenResult,
   UpdateTaskTextInput,
   TaskPlanningPacket,
   TaskPlanningSnapshot,
