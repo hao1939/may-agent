@@ -741,7 +741,10 @@ export class Cron {
     );
   }
 
-  private drainQueuedEventTrigger(entryName: string): void {
+  /** Track consecutive errors per entry for exponential backoff on queue drain. */
+  private consecutiveErrors = new Map<string, number>();
+
+  private drainQueuedEventTrigger(entryName: string, opts?: { afterError?: boolean }): void {
     const entry = this.entries.find((candidate) => candidate.name === entryName);
     if (!entry || entry.enabled === false) return;
     if (!this.hasCapacity(entry)) return;
@@ -751,6 +754,38 @@ export class Cron {
       this.queuedEventTriggers.delete(entryName);
       return;
     }
+
+    // After an error, apply exponential backoff before draining the next event.
+    // This prevents tight error→drain→error loops when handlers fail instantly
+    // (e.g. provider errors, concurrency blocks) which otherwise cascade into
+    // event pileups and blocked-run bursts.
+    if (opts?.afterError) {
+      const errorCount = (this.consecutiveErrors.get(entryName) ?? 0) + 1;
+      this.consecutiveErrors.set(entryName, errorCount);
+
+      // Exponential backoff: 5s, 10s, 20s, 40s, capped at 60s
+      const backoffMs = Math.min(5_000 * Math.pow(2, errorCount - 1), 60_000);
+
+      // If too many consecutive errors, drop the queue to prevent unbounded accumulation
+      if (errorCount >= 5) {
+        const dropped = queue.length;
+        queue.length = 0;
+        this.queuedEventTriggers.delete(entryName);
+        this.onError?.(
+          `Cron "${entryName}" queue dropped (${dropped} events) after ${errorCount} consecutive errors`,
+        );
+        return;
+      }
+
+      setTimeout(() => {
+        this.triggerNow(entryName, { force: true, triggerEvent: queue.shift()! });
+        if (queue.length === 0) this.queuedEventTriggers.delete(entryName);
+      }, backoffMs).unref();
+      return;
+    }
+
+    // Success path: reset error count.
+    this.consecutiveErrors.delete(entryName);
     const event = queue.shift()!;
     if (queue.length === 0) this.queuedEventTriggers.delete(entryName);
 
@@ -1004,7 +1039,7 @@ export class Cron {
         });
         this.onError?.(`Cron handler "${entry.name}" failed: ${errMsg}`);
         this.notify?.(`\u26a0\ufe0f Handler "${entry.name}" failed: ${errMsg}`);
-        this.drainQueuedEventTrigger(entry.name);
+        this.drainQueuedEventTrigger(entry.name, { afterError: true });
       });
   }
 }

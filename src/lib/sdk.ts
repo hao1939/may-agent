@@ -43,11 +43,11 @@ export interface AgentSDK {
 
   /** System paths. */
   paths: {
-    persist: string;   // .state directory (DB, logs)
-    root: string;      // project root
-    agents: string;    // agents/ directory
-    shared: string;    // shared conventions, guards, docs
-    projects: string;  // first-class projects directory
+    persist: string; // .state directory (DB, logs)
+    root: string; // project root
+    agents: string; // agents/ directory
+    shared: string; // shared conventions, guards, docs
+    projects: string; // first-class projects directory
   };
 }
 
@@ -76,6 +76,7 @@ export interface RunOpts {
 export interface EventEnvelopeOptions {
   owner?: string;
   source?: string;
+  target?: Record<string, unknown>;
   urgency?: "low" | "normal" | "high" | "immediate";
   ttl_ms?: number;
 }

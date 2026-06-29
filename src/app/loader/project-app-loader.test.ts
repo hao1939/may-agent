@@ -597,6 +597,61 @@ export default defineProjectApp({
     }
   });
 
+  it("falls back when event type has a workflow handler but selector does not match", async () => {
+    const root = tempRoot();
+    try {
+      const projectsRoot = join(root, "projects");
+      const appDir = join(projectsRoot, "sample.app");
+      writeAgent(appDir, "owner", "sample-owner");
+      writeApp(
+        appDir,
+        `{
+        id: "sample",
+        workflowHandlers: [{
+          name: "sample-loop",
+          enabled: true,
+          accepts: [{
+            type: "project.task.tick",
+            target: { project: "sample" },
+            actions: ["known-loop"]
+          }],
+          handler: { workflow: "loop", task: "work" }
+        }],
+        onEvent() { return undefined; }
+      }`,
+      );
+
+      const calls: Array<{ agent: string; task: string }> = [];
+      const bus = new EventBus();
+      await installProjectApps({
+        projectsRoot,
+        projectRoot: root,
+        manager: {
+          hasAgent: () => true,
+          runAgent: (agent: string, task: string) => calls.push({ agent, task }),
+        } as any,
+        bus,
+        agentCrons: new Map(),
+      });
+
+      bus.emit({
+        type: "project.task.tick",
+        source: "test",
+        owner: "project:sample",
+        target: { project: "sample", taskId: "unknown-loop" },
+        data: { project: "sample", action: "unknown-loop" },
+      } as any);
+      await waitForMicrotasks();
+
+      expect(calls).toHaveLength(1);
+      expect(calls[0]!.agent).toBe("sample-owner");
+      expect(calls[0]!.task).toContain("project.task.tick");
+      expect(calls[0]!.task).toContain("unknown-loop");
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
   it("dispatches project events to installed workflow handler entries", async () => {
     const root = tempRoot();
     try {
@@ -1017,6 +1072,7 @@ export async function execute(ctx: any) {
       expect(observed).toContainEqual(
         expect.objectContaining({
           type: "project.owner.requested",
+          owner: "project:sample",
           urgency: "high",
           ttl_ms: 5000,
           target: { project: "sample", taskId: "review-task" },
