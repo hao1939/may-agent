@@ -47,8 +47,6 @@ type ProjectApp = {
     name: string;
     enabled?: boolean;
     description?: string;
-    intervalMs?: number;
-    offsetMs?: number;
     maxConcurrentTriggers?: number;
     on?: string[];
     handler: {
@@ -258,6 +256,8 @@ function normalizeEvent(event: Record<string, unknown>, defaults: { source: stri
   const source = typeof event.source === "string" ? event.source : defaults.source;
   const owner = typeof event.owner === "string" ? event.owner : defaults.owner;
   const timestamp = typeof event.timestamp === "number" ? event.timestamp : Date.now();
+  const urgency = typeof event.urgency === "string" ? event.urgency : undefined;
+  const ttlMs = typeof event.ttl_ms === "number" ? event.ttl_ms : undefined;
   const data = isRecord(event.data)
     ? event.data
     : Object.fromEntries(
@@ -265,7 +265,15 @@ function normalizeEvent(event: Record<string, unknown>, defaults: { source: stri
           ([key]) => !["type", "source", "owner", "timestamp", "urgency", "ttl_ms"].includes(key),
         ),
       );
-  return { type, source, owner, timestamp, data };
+  return {
+    type,
+    source,
+    owner,
+    timestamp,
+    ...(urgency ? { urgency: urgency as EventEnvelope["urgency"] } : {}),
+    ...(typeof ttlMs === "number" ? { ttl_ms: ttlMs } : {}),
+    data,
+  };
 }
 
 function requireWorkflowRuntimeOptions(opts: ProjectAppLoaderOptions): {
@@ -505,8 +513,6 @@ function installWorkflowHandlers(opts: ProjectAppLoaderOptions, cron: Cron, desc
       name: handler.name,
       enabled: handler.enabled !== false,
       description: handler.description,
-      intervalMs: handler.intervalMs,
-      offsetMs: handler.offsetMs,
       maxConcurrentTriggers: handler.maxConcurrentTriggers,
       on: handler.on ?? [],
       context: handler.context,
