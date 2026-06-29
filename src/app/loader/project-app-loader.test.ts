@@ -2,6 +2,7 @@ import { describe, expect, it } from "bun:test";
 import { mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { pathToFileURL } from "node:url";
 
 import { Cron } from "../cron.ts";
 import { EventBus } from "../event-bus.ts";
@@ -37,6 +38,11 @@ function writeAgent(appDir: string, dirName: string, name = dirName): void {
 function writeApp(appDir: string, body: string): void {
   mkdirSync(appDir, { recursive: true });
   writeFileSync(join(appDir, "app.ts"), `export default ${body};\n`);
+}
+
+function writeAppModule(appDir: string, source: string): void {
+  mkdirSync(appDir, { recursive: true });
+  writeFileSync(join(appDir, "app.ts"), source);
 }
 
 function writeWorkflow(appDir: string, name: string, body: string): void {
@@ -152,6 +158,59 @@ describe("project app loader", () => {
           task: "work",
         },
       });
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it("expands onEvent workflowHandlers sugar into installable workflow handlers", async () => {
+    const root = tempRoot();
+    try {
+      const projectsRoot = join(root, "projects");
+      const appDir = join(projectsRoot, "sample.app");
+      const sdkUrl = pathToFileURL(join(process.cwd(), "packages/sdk/src/project-app.ts")).href;
+      writeAgent(appDir, "owner", "sample-owner");
+      writeAppModule(
+        appDir,
+        `import { defineProjectApp, workflowHandlers } from "${sdkUrl}";
+
+export default defineProjectApp({
+  id: "sample",
+  onEvent: workflowHandlers([
+    {
+      name: "sample-worker",
+      type: "job",
+      enabled: true,
+      description: "Generated workflow-backed event handler.",
+      on: ["project.work"],
+      handler: { workflow: "worker", task: "work", timeoutMs: 60000 },
+      context: []
+    }
+  ])
+});
+`,
+      );
+
+      const agentCrons = new Map<string, Cron>();
+      const result = await installProjectApps({
+        projectsRoot,
+        projectRoot: root,
+        manager: { hasAgent: (name: string) => name === "sample-owner" } as any,
+        bus: new EventBus(),
+        agentCrons,
+      });
+
+      expect(result.installed.map((app) => app.id)).toEqual(["sample"]);
+      expect(agentCrons.get("sample-owner")!.getEntries()).toContainEqual(
+        expect.objectContaining({
+          name: "sample-worker",
+          on: ["project.work"],
+          handler: expect.objectContaining({
+            workflow: "worker",
+            projectId: "sample",
+          }),
+        }),
+      );
     } finally {
       rmSync(root, { recursive: true, force: true });
     }
