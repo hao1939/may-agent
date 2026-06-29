@@ -67,6 +67,14 @@ describe("redactTranscriptSecrets", () => {
         result.includes("[REDACTED-ACCESS-TOKEN]"),
     ).toBe(true);
   });
+
+  it("redacts authenticated GitHub URLs with embedded tokens", () => {
+    const gitOutput = `Cloning into '/tmp/repo'...\nhttps://ghp_abc123XYZtoken456@github.com/org/my-repo.git\nDone.`;
+    const result = redactTranscriptSecrets(gitOutput);
+    expect(result).not.toContain("ghp_abc123XYZtoken456");
+    expect(result).toContain("[REDACTED-GIT-TOKEN]");
+    expect(result).toContain("Cloning into");
+  });
 });
 
 // ── End-to-end persistence-path tests ─────────────────────────────────
