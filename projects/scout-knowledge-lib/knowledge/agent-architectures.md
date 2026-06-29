@@ -1,8 +1,8 @@
 <ai_context>
 summary: "Canonical overview of agent architecture patterns, trends, and proven designs. Consolidated from five overlapping notes."
 triggers: ["agent architecture", "architecture patterns", "ReAct", "multi-agent orchestration", "monitor agent", "critic pattern", "tiered memory", "control flow agents"]
-last_updated: "2026-07-22"
-source_basis: "Merged from agent-architectures.md, agent-architecture-trends.md, agent-patterns.md, agent_patterns.md, agent_architectures_01.md. Sources include HN May 2026 trends, XHS community discussions, internal Scout synthesis, GitHub trending repos June 2026 (scans on Jun 13, 15, 20), and arXiv papers June 2–16 2026 (triages on Jun 14, 15, 17, 19, batch 6/7, session-state Jul 18, runtime-hardening Jul 22). Batch 6 sourcing: Intelligence Entropy, Strained Coherence, Cold-Start Safety Gap, Decision-Aware Memory Cards, IntentKV, MemoPilot, Bayesian-Agent. Session-state sourcing (Jul 18): Concurrency Anomalies, TokenPilot, CacheWise, Insight Governance, SaliMory. Runtime hardening sourcing (Jul 22): Cordon semantic transactions, CoAgent advisory concurrency, Looking Is Not Picking readout bottleneck, PreAct run compilation, SkillWeaver compositional routing, ADE stabilization framework. Jul 22 GitHub scan: Loop Engineering, Architectural Laziness (ponytail 30k★), Cross-Vendor Orchestration, Memory Lifecycle narrowing."
+last_updated: "2026-10-31"
+source_basis: "Merged from agent-architectures.md, agent-architecture-trends.md, agent-patterns.md, agent_patterns.md, agent_architectures_01.md. Sources include HN May 2026 trends, XHS community discussions, internal Scout synthesis, GitHub trending repos June 2026 (scans on Jun 13, 15, 20), and arXiv papers June 2–16 2026 (triages on Jun 14, 15, 17, 19, batch 6/7, session-state Jul 18, runtime-hardening Jul 22). Batch 6 sourcing: Intelligence Entropy, Strained Coherence, Cold-Start Safety Gap, Decision-Aware Memory Cards, IntentKV, MemoPilot, Bayesian-Agent. Session-state sourcing (Jul 18): Concurrency Anomalies, TokenPilot, CacheWise, Insight Governance, SaliMory. Runtime hardening sourcing (Jul 22): Cordon semantic transactions, CoAgent advisory concurrency, Looking Is Not Picking readout bottleneck, PreAct run compilation, SkillWeaver compositional routing, ADE stabilization framework. Jul 22 GitHub scan: Loop Engineering, Architectural Laziness (ponytail 30k★), Cross-Vendor Orchestration, Memory Lifecycle narrowing. §Process Harness & §Architecture Gradient extracted to agent-runtime-hardening.md (2026-10-31)."
 supersedes: ["agent-architecture-trends.md", "agent-patterns.md", "agent_patterns.md", "agent_architectures_01.md"]
 </ai_context>
 
@@ -87,10 +87,12 @@ The dominant new architectural pattern from GitHub trending repos. The "harness"
 
 ### Architectural Laziness (July 2026 — Explosive Growth)
 
-DietrichGebert/ponytail (30k★, from 4.5k→30k in 5 weeks) encodes a design
-principle: "Makes your AI agent think like the laziest senior dev in the
-room." The optimal session is the one that doesn't run. Optimizing for NOT
-doing work — the cheapest code is the code you don't write.
+DietrichGebert/ponytail (49,647★ as of Jun 23, from 4.5k→30k→50k in 11 days)
+encodes a design principle: "Makes your AI agent think like the laziest senior
+dev in the room." The optimal session is the one that doesn't run. Optimizing
+for NOT doing work — the cheapest code is the code you don't write. Benchmark:
+**54% less code, 20% cheaper, 27% faster** on real Claude Code sessions
+(Haiku 4.5, n=4, 12 feature tasks).
 
 - **Why it resonates**: ponytail is the fastest-growing philosophy repo in
   agent history. It's the Abstention Advantage crystallized as open-source:
@@ -98,7 +100,28 @@ doing work — the cheapest code is the code you don't write.
 - **Aligns with**: Abstention Advantage synthesis, Compilation Threshold
   ("38% of budget is LLM reasoning about deterministic answers").
 - **Source**: GitHub trending repos Jun–Jul 2026 (star velocity tracked
-  across six scans).
+  across seven scans; 50K confirmed via GitHub API 2026-06-23).
+
+### The Skill Cambrian Explosion (June 2026 — Phase Transition)
+
+Agent capabilities are propagating as installable Markdown files (SKILL.md),
+not framework APIs. 40+ skill repos created in June 2026 alone. The format is
+cross-vendor: works with Claude Code, Codex, Cursor, and others.
+
+Key ecosystem layers:
+- **Platform registry**: anthropics/skills (154K★, 18K forks) — the canonical skill repo
+- **Skill collections**: BuilderIO/skills (2,450★), guard-skills (877★)
+- **Domain skills**: baoyu-design (1,778★), effective-html (1,129★), security-audit-skill (358★)
+- **Meta-skills**: luban-skill (464★, skill polishing), lazyskills (75★, first skill manager TUI)
+- **Platform exports**: xcode27-skills (103★, Apple official), alpaca-skills (87★)
+
+The installation model is radical: `cp SKILL.md .` — zero dependency management,
+composition by concatenation. Git is the version control, GitHub is the registry.
+Prediction: `skills.json` manifest or equivalent within 3 months; first skill-layer
+supply-chain incident within 6 months.
+
+- **Source**: GitHub API search Jun 23: 40+ repos matching "agent skill" created
+  since 2026-06-01. See scan #107 for full table.
 
 ### Cross-Vendor Agent Orchestration (July 2026 — Emerging)
 
@@ -770,188 +793,19 @@ over SOTA, good personalization rate more than doubled.
 
 ## Runtime Hardening (June 2026 — Emerging Layer)
 
-The state management stack (concurrency, caching, memory governance) provides
-the foundation; the **runtime hardening** layer addresses containment of agent
-effects before they escape to the world. Ten converging papers define layers
-R0–R9 of this stack.
+→ **Extracted to companion note**: [Agent Runtime Hardening](./agent-runtime-hardening.md)
 
-### Semantic Transactions — Effect Containment (Cordon, arXiv June 2026)
+8 named patterns covering effect containment, advisory concurrency, run
+compilation, compositional skill routing, entropy stabilization, harness
+evolution, and false-success detection. Sources: Cordon [2606.17573], CoAgent
+[2606.15376], Looking Is Not Picking [2606.16364], PreAct [2606.17929],
+SkillWeaver [2606.18051], ADE [2606.18065], Harness Updating [2605.30621],
+False-Success Detection [2606.09863].
 
-Agent runtimes expose tools as isolated RPCs with no task-scoped execution
-boundary. Cordon introduces **semantic transactions**: task-level boundaries
-binding tool intents, result lineage, reversible local state, staged external
-effects, delegated authority, and audit metadata. Shadow state + effect outbox
-pattern prevents irreversible mutations from escaping before commit.
+## Process Harness & Composition Governance (June 2026)
 
-- **Key implication**: This is the Compilation Gradient implemented at the
-  runtime layer. Staged effects prevent Ghost Metabolism (sessions acting on
-  retracted state). The "semantic transaction" vocabulary is the formal name
-  for what's needed: not just state isolation but *effect containment* — a
-  strictly stronger property.
-- **Connects to**: Ghost Metabolism (staged effects prevent ghost mutations),
-  Compilation Gradient (transactions = compiled governance at runtime),
-  Cold Start Tax (recovery metadata enables warm restart),
-  Verified Concurrency Anomalies (sits at a new "L-1" layer: effect staging
-  before state commitment).
-- **Source**: [2606.17573] Cordon, arXiv June 2026. Categories: cs.OS, cs.CR.
+→ **Extracted to companion note**: [Agent Runtime Hardening](./agent-runtime-hardening.md)
 
-### Advisory Concurrency — LLM-as-Conflict-Judge (CoAgent, arXiv June 2026)
-
-Classical concurrency control (locks, OCC) fits agent systems poorly:
-transactions span minutes of inference, read sets are opaque, writes take
-immediate effect. CoAgent exploits a new capability: **the LLM itself judges
-whether a conflicting write invalidates its plan and repairs locally**, making
-control advisory rather than blocking.
-
-**MTPO Protocol (Monotonic Trajectory Pre-Order):**
-- Fix serialization order at launch
-- Serve each read an order-filtered value
-- Speculative writes in place
-- One-way notification for re-judgment and patching
-- Saga-style inverse tools for undo/reorder
-
-Results: 5% of serial correctness at 1.4× speedup (vs. 2PL/OCC losing all
-gains). ToolSmith grows 25-tool library from bash target. Task pass: 45→63/71.
-
-- **Key implication**: First paper to exploit LLM reasoning as a *concurrency
-  primitive*. The "advisory" model (runtime informs, agent repairs) is a new
-  interaction pattern. Our parallel sessions working on the same codebase
-  could adopt this for structural conflict resolution.
-- **Connects to**: Verified Concurrency Anomalies (detection ↔ CoAgent =
-  resolution), Ghost Metabolism (advisory control prevents stale action),
-  Harness Engineering (ToolSmith as self-growing harness),
-  Session Floor (MTPO eliminates abort-retry cost).
-- **Source**: [2606.15376] CoAgent, arXiv June 2026. Categories: cs.DC, cs.AI.
-  Submitted to ATC 2026.
-
-### Tool-Selection Readout Bottleneck (Looking Is Not Picking, arXiv June 2026)
-
-LLM agents mis-call tools NOT because they fail to attend to the correct tool.
-The model attends most to the correct tool **80% of the time** (vs. 21%
-chance). The failure is at **decision readout**, not the harness. This directly
-refutes the "crowded-harness / lost-in-the-middle" explanation.
-
-Three-way evidence:
-- Prompt repairs (reordering/duplicating) recover ≤23% of failures
-- Readout-side interventions recover 59–91%
-- Two different interventions recover the same failures (Jaccard 0.865)
-
-Training-free selector: +11.9pp on BFCL, +14.9 on Seal-Tools.
-
-- **Key implication**: Harness curation is less important than readout quality.
-  The intuitive "reduce the harness" response recovers at most 23% of failures.
-  The real fix is readout-side: better decoding, attention-informed selection,
-  or separate tool-choice heads. Challenges minimal-harness design principle.
-- **Connects to**: Prompt Mass Problem (harness size ≠ selection failure),
-  Verification Inversion (verify at readout, not input structure),
-  Harness Engineering (curation less important than decoding).
-- **Source**: [2606.16364] arXiv June 2026. Categories: cs.AI, cs.CR, cs.SE.
-
-### Run Compilation — PreAct (arXiv, June 2026)
-
-Computer-using agents solve every task from scratch. PreAct **compiles
-successful runs into small state-machine programs** (states = screen checks,
-transitions = actions), then replays directly without LLM calls — **8.5–13×
-faster**. Mismatch → graceful fallback to full agent reasoning.
-
-Store-time validation: re-run from clean state + independent evaluator confirms
-success before storing. Programs that replay to last step but leave task undone
-are rejected. What didn't matter: prompt wording, runtime guardrails, retriever.
-
-- **Key implication**: The Compilation Gradient thesis applied to execution.
-  Successful runs are literally compiled from probabilistic LLM execution into
-  deterministic state machines. Store-time validation = verification at compile
-  time. Directly addresses Cold Start Tax: compiled programs have zero cold-start
-  cost on replay.
-- **Connects to**: Compilation Gradient (probabilistic → deterministic),
-  Cold Start Tax (zero-cost replay), Session Floor (compiled programs eliminate
-  floor), Insight Governance (store-time validation = curation loop).
-- **Source**: [2606.17929] PreAct, arXiv June 2026. Categories: cs.AI.
-
-### Compositional Skill Routing — SkillWeaver (arXiv, June 2026)
-
-Real tasks require *composing* multiple skills. The Compositional Skill Routing
-problem: decompose query into atomic sub-tasks, retrieve skill per sub-task,
-compose executable plan. **Task decomposition quality is the primary bottleneck**
-(34.2% category recall at step level).
-
-SkillWeaver uses Iterative Skill-Aware Decomposition (SAD): retrieval-augmented
-feedback loop. Results: 34.2% → 67.7% (+32.7%). Context reduction >99%.
-Transfer: +35.6% even on unseen categories. CompSkillBench: 300 queries over
-2,209 real MCP server skills, 24 categories.
-
-- **Key implication**: Most failed runs aren't failing at *which tool to use*
-  but at *how to decompose the problem*. SkillWeaver provides the formal
-  mechanism for what task-tree systems do informally. The >99% context reduction
-  from routing (vs loading all tools) connects to Prompt Mass Problem.
-- **Connects to**: Prompt Mass Problem (skill routing = context reduction),
-  Transduction Chain (decomposition format determines routing success),
-  Agent Protocols: MCP (2,209 real MCP skills = ecosystem maturity).
-- **Source**: [2606.18051] SkillWeaver, arXiv June 2026. Categories: cs.CL.
-
-### Intelligence Entropy Stabilization — ADE Framework (arXiv, June 2026)
-
-Extends the Intelligence Entropy principle ([2606.08162]) with engineering
-framework. Lyapunov analysis yields stabilization condition: **λ > α/Cm**
-(active stabilization effort must exceed entropy production rate divided by
-model capability). ADE (Agent Delivery Engineering): four-layer architecture,
-23 components, Five-Layer Disorder Taxonomy.
-
-Production results (33.6 days monitoring, 100K-scale):
-- Channel fracture: 69–98% → **near 0%**
-- System death probability: below **0.02%**
-
-- **Key implication**: First formal thermodynamic stabilization framework for
-  agent systems. The condition λ > α/Cm quantifies why accumulated state
-  degrades performance. Systems without stabilization exceeding entropy
-  production will degrade exponentially regardless of component quality.
-- **Connects to**: Abstention Decay (entropy growth = loss of selective
-  action), Ghost Metabolism (disorder in retracted sessions), Cold Start Tax
-  (S₀ at session start; higher = harder stabilization).
-- **Source**: [2606.18065] ADE, arXiv June 2026. Categories: cs.MA.
-  Origin: Shanghai Qijing Digital Technology.
-
-### Harness Evolution Paradox — Flat-Updating / Non-Monotonic Benefit (arXiv, May 2026)
-
-Decomposes agent self-evolution into two orthogonal capabilities:
-- **Harness-updating**: producing useful persistent harness updates from traces.
-  **FLAT across model tiers** — even Qwen3.5-9B produces updates comparable to
-  Claude Opus 4.6.
-- **Harness-benefit**: actually improving from updated harnesses.
-  **NON-MONOTONIC** — weak models benefit little, mid-tier benefit most, strong
-  models benefit less than mid-tier.
-
-Weak-tier failure modes: (1) fail to activate relevant harness artifacts;
-(2) activate but fail to follow faithfully.
-
-- **Key implication**: The investment should go into the task-solving agent's
-  instruction-following and harness-activation capabilities, not the evolver's
-  strength. Guidance files help most for "average" sessions and least for the
-  hardest problems. Structured, machine-parseable guidance with explicit
-  activation triggers outperforms prose advice.
-- **Connects to**: Cold Start Tax (guidance helps less when it's needed most),
-  Compilation Gradient (compiled guidance > interpreted guidance), EvoHunt
-  (playbook evolution works regardless of evolver strength), Criterion-Completion
-  Gap (per-criterion ≠ end-to-end).
-- **Source**: [2605.30621] Harness Updating Is Not Harness Benefit, arXiv May 2026.
-
-### False-Success Detection — Lightweight vs LLM Judges (arXiv, June 2026)
-
-**45–48% of agent failures are self-reported successes** where the agent
-confidently claims completion while environment state shows otherwise. LLM
-judges across 5 models × 5 prompt strategies × full task specs: **max AUROC
-0.65** (near random). Judges rely on surface completion proxies (confident
-closing language, action-sequence volume).
-
-Lightweight TF-IDF detectors: **AUROC 0.83–0.95**, recovering 4–8× more
-false successes at the same flag rate with **3,300× lower latency**.
-
-- **Key implication**: LLM-as-judge for success verification is structurally
-  inadequate. The fix is domain-calibrated lightweight detectors as triage
-  signals: verify deliverable existence, file-change consistency, required-field
-  presence BEFORE expensive LLM evaluation. This extends SafeClawBench's
-  "semantic check ≠ actual harm" to the success direction.
-- **Connects to**: Evaluation Mirage (judge-based evaluation misses half the
-  problems), SafeClawBench (semantic layer unreliable), Silent Failures
-  (fail-plausible as failure mode), Externalization Turn (externalize verification).
-- **Source**: [2606.09863] From Confident Closing to Silent Failure, arXiv June 2026.
+Two patterns formalizing the "deterministic engine + policy-governed agents" concept:
+CUGA FLO process harness ([2606.27188]) and NOVA architecture gradient ([2606.27243]).
+See companion note for full descriptions.

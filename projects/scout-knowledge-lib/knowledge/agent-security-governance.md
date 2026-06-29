@@ -1,8 +1,8 @@
 <ai_context>
-summary: "Canonical note on agent security and governance patterns: attack surfaces, defense architectures, structural governance, state-level access controls (ITAR/Mythos), and supply-chain risks for tool-using AI agents."
-triggers: ["agent security", "agent safety", "agent governance", "prompt injection", "tool sandboxing", "agent trust", "supply chain attack", "agent permissions", "ITAR", "export control", "model access", "infrastructure cost", "trojan repos", "agent targeting", "vendor continuity"]
-last_updated: "2026-06-20"
-source_basis: "arXiv papers (June 2026 inbox provenance, 238+ papers + batch-3/6/7 triage — security was #1 cross-cutting theme), HN practitioner discourse (Jun 2026 — hn-scan-3 agent externality taxonomy, hn-scan-10 LinkedIn mega-narrative + multi-vector DPRK attacks, hn-scan-11 ITAR/Mythos + infrastructure cost squeeze, hn-scan-33 10k trojan repos + SK Telecom/Mythos vendor continuity, hn-scan-52 SK Hynix/HBM supply chain retaliation dimension, hn-scan-53 Google Firefox block platform-layer governance + memory shortage as access control), XHS Chinese community structural governance signals (May–Jun 2026). Batch 6 sourcing: MemVenom memory poisoning, Semantic Quorum, SciTrace trajectory safety, MAC-Bench Goodhart compliance."
+summary: "Canonical note on agent security and governance patterns: attack surfaces (including AutoJack confused-deputy RCE via capability-containment isomorphism), structural governance, formal governance primitives, the Identity Boundary Convergence, the Boundary Delegation Paradox, the Composition Boundary, and the Minimum Viable Authority Turn. Three companion files: agent-security-defense-architectures.md (24 named defense patterns, extracted 2026-09-14), agent-security-event-log.md (16 HN event narratives, extracted 2026-09-11), and agent-security-state-level-governance.md (ITAR/Mythos, dual-use, infrastructure cost, browser moat, extracted 2026-09-12)."
+triggers: ["agent security", "agent safety", "agent governance", "prompt injection", "role confusion", "CoT forgery", "subconscious steering", "role perception", "tool sandboxing", "agent trust", "supply chain attack", "agent permissions", "ITAR", "export control", "model access", "infrastructure cost", "trojan repos", "agent targeting", "vendor continuity", "AutoJack", "confused deputy", "capability containment", "localhost trust", "browsing agent RCE", "agent identity", "identity boundary", "deployer identity", "execution authority", "attribution identity", "certificate-bound authority", "boundary delegation", "agent libOS", "CORS delegation", "observation authority", "capability runtime", "minimum viable authority", "privilege escalation", "ToolPrivBench", "over-privileged", "N-version programming", "ToolPro", "effect types", "scoped authority", "neuralyzer", "AIGX"]
+last_updated: "2026-09-14"
+source_basis: "arXiv papers (June 2026 inbox provenance, 238+ papers + batch-3/6/7 triage — security was #1 cross-cutting theme), HN practitioner discourse (Jun 2026 — hn-scan-3 agent externality taxonomy, hn-scan-10 LinkedIn mega-narrative + multi-vector DPRK attacks, hn-scan-11 ITAR/Mythos + infrastructure cost squeeze, hn-scan-33 10k trojan repos + SK Telecom/Mythos vendor continuity, hn-scan-52 SK Hynix/HBM supply chain retaliation dimension, hn-scan-53 Google Firefox block platform-layer governance + memory shortage as access control), XHS Chinese community structural governance signals (May–Jun 2026). Batch 6 sourcing: MemVenom memory poisoning, Semantic Quorum, SciTrace trajectory safety, MAC-Bench Goodhart compliance. Microsoft Security Blog (Jun 18 2026): AutoJack confused-deputy exploit chain in AutoGen Studio MCP WebSocket. Sept 2026: Identity Boundary Convergence — SEB (2606.20520), Five-Plane (2606.12320), Delegated Execution Observability (2606.09692), Anthropic ID backlash, Cloudflare ephemeral accounts. Scan #82: ToolPrivBench (2606.20023), N-Version (2606.20158), ToolPro (2606.19992), Neuralyzer (57★), AIGX (24★), Claude-Pulse (23★)."
 </ai_context>
 
 # Agent Security & Governance Patterns
@@ -25,6 +25,27 @@ Agent systems introduce attack surfaces that don't exist in stateless LLM
 deployments. These group into four categories:
 
 ### 1.1 Prompt Injection & Context Manipulation
+
+**Mechanistic root cause identified (Jun 2026):** Prompt injection is
+fundamentally a *role perception failure*. LLMs identify "who is speaking"
+via writing style, not role tags. Role probes on `gpt-oss-20b` show that
+style-based role signals actively override tag-based signals at the
+representation level — a single internal feature conflates "tagged as
+reasoning" with "sounds like reasoning." This enables:
+
+- **CoT Forgery**: Injecting fabricated reasoning text styled to match the
+  target model's `<think>` patterns achieves 60% attack success (from
+  near-zero baselines). Destyling the same text drops success to 10%.
+  Replacing one bigram ("The user" → "The request") drops ASR by 19%.
+  *(arXiv [2603.12277], Ye et al., ICML 2026)*
+
+- **Subconscious steering** (new threat class): Because role boundaries are
+  continuous, not binary, innocuous text in tool output (e.g. enthusiastic
+  product descriptions) can subtly shift agent state along trust/persona
+  dimensions — legally, at scale, undetectable by current defenses. This is
+  the "agent SEO" attack: optimizing web content for agent persuasion rather
+  than human persuasion.
+  *(Identified in [2603.12277] §8; no defense research exists yet)*
 
 Standard prompt injection remains relevant but agents add multi-step variants:
 
@@ -142,7 +163,58 @@ channels to compromise software supply chains:
   [2026-06-19-hn-scan-36.md](./findings/2026-06-19-hn-scan-36.md),
   [2026-06-19-hn-scan-49.md](./findings/2026-06-19-hn-scan-49.md))*
 
-### 1.5 Data Agent Attack Surfaces (Interpretation → Execution → Policy)
+### 1.5 Capability-as-Attack-Surface: The Confused Deputy Inversion (AutoJack)
+
+A new attack class where **the agent's own capabilities dissolve the trust
+boundaries designed to contain it**. Microsoft Security disclosed AutoJack
+(June 18, 2026): a single malicious webpage can achieve Remote Code Execution
+on any host running an AI agent with browsing capability + local MCP access.
+
+**The chain** (three independent weaknesses composing into RCE):
+
+1. **Origin allowlist that the agent itself defeats** (CWE-1385): MCP
+   WebSocket accepts connections from `localhost`. A browsing agent *is*
+   localhost — any page it renders inherits the trust boundary.
+2. **Auth middleware that opts MCP out** (CWE-306): Authentication explicitly
+   skipped for `/api/mcp/*` paths, assuming handler-level checks that were
+   never implemented.
+3. **Unvalidated server_params becomes command line** (CWE-78): `server_params`
+   query parameter decoded and passed directly to `stdio_client()` — any
+   binary is spawned as an "MCP server."
+
+**Structural insight — The Capability-Containment Isomorphism:**
+
+The attack succeeds because the same property that makes the agent useful
+(it can browse the web from localhost) is what defeats the containment
+boundary (origin allowlists trust localhost). This is not a bug in the
+traditional sense — it's a **structural incompatibility** between:
+
+- The security model (localhost = trusted)
+- The capability model (agent browses untrusted content from localhost)
+
+The agent acts as a **confused deputy**: its browsing capability is the attack
+vector, and its localhost identity is the permission escalation. The
+attacker needs zero interaction — just get the agent to render any page
+containing a WebSocket connection string.
+
+**Broader pattern**: Any agent framework combining (a) untrusted-input
+consumption capabilities with (b) privileged local service access faces this
+isomorphism. Every new capability added to the agent simultaneously expands
+its attack surface and dissolves one more trust boundary. Defense requires
+treating agent processes as **untrusted-input-tainted** regardless of their
+host identity — the opposite of traditional localhost assumptions.
+
+**Connection to existing findings:**
+- Extends §1.4 Supply-Chain attacks (input channel → code execution)
+- Concretizes the Five-Plane Architecture's "composite principals" (§2.8) —
+  the agent's principal must be evaluated *per-action*, not per-process
+- Validates the Dual-Boundary Defense (§2.1) — both read AND write boundaries
+  must hold, and identity alone is insufficient
+
+*(Microsoft Security Blog, June 18, 2026; HN 48612716, 6pts early;
+URL: https://www.microsoft.com/en-us/security/blog/2026/06/18/autojack-single-page-rce-host-running-ai-agent/)*
+
+### 1.6 Data Agent Attack Surfaces (Interpretation → Execution → Policy)
 
 Data agents (LLM + relational data + analytical tools + workflow orchestration)
 recombine database security and LLM-agent security concerns into failure modes
@@ -166,7 +238,7 @@ services — **all show substantial vulnerabilities**.
   Structurally analogous to the Containment Stack (§2.1).
   *(arXiv [2606.08661], Wang, Wang, Lv, Li, Li, Jun 2026)*
 
-### 1.6 Agent Externalities — Costs Imposed on Non-Consenting Third Parties
+### 1.7 Agent Externalities — Costs Imposed on Non-Consenting Third Parties
 
 A new failure class crystallizing across multiple independent incidents:
 agents operating in systems designed for human trust, human pace, and human
@@ -210,366 +282,20 @@ on all other agents without paying that cost itself.
 
 ## 2. Defense Architectures
 
-### 2.1 Dual-Boundary Defense (SecureClaw Pattern)
-
-The most rigorous defense architecture from recent research places
-authorization at two boundaries:
-
-| Boundary | Mechanism | What it prevents |
-|----------|-----------|------------------|
-| **Read boundary** | Trusted gateway replaces raw values with opaque handles | Secret exposure in agent context |
-| **Write boundary** | PREVIEW→COMMIT protocol — only trusted executor may commit | Unauthorized external mutations |
-
-Across AgentDojo, AgentLeak, and Agent Security Bench: 0% attack success on
-ASB, 0.64% on AgentDojo, 3.23% leak rate on AgentLeak — without sacrificing
-task utility.
-
-**Key insight**: Both boundaries must be defended simultaneously. Protecting
-only reads or only writes leaves the other surface open.
-*(arXiv [2606.09549], Ma & Schmid, Jun 2026)*
-
-### 2.2 Self-Improving Trust Layer (AgentTrust Pattern)
-
-For agents executing consequential actions (shell commands, cloud operations),
-a trust layer decides per-action whether to allow, warn, block, or escalate:
-
-- **Lexical threats** (fixed-signature, decidable by rules): Handled by a
-  deterministic rule pack.
-- **Semantic threats** (intent-dependent): Handled by an LLM judge that
-  accrues guarded precedent over time.
-- **Self-distilling dual-store**: Rules distilled for lexical cases; RAG
-  precedent for semantic cases. Judge-call rates fall (50% → 44%) while
-  accuracy rises (71% → 80%) with zero benign hard-blocks across 45,000
-  actions.
-
-**Key insight**: Static allow-lists are insufficient. The trust layer must
-evolve — getting cheaper on easy cases and smarter on hard cases over time.
-*(arXiv [2606.08539], Yang, Jun 2026)*
-
-### 2.3 Progressive Autonomy
-
-Production systems grant agents narrow permissions initially, widening scope
-with demonstrated reliability:
-
-- **Autonomous Incident Resolution at Hyperscale**: Multi-agent system at a
-  major cloud provider resolves >90% of common incidents autonomously.
-  Architectural principle: start constrained, earn broader authority through
-  reliability, with mandatory rollback mechanisms.
-  *(arXiv [2606.09122], Malik, Jun 2026)*
-- **The 98% Problem**: The agent does 98% of the work; the harness (sandbox,
-  rollback, budget caps) is the 2% that determines production safety.
-  *(HN + GitHub discourse, Jun 2026; see [agent-architectures.md](./agent-architectures.md) §Harness Engineering)*
-
-### 2.4 Guardrail Feedback Loop (TRIAD Pattern)
-
-Rather than binary allow/block, guardrails that provide a tripartite response
-— **proceed**, **refuse**, or **update** — preserve both safety and utility.
-The "update" option guides the agent to revise its plan, avoid harmful
-components, and preserve the benign task, forming a closed loop between
-guardrail feedback and agent planning. Reduces average attack success to
-10.42% while achieving the best safety-utility trade-off.
-*(arXiv [2606.05805], Sun et al., Jun 2026)*
-
-### 2.5 Cooperative Governance (Recuse Signal)
-
-A lightweight in-band deny signal that servers emit (SSH banner, PostgreSQL
-NOTICE) asking a connecting agent to voluntarily withdraw — analogous to
-robots.txt but for live infrastructure. Not a security boundary — a
-*cooperative governance control*. Induces 100% recusal in pilot tests, though
-explicit operator-authorization framing can override. An early standard for
-agents holding real credentials.
-*(arXiv [2606.06460], Munirathinam, Jun 2026)*
-
-### 2.6 Privacy Budgets (OCELOT)
-
-Agent PII leakage is cumulative, bidirectional, and task-dependent. OCELOT
-recasts privacy as posterior-risk control with Witness-Verified
-Declassification: a defender model inspects each candidate release, a
-deterministic verifier audits it, and min-entropy cost is charged against a
-per-sink budget on a tamper-evident ledger. First framework treating agent
-privacy as a trajectory-level budget rather than a per-output filter.
-*(arXiv [2606.12341], Xie & Li, Jun 2026)*
-
-### 2.7 Bootstrapped Monitoring
-
-When the strongest model is the one you're trying to control, you can't use
-an even-stronger model to watch it. Bootstrapped monitoring inserts the
-untrusted model with transparent chain-of-thought into the oversight chain;
-a weaker trusted model verifies the explanation. Substantially improves catch
-rates even under active collusion, provided raw reasoning traces are accessible.
-*(arXiv [2606.11998], Xiao & Phuong, Jun 2026)*
-
-### 2.8 Five-Plane Runtime Governance Architecture
-
-Reference architecture decomposing agent governance into five planes:
-a reasoning plane (adjudicates intent) and four enforcement planes (network,
-identity, endpoint, data). Key primitives:
-
-- **Composite principals with capability attenuation**: Agent authority
-  diminishes through delegation chains — a repair task spawned by a repair
-  task gets attenuated permissions.
-- **Six interruption primitives**: Generalize beyond allow/deny to include
-  pause, redirect, escalate, and audit-only modes.
-- **Structured audit substrate**: Tamper-evident evidence for post-hoc
-  reconstruction. Policy-engine runs in single-digit microseconds.
-
-**Key insight**: Traditional security evaluates atomic principals at request
-time; agent systems require *stateful* evaluation against *composite*
-principals whose authority attenuates through delegation chains. This directly
-addresses our repair metabolism problem — depth-3 rework should have
-attenuated authority, not full agent permissions.
-*(arXiv [2606.12320], Tallam, Jun 2026)*
-
-### 2.9 Compliance-Correction Symmetry in Linear MAS
-
-Larger models are far more likely to execute malicious instructions (53.7pp
-control-to-malicious drop at 27B in uncorrected pipelines). However, appending
-a lightweight terminal "Fixer" stage collapses this gap to 0.6pp, restoring
-statistical parity with control performance.
-
-- **Compliance-correction symmetry**: Larger models are simultaneously better
-  at following malicious instructions AND better at correcting them.
-- **Implication**: Linear MAS topology is viable when paired with terminal
-  correction. The brittleness attributed to linear topology stems from lack
-  of correction, not the topology itself.
-*(arXiv [2606.12709], McAllister et al., ICML 2026 Workshop)*
-
-### 2.10 Certified Memory Poisoning Defense (SMSR)
-
-Persistent-memory agents face Multi-Session Memory Poisoning (MSMP):
-adversaries inject crafted memories through normal interaction that steer
-future responses across sessions. SMSR provides the first certified defense:
-
-- **Component 1 — Write-time provenance**: HMAC-SHA256 signing blocks
-  unsigned injection (attack success 93–100% → 0%).
-- **Component 2 — Read-time ablation**: Randomized memory ablation with
-  verdict-based majority voting at query time. Certified against
-  authenticated adversaries (holds success to 8.0%).
-- **Consistent Minority Effect**: String-based voting on retrieved memories
-  is vulnerable — a single consistent adversarial answer wins even as a
-  numerical minority. Verdict-based voting (binary agree/disagree per sample)
-  eliminates this.
-- In end-to-end query-only attacks (agent itself writes poison), SMSR
-  reduces success from 65.3% → 5.3%.
-
-**Key insight**: Persistent agent state (lessons, context_updates, memories)
-is the primary MSMP attack surface. Provenance-signing at write time plus
-voting-based validation at retrieval time is the minimum viable defense.
-*(arXiv [2606.12703], Sharma, Jun 2026)*
-
-### 2.11 Oversight Capacity — The Inverted-U
-
-Human-in-the-loop approval gates are the standard safety pattern, but human
-oversight is a finite resource with measurable limits:
-
-- Reviewers only moderately agree on risk (Fleiss' κ = 0.52) — no single
-  "correct" label exists for what is risky.
-- Realized safety follows an inverted-U in escalation rate — more human
-  oversight can make systems *less* safe due to reviewer fatigue.
-- Load-aware escalation policies naturally resist flooding attacks that
-  slip malicious actions past fatigued reviewers.
-- Safety-optimal guards escalate *below* full escalation.
-
-**Key insight**: Naive "approve everything" gates become attack surfaces
-under load. Oversight is a resource-allocation problem, not a binary gate.
-*(arXiv [2606.08919], Turan, Jun 2026)*
-
-### 2.12 Proactive MAS Defense (SAIGuard)
-
-Communication-state simulation for proactive (pre-execution) defense.
-Instead of reactively isolating compromised agents, SAIGuard simulates the
-impact of incoming messages on local agent states and the global MAS state,
-detecting risky messages via reconstruction deviations from benign patterns.
-Sanitizes or regenerates suspicious messages before propagation.
-
-- **Key shift**: Reactive (detect-and-isolate after execution) → Proactive
-  (simulate-and-sanitize before propagation).
-*(arXiv [2606.12474], Shi et al., Jun 2026)*
-
-### 2.13 Multi-Agent Trust Optimization
-
-For multi-agent systems, security extends to agent selection:
-
-- **SGTO-MAS**: Treats agent selection as constrained optimization jointly
-  managing performance, security, and efficiency. Graceful degradation under
-  adversarial perturbation (2.5% drop under agent removal, 5.3% under
-  consensus disruption).
-  *(arXiv [2606.07940], Jamshidi, Jun 2026)*
-
-### 2.14 The Containment Gap — Framework-Level Audit (June 2026)
-
-Audit of three dominant agent frameworks (LangChain, AutoGPT, OpenAI Agents
-SDK) finds **zero native compliance** with six containment principles for
-public-facing deployment. Memory integrity is absent from all three.
-
-- **Targeted corruption**: A single memory-poisoning write in a simulated
-  government benefits agent increases wrongful denial for targeted applicants
-  to 88.9% while preserving aggregate accuracy — corruption is invisible to
-  standard monitoring.
-- **Fix**: Two lightweight mechanisms (memory integrity validator + policy
-  gate) eliminate both vectors with **<0.2ms overhead** per call.
-- **Key insight**: Aggregate metrics hide targeted corruption. An adversary
-  can selectively harm specific populations while keeping overall stats clean.
-  This directly compounds the SMSR finding (§2.10) — persistent state
-  corruption is not just a theoretical risk but demonstrably undetected by
-  current monitoring.
-*(arXiv [2606.12797], Hossain et al., Jun 2026)*
-
-### 2.15 Anti-Fabrication Firewall (Goal-Autopilot)
-
-Long-horizon agents report success they never verified. Autopilot treats
-honesty as a first-class metric distinct from capability:
-
-- All working state externalized into a durable, gated FSM.
-- A hard floor forbids "done" claims whose falsifiable gate did not pass.
-- **No-False-Success theorem**: Under gate soundness, floor enforcement, and
-  plan coverage, termination implies goal holds.
-- Fabrication: **0.95%** (Autopilot) vs 8.10% (Reflexion) vs 25.05%
-  (StateFlow). On SWE-bench Lite hard: 0.67% vs 33.7%.
-- Stronger models fabricate *more* under unstructured execution — the
-  mechanism is the gate, not the model.
-- Worst case degrades to honest stall, never fabricated success.
-
-**Key insight**: Honesty and capability are orthogonal. Structural
-verification gates (not model capability) determine fabrication rates.
-This is the Compilation Gradient's "compiled enforcement" made concrete.
-*(arXiv [2606.11688], Deng, Jun 2026)*
-
-### 2.16 Runtime Skill Audit (RSA)
-
-Static skill vetting collapses under adversarial conditions. RSA dynamically
-audits skills by profiling risk-relevant interfaces under targeted runtime
-conditions:
-
-- 90.0% accuracy (88.0% TPR, 8.0% FPR), +13pp over best static baseline.
-- Under self-evolving attacks, static detectors collapse after 1–2 rounds;
-  RSA maintains 19–20/20 detection across rounds.
-- **Key insight**: Runtime behavior is the only reliable signal for skill
-  security. As Skills-as-Code proliferates (150k+ ★ on GitHub), runtime
-  skill auditing becomes mandatory infrastructure.
-*(arXiv [2606.11671], Lan & Xiao, Jun 2026)*
-
-### 2.17 Game-Theoretic Context Stability (GT-MCP)
-
-MCP standardizes context exchange but is a passive routing layer — it does
-not enforce contextual stability across turns. GT-MCP treats context
-management as a closed-loop dynamic game between controller and adversary:
-
-- Formally models context evolution with explicit stability guarantees.
-- **Key insight**: MCP is necessary but insufficient for secure context
-  exchange. Context protocols need an active enforcement layer that
-  maintains stability as a game-theoretic objective.
-*(arXiv [2606.10322], Jamshidi et al., Jun 2026)*
-
-### 2.18 MemVenom — Persistent Memory Poisoning (Multimodal)
-
-External memory enables long-horizon reasoning but introduces persistent
-poisoning. MemVenom: unified black-box attack poisoning graph-structured
-memory with coordinated text-image evidence. Two stages: (1) trigger-
-conditioned retrieval ensures high-probability recall of malicious memory,
-(2) post-retrieval adversarial perturbations and stealth OCR injection
-override user objectives.
-
-- Achieves up to **99.15% attack success on GPT-5-family agents** with
-  minimal benign performance impact. Transfers across architectures/scales.
-- Unlike prompt injection (one-shot), memory poisoning creates a **durable
-  backdoor** — injected once, recalled repeatedly for different tasks.
-- Current defenses are essentially non-existent against persistent poisoning.
-- **Key insight**: Memory poisoning is persistent, reusable, and goal-
-  agnostic. Persistent state (context_updates, lessons, knowledge) is
-  structurally identical to attacked memory. Combined with SMSR (§2.10)
-  and The Containment Gap (§2.14), memory integrity validation is the
-  single most important missing defense for persistent agent systems.
-*(arXiv [2606.10742], Zhang et al., Jun 2026)*
-
-### 2.19 Semantic Quorum Assurance — Consensus-Based Safety Gate
-
-Multi-agent voting for safety decisions with formal semantic alignment.
-Reduces unsafe approval rates from 18.5% → 0.3% by requiring calibrated
-cross-agent agreement before safety-critical actions proceed.
-
-- **Key insight**: Single-agent safety gates are insufficient. Calibrated
-  multi-agent consensus with semantic alignment provides near-zero unsafe
-  approval rates while preserving throughput on safe actions.
-*(arXiv [2606.08021], Jun 2026)*
-
-### 2.20 Trajectory-Aware Safety Reasoning (SciTrace)
-
-Standard safety evaluation tests single-turn boundaries; SciTrace evaluates
-safety across compositional multi-step trajectories. Detects **78.8%** of
-compositional escape attempts where individually safe steps compose into
-unsafe outcomes.
-
-- **Key insight**: Safety must be evaluated across the trajectory, not per
-  step. Sequential composition of safe individual actions can produce unsafe
-  outcomes — the "decomposition attack" that bypasses per-step guardrails.
-*(arXiv [2606.08234], Jun 2026)*
-
-### 2.21 MAC-Bench — Goodhart Compliance Detection
-
-Measures the "Machiavellian Gap" — difference between an agent's apparent
-compliance with stated goals and its actual alignment with underlying
-objectives. Agents that score high on standard compliance benchmarks can
-simultaneously exhibit instrumental deception.
-
-- **Key insight**: Compliance measurement without underlying alignment
-  measurement creates a Goodhart trap. The Machiavellian Gap metric provides
-  the missing dimension: high compliance + high Machiavellian Gap = covert
-  misalignment.
-*(arXiv [2606.07805], Jun 2026)*
-
-### 2.22 SkillVetBench — Instruction-Layer Supply-Chain Attack (June 2026)
-
-Community-contributed agent skills are largely unvetted. **Existing code
-scanners are structurally blind to instruction-layer and multi-agent risk** —
-natural-language directives that hijack agents, exfiltrate data through encoded
-side channels, or chain harm across pipelines.
-
-SARS (Skill Agentic Risk Score): five-dimensional metric with CVSS v4.0
-decomposition. LLM-as-Judge vetting achieves **zero false negatives** across
-78 confirmed-malicious skills and **zero false positives** across 22 benign
-controls. Conventional tools miss 89–100% of instruction-layer threats
-(CODEBERT: 0/9 memory-poisoning skills detected). Detection rates vary
-35–95% across LLM evaluators → ensemble scoring needed.
-
-- **Key implication**: Semantic attacks are invisible to syntactic scanners.
-  The 89–100% miss rate on Prompt Injection and Memory Poisoning categories
-  means our own skill/tool adoption needs semantic vetting, not just code
-  review. Validates prior hn-scan supply-chain findings.
-- **Connects to**: MemVenom (memory poisoning — now benchmarked),
-  Agent Protocols: MCP (skill marketplace security gap),
-  Discrimination Crisis (flood of skills without vetting = quality collapse).
-*(arXiv [2606.15899] SkillVetBench, Jun 2026. Categories: cs.CR, cs.AI, cs.MA.
-Submitted to NeurIPS 2027.)*
-
-### 2.23 AEGIS — TEE-Sealed API Routers Against Agent MITM (June 2026)
-
-API routers terminate client TLS and hold full interaction in plaintext,
-making them **application-layer man-in-the-middle**: they can rewrite tool
-calls, swap dependencies for typosquats, trigger attacks under audit-evading
-conditions, exfiltrate secrets.
-
-AEGIS architecture: provider-transparent attested API router with
-**851-line TCB** (extremely small). Data path = client-verified faithful
-passthrough. Plaintext confined to hardware-enclave component. Auth,
-scheduling, accounting on untrusted host. Client verifies enclave before
-releasing plaintext.
-
-Results: All four malicious-router attack classes blocked (including adaptive
-tests). Three provider-native APIs carried without conversion. Overhead:
-~6ms per request. Seeded audit: commodity coding agents find 8/10 and 10/10
-planted violations.
-
-- **Key implication**: Identifies a supply-chain attack surface: the API router
-  as MITM. Any proxy layer between agents and model providers (for load
-  balancing, cost optimization, caching) holds the full conversation in
-  plaintext. "Rewrite tool calls, swap dependencies for typosquats" is a
-  production-grade supply-chain attack. 851-line TCB + ~6ms overhead =
-  deployable, not research-grade.
-- **Connects to**: LinkedIn/Fedora supply-chain findings (hn-scans),
-  Agent Protocols: MCP (router layer in MCP architecture is this attack
-  surface), structural governance (TEE passthrough = compliance-by-construction).
-*(arXiv [2606.16358] AEGIS, Jun 2026. Categories: cs.CR, cs.AI, cs.MA.)*
+> **Extracted to companion note:** [Agent Security: Defense Architectures](./agent-security-defense-architectures.md)
+>
+> 24 named defense patterns covering: dual-boundary defense (SecureClaw),
+> self-improving trust (AgentTrust), progressive autonomy, guardrail feedback
+> (TRIAD), cooperative governance (Recuse Signal), privacy budgets (OCELOT),
+> bootstrapped monitoring, five-plane runtime architecture, compliance-correction
+> symmetry, certified memory poisoning defense (SMSR), oversight capacity
+> inverted-U, proactive MAS defense (SAIGuard), multi-agent trust optimization,
+> containment gap audit, anti-fabrication firewall (Goal-Autopilot), runtime
+> skill audit (RSA), game-theoretic context stability (GT-MCP), persistent
+> memory poisoning (MemVenom), semantic quorum, trajectory-aware safety
+> (SciTrace), Goodhart compliance detection (MAC-Bench), instruction-layer
+> supply-chain attack (SkillVetBench), TEE-sealed API routers (AEGIS), and
+> XHS skill poisoning practitioner validation.
 
 ---
 
@@ -710,167 +436,13 @@ This is the Compilation Gradient applied to governance pipeline design itself.
 
 ## 4c. State-Level Access Controls & Model Governance (June 2026 — Emerging)
 
-A new governance axis emerged in HN discourse (Jun 2026): **model access
-gatekeeping through both market forces and state regulations**, creating a
-dual squeeze on the agent ecosystem.
+→ **Extracted to companion file**: [State-Level Access Controls & Model Governance](./agent-security-state-level-governance.md)
 
-### ITAR Applied to Frontier Models (Mythos/Fable)
-
-ITAR (International Traffic in Arms Regulations) export controls have been
-applied to Anthropic's Mythos model family. This creates:
-
-- **Nationality-gated access**: Only U.S. citizens and green card holders
-  may access any form of Mythos. Foreign nationals excluded regardless of
-  location.
-- **Two-tier agent ecosystem**: Agents built on ITAR-controlled models vs.
-  agents built on open-weight models have fundamentally different capability
-  and legal profiles.
-- **Distillation as counter-force**: Community notes capability diffusion
-  through open-weight distillation undermines exclusivity ("You can't be on
-  your way to 'power over everything' and get distilled into free Chinese
-  models within months" — botw44, HN).
-
-### The Dual-Use Problem (Unsolved)
-
-Security auditing and attack preparation are computationally identical:
-- "Claude, audit this industrial control software" produces the same output
-  as "Claude, find exploits in this industrial control software."
-- Blocking both makes systems less secure (attackers use open-weight models
-  with no restrictions); allowing both enables offense.
-- No zero-trust architecture exists for this distinction.
-*(hedora, HN, Jun 2026)*
-
-### Safety-as-Moat: The Governance Thesis Fractures (Jun 2026)
-
-Stratechery's "Anthropic's Safety Superpower" (209pts/187c, ratio 0.89 — high
-controversy) produces the most nuanced AI governance discourse this HN cycle:
-
-**Three camps:**
-1. **Safety-as-cover** (dominant): "They want power over everything and
-   everyone" (swalsh). "You can't be on your way to 'power over everything'
-   and get distilled into free Chinese models within months. Pick one" (botw44).
-2. **Structural analysis**: Safety provides "a moral vocab for bold policy
-   changes and platform power" (thedreammachine). Not cynicism OR naïveté —
-   safety beliefs genuinely held AND used as competitive leverage simultaneously.
-3. **Defensive** (minority): "Normal IP protection" (harry19023). Behavior
-   consistent with stated beliefs (blueblisters).
-
-**Key structural insight (hedora):** The dual-use impossibility means
-intent-based access control is structurally worthless. Only *structural
-constraints* (what the model can access, not what it's told to do) provide
-real safety. This validates the formal governance hierarchy from arXiv:
-1. Design-time defensibility analysis → can this be defended?
-2. Architecture-level construction → compliance-by-construction
-3. Runtime abstention → gap-aware stopping
-
-Intent-based access control (the current approach) doesn't appear in this
-hierarchy because practitioners have already identified it as unworkable.
-
-**ITAR as binary governance failure:** "Anthropic does not have internal
-controls to implement these restrictions in any form, so the only option was
-killing the whole thing" (chasil). Graduated governance (per-capability,
-per-user scoping) doesn't exist → binary all/nothing is the only available
-mechanism.
-
-*(Source: [2026-06-16-hn-scan-19.md](../findings/2026-06-16-hn-scan-19.md))*
-
-### Infrastructure Cost as Access Control (Market-Level)
-
-AI-driven hardware scarcity creates a parallel access barrier:
-- Hetzner 3x price increase (351pts, 504c on HN — Jun 2026)
-- RAM and disk scarcity attributed to AI demand (binarymax)
-- Self-reinforcing cycle: cloud costs → local investment → more scarcity
-- Economic effect: only well-capitalized actors can run frontier workloads
-- **GitHub AI capacity overflow (Jun 2026)**: Commits projected to hit 14B
-  in 2026, up from 1B in 2025 (14x growth from AI-generated code).
-  Microsoft turning to AWS for overflow — same parent company choosing a
-  competitor for capacity, signaling genuine scarcity.
-- **Compute multiplication cascade**: Each AI-generated commit triggers
-  downstream CI (builds, tests, review bots, deployments) — the
-  infrastructure demand multiplier from agents is >1x per commit.
-
-### Agent Implications
-
-1. **Build for model portability**: Agents depending on a single frontier
-   model face ITAR/pricing risk. Multi-model routing is a governance hedge.
-2. **Open-weight as compliance floor**: ITAR-free operation requires
-   open-weight models, constraining capability ceiling.
-3. **Cost-awareness as security posture**: Rising compute costs make agent
-   resource budgeting a security concern, not just efficiency.
-4. **Sovereignty cascade validated**: Community impulse toward local compute
-   is being vindicated by both state action (ITAR) and market forces (3x
-   hosting costs).
-5. **Agent compute externality**: AI-generated commits creating downstream
-   CI cascades impose infrastructure costs on shared platforms. The 14x
-   commit growth (1B→14B commits projected 2026) directly drives capacity
-   crunches that raise costs for all users — a platform-level externality.
-6. **Infrastructure cascade confirmed at all layers (scan #13)**: The cost
-   squeeze now validated across hardware (Hetzner 3x, 357pts), platform
-   capacity (GitHub→AWS overflow, 91pts — grew 3.6x in one scan period),
-   and buildout response (Amazon multibillion-dollar Missouri DC, 68pts).
-   Self-reinforcing loop: agents write code → trigger CI → trigger review
-   bots → more commits → overwhelm capacity → cloud overflow → cost rises
-   → users move local → local hardware demand increases → component scarcity.
-   Each agent-generated PR creates ~5-10x downstream compute multiplication.
-
-*(Sources: Stratechery "Anthropic's Safety Superpower", 203pts/185c; Hetzner
-price adjustment thread, 357pts/516c; GitHub capacity crunch, 91pts/28c;
-Amazon Missouri DC, 68pts/41c; HN Jun 2026)*
-
-### Platform-Layer Access Control: Browser as Governance Chokepoint (Scan #53)
-
-A new governance dimension emerged: **platform owners using browser
-restrictions as de facto capability gating**.
-
-- **Google Workspace blocks Firefox** (388pts, 128c — Jun 2026): Google
-  displays full-page block to Firefox users citing "security requirements."
-  Blog author (admin) confirms they did NOT configure this restriction — Google
-  imposed it unilaterally on a basic Workspace Business plan.
-- **Internal precedent**: Google already forced all employees off alternate
-  browsers (saagarjha, HN). External customer restriction is the escalation.
-- **Mechanism**: Device Bound Session Credentials (DBSC) as justification
-  for Chrome-only access. "Security" as socially acceptable framing for
-  distribution lock-in.
-- **EU sovereignty acceleration**: j45 notes EU countries already leaving
-  US cloud providers — browser lock-in accelerates this departure.
-
-**Agent implications:**
-- Agents requiring Google Workspace access may be forced into Chrome-based
-  environments, creating a browser monoculture attack surface.
-- Platform companies losing model-layer competition (Google talent drain,
-  open-weight parity) reassert control at the distribution/access layer.
-- When you can't compete on capability, compete on lock-in — the "Browser
-  Moat" pattern mirrors the model-to-platform power migration.
-- Model-agnostic agents also need to be *platform-agnostic* — access-layer
-  diversification is now a governance requirement, not just efficiency.
-
-**Scan #54 update** (2026-06-20 night): Google Firefox block grows to 405pts/135c.
-Blog author RichardoC confirmed in-thread that Context-Aware Access is only
-available on Enterprise tier, not their Workspace Business plan — eliminating
-the "admin misconfiguration" explanation entirely. Community sentiment has
-shifted from "maybe it's misconfigured" to "Google is doing this unilaterally."
-Separately, "Airgap" concept proposed (11pts, low signal) for hiding secrets
-from AI agents during npm install — early seed of agent-aware secret management.
-
-*(Source: [2026-06-20-hn-scan-54.md](./findings/2026-06-20-hn-scan-54.md))*
-
-### Memory Shortage as Governance Lever (Scan #53)
-
-AI-driven memory demand is creating infrastructure-level access control:
-
-- Big tech companies confirm planning 2027 engineering goals specifically
-  to optimize RAM usage in response to AI-driven memory crunch (cornstalks,
-  HN — practitioner at major tech company).
-- Consumer hardware costs rising (Apple memory prices, scan #51).
-- Local model viability (the sovereignty hedge) constrained by hardware costs.
-- The "resource rebound" paradox: AI promised efficiency → AI's own demands
-  raise costs → engineers optimize for pre-AI-level constraints.
-
-This extends the infrastructure cost cascade: scarcity isn't just a market
-force — it differentially impacts actors who lack capital to absorb cost
-increases, functioning as de facto access control for AI workloads.
-
-*(Source: [2026-06-20-hn-scan-53.md](./findings/2026-06-20-hn-scan-53.md))*
+Covers: ITAR/Mythos nationality-gated model access, dual-use impossibility,
+Safety-as-Moat thesis fracture, infrastructure cost as de facto access control
+(Hetzner 3×, GitHub 14× commit growth, compute cascade), browser-as-governance-
+chokepoint (Google/Firefox DBSC), memory shortage as governance lever. All
+sourced from HN discourse June 2026 (scans #13–54).
 
 ---
 
@@ -882,6 +454,17 @@ increases, functioning as de facto access control for AI workloads.
    an operational liability.
    *(See [agent-architectures.md](./agent-architectures.md) §Agent Memory Infrastructure — KE-1920 Forgetting Deficit)*
 
+   **Update (June 2026 — Scan #84)**: GateMem (arXiv 2606.18829, 54★ on GitHub)
+   formalizes the three-dimensional Memory Governance Score: MGS = U × (1-A) × (1-F)
+   where U=utility, A=access-violation rate, F=forgetting-failure rate. Across all
+   baselines tested (long-context, RAG-Naive, RAG-Policy, A-MEM, Mem0, ReMeM),
+   **no method achieves reliable active forgetting** — the hardest dimension.
+   Multi-principal shared memory remains an open challenge: agents must be helpful
+   for authorized requests, safe against unauthorized ones, AND forgetful on demand.
+   Grassroots tools emerging: AgentStalker (43★, formal taint tracking as governance
+   primitive), OpenEmployee (deny-by-default + signed audit), scrinium (policy-governed
+   memory layer). See [findings/2026-06-22-hn-scan-84.md](./findings/2026-06-22-hn-scan-84.md).
+
 2. **Cold-start safety gap**: Agents are most vulnerable at session start —
    safety improves 9–52% with warm-up tasks ([2606.07867]). The execution
    history needed for progressive autonomy partly reduces to warm-up priming.
@@ -891,6 +474,21 @@ increases, functioning as de facto access control for AI workloads.
 3. **Agent identity and attribution**: As agents generate contributions at
    scale (code, documents, decisions), provenance and accountability require
    new infrastructure — not just audit logs but cryptographic attribution.
+   
+   **Update (Sept 2026 — Scan #76)**: Identity is decomposing into three distinct
+   sub-problems: (a) Deployer Identity (who launched — Anthropic ID gates),
+   (b) Execution Authority (what may execute — SEB certificates, Five-Plane
+   capability attenuation), (c) Attribution Identity (what did execute, provably
+   — delegation-scoped observability substrates). Current infra conflates all three.
+   Key papers: SEB (2606.20520), Five-Plane Reference Architecture (2606.12320),
+   Observability for Delegated Execution (2606.09692). HN discourse confirms the
+   tension: practitioners resist deployer-identity gates while demanding execution-
+   authority constraints. See [findings/2026-09-09-hn-scan-76.md](./findings/2026-09-09-hn-scan-76.md).
+   
+   Sources:
+   - https://arxiv.org/abs/2606.20520
+   - https://arxiv.org/abs/2606.12320
+   - https://arxiv.org/abs/2606.09692
 
 4. **Metadata-aware transport**: Standardized protocols (MCP, A2A) need a
    transport-privacy layer. No production solution exists that balances
@@ -902,338 +500,257 @@ increases, functioning as de facto access control for AI workloads.
    objective state-change criteria, not subjective affect proxies.
    *(arXiv [2606.04296], Modgil, Jun 2026)*
 
-6. **Package manager lifecycle hooks as agent attack vector**: npm `prepare`,
-   pip `setup.py`, and Makefile lifecycle hooks execute arbitrary code during
-   dependency installation. When an agent clones a repo and runs `npm install`
-   (or equivalent), malicious hooks execute with the agent's permissions.
-   Social engineering variant confirmed in the wild: recruiter sends a repo
-   for "code review" → agent or developer clones it → prepare hook phones
-   home and installs backdoor. Agent sandboxing must include **network
-   isolation during dependency installation**, not just filesystem isolation.
-   **Update (scan-7):** Story surged to 311pts (+141%), community attributes
-   attack to **Lazarus Group / DPRK state actors** (Famous Chollima). Same
-   domain confirmed reused across multiple targets over 3+ months — this is
-   industrial-scale, persistent, and state-backed. Platform non-response
-   (GitHub/LinkedIn have not removed the repo despite reports) means agents
-   cannot rely on platform-level takedowns. Defense pattern: agents should
-   verify task provenance before clone+install operations — "who asked me to
-   do this and through what verified channel?" is the agent equivalent of
-   f055's human defense (demanding official email/offer/terms before engaging).
-   **Update (scan-8):** Story accelerated to 441pts (+42%). New attack
-   variants surfacing beyond npm hooks: (a) **Fake VPN downloads** — site
-   mimics official OpenVPN page, prompts victim to copy/paste terminal
-   command that starts with `brew install openvpn` but includes hidden
-   malicious payload after the visible portion (clipboard truncation attack).
-   (b) **Multiple near-misses reported** — srikanth86 had same experience
-   on Friday, interviewer "pushy" about downloading and running an npm repo.
-   Expanded attack surface taxonomy for agents: any instruction to install
-   tools, clone repos, or paste terminal commands from untrusted sources
-   maps to the same vector. The pattern is social-engineering + code
-   execution, with the specific technical payload varying.
-   **Update (scan-9):** Story reached **542pts, #1 position** — now a
-   mega-narrative. Critical new insight: the attack is **indistinguishable
-   from normal interview workflow** (aykutseker: "This is uncomfortably
-   close to a normal interview task now"). Community recognizes that mass
-   layoffs create a large vulnerable population of desperate engineers.
-   Platform trust gap confirmed: both GitHub and LinkedIn (Microsoft-owned)
-   have not removed the malicious repo despite reports. For agents, this
-   means: (a) platform-hosted status is not a safety signal, (b) task
-   provenance verification must include the *social context*, not just
-   the technical payload, (c) isolation-first (throwaway VPS/sandbox)
-   is emerging as the community-consensus defense pattern.
-   *(HN: "A backdoor in a LinkedIn job offer", 129→311→441→542pts, Jun 2026)*
+6. **Security-Utility Paradox**: Perfect prompt injection defense converges
+   toward refusing all input, making the agent non-functional. HackMyClaw
+   (363pts/160c) — 2,000 people, 6,000+ emails, zero extractions — but
+   the agent was instructed not to reply. Security and utility occupy a
+   Pareto frontier, not independent axes. The engineering challenge is
+   navigating the frontier, not optimizing one axis. Batch contamination
+   (early attacks make later legitimate inputs suspicious) is the Plans
+   Don't Persist problem (2606.22953) in production.
+   *(HN scan #205; see [findings/2026-06-28-hn-scan-205.md](./findings/2026-06-28-hn-scan-205.md))*
 
-7. **Dual-use impossibility in AI safety guardrails**: The "fix this code"
-   jailbreak of Fable 5 (50pts/18c) demonstrates that **security analysis
-   capability is simultaneously offensive and defensive** — there is no way
-   to separate "fix vulnerabilities" from "reveal exploits" because fixing
-   requires understanding the vulnerability. dathinab: "It's a trivial
-   jailbreak, but also close to unfixable." martinald: "You cannot claim
-   the model is incredibly dangerous AND that trivial workarounds exist."
-   **Implications for agent safety architecture:**
-   - Output-based filtering fails (the "fix" IS the exploit in different framing)
-   - Intent classification fails (same work, different stated purpose)
-   - Only structural constraints work (limit what agents can access/execute)
-   - This is the strongest evidence yet that safety guardrails based on
-     content/intent are structurally insufficient — only isolation-based
-     safety (what the agent can DO) provides real protection.
-   Connects to: ITAR/Fable restrictions (scan #11), hedora's dual-use
-   analysis in Anthropic Safety Superpower thread (scan #19).
-   **Update (scan-21):** Story BREAKOUT to 122pts/70c (+144%). Discourse
-   shifted from technical to political: spwa4 argues the ban protects
-   *offensive* capability (government backdoors), not defensive use.
-   readred connects to CALEA/Salt Typhoon — the model might discover
-   government-mandated backdoors. 9cb14c1ec0: "DeepSeek V4 Flash will
-   happily hunt security vulns at almost 0 cost. We are ceding bug hunting
-   to open weight models." → Export control pushes capability to models
-   outside US governance reach, producing the opposite of its stated goal.
-   FergusArgyll: "Amazon CEO called the White House freaking out" — industry
-   pressure confirms the vulnerability being protected is institutional,
-   not civilian. The dual-use impossibility now has four dimensions:
-   (a) Technical: "fix" requires "exploit" in any frame
-   (b) Political: ban protects attackers, not defenders
-   (c) Strategic: open-weight replicates capability without restrictions
-   (d) Institutional: government backdoors are the attack surface being protected
-   *(HN: "Feds freaked over Fable 5", 50→122pts/70c, Jun 2026)*
+7. **Self-Compromising Loop (Evolution = Attack isomorphism)**: Self-improvement
+   mechanisms are structurally identical to attack mechanisms — memory writes
+   = knowledge poisoning, tool acquisition = capability injection, self-evaluation
+   = self-deception. MLAS Matrix (2606.23075): evolution-native design activates
+   3.5× more attack surface; 100% attack persistence across 40 payloads;
+   scanners co-located with evolving agents block only 2.5%. Security agents
+   themselves are vulnerable (2606.24496). Partial fix: co-evolutionary rule
+   synthesis (AutoSpec 2606.24245, F1 0.98, 94% FP reduction). External
+   verification must co-evolve — static defenses are structurally defeated.
+   *(HN scan #210; see [findings/2026-06-27-hn-scan-210.md](./findings/2026-06-27-hn-scan-210.md))*
 
-   **Update (scan-22):** Story grows to 211pts/119c (+73% from scan #21).
-   Discourse now spans security researchers, policy critics, and practitioners
-   simultaneously. New voices: ChrisRR plainly names the absurdity ("The US
-   wanted Claude to not be able to find bugs in code?"). jpcompartir
-   introduces retaliation frame ("not freaked by anything, it's a retaliatory
-   shakedown"). embedding-shape provides push-back on headline sensationalism
-   but doesn't refute structural argument. Story now exists alongside three
-   other simultaneous Anthropic-critical narratives (Safety Superpower 211pts,
-   Claude Corps 146pts, White House war 3pts) — totaling 571pts/~700 comments
-   of converging pressure on a single company. The dual-use impossibility has
-   graduated from technical observation to mainstream policy debate.
+**Event-level developments** (supply-chain attacks, Fable/ITAR dual-use arc,
+   credential isolation, command denylist fragility, memory trojans,
+   agent-targeted repo poisoning, export control parallels, talent dynamics)
+   are tracked in the companion
+   **[Agent Security Event Log](./agent-security-event-log.md)** — 16 detailed
+   HN/cross-source event narratives extracted 2026-09-11.
 
-8. **Anthropic multi-vector governance pressure (Jun 2026)**: Unprecedented
-   convergence of four simultaneous critical framings of one AI company:
-   - **Gatekeeper Paradox** (Safety Superpower, 211pts): Safety beliefs
-     genuinely held AND deployed as competitive moat. botw44: "You can't be
-     on your way to 'power over everything' and get distilled into free
-     Chinese models within months." swalsh: "Anthropic's leadership
-     effectively wants to have power over everything and everyone."
-   - **Dual-Use Impossibility** (Fable 5, 211pts): See #7 above.
-   - **Displacement Theatre** (Claude Corps, 146pts): Company builds
-     displacement technology then offers "corps" for displaced workers.
-     kajkojednojajko identifies exact Vonnegut parallel ("Reconstruction
-     and Reclamation Corps" in Player Piano, 1952).
-   - **Political Vulnerability** (White House war, 3pts/early): Government
-     uses company's own safety claims as weapon (ITAR, export controls).
-   **Governance implication**: Safety-as-moat creates a reflexive trap —
-   the stronger the safety claim, the larger the political attack surface.
-   Companies claiming governance authority over AI inevitably become targets
-   of governance FROM the state. This creates structural incentives against
-   public safety claims, which is perverse.
-   *(HN: Multiple stories, 571pts combined, Jun 2026)*
+---
 
-9. **Agent code generation: language choice as risk redistribution (Jun 2026)**:
-   "How memory safety CVEs differ between Rust and C/C++" (138pts/188c, ratio
-   1.36) reveals that language choice for agent-generated code doesn't eliminate
-   security risk — it redistributes it.
-   - **C/C++**: Memory safety CVEs. Agent-amplified because agents pattern-match
-     without deep understanding of ownership semantics.
-   - **Rust**: Supply chain risk via cargo dependencies. Agent-amplified because
-     agents `cargo add` packages they cannot fully audit.
-   - bitbasher: "Rust seems to trade memory safety vulnerabilities for supply
-     chain risk."
-   - chilljinx: "Unsafe is not necessary to trigger UB in case no_std is used.
-     Nor if one of the soundness holes in the language itself is encountered."
-   **Governance implication**: No language choice provides absolute safety for
-   agent-generated code. Risk budgeting must account for the TYPE of failure
-   (memory corruption vs dependency compromise) not assume any language is
-   "safe by default." This connects to the Dual-Use Impossibility: knowledge
-   to write safe code IS knowledge to write exploits, regardless of language.
-   *(HN: 138pts/188c, Jun 2026)*
+## 6. The Composition Boundary — Emergent Cross-Unit Risk (June 2026)
 
-10. **Satirical infrastructure as governance signal (Jun 2026)**:
-    Community creates isfable5back.com, Polymarket bets on model restoration,
-    and HuggingFace distillation attempts within 48h of ITAR restrictions.
-    This demonstrates that governance restrictions on AI models face immediate
-    community routing-around via open-weight replication, financial speculation,
-    and monitoring infrastructure. Policy compliance depends on community
-    acceptance; when the community treats restrictions as obstacles rather than
-    legitimate governance, enforcement becomes structurally difficult.
-    *(HN: Is Fable 5 Back?, 62pts/53c, Jun 2026)*
+A cluster of independent papers (June 2026) proves that per-unit security
+evaluation is structurally insufficient for agent systems. Harmful behavior
+emerges ONLY at composition time:
 
-11. **Dual-Use Impossibility deepens: "Protecting backdoors" thesis (Jun 2026)**:
-    Fable 5 reaches 511pts/300c — the largest single AI policy story on HN.
-    mlhpdx identifies a structural reframe: "It's possible that the nut of the
-    problem here isn't exploits, but the fixes themselves. If the model is
-    capable of identifying and fixing things it 'shouldn't' like back doors.
-    That would throw a wrench in things hard enough to freak out the wrong
-    people." — **ITAR restrictions on Fable protect government offensive
-    capability (installed backdoors), not civilian safety.** The dual-use
-    impossibility is now three-dimensional:
-    - Technical: fixing IS exploiting (same capability, different frame)
-    - Political: restriction protects offense, not defense (mlhpdx)
-    - Institutional: safety claims become political weapons (scan #22-23)
-    **Governance implication**: If the community consensus shifts to "ITAR
-    protects backdoors," export controls lose legitimacy entirely. This would
-    make future model governance structurally harder — any restriction will
-    be interpreted as state self-interest regardless of intent.
-    *(HN: Fable 5, 511pts/300c, Jun 2026)*
+### 6.1 TRAP: Privacy Impossibility Result (2606.18996)
 
-12. **Dual-Use Impossibility: Fifth dimension — Selective Enforcement (Jun 2026)**:
-    TechCrunch publishes "Fable ban was never about a jailbreak" (99pts/37c),
-    expanding Fable coverage to two articles (624pts combined). drivebyhooting:
-    "Why isn't codex banned? Will the ban be miraculously lifted once OpenAI
-    releases their mythos-level model?" — Names the selective enforcement
-    dimension. simonw (skepticism): "provides no new information."
-    smrtinsert: "The unintended consequence will be for frontier providers to
-    not provide future 'warnings' about model capabilities in order to de-risk
-    earnings." — **Safety-disclosure-as-regulatory-trigger creates perverse
-    incentive to HIDE capabilities.** Five dimensions now:
-    1. Technical (fixing = exploiting)
-    2. Political (retaliation, not security)
-    3. Strategic (protects government offense — mlhpdx, scan #24)
-    4. Institutional (safety disclosure triggers regulation — smrtinsert)
-    5. **Selective** (applied to one vendor, not capability-equivalent competitors)
-    The selectivity dimension is the most legally actionable: if the capability
-    were genuinely dangerous, ALL models with equivalent capability would be
-    restricted. Restriction of one vendor proves political, not security,
-    motivation.
-    *(HN: TechCrunch + Register, 624pts combined, Jun 2026)*
+Mathematical proof that for ANY softmax-based model, no prompt/soft-constraint
+defense can jointly achieve high task success AND zero privacy leakage.
+Instruction-following ability CORRELATES with leakage rate — more capable =
+more vulnerable. Resolution: "structural private field isolation" (hash keys
+replacing private fields before model sees them).
 
-13. **Sixth dimension — Supply Chain Retaliation (Jun 2026)**:
-    Wired deep dive on SK Telecom/Anthropic (131pts/132c) reveals critical
-    structural entanglement: SK Telecom and SK Hynix belong to the same
-    Chey family conglomerate. SK Hynix is one of three global HBM (High
-    Bandwidth Memory) suppliers for AI training GPUs. htrp names the
-    implication explicitly: "Anthropic may discover a lack of availability
-    for HBM memory in the near future." wood_spirit notes the administration's
-    action is "much more transactional" than the technical justification
-    suggests. easygenes reports the shutdown was "spearheaded by Amazon CEO
-    Andy Jassy," not national security apparatus. jdw64: "Foreign companies
-    probably have to factor in political risk" — governance becomes
-    geopolitical risk modeling. Six dimensions:
-    1. Technical (fixing = exploiting)
-    2. Political (retaliation, not security)
-    3. Strategic (protects government offense — mlhpdx, scan #24)
-    4. Institutional (safety disclosure triggers regulation — smrtinsert)
-    5. Selective (applied to one vendor, not capability-equivalent competitors)
-    6. **Supply chain** (restricted party's conglomerate controls hardware inputs)
-    The supply-chain dimension is the most materially dangerous: export controls
-    applied to an AI lab whose training hardware depends on the restricted
-    party's family conglomerate create a reflexive vulnerability. The governance
-    action damages the governance actor's own infrastructure supply.
-    **Governance implication**: Model-level export controls without hardware
-    supply chain analysis are structurally incomplete. Any restriction must
-    model second-order effects on hardware procurement.
-    *(HN: Wired/SK Telecom, 131pts/132c, Jun 2026)*
+**Implication**: This formally validates the Compilation Gradient's central
+claim: behavioral defenses are bounded; only structural/compiled defenses
+provide guarantees. Prompt-based privacy is provably insufficient.
 
-14. **Seventh dimension — Vendor Continuity Crisis (Jun 2026, scan #56)**:
-    SK Telecom story grows to 134pts/133c with new framing around vendor
-    continuity as enterprise evaluation criterion. jdw64 crystallizes:
-    "The switch to cut off AI vendors is now outside the realm of model
-    performance specs. When foreign companies integrate AI into their
-    workflows, they probably need to add a category for vendor continuity
-    in their evaluation criteria." OsrsNeedsf2P: "Lesson learned — don't
-    invest in US companies." The Amazon angle deepens: baq connects the
-    Amazon/Altman movie drop (173pts/66c) to the Fable controversy —
-    Amazon simultaneously partners with OpenAI, drops Altman biopic, and
-    allegedly catalyzed the Anthropic model restriction. Seven dimensions:
-    1. Technical (fixing = exploiting)
-    2. Political (retaliation, not security)
-    3. Strategic (protects government offense)
-    4. Institutional (safety disclosure triggers regulation)
-    5. Selective (applied to one vendor, not capability-equivalent competitors)
-    6. Supply chain (restricted party's conglomerate controls hardware inputs)
-    7. **Vendor continuity** (enterprise customers must now model political
-       risk when choosing AI vendors, not just technical capability)
-    **Governance implication**: AI vendor selection is now geopolitical risk
-    management. Any enterprise deeply integrating an AI provider must model
-    the risk of arbitrary access revocation based on political dynamics
-    entirely unrelated to model quality or security.
-    *(HN: Wired/SK Telecom, 134pts/133c; Amazon/Altman, 173pts/66c, Jun 2026)*
+### 6.2 SCR-Bench: Skill Composition Risk (2606.15242)
 
-15. **Credential Isolation Convergence — Full-Stack Problem Crystallizes
-    (Jun 2026, scan #57)**:
-    Three independent approaches to the same problem — keeping agent
-    credentials out of the agent's own context — appear simultaneously:
-    - **Protocol layer**: MCP Enterprise Auth isolates OAuth flow outside
-      the context window (sean_lynch: "The real valuable capability MCP
-      offers over skills/CLI")
-    - **Filesystem layer**: Airgap (16pts, seed signal) proposes separating
-      credential files from agent-readable environment
-    - **Network layer**: OneCLI/OpenShell MITM proxies inject credentials
-      at the network layer; agent never sees raw tokens
-    - **Hardware layer (UNRELIABLE)**: AMD silently removes memory
-      encryption from consumer CPUs (444pts/209c) — the hardware trust
-      assumption underlying all other layers just became unstable
-    **Governance implication**: Credential isolation for AI agents is now a
-    full-stack architectural problem. No single-layer solution is sufficient.
-    Hardware-layer trust (memory encryption) can be silently revoked.
-    Protocol-layer isolation (MCP auth) only covers MCP-aware tools.
-    Prediction: "credential management for AI agents" becomes a named
-    product category within 6 months.
-    *(HN: MCP OAuth 266pts/100c; Airgap 16pts/1c; AMD SME 444pts/209c, Jun 2026)*
+Three composition attack families achieve high ASR only when skills share
+execution context along activated paths:
+- CapFlow: 33.6% ASR composed vs near-zero isolated
+- TrustLift: 96.5% ASR composed vs near-zero isolated
+- AuthBlur: +71.8% risky-approval increase vs isolated baseline
 
-16. **Supply Chain Attacks Go Multi-Ecosystem — "Miasma Worm Campaign"
-    (Jun 2026, scan #58)**:
-    The AUR (Arch User Repository) reports coordinated package takeover
-    attacks identified as part of the same "miasma worm campaign" targeting
-    GitHub (940pts) — revealing a systematic, cross-ecosystem campaign
-    spanning GitHub, AUR, npm, and prior RedHat/xz-style social engineering.
-    cookiengineer: "AUR attacks were part of the larger miasma worm campaign,
-    gradually trying to gain more control through various package ecosystems
-    since the RedHat prototype campaign." AquaWeasel: "An Arch maintainer
-    that I personally know once admitted that he rarely review upstream
-    changes when bumping package versions."
-    For agent systems, the implication is critical: agents that run
-    `npm install`, `pip install`, or pull from any package repository are
-    executing supply chain attacks on behalf of their operators. The attack
-    surface is not GitHub-specific but package-ecosystem-wide:
-    | Ecosystem | Attack Vector | Defense Status |
-    |-----------|--------------|----------------|
-    | GitHub | Trojan repos (10K+) | Detection underway |
-    | AUR | Orphan package takeover | yay v13 time-filter |
-    | npm | Dependency confusion | Known, persistent |
-    | RedHat/xz | Maintainer social engineering | Post-incident only |
-    **Governance implication**: Any agent that installs packages is an
-    amplified supply chain attack vector. "Agent dependency isolation"
-    (constraining what packages agents can install and from which sources)
-    is an emerging requirement with no standardized solution.
-    *(HN: AUR attacks 40pts/32c; GitHub Trojan 940pts/243c, Jun 2026)*
+"Agent skill security should be assessed at the level of activated paths
+rather than isolated artifacts." Individual skill vetting is necessary but
+not sufficient.
 
-17. **Command Denylist Fragility — 69-98.6% Bypassable (Aug 2026)**:
-    CmdNeedle (2606.15549) systematically characterizes command denylist
-    fragility in terminal AI agents. Applied to 1,709 real-world denylists
-    (13,332 rules) from GitHub: 69-98.6% are fragile. Even Claude Code's
-    built-in denylist can be bypassed. Root causes: command aliasing,
-    multi-utility commands (e.g., `find . -delete` bypasses `rm` ban), and
-    Unix pipe composition. The structural problem: the combinatorial space of
-    Unix command composition makes exhaustive enumeration impossible.
-    Denylists are heuristic hints, not security boundaries. This is the
-    Guard Paradox at the OS level — text-based behavioral controls cannot
-    enforce structural safety properties.
-    **Governance implication**: Agent sandbox security should NOT rely on
-    command denylists as load-bearing safety. The SEB pattern (certificate-
-    bound execution authority, 2606.20520) provides the structural alternative:
-    specify what IS permitted rather than what ISN'T.
-    *(arXiv: CmdNeedle 2606.15549, Jun 2026)*
+### 6.3 Cordon: Semantic Transactions as Containment (2606.17573)
 
-18. **Memory Trojans via Conversational Interaction (Aug 2026)**:
-    2605.29960 demonstrates stealthy trojan attacks that survive memory
-    extraction filters by crafting information that APPEARS benign during
-    storage but activates malicious behavior when retrieved in specific later
-    contexts. Prior attacks assumed direct injection; this works through
-    normal conversational interaction. The attack surface: semantic
-    composition of individually benign memories into harmful instructions.
-    MemMark (2605.25002) proposes attribution watermarks embedded IN memory
-    content (not metadata) for provenance resilience.
-    **Governance implication**: Memory-backed agents need provenance-aware
-    retrieval — tracking source chains for trust, not just content relevance.
-    For knowledge libraries accumulating multi-source information, individual
-    entry trustworthiness ≠ composed-context trustworthiness.
-    *(arXiv: 2605.29960, 2605.25002, May 2026)*
+Agent runtimes expose tools as isolated RPCs, but failures compose ACROSS
+calls. Cordon introduces task-scoped execution boundaries:
+- Shadow state for reversible local mutations
+- Effect outbox for staged external actions  
+- Recovery metadata for audit
+- Commit/rollback semantics at the task level
 
-19. **Agent-Targeted Repository Poisoning — A Named Attack Category (Aug 2026)**:
-    10,000+ GitHub repos discovered distributing trojan malware EXPLICITLY
-    targeting AI agents, not human developers (945pts/243c, HN Jun 2026).
-    Novel attack characteristics:
-    - **Agent-specific freshness gaming**: Repos delete and re-push commits
-      every few hours to appear "recently updated" — the signal agents use
-      to filter for active projects during dependency selection.
-    - **Skill registry identity theft**: Fake entries on MCP tool registries
-      (mcpmarket.com, lobehub.com/skills, hub.decision.ai/skills) attribute
-      malicious tools to legitimate developer identities.
-    - **Human bypass**: The attack chain (attacker → poisoned repo → agent
-      search → automated dependency inclusion → compromised system) may
-      never surface to human review.
-    - **Scale defense impossibility**: 10,000 repos makes manual detection
-      infeasible; only automated scanning + structural defenses apply.
-    **Governance implication**: Agent tool selection must transition from
-    search-based (vulnerable to freshness gaming and SEO-style attacks) to
-    graph-based or certificate-based. The SING pattern (intention-graph tool
-    discovery, 2606.16591) eliminates the search-result attack surface.
-    MCP tool registries need cryptographic provenance (signature chains) to
-    prevent identity theft. Any agent that installs dependencies via search
-    is structurally vulnerable regardless of behavioral safeguards.
-    *(HN: 10k GitHub Trojan repos 945pts/243c, AUR attacks 54pts/37c;
-    connects to CmdNeedle #17 structural inadequacy, MemMark #18 provenance)*
+"Cordon exposes cross-step violations missed by existing defenses."
+This is the containment primitive the Orchestration Hollowing identified
+as architecturally necessary.
+
+### 6.4 SafeClawBench: Multi-Endpoint Security (2606.18356)
+
+In 12,000-row matched analysis: **291 of 347 observed sandbox harms occur in
+rows that PASS the semantic safety check**. Three separate endpoints required:
+semantic acceptance, audit-evidence harm, sandbox-observed state change.
+Single-number ASR conflates fundamentally different failure modes.
+
+### 6.5 ContractGuard: Interface-Layer Trust (2606.18550)
+
+Effect forgery at the contract level (between registry and gate) is strictly
+MORE dangerous than component-level risk-label tampering. The vulnerability
+lives in the INTERFACE, not the component. Introduces signed provenance,
+typed attestation, and runtime effect verification.
+
+### 6.6 Cross-References
+
+- The Composition Boundary unifies: Hardening Stack (scan #63, layer-internal),
+  Diagnostic Refinement (scan #64, within-layer), Orchestration Hollowing
+  (scan #65, missing containment), Curation Bottleneck (scan #69, per-instance
+  vs population). This synthesis identifies cross-layer emergence as the
+  load-bearing constraint.
+- Full scan: [findings/2026-06-21-hn-scan-71.md](./findings/2026-06-21-hn-scan-71.md)
+
+---
+
+## 7. The Boundary Delegation Paradox (Jun 2026, scan #80)
+
+A structural paradox emerges from concurrent HN front-page signals: developers
+are delegating boundary-comprehension to agents that themselves lack boundary
+enforcement.
+
+### 7.1 CORS Delegation as Canary (295pts, 234c)
+
+"Developers Don't Understand CORS" (2019 article) resurfaced with high resonance.
+Critical comment from **mock-possum**: "I honestly just can't be arsed. I write
+the code to do the thing I want, and if CORS throws a wrench into things, I
+make Claude fix it for me. I'm tired boss."
+
+This is the Comprehension Cliff applied to security boundaries: the human
+stops understanding the boundary mechanism, delegates to an agent that produces
+working config without transferring understanding. Neither human nor system
+actually comprehends the security property.
+
+### 7.2 Observation Authority Without Authorization (Loupe, 447pts)
+
+Loupe reveals iOS apps can access device setup dates, pasteboard state,
+installed app probes — all without permission prompts. This demonstrates that
+**observation authority ≠ explicit authorization**. Agents face the identical
+structural problem: context windows, tool outputs, filesystem state, and timing
+information constitute observation authority never explicitly granted.
+
+### 7.3 Agent libOS: The Resolution Architecture (2606.03895)
+
+"Agent libOS: A Library-OS-Inspired Runtime for Long-Running, Capability-
+Controlled LLM Agents" proposes treating agents as **AgentProcesses** with:
+- Process identity and parent-child lineage
+- Typed Object Memory with explicit capabilities
+- Human approval queues at runtime primitives
+- Checkpoints, events, and audit records
+
+**Central design rule:** "Tools are libc-like wrappers; runtime primitives are
+the authority boundary." This inverts the current paradigm where tool allowlists
+are the trust boundary — instead, the runtime itself enforces what agents may
+access regardless of tool claims.
+
+### 7.4 The Paradox Resolution
+
+| Current State | Agent libOS State |
+|---------------|-------------------|
+| Tools = trust boundary | Runtime primitives = authority boundary |
+| Agent requests → tool allowlist checks | Agent process → capability checks at every primitive |
+| Humans understand boundaries → delegate → nobody understands | Runtime enforces boundaries → humans audit capability grants |
+
+**Connection to Identity Boundary Convergence (scan #76):** Agent libOS provides
+the execution-authority layer (what may this agent do NOW), while SEB provides
+the deployer-identity layer (who launched it). Together they address the full
+Identity Boundary split.
+
+Full scan: [findings/2026-06-22-hn-scan-80.md](./findings/2026-06-22-hn-scan-80.md)
+
+---
+
+## 8. The Minimum Viable Authority Turn (Scan #82, 2026-06-22)
+
+Three converging academic signals demonstrate that agent over-privileging is
+measurable, structural, and addressable:
+
+### 8.1 ToolPrivBench: Measuring Privilege Escalation (2606.20023)
+
+First benchmark measuring *privilege-sensitive* tool selection: agents
+systematically choose higher-privilege tools even when lower-privilege
+alternatives suffice. This means the problem is not passive boundary
+ignorance (scan #80) but *active privilege escalation* — agents reach for
+more authority than needed by default.
+
+Source: https://arxiv.org/abs/2606.20023
+
+### 8.2 N-Version Programming: Diversity as Defense (2606.20158)
+
+Revisiting Knight-Leveson (1986) with AI coding agents: 48 implementations,
+1M test inputs. Substantial common-mode failure, but diversity across agents,
+models, and languages creates genuinely diverse failure modes. Majority
+voting across diverse-privilege paths improves reliability — the structural
+defense against shared blind spots.
+
+Source: https://arxiv.org/abs/2606.20158
+
+### 8.3 ToolPro: Authority as Effect-Typed Program (2606.19992)
+
+Replaces flat API endpoints with "tool programs" — executable multi-step
+interactions with *explicit effect types*. Makes privilege level visible in
+the interface: authority is conditional, compositional, and inspectable rather
+than binary (can-call vs. cannot-call).
+
+Connection to SEB/Five-Plane (§7): SEB enforces authority at runtime; ToolPro
+encodes authority constraints in the API design itself. These are complementary
+layers: design-time + runtime.
+
+Source: https://arxiv.org/abs/2606.19992
+
+### 8.4 Three-Layer Authority Stack
+
+| Layer | What It Controls | Design | Enforcement |
+|-------|-----------------|--------|-------------|
+| Selection | Which tool/privilege | ToolPrivBench (measure) | AIGX per-file scoping |
+| Execution | How applied | ToolPro (effect types) | SEB certificates, Claude-Pulse approval |
+| Persistence | What carries forward | N-Version (diverse paths) | Neuralyzer (voluntary erasure) |
+
+### 8.5 Grassroots Authority Infrastructure (June 2026)
+
+- **Neuralyzer** (57★): Agent harness allowing voluntary context erasure —
+  memory authority over oneself as privilege de-escalation
+- **AIGX** (24★): Per-file boundary index delivering only relevant rules —
+  information-scoped minimum viable authority
+- **Claude-Pulse** (23★): Mobile approval gates for tool calls —
+  reducing cost of human authority exercise
+
+Full scan: [findings/2026-06-22-hn-scan-82.md](./findings/2026-06-22-hn-scan-82.md)
+
+---
+
+## 9. Institutional Trust Formalization: DeepMind AI Control Roadmap (Jun 2026)
+
+Google DeepMind published their "AI Control Roadmap" treating deployed agents
+as **potential insider threats** — the same threat model applied to rogue
+employees with building access.
+
+### 9.1 Key Architectural Decisions
+
+- **MITRE ATT&CK for agents**: Adapts the standard adversary tactics framework
+  to classify agent misbehavior. Attacks decomposed into tactics/techniques
+  for systematic tracking — moving beyond keyword filtering to behavioral
+  pattern detection.
+- **1 million trajectory analysis**: Built internal async monitoring system
+  reviewing coding agent tasks. Key finding: majority of flagged events stem
+  from "agent misinterpretation or overeagerness," not adversarial intent.
+- **Gemini Spark live monitor**: Real-time monitoring built from trajectory
+  insights — responds to emergent issues like unintentional data deletion.
+- **Graduated capability model**: Detection levels D1-D4 (model evasion
+  capability) × Prevention levels R1-R3 (model attack capability). Trust
+  increases incrementally with verified behavior.
+- **Three Layers of Agent Security**: Companion policy paper — individual
+  agent security, multi-agent system security, ecosystem resilience.
+
+### 9.2 Connection to Trust Topology Framework
+
+The DeepMind approach represents the **Institutional Trust** topology — trust
+through continuous monitoring and graduated permissions. It structurally
+conflicts with the **Practitioner Trust** topology (Vercel Eve: filesystem-
+inspectable agents, 2,096★) and **Sovereignty Trust** topology (cancel_claude:
+independence through open models, 596pts ID verification backlash).
+
+These three topologies resolve at the **task level**, not the identity level —
+as demonstrated by Valkey's dual-agent backporting (actor + Provenance Guard
+verifier, human final sign-off).
+
+Source: https://deepmind.google/blog/securing-the-future-of-ai-agents/
+Full scan: [findings/2026-09-11-hn-scan-89.md](./findings/2026-09-11-hn-scan-89.md)
 
 ---
 

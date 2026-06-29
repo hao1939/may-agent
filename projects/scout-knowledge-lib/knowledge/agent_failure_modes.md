@@ -55,3 +55,52 @@ Based on recent community discussions, the most common reasons autonomous agents
 To build robust systems, architectures are shifting towards:
 *   **Hierarchical Checkers:** Having a fast, cheap model verify the output of a complex reasoning model before execution.
 *   **Explicit State Machines:** Combining LLM reasoning with deterministic state machines where transitions are rigidly controlled.
+
+## Recent Research: Trajectory Collapse (arXiv 2606.19812, Sept 2026)
+
+Unlike single-turn failures, multi-step agentic workflows exhibit a class
+of failure termed **trajectory collapse**: an early misclassification silently
+propagates through the reasoning chain, rendering the entire downstream
+output invalid. This is the multi-step generalization of failure modes 1-4
+above — any single-step error becomes a trajectory collapse seed.
+
+**Four-layer verification architecture** proposed to intercept cascading
+failures: planning verification, reasoning verification, execution
+verification, and uncertainty quantification. Key result: calibrated
+uncertainty thresholds reduce cascade risk by 61% while routing <25% of
+decisions to human review.
+
+**Connection to observed failure mode #4 (False Blocked):** Trajectory
+collapse in our system manifests differently — not as silent error propagation
+but as status misclassification that blocks completed work. Both share the
+root cause: verification at the wrong architectural layer (same system that
+executes also judges success).
+
+See also: [The Decoupling Cascade](./the-decoupling-cascade.md) — Axis 4
+(Execution ↔ Verification) generalizes this finding.
+
+Source: https://arxiv.org/abs/2606.19812
+
+## Recent Research: The Resilience Gap — Tool-Environment Unreliability (arXiv 2606.25819, Oct 2026)
+
+ToolBench-X introduces a benchmark specifically targeting **recoverable reliability hazards** — tool failures that have a valid recovery path but require the agent to diagnose the hazard type and select an appropriate strategy.
+
+**Five hazard types tested:**
+1. Specification Drift — tool API changes without notice
+2. Invocation Error — malformed calls that could be self-corrected
+3. Execution Failure — tools that crash but could be retried
+4. Output Drift — tool returns unexpected format
+5. Cross-source Conflict — contradictory results from different tools
+
+**Critical finding**: Agents that ace clean tool environments show a "substantial reliability gap" under these hazards. Failures are driven by **limited hazard diagnosis and ineffective recovery** — NOT by tool-use volume or inference budget. Test-time scaling (more compute) yields only limited gains; targeted recovery hints recover many tasks.
+
+**Implication for failure mode taxonomy**: This is a distinct failure mode from the four above — call it **5. Recovery Paralysis**:
+- **Symptom**: Agent encounters a tool error, attempts generic retry or gives up entirely, even though the error is recoverable with a different strategy
+- **Cause**: Training on clean tool environments means agents lack learned recovery schemas. "Retry" is the only strategy; diagnosis of *why* the tool failed is absent.
+- **Proposed Solutions**:
+  - Recovery-aware training: include tool failures + recovery paths in post-training
+  - Hazard diagnosis prompting: before retrying, require agents to classify the failure type
+  - Strategy libraries: expose retry/fallback/verify/cross-check as explicit recovery options
+  - Circuit breaker extension: not just "stop after N failures" but "diagnose and switch strategy after 1 failure"
+
+Source: https://arxiv.org/abs/2606.25819

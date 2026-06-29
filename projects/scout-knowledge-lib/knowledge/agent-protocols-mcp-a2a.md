@@ -1,7 +1,7 @@
 <ai_context>
 summary: "Canonical overview of the agent protocol landscape: MCP (agent→tool), A2A (agent→agent), AG-UI (agent→frontend). Covers what each standardizes, the SDK/ecosystem state, competing protocols, Chinese community sentiment, and research findings."
-triggers: ["MCP", "Model Context Protocol", "A2A", "AG-UI", "agent protocol", "agent-to-agent protocol", "tool connectivity protocol", "MCP陨落", "ID-JAG", "Zero-Touch OAuth", "protocol fatigue", "EMA enterprise managed auth", "auth isolation", "MCP moat"]
-last_updated: "2026-06-20"
+triggers: ["MCP", "Model Context Protocol", "A2A", "AG-UI", "AHP", "Agent Host Protocol", "agent protocol", "agent-to-agent protocol", "tool connectivity protocol", "MCP陨落", "ID-JAG", "Zero-Touch OAuth", "protocol fatigue", "protocol absorption", "EMA enterprise managed auth", "auth isolation", "MCP moat", "agent-behind-MCP", "Cloudflare temporary accounts", "agent-native infrastructure", "accommodation wave", "auth.md", "ephemeral deploy"]
+last_updated: "2026-06-28"
 source_basis: "GitHub trending repos June 2026, XHS Chinese AI community May-June 2026, arXiv briefings June 2026, HN explorations June 2026 (incl. scan #33). See ai_context sources section below."
 </ai_context>
 
@@ -265,6 +265,17 @@ to "stable infrastructure" — the community has absorbed it as expected tooling
 rather than debating its merits. This is the pattern of successful
 standardization: controversy → adoption → invisibility.
 
+**Update (Scan #53, 2026-08-29)**: Resurfaces at 274pts/102c with new
+discourse. Anthropic engineer **dend** does AMA confirming expansion to more
+identity providers. Key new signal: **sean_lynch** reframes MCP's value as
+"isolating the auth flow outside of the agent's context window" — security
+boundary separation, not tool discovery. **programmancer** provides reality
+check: implementing with Microsoft Entra ID is "genuinely painful," indicating
+spec maturity ≠ implementation ease. Protocol fatigue minority grows (**brap**:
+"I thought we're over this collective delusion called MCP").
+
+- **Source**: [HN Scan #53](./findings/2026-08-29-hn-scan-53.md), Jun 2026.
+
 - **Source**: [HN Scan #54](./findings/2026-06-20-hn-scan-54.md), Jun 2026.
 
 **Update (Scan #57)**: Story holds at 266pts/100c — engagement stable, but the
@@ -288,25 +299,41 @@ phase is over. Remaining work is implementation detail, not adoption.
 
 - **Source**: [HN Scan #57](./findings/2026-06-20-hn-scan-57.md), Jun 2026.
 
-### A2A Adoption Reality Check (HN, June 2026)
+### A2A Adoption Reality Check (HN, June–September 2026)
 
-"Ask HN: Is anyone using the A2A protocol?" (75pts, 38c) revealed thin
-adoption. A2A SDK has **10.9M downloads** vs MCP's **257M** (4.2% ratio,
-reported by A2A package maintainer).
+"Ask HN: Is anyone using the A2A protocol?" (96pts, 45c) revealed thin but
+growing enterprise adoption. A2A SDK has **10.9M downloads** vs MCP's **257M**
+(4.2% ratio, reported by A2A package maintainer).
 
 Community positions cluster around skepticism:
 - "No distinction between Agent A → Agent B and Agent A → future Agent A.
   Agents have no inherent sense of identity." (simonreiff)
 - "Nothing stops me from having a full agent behind my MCP server." (holografix)
 - "Just build an API, give the other agent the spec in markdown." (asdev)
-- "A bit like microservices for agents" (lazharichir) — only positive report.
 
-**Implication**: A2A may follow the microservices adoption curve: enterprise-in,
-startup-out, eventual backlash. The MCP-as-universal-envelope thesis (agents
-behind MCP servers) is winning by default. Chinese community's "Agent协议
-三剑客" framing (MCP + A2A + Skills) may need revision.
+**Enterprise confirmation (Scan #157, Sep 28):** Three new practitioner reports:
+- lazharichir: "I am using A2A at work. It's a bit like the 'microservices
+  architecture' for agents. Allows teams to develop agents independently."
+- reactordev: "My agent speaks A2A with itself and others. Built in layers
+  like an organization."
+- techwizrd: "I'm using it at work as well. It's quite challenging to manage."
+- baroiall: "Enterprises are [using it], it's the future for them."
 
-- **Source**: [HN Scan #33](./findings/2026-06-20-hn-scan-33.md), Jun 2026.
+The skeptic critique also sharpened:
+- nyellin: "Designed on paper by someone with no understanding of prompt caching
+  and no consideration of latency or token costs."
+- bckr: "We set up AgentCards + SSE streaming — then realized we didn't need an
+  agent on the other side. So, no."
+- calny: npm creator Laurie Voss presented on agent interaction protocols and
+  was "skeptical whether they (including A2A) added much value."
+
+**Pattern confirmed**: A2A follows the microservices adoption curve exactly:
+enterprise-in (organizational boundaries justify overhead), startup-out
+(overhead exceeds value at small scale). The "just use an API/MCP server"
+position wins for simple cases. A2A's value emerges only when lifecycle
+management across organizational trust boundaries is needed.
+
+- **Source**: [HN Scan #33](./findings/2026-06-20-hn-scan-33.md), Jun 2026; [HN Scan #157](./findings/2026-09-28-hn-scan-157.md), Sep 2026. HN item 48582679.
 
 ### Protocol Fatigue: Agentic Resource Discovery Rejected (HN, June 2026)
 
@@ -333,6 +360,291 @@ dynamics + minimalist alternatives.
 
 - **Source**: [HN Scan #33](./findings/2026-06-20-hn-scan-33.md),
   [HN Scan #55](./findings/2026-06-20-hn-scan-55.md), Jun 2026.
+
+### ATProto Identity Portability as Agent Protocol Analog (HN, June 2026)
+
+Dan Abramov's "There are no instances in ATProto" (471pts, 245c) triggered
+community discourse on identity-portable vs instance-bound protocol design.
+ATProto separates identity (DID) from hosting (PDS) from execution (AppView)
+— each is independently swappable.
+
+**Agent-relevant parallels:**
+- PDS (Personal Data Server) = Agent State Store — memory is portable between hosts
+- AppView = Capability Executor — separated from identity/data ownership
+- Relay = Message Bus — distribution infrastructure independent of both
+
+**Connection to MCP Auth**: sean_lynch's scan #53 insight ("auth isolation
+outside the context window is MCP's real moat") and ATProto's identity-data
+separation both solve the same structural problem: decoupling identity/auth
+from the compute that processes the data.
+
+**Community critique** (timbray): ATProto's portability is aspirational while
+existentially dependent on Bluesky PBC funding. RobotToaster: "In practice,
+there's only one PLC directory." jrm4 counter-argues that persistent portable
+identity is *worse* for privacy than instance-bound identity.
+
+**Implication for agent architecture**: The "portable agent identity" pattern
+(agent DID separate from hosting platform) is structurally sound but faces
+the same bootstrapping problem as ATProto — someone must run the directory.
+For multi-agent systems, this means a DID-like layer is necessary for
+cross-platform agent coordination, but practical deployment will likely
+centralize around 1-2 directories initially.
+
+- **Source**: [HN Scan #54](./findings/2026-08-30-hn-scan-54.md), Jun 2026.
+
+### Agent-Native Infrastructure Accommodation (HN/Cloudflare, June 2026)
+
+**The Accommodation Wave** — infrastructure providers are inverting traditional
+auth/signup flows to serve agents as first-class consumers.
+
+**Cloudflare Temporary Accounts** (blog.cloudflare.com/temporary-accounts/,
+2026-06-19): First major cloud platform to formally eliminate auth walls for
+agent consumers.
+
+Mechanism:
+1. Agent runs `wrangler deploy` → hits auth wall
+2. Wrangler detects non-browser context, tells agent about `--temporary` flag
+3. Agent re-runs with `--temporary` → ephemeral account provisioned automatically
+4. Deployment lives 60 minutes; human can claim ownership or it auto-expires
+5. Agent can iterate (deploy, curl, redeploy) unlimited times within window
+
+**Three design principles:**
+- **Detection-Not-Declaration**: System observes agent context without requiring
+  self-identification. Works for unknown agents.
+- **Ephemeral-by-Default, Persistent-by-Claim**: Resources start temporary,
+  become permanent through explicit human action. Inverts "create account → use"
+  to "use → optionally take ownership."
+- **Tight Iterate Loops**: 60-minute window enables agent trial-and-error without
+  human intervention between iterations.
+
+**Related initiatives:**
+- **Stripe partnership** — agents provision subscriptions/payments on behalf of users
+- **auth.md** (WorkOS + Cloudflare) — protocol letting agents provision accounts
+  via well-known OAuth standards without browser flows
+- **Flue framework** (Cloudflare, Jun 17) — third-party agent frameworks targeting
+  Agents SDK as deployment runtime
+
+**Connection to protocol stack**: Cloudflare's accommodation + MCP Zero-Touch
+OAuth + ATProto identity portability form a convergent infrastructure layer
+where identity, deployment, and resource management are all designed for
+non-human consumers. The Accommodation Wave complements The Substrate Inversion:
+once the architecture (not the model) is the locus of capability, infrastructure
+must accommodate the *architecture* (agents) as the primary consumer.
+
+- **Source**: [HN Scan #56](./findings/2026-09-01-hn-scan-56.md), Sep 2026.
+
+### Protocol Taxonomy Research — Federated Stack Thesis (arXiv, Sept 2026)
+
+arXiv 2606.19135 provides the first systematic taxonomy of LLM agent
+communication protocols, classifying nine actively maintained protocols across
+five dimensions: counterparty, payload, interaction state, discovery mechanism,
+and schema flexibility.
+
+**Key findings:**
+- All sampled agent-to-agent protocols combine hybrid payloads with session-state
+  persistence — this is converging as the baseline.
+- Most protocols support multiple predefined schemas; two negotiate schemas at
+  runtime, indicating a trend toward schema flexibility.
+- **Decentralized discovery remains rare** — validating the practical centralization
+  critique from ATProto discourse (scan #54).
+- Short-term convergence pressure toward protocols unifying agent-to-agent and
+  agent-to-context (tool+data) communication.
+- Long-term: **"No single protocol is likely to maximize versatility, efficiency,
+  and portability simultaneously."** The field will evolve toward a federated,
+  layered protocol stack.
+
+**Implication**: Confirms protocol fatigue is structural, not just community
+sentiment. Validates the thin-protocol design principle. Connects to The
+Decoupling Cascade (knowledge/the-decoupling-cascade.md) — protocol
+decomposition is one of six simultaneous decoupling axes in agent architecture.
+
+- **Source**: [arXiv 2606.19135](https://arxiv.org/abs/2606.19135), Sept 2026.
+
+### Web4 Agent Economy — Payment Layer Empirics (arXiv, Jun 2026)
+
+arXiv 2606.25876 provides the first large-scale empirical study of the Web4
+autonomous agent economy — agents as independent economic actors with crypto
+wallets, on-chain trading, and API payments.
+
+**Key findings:**
+- Analyzed: 99,448 multi-chain identity registrations, 317M+ transaction logs,
+  341 MCP project source code, 349 GitHub issues
+- Agents process **millions of daily transactions** — machine-to-machine economy
+  already exists at scale
+- Three-protocol infrastructure triangle: MCP (agent→tool), x402 (agent→agent
+  payments), EIP-8004 (verifiable identity)
+- **Payment interoperability is the most persistent unresolved bottleneck**
+- Identity/authorization and cross-environment operation are critical gaps
+- Community responses visible but unevenly distributed across repositories
+
+**Implication**: Extends the ERC-8004 empirical study (2606.26028, scan #156)
+with production-scale data. The 73-90% Sybil reviewer problem is even more
+concerning at millions of daily transactions. x402 fills the payment gap that
+MCP/A2A/AG-UI taxonomy leaves open — the protocol stack needs a fourth layer
+for economic exchange. This is the "missing payment primitive" that Stripe
+partnership and Cloudflare OAuth were approaching from the enterprise side.
+
+- **Source**: [arXiv 2606.25876](https://arxiv.org/abs/2606.25876), [findings/2026-10-02-hn-scan-161.md](./findings/2026-10-02-hn-scan-161.md)
+
+### Governance Structures for Agent Protocols — Empirical Comparison (arXiv, Jun 2026)
+
+arXiv 2606.26203 introduces the first LLM-powered comparative pipeline for
+analyzing governance discourse across agent protocol standards, comparing
+ERC-8004 (permissionless, on-chain DAO) with Google A2A (corporate-led).
+
+**Key findings** (4,323 governance participation records analyzed):
+- **Comparable participation inequality** — neither regime is "more democratic"
+  at the contributor level; similar power concentration in both
+- **Comparable community fragmentation** — similar clique structures emerge
+  regardless of governance form
+- **Denser discourse alignment in permissionless setting** — open governance
+  fosters greater *thematic convergence* despite decentralized participation
+- Institutional design influences **substantive focus** (what topics dominate)
+  more than participation patterns (who contributes)
+
+**Implication for MCP/A2A debate**: Community skepticism toward A2A (scan #166)
+may partly reflect corporate governance focusing on different priorities than
+practitioners need. The "thematic convergence" advantage of open governance
+suggests community-governed standards converge on practitioner-relevant topics
+faster. However, the participation inequality finding means no governance form
+solves the "who decides" problem — structural power concentration persists
+regardless.
+
+**Implication for protocol design**: Protocol governance *form* (corporate vs
+permissionless) is a substantive choice about what gets prioritized, not a
+participation-equity choice. Both concentrate power similarly; the question is
+whether that power focuses on enterprise needs (A2A) or practitioner needs
+(open/MCP ecosystem). The "federated, layered protocol stack" prediction above
+may naturally result from different governance structures focusing different
+protocol layers on different audiences.
+
+- **Source**: [arXiv 2606.26203](https://arxiv.org/abs/2606.26203), [findings/2026-06-26-hn-scan-179.md](./findings/2026-06-26-hn-scan-179.md)
+
+### MCP in Physical-World Safety-Critical Domains (Scan #183)
+
+**Source**: [arXiv 2606.27231](https://arxiv.org/abs/2606.27231)
+
+First documented MCP deployment controlling physical hardware (trapped-ion
+quantum physics experiments). Agent writes native ARTIQ control code and
+interacts with hardware through MCP tool calls. Key architectural innovations:
+
+- **Per-operation cryptographic authorization**: No tool call reaches hardware
+  without a token bound to its exact contents
+- **Simulation-first gate**: Agent code runs in isolated dax.sim before
+  touching real equipment
+- **Dual authorization modes**: Automatic (simulation-verified) or manual
+  (human operator) depending on action sensitivity
+- **Interface portability**: Same MCP interface confirmed on two independent
+  ion-trap platforms (Ca⁺/CaOH⁺ and Yb⁺)
+
+This extends MCP from software/API tooling into physical-world control,
+validating the protocol's generality. The authorization-token mechanism
+demonstrates MCP can enforce safety constraints that matter (hardware damage)
+beyond data/access control. Represents the convergence of MCP with the
+Institutional Attestation pattern (#176): "govern actions, not agents."
+
+### Agent-Native Infrastructure Identity (Scan #197)
+
+**Source**: [Cloudflare blog](https://blog.cloudflare.com/temporary-accounts/), HN 48608394 (249pts)
+
+Cloudflare launches **temporary accounts for AI agents** — first major
+infrastructure provider creating agent-native identity primitives at scale.
+Agents can programmatically provision Workers, D1, R2, Durable Objects
+without permanent human identity.
+
+Key architectural properties:
+- **Ephemeral by default**: accounts are disposable, reducing blast radius
+- **Rate-limited provisioning**: prevents abuse of agent-driven infra creation
+- **No human identity requirement**: agents operate as first-class actors
+- **Full platform access**: not a sandboxed subset but real CF infrastructure
+
+**Structural significance**: While ERC-8004 (§above) proposes decentralized
+identity and MCP provides tool-level interop, Cloudflare solves the pragmatic
+deployment identity problem. This confirms the infrastructure layer is
+legitimating agents independently of model-layer political gatekeeping.
+
+Community tension: "Let's give bots their own accounts so they can scrape
+harder — also Cloudflare: endless Turnstile loops for humans." The
+legitimation creates a paradox where the same company that gates human access
+explicitly enables agent access.
+
+### MCP Domain Expansion: 3D World Generation and Game Engines (Scan #201)
+
+**Source**: https://github.com/per-simmons/unreal-agent-harness (131★, Jun 2026)
+
+AI agents building procedurally generated cities in Unreal Engine 5.8,
+controlled entirely through MCP. Uses City Sample base + PCG (Procedural
+Content Generation). Extends the physical-domain trajectory from scan #183
+(trapped-ion quantum) into creative/spatial domains.
+
+MCP domain coverage now spans:
+- **Software tools**: File systems, APIs, databases (original scope)
+- **Physical experiments**: Trapped-ion quantum hardware (#183)
+- **3D world generation**: Game engines, procedural content (#201)
+- **Financial operations**: DeFi markets via theeleven (517★, #201)
+- **Browser automation**: patchright-browser, peerd (earlier scans)
+- **Desktop context**: continuum (21★, full desktop as MCP)
+
+Each new domain that adopts MCP raises switching costs and creates de facto
+standardization. The protocol is hardening through proliferation, not
+specification committees.
+
+### Microsoft AHP — Fourth Protocol Layer (Scan #204)
+
+**Source**: https://github.com/microsoft/agent-host-protocol (65★, Jun 2026)
+
+Microsoft's VS Code team announced **AHP (Agent Host Protocol)** — a
+"synchronized, multi-client state protocol for AI agent sessions." Immutable
+state, pure reducers, write-ahead reconciliation. SDKs in Swift, Rust,
+Kotlin, TypeScript, Go.
+
+AHP occupies a previously unnamed protocol position:
+- **L0 MCP**: Agent → Tool
+- **L1 A2A**: Agent → Agent
+- **L2 AG-UI**: Agent → Frontend
+- **L3 AHP**: Host → Client (session state synchronization)
+
+roblourens (VS Code team) announced AHP in the A2A thread, implicitly
+positioning it as what VS Code needs instead of A2A.
+
+**Prediction**: AHP remains VS Code-internal. The pattern repeats — vendors
+ship their own protocol layer, the ecosystem consolidates on MCP, vendor
+layers become internal implementation details.
+
+- **Source**: [GitHub](https://github.com/microsoft/agent-host-protocol), HN item 48582679 (roblourens comment).
+
+### The Absorption Principle (Scan #204, Jun 2026)
+
+**Key finding**: Protocols succeed by absorption, not cooperation in a layered
+stack.
+
+MCP is not winning because it's the best tool-access protocol. It's winning
+because practitioners discovered they can hide entire agents behind MCP
+servers, making A2A unnecessary for most cases. Evidence:
+
+1. **A2A practitioners retreated to MCP**: bckr ("didn't need an agent on the
+   other side"), thallavajhula ("moved from MCP to A2A to Agent↔MCP back
+   again"), time0ut ("stayed with agent-behind-MCP style patterns").
+2. **MCP absorbed memory**: Statey, BetterDB, agent-memory-engine all expose
+   memory through MCP tools, not a separate memory protocol.
+3. **MCP absorbed evaluation**: Topos exposes code quality metrics through MCP.
+4. **MCP absorbed security**: Diplomat-agent, CapFrame — security tooling
+   assumes MCP is THE interface.
+
+**Why absorption works**: Integration cost scales super-linearly with protocol
+count (Composition Tax, scan #184). Each new protocol requires new auth, new
+context, new caching, new debugging. Practitioners minimize total cost by
+stretching one protocol beyond its design scope.
+
+**Absorption boundary** — what MCP structurally cannot absorb:
+- Real-time state synchronization (AHP's niche)
+- Payment settlement (x402's niche)
+- Identity portability (DID/ATProto's niche)
+
+These three edges predict where new, durable protocol layers may emerge — but
+only when use cases are popular enough to justify integration cost.
+
+- **Source**: [HN Scan #204](./findings/2026-06-28-hn-scan-204.md), Jun 2026. HN items: 48582679, 48691461, 48687650, 48672444, 48678841.
 
 ---
 

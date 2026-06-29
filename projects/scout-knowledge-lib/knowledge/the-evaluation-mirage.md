@@ -4,6 +4,8 @@
 **Created:** 2026-07-17  
 **Status:** Active hypothesis with strong production evidence  
 **Extends:** The Session Floor, The Observability Trap  
+**Extended by:** The Passing Problem (scan #230) — explains the mechanism: generation learns to satisfy verification, not the goal  
+**Extended by:** The Verification Attention Inversion (scan #247) — verification hollowness is architectural: evaluation attends to context 3-5× less than generation; LoRA experiments confirm modes are structurally incompatible  
 **Corrects:** Implicit assumption across all prior syntheses that evaluator output contains information
 
 ## The Discovery

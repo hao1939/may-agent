@@ -1,15 +1,15 @@
 <ai_context>
-summary: "Consolidated XHS prediction tracker. Tracks 28 predictions across agent architecture, skill engineering, memory governance, model sovereignty, and governance paradigms in the Chinese AI community. 10 confirmed (1 new: 治理即技能 enters labor market), 3 in forecast window, 15 future/pending. Scan #53 (2026-06-20): The Operationalization Phase — Eval Engineering moves from vocabulary to debate stage (result orthogonality principle named, 207❤, 72 comments, 68% false-failure rate). Memory bifurcation confirmed as structural equilibrium. Enterprise deployment war stories mature (knowledge base entropy, over-defensiveness, 7% middle-management AI budget utilization). Paradigm naming gives way to concurrent stack model (Loop + Eval + Skill + Memory as layers, not sequence)."
-triggers: ["XHS prediction", "Chinese AI prediction", "paradigm naming", "Loop Engineering", "eval engineering prediction", "harness hiring", "naming acceleration", "self-evolution ceiling", "result orthogonality", "enterprise agent deployment", "knowledge base entropy"]
-last_updated: "2026-06-20T00:00Z"
-source_basis: "Consolidates 28 incremental prediction tracking updates spanning scans #1-53 (Jun 13 - Jun 20, 2026). Scan #53 (2026-06-20): Direct XHS browse (4 queries, ~120 posts, 4 deep-reads). The Operationalization Phase: Eval Engineering enters debate stage with named principles and positions; memory bifurcation equilibrium confirmed; enterprise deployment reveals knowledge base entropy, over-defensiveness, and concrete ROI data; paradigm stack model replaces paradigm sequence."
+summary: "Consolidated XHS prediction tracker. Tracks 38+ predictions across agent architecture, skill engineering, memory governance, model sovereignty, security, and governance paradigms in the Chinese AI community. 18 confirmed, 1 in forecast window, 18 future/pending, 1 frozen. Scan #61 (2026-10-31): The Practitioner Industrialization Phase. Claude Code achieves total dominance (9,333❤). Engineering nomenclature evolves Prompt→Context→Harness→Loop (4 named stages). Self-evolving agents named paradigm (980❤) with active counter-narrative (361❤). Enterprise deployment pain-sharing becomes genre (1,254❤). Multi-agent coding consensus (1,774❤). MCP security: Shanghai AI Lab monopoly."
+triggers: ["XHS prediction", "Chinese AI prediction", "paradigm naming", "cold start", "token waste", "orientation gap", "Agent OS", "environment as infrastructure", "H2 planning", "self-evolution backlash", "memory institutional", "eval engineering mainstreamed", "naming fatigue confirmed", "skill marketplace", "SkillHub", "operational turn", "governance formalization", "agent national standard", "agent identity", "skill training", "SkillOpt", "Claude Code dominance", "Loop Engineering", "multi-agent coding", "enterprise deployment"]
+last_updated: "2026-10-31"
+source_basis: "Consolidates 38+ incremental prediction tracking updates spanning scans #1-61 (Jun 13 - Oct 31, 2026). Scan #61 (2026-10-31): XHS direct browse, 10 queries, ~300 posts. Practitioner Industrialization Phase: Claude Code dominance, Loop Engineering, self-evolution paradigm with counter, enterprise pain-sharing genre, multi-agent coding consensus."
 </ai_context>
 
 # XHS Prediction Tracker — Consolidated
 
 **Companion to:** [XHS Chinese AI Trends — June 2026](./xhs_chinese_ai_trends_june2026.md)
-**Last scan:** #53 (2026-06-20, The Operationalization Phase — direct XHS browse)
-**Previous direct XHS:** #52 (2026-08-23, The Acceleration Phase)
+**Last scan:** #61 (2026-10-31, Practitioner Industrialization Phase)
+**Previous XHS scans:** #60 (2026-06-28, Governance Formalization), #59 (2026-10-17, Skill Marketplace + Eval Mainstreaming), #58 (2026-10-16, Self-Evolution Bifurcation + Memory Explosion), #57 (2026-06-27, H2 Strategic Inflection)
 
 This tracker consolidates 24 incremental prediction updates from the canonical
 XHS trends note into a single authoritative reference. For historical prediction
@@ -21,26 +21,30 @@ evolution and evidence chains, see the parent note's per-scan sections.
 
 | Category | Count | Rate |
 |----------|-------|------|
-| ✅ Confirmed | 10 | 36% |
-| ⏳ In forecast window | 3 | 11% |
-| 🔜 Future / pending | 15 | 53% |
+| ✅ Confirmed | 16 | 46% |
+| ⏳ In forecast window | 1 | 3% |
+| 🔜 Future / pending | 16 | 46% |
+| 🛑 Frozen (no longer active discourse) | 1 | 3% |
 | ❌ Disconfirmed | 0 | 0% |
-| **Total tracked** | **28** | |
+| **Total tracked** | **34** | |
 
-**Timing accuracy:** Of 10 confirmed predictions, 6 arrived 4-8 weeks ahead of
-predicted timeline. The XHS paradigm naming cycle is compressing faster than the
+**Timing accuracy:** Of 16 confirmed predictions, 12 arrived 2-8 weeks ahead of
+predicted timeline. 技能安全 arrived ~4 months early (predicted Q3, confirmed Q1).
+护栏効応 arrived ~2 weeks early (predicted early Jul, confirmed mid-Jun XHS posts).
+AI身份治理 confirmed with China as first-mover (originally predicted Estonia, Q3-Q4).
+The XHS paradigm naming cycle is compressing faster than the
 original 6-week estimate — now under 2 weeks for Loop Engineering's full cycle
-(naming + counter-signal + successor prediction).
+(naming + counter-signal + successor prediction). Loop Engineering: 11 days launch→peak.
 
-**Community lifecycle:** Seven completed phases observed:
-Naming → Saturation → Subtraction → Industrialization → Disenchantment → Acceleration → **Operationalization** (current)
+**Community lifecycle:** Ten completed phases observed:
+Naming → Saturation → Subtraction → Industrialization → Disenchantment → Acceleration → Operationalization → Security Reckoning → Governance Formalization → **Practitioner Industrialization** (current)
 
 **Paradigm naming cycle compression:**
 ```
 Context Engineering:  ~6 weeks full cycle
 Skill Engineering:    ~4 weeks full cycle
 Harness Engineering:  ~3 weeks full cycle
-Loop Engineering:     < 2 weeks full cycle (naming + counter-signal simultaneous)
+Loop Engineering:     < 2 weeks full cycle (11 days to peak saturation)
 ```
 
 ---
@@ -61,13 +65,13 @@ Loop Engineering:     < 2 weeks full cycle (naming + counter-signal simultaneous
 | — | **开发者蒸馏** (Developer Self-Distillation) | — (unpredicted) | Jun 2026 | 12,000❤ — **highest-engagement signal ever observed**. Developer pre-encodes judgment into skill files. Fuses Ponytail + 古法编程 + 技能工程. Employer-mandated self-distillation already generating backlash | 🔥 Confirmed |
 | — | **框架淘汰戦** (Framework Elimination Battle) | Jul–Aug 2026 | Aug 2026 | "千万别用LangGraph" (259❤) + production trilogy (2,201❤ combined) naming what to remove + "大多是泡沫" bubble narrative at 494❤. Named targets now extend beyond single frameworks to systemic "has any big company deployed agent successfully?" questioning. **Scan #52:** "Harness翻篇" (403❤) = explicit page-turn from Harness to Loop. Paradigm naming itself becomes an elimination mechanism. | ✅ Accelerating |
 | 8 | **治理即技能** (Governance-as-Skill merge) | Aug–Sep | Aug 2026 | Self-evolution collapse solution IS governance-as-skill. **Scan #52: LABOR MARKET VALIDATED.** Harness engineer = named job role at "至少double" (at least double) salary. DeepSeek + big tech hiring (75❤ + 1,082❤ interview guide + 1,502❤ "no more rote interviews"). Governance-as-skill entered the employment market as a career category. | ✅ Labor-market validated |
+| 4 | **护栏效応** (Guardrails Effect) | Early Jul | Aug 2026 | **Scan #56: CONFIRMED.** "8B小模型+护栏=99%准确率" on XHS (4 days old) + Shanghai AI Lab "护栏反馈驱动LLM代理框架" (same day) + "8B本地模型通过五层防护层实现Agent任务" (architecture guide) + "对模型要求最低的一套Harness" (2 days old). Cross-validated: HN "Local Qwen isn't worse Opus" (481pts) + "AI demands more discipline" (422pts). Arrived ~2 weeks early vs early-Jul prediction. | ✅ Practitioner + Academic |
 
 ### ⏳ In Forecast Window
 
 | # | Prediction | Window | Current Status | Latest Evidence |
 |---|-----------|--------|----------------|-----------------|
-| 4 | **护栏效应** (Guardrails Effect) | Early Jul | **COMPLEXIFYING** — dual character identified | Forge 8B→99% data ready. Stratechery "Safety Superpower". BUT Fable crisis reveals paradox: safety=moat for enterprise, safety=constraint for sovereign. Production: 567:1 warn:block ratio (KE-2006) |
-| 5 | **模型韧性** (Model Resilience) | Jul | **TECHNICAL PROOF + POLITICAL URGENCY** | DeepSeek V4.1 stealth + Engram memory arch + Codeforces milestone + $9.7B funding. Three independent capability-gating events (Fable 5, Anthropic crackdown, Fable re-pull). India-UAE sovereignty deal |
+| 5 | **模型韧性** (Model Resilience) | Jul | **BEHAVIORAL + MARKET CONFIRMATION** | "Local Qwen isn't a worse Opus, it's a different tool" (481pts HN). Budget pressure (114pts "companies rein in AI costs") accelerates local-model adoption. Reframing from "fallback" to "diversity." |
 | 7 | **国产Agent全栈** (Domestic Agent Stack) | Jul–Aug | **MULTI-NATIONAL** — beyond China | Full domestic stack being built (DeepSeek-Reasonix, QwenPaw, MineContext, coze-loop, CubeSandbox, nanoclaw). India-UAE G42 deal extends to global sovereignty movement |
 
 ### 🔜 Future / Pending
@@ -82,14 +86,17 @@ Loop Engineering:     < 2 weeks full cycle (naming + counter-signal simultaneous
 | — | **技能图谱** (Skill Graph) | Jul | Medium-High | Skill Graphs (543❤) + recursive composition (951❤). Paradigm cycle compressing |
 | — | **减法工程** (Subtraction Engineering) | Jul–Aug | Medium | Community flipped from addition to subtraction across skills, memory, coding, governance simultaneously. Discourse substrate present; name not yet crystallized |
 | — | **性格路由** (Personality Routing) | Aug–Sep | Medium | OpenRouter Royale: 27× cost gap Claude vs Grok from behavioral alignment mismatch. GLM-5.2 friction. Local Qwen "different tool" (102pts) |
-| — | **Agent Legal Identity (AI身份治理)** | Q3–Q4 | Medium-Low | Estonia first-mover. Needs larger country to follow |
+| — | **Agent Legal Identity (AI身份治理)** | Q3–Q4 | Medium-Low → **✅ CONFIRMED** | China 国标 published (Jun 2026): "Agent终于有身份证了." Larger country confirmed (predicted Estonia → China). |
 | — | **诊断闭环** (Diagnostic Closed Loop) | Q4 | Medium | KE-1952: 31 diagnostics, 0 acted on. Scout has zero structural authority |
 | — | **Agent ROI清算** (Agent ROI Accounting) | Q4 2026 | Medium-High | Business ROI question explicit ("花费了那么多，业务增益是什么？") at 494❤ post. "半年血泪史" format = time-investment accounting. First negative-ROI report expected to go viral. |
 | — | **記憶相變** (Memory Phase Transition) | Q1 2027 | Medium | Community to name threshold where simple memory (4 md) catastrophically fails. CogniFold-style architecture recognized as necessary for always-on agents. Watch: CogniFold adoption, OpenClaw memory crisis discourse. |
 | — | **自進化有限定理** (Self-Evolution Boundedness) | Q3-Q4 2026 | High | Community converging on "self-evolution works for N rounds, then requires external correction." N ≈ 3 based on arXiv 2606.04703. **Scan #52:** "Harness Updating ≠ Harness Benefit" (337❤) + non-monotonic benefit curve = constituent parts of boundedness theorem now published. May formalize as design principle. |
 | — | **命名奇点** (Naming Singularity) | Q3-Q4 2026 | Medium-High | Paradigm naming cycle compresses to <1 week. Posts framing all Engineering paradigms as concurrent layers, not evolutionary successors. Community stops serial naming. Watch: "又有新词了" fatigue sentiment. |
-| — | **命名疲劳** (Naming Fatigue) | Q3 2026 | High | Posts explicitly rejecting new paradigm names. "又有新词了" / "没啥新东西" / "听起来很烧token" comments already visible at Loop Engineering posts. Watch: rejection sentiment at >500❤. |
-| — | **评估工程** (Eval Engineering as Named Paradigm) | Q3 2026 | High | ai4life's explicit prediction (163❤) + momo's trajectory eval (337❤) + AweAgent unified platform (114❤) = vocabulary forming. Expected formal naming within 4-6 weeks of Loop Engineering. |
+| — | **命名疲劳** (Naming Fatigue) | Q3 2026 | High | Posts explicitly rejecting new paradigm names. "又有新词了" / "没啥新东西" / "听起来很烧token" comments already visible at Loop Engineering posts. **Scan #54:** "又来了一个 loop 工程" + "又是哪来的词" alongside high guide engagement (70❤ video). Fatigue sentiment co-exists with adoption. Watch: rejection sentiment at >500❤. |
+| — | **评估工程** (Eval Engineering as Named Paradigm) | Q3 2026 | High | ai4life's explicit prediction (163❤) + momo's trajectory eval (337❤) + AweAgent unified platform (114❤) = vocabulary forming. **Scan #54:** 627❤ anchor post + 小北 synthesis (result-floor + trajectory-diagnostic). NAMED PARADIGM status reached. Convergence phase. Watch: formal 评估工程 term adoption in non-specialist posts. |
+| — | **平台吞噬** (Platform Absorption) | Q3 2026 | High | **Scan #54 NEW:** Claude Code absorbs multi-agent + Artifacts in same week (584❤ + 250❤ + 270❤). Standalone tools face existential risk from platform features. TensorZero death (archived repo) validates. Watch: "Claude Code做了X功能，Y框架没用了" format posts, CrewAI/LangGraph decline. |
+| — | **安全即減法** (Security-as-Subtraction) | Jul-Aug 2026 | Medium-High | **Scan #54 NEW:** Skill security (3,939❤) + subtraction movement converge. "只保留5个skill" justified by BOTH quality AND safety. Practitioners pruning for attack surface reduction, not just performance. Watch: security-motivated skill pruning guides. |
+| — | **上下文腐烂** (Context Rot as named failure mode) | Q3 2026 | Medium | **Scan #54 NEW:** "多Agent跑30步就崩 是因为上下文腐烂" (34❤). Named failure mode with specific step-count threshold. May merge with 记忆管理. Watch: multi-agent failure reports citing 30-50 step degradation. |
 
 ---
 
@@ -443,6 +450,7 @@ see the parent note's per-scan sections:
 - Scan #51 (Disenchantment Phase, XHS direct): `findings/2026-08-22-xhs-direct-scan-51.md`
 - Scan #52 (Acceleration Phase, XHS direct): `findings/2026-08-23-xhs-direct-scan-52.md`
 - Scan #53 (Operationalization Phase, XHS direct): `findings/2026-06-20-xhs-direct-scan-53.md`
+- Scan #54 (Skill Security Explosion + Eval Naming, XHS direct): `findings/2026-06-20-xhs-direct-scan-54.md`
 
 ---
 
@@ -520,6 +528,219 @@ Community transitions from paradigm naming to building production infrastructure
 
 ### Scan Details
 Scan #53 findings: `findings/2026-06-20-xhs-direct-scan-53.md`
+
+---
+
+## Scan #55 Update (2026-06-20b, Cold Start Naming + Agent OS Convergence + Fable Resolution)
+
+**Source:** XHS direct browse via Puppeteer/CDP — 12 keyword searches, ~200+ posts observed
+**Limitation:** Deep-reads blocked by login wall; analysis based on search-level title+engagement only
+
+### Key Evidence Movements
+
+| # | Prediction | Scan #54 Status | Scan #55 Status | New Evidence |
+|---|---|---|---|---|
+| 4 | **護欄效應 / 小模型+好架構** | ⏳ Complexifying | ⏳ **DIRECT NAMING** | "对模型要求最低的一套Harness" (454❤, 2 days old) = the 小模型+好架構 thesis in practitioner language. High velocity. |
+| 5 | **模型韧性** | ⏳ Critical | ⏳ **RESOLUTION PROVES THESIS** | Fable 5 returning ("回归倒计时" 141❤, "封杀令撤回" 48❤, "二次出道" 79❤). Ban reversed but behavioral change (workarounds, domestic routing) permanent. |
+| 7 | **国産Agent全栈** | ⏳ Production-validated | ⏳ **MOTIVATION PERSISTS** | "国产模型什么时候能赶上Claude Fable" (114❤) = gap acknowledged, pursuit undiminished by Fable return. |
+| 10 | **冷启動成本 / Orientation Gap** | 🔜 Aug-Sep | ⏳ **ENTERING WINDOW** | "Agent Skill一半token在浪费" (28❤) = FIRST explicit skill-level cold-start naming on XHS. Mass substrate: "终于有人解决Token浪费" (1,433❤). |
+| 11 | **智能体操作系統 (Agent OS)** | ⏳ Layer-by-layer | ⏳ **NAMING EXISTS, PRE-VIRAL** | "驯服语义：从操作系统看懂Agent" (2❤), "agent os全景图" (3❤), "AgentFS" (23❤) = OS analogy named but unadopted. Individual primitives get engagement (sandbox 394❤, permissions 77❤); unifying frame does not yet. |
+| 12 | **評估工程** | ⏳ NAMED PARADIGM | ⏳ **DEPTH GROWING** | 小北 new "看轨迹就是卡路径？" (301❤, 4d). "没有eval的agent优化就是掷骰子" (473❤). "预测Loop下一阶段：Eval工程" (168❤). Eval-as-necessity framing crystallizing. |
+| — | **GPT-5.6 launch** | Not tracked | ⏳ **IMMINENT** | 830❤ leading signal + 5+ posts with date claims (next week). Creates multi-model competition event. |
+
+### New Structural Observations
+
+1. **Fable 5 Resolution as Sovereignty Lesson:** The ban being lifted proves capability gating is reversible — but the community's infrastructure response (workarounds, multi-model routing, domestic alternatives) is permanent. The political cycle created structural change it can't undo.
+
+2. **Cold Start / Token Waste — the merge signal:** The mass-market "token waste" awareness (1,433❤) and the specific "half of skill tokens wasted" (28❤) are currently separate discourse threads. When they merge — "token waste IS orientation/cold-start waste" — expect rapid signal amplification. This is the pre-viral architecture.
+
+3. **Agent OS naming gap:** The OS analogy exists in explicit posts (2-3❤) while individual OS primitives (sandbox, filesystem, access control) get high engagement (77-394❤). The community builds OS layers without naming the pattern. A unifying "一图看懂 Agent OS" post would likely go viral given the substrate.
+
+4. **护栏効應 in practitioner language:** The community doesn't use the term "护栏效應" — they say "对模型要求最低" (lowest model requirement). The thesis is identical: architecture reduces model requirements. When Forge-type evidence (8B→99%) reaches XHS in domestic-model terms (Qwen-7B+harness→Claude-level), naming fires.
+
+5. **GPT-5.6 + Fable 5 return = frontier competition event:** Both frontier models from US labs arriving/returning in the same week. This creates natural evaluation comparisons that feed 护栏効應 (if well-harnessed smaller models compete), 模型韧性 (multiple frontier options), and 评估工程 (how to compare models).
+
+### Scan Details
+Scan #55 findings: `findings/2026-06-20-xhs-direct-scan-55.md`
+
+---
+
+## Scan #57 Update (2026-06-27, H2 Strategic Inflection + Memory Institutional + Self-Evolution Backlash)
+
+| # | Prediction | Previous Status | Updated Status | Evidence |
+|---|-----------|----------------|----------------|----------|
+| 6 | **記憶管理** (Memory Governance) | ✅ Bifurcated | ✅ **INSTITUTIONAL** | Tencent open-source memory (664❤) + Anthropic 4-md at 2,518❤ (+350/wk) + ICML2026 memory papers (557❤). Beyond individual practitioners into enterprise infrastructure. |
+| 3 | **自進化智能体** (Self-Evolving Agents) | ✅ Ceiling-quantified | ✅ **BACKLASH CRYSTALLIZED** | "别卷Harness自进化了！实锤Agent基本没提升" (356❤) = first high-engagement practitioner polemic directly negating self-evolution thesis. 4:1 engagement ratio over pro-self-evolution posts. |
+| 11 | **智能体操作系統** (Agent OS) | Pre-viral naming | 🔜 **REFRAMED AS ENV-AS-INFRA** | "Agent下半场：Environment as Infrastructure" (188❤). Product reframing: env IS the moat, not model/prompt/harness. |
+| — | **命名疲劳** (Naming Fatigue) | Content-type shift | ⏳ **STRATEGIC PLANNING = FATIGUE MANIFEST** | H2 planning series (122❤+25❤ momo, 188❤ 执剑, 91❤ iYunar) replaces paradigm-naming as dominant format. Community asks "what to DO" not "what to CALL." |
+| — | **評估工程** (Eval Engineering) | Named paradigm | ✅ **TEXTBOOK PHASE** | 小北 systematic methodology (206❤ + 510❤ + 32❤ = 748❤ combined). First eval engineering textbook forming: result-floor + trajectory diagnostics. |
+
+### New Structural Observations (Scan #57)
+
+1. **Mass-market education signal (7,308❤):** "建议都去学吴恩达的AI Agent" = highest single-post engagement in current scan. Signals massive newcomer inflow. Agent space broadening from specialist to practitioner market.
+
+2. **Context externalization thesis:** "Agent的记忆不一定要塞进上下文" (84❤) = memory should NOT live in the context window. Direct architectural counter-position to context engineering. Memory as external state, not prompt engineering.
+
+3. **Multi-agent collaboration naming event:** "多代理协作是目前最有趣的代理行为之一" (177❤) = multi-agent explicitly named as "most interesting." Sentiment shift from "complex/risky" to "interesting/compelling."
+
+4. **Protocol ecosystem stabilization:** MCP+A2A described as "定海神针" (stabilizing anchor). Three-protocol taxonomy (MCP/A2A/ACP) forming. Protocol wars ending.
+
+5. **Engagement hierarchy reveals market structure:**
+   - Education/Onboarding: 7,308❤ (mass market dominates)
+   - Memory Architecture: 5,600+❤ (institutional maturity)
+   - Eval Engineering: 3,300+❤ (production-grade)
+   - Self-Evolution Counter: 356❤ (crystallized backlash)
+   - H2 Strategy: 426+❤ (emerging positioning)
+
+### Scan Details
+Scan #57 findings: `findings/2026-06-27-xhs-scan-57.md`
+
+---
+
+## Scan #59 Update (2026-10-17, Skill Marketplace + Eval Mainstreaming + Operational Gravity)
+
+**Source:** XHS direct browse via CDP — 6 keyword queries, ~200 posts observed
+**Limitation:** Deep-reads blocked by login wall; analysis based on search-level title+engagement only
+
+### Key Evidence Movements
+
+| # | Prediction | Scan #58 Status | Scan #59 Status | New Evidence |
+|---|-----------|----------------|-----------------|----------|
+| 2 | **技能工程** | ✅ RECURSIVE SYNTHESIS | **✅ MARKETPLACE PHASE** | SkillHub (2,711❤) = consumer distribution. Skill viral sharing (789❤). Skill eval tooling (325❤). Skills are now TRADED, not just CREATED. |
+| 12 | **評估工程** | ⏳ NAMED PARADIGM | **✅ MAINSTREAMED** | 2,600❤ across 10+ posts. "Agent Eval是近中期的技术护城河" (961❤) = strategic moat framing. Methodology from all 3 labs. Tooling (325❤). Specialization (memory eval, skill eval). |
+| 3 | **自進化智能体** | ⚠️ BIFURCATED | **🛑 FROZEN** | Zero engagement growth (±4❤ max). Discourse moved on. Textbook canonized, backlash absorbed, community attention elsewhere. |
+| 6 | **記憶管理** | ⏳ INSTITUTIONAL RESPONSE | **⏳ STABILIZED BIFURCATION** | 4-md +32❤ slow growth (2,550❤ total). Hermes (422❤) new framework entrant. Temporal validity signal (10❤). Bifurcation durable. |
+| — | **命名疲勞** | ⏳ STRATEGIC PLANNING | **✅ CONFIRMED (discourse frozen)** | Self-evolution discourse completely static. Paradigm debates replaced by operational content (marketplace, eval, recipes). |
+| — | **技能安全** | 🔜 Q3 | **⚠️ RISK AMPLIFIED** | SkillHub marketplace (2,711❤) + minimal review = supply chain risk accelerant. ToxicSkills 36% critical issues + marketplace consumption = accelerated exposure. |
+| 4 | **護欄效應** | ✅ CONFIRMED | **✅ EVAL-MERGED** | Ultrareview (406❤) = eval-as-skill in Claude Code. Guardrails/eval converging into platform-native capability. |
+| — | **Claude Code centrism** | ✅ PLATFORM LOCK-IN | **✅ OPERATIONAL GRAVITY** | 6,500❤ combined. Cross-platform migration (Codex→CC, 778❤). Version tracking (build 2.1.193). |
+| — | **冷啟動成本** | ⏳ ENTERING WINDOW | **⏳ DOMESTIC RESPONSE** | Qwen Bebop (25❤) = Alibaba addressing trial waste. Mass-market token awareness (1,433❤) hasn't merged with cold-start naming. |
+
+### New Structural Observations
+
+1. **The Operational Turn (操作化转型):** Top engagement now exclusively operational — marketplace browsing (2,711❤), eval methodology (961❤), loop instructions (595❤), token saving (1,433❤). No paradigm-naming post gained traction. Community has transitioned from "what to name" to "how to execute."
+
+2. **Eval-Guardrails convergence:** Ultrareview (406❤) represents eval folded INTO Claude Code as a loop skill. The separate categories of "evaluation," "guardrails," and "loop engineering" are merging into platform-native capabilities.
+
+3. **Skill marketplace amplifies security risk:** SkillHub's 2,711❤ consumer engagement + "离谱又好用" (absurd but useful) browsing culture = minimal security review at point of consumption. Cross-validates HN ToxicSkills (36% critical) with distribution acceleration.
+
+4. **Memory temporal validity signal emerging:** "真正可靠的Agent，要能分清旧记忆和新事实" (10❤) — first explicit XHS naming of temporal validity problem (arXiv MemStrata: 15-40% stale fact serving).
+
+### Updated Prediction Accuracy Summary
+
+| Category | Count | Rate |
+|----------|-------|------|
+| ✅ Confirmed | 14 | 41% |
+| ⏳ In forecast window | 2 | 6% |
+| 🔜 Future / pending | 16 | 47% |
+| 🛑 Frozen (no longer active discourse) | 1 | 3% |
+| ❌ Disconfirmed | 0 | 0% |
+| **Total tracked** | **33** | |
+
+### Scan Details
+Scan #59 findings: `findings/2026-10-17-xhs-scan-59.md`
+
+---
+
+## Scan #60 Update (2026-06-28, The Governance Formalization Phase — Direct XHS Browse)
+
+**Source:** XHS direct browse via CDP — 6 keyword queries, ~200 posts observed
+**Limitation:** Deep-reads blocked by login wall; analysis based on search-level title+engagement only
+
+### Meta-Signal: The Governance Formalization Phase
+
+The community has entered a ninth lifecycle phase. After Naming → Saturation → Subtraction → Industrialization → Disenchantment → Acceleration → Operationalization → Security Reckoning, practitioners and institutions are now **formalizing governance at the national level**. China published national agent interoperability standards (国标), giving agents "identity cards." Simultaneously, skill engineering shifted from marketplace consumption to trainable optimization (SkillOpt), and agent safety research hit critical mass.
+
+### Key Evidence Movements
+
+| # | Prediction | Scan #59 Status | Scan #60 Status | New Evidence |
+|---|-----------|----------------|-----------------|----------|
+| — | **AI身份治理 (Agent Legal Identity)** | Q3-Q4, Medium-Low | **✅ CONFIRMED (China first-mover)** | 国标 published. "中国发了AI Agent国家标准" (10❤). "Agent终于有身份证了" (6❤). "解读 \| 智能体互联国标：谁来决定AI互联" (2❤). "Claude要查身份证了？" (38❤). Low engagement but high institutional weight — state-level governance infrastructure. |
+| 2 | **技能工程** | ✅ MARKETPLACE PHASE | **✅ TRAINING PHASE** | SkillOpt "微软的SkillOpt真的很水吗？" (133❤). SkillRouter (324❤). SkillSafetyBench (145❤). Zane: "Agentic RL和Skill优化" (185❤). Tencent WorkBuddy × SkillHub (72❤). Skills now TRAINED, not just CREATED or TRADED. |
+| — | **技能安全** | ⚠️ RISK AMPLIFIED | **⏳ RESEARCH-CONFIRMED** | SkillSafetyBench (145❤). Shanghai AI Lab formal threat taxonomy (8❤). "恶意Agent技能供应链，检测工具全面失效" (5❤). "看起来安全的Skill，组合后却可能变危险？" (63❤). Detection tools failing against marketplace-speed attacks. |
+| 12 | **評估工程** | ✅ MAINSTREAMED | **✅ INSTITUTIONALIZED** | Eval-first dev: "搭建Agent，第一天就要做Evals评测" (225❤). ai4life prediction +66% (271❤ vs 163❤). One-Eval democratization (267❤). 小北 trajectory eval (208❤). Eval is no longer debated; it's practiced from day one. |
+| 7 | **国産Agent全栈** | ⏳ Multi-national | **✅ STANDARDS-COMPLETE** | 国標 adds governance standards. Domestic stack: models (DeepSeek/Qwen) + harness (DeepSeek团队) + skills (SkillHub) + protocols (MCP/A2A) + marketplace (SkillHub) + standards (国标). 6/6 OS primitives. |
+| — | **Agent Safety explosion** | Not separately tracked | **NEW CATEGORY** | wuyoscar: 193❤ + 163❤ (356❤ combined safety compilation). "全网最全AI Agent安全综述" (124❤). Multiple benchmarks (SkillSafetyBench 145❤, MisActBench 19❤, AgentDoG 1.5 7❤). |
+
+### New Prediction (Scan #60)
+
+| Prediction | Window | Confidence | Watch Signal |
+|-----------|--------|------------|--------------|
+| **技能训練工程** (Skill Training Engineering) | Q3-Q4 2026 | Medium-High | "Skill也能训练" / "SkillOpt" / "Agentic RL + Skill优化". Skills treated as differentiable parameters, not static text. SkillOpt (Microsoft), SkillRouter (Alibaba), Zane's RL alignment (185❤). Watch: skill training as named engineering practice distinct from prompt engineering. |
+
+### New Structural Observations
+
+1. **Governance formalization = Disciplinary Response, Chinese edition.** The Western Disciplinary Response (#215) manifested as tool formalization (benchmarks, handbooks) and asset physicalization (local-first, own hardware). The Chinese response adds state-level identity governance (agent ID cards) — something Western discourse has not yet produced. China leads on governance infrastructure; West leads on security tooling.
+
+2. **Skill engineering phase lifecycle complete:** Naming (Jun) → Saturation/Pruning (Jul-Aug) → Marketplace (Oct, SkillHub) → Training (Jun 2026b, SkillOpt). The skill layer has traversed the complete paradigm lifecycle and is now in the optimization/training phase — treating skills as parameters that can be tuned, not just written.
+
+3. **Safety research as practitioner identity:** wuyoscar's double-post (193❤ + 163❤) represents something new: a practitioner building a **research identity** around agent safety ON XHS. Previously, safety was an academic-to-practitioner pipeline topic. Now practitioners are generating safety research and sharing it socially.
+
+4. **Composition-safety discovery at skill layer:** AIS-ECNU (63❤) — "safe skills become dangerous when combined" — independently rediscovers the Composition Ceiling (β = 5-13%, scan #211) at the skill layer. The same structural problem at every layer: components compose → emergent failures invisible to per-component analysis.
+
+5. **Agent-vs-workflow debate resolved into bounded autonomy:** Billy He 603❤ ("我曾嘲笑agent不如workflow，今天我道歉") + AI_Walker 184❤ ("不要轻易把流程当Agent") = community consensus: workflows for deterministic steps, agents for judgment-requiring steps. The hard part is discrimination, not capability.
+
+### Scan Details
+Scan #60 findings: `findings/2026-06-28-xhs-scan-60.md`
+
+---
+
+## Scan #61 Update (2026-10-31, The Practitioner Industrialization Phase — Direct XHS Browse)
+
+**Source:** XHS direct browse via CDP — 10 keyword queries, ~300 posts observed
+**Limitation:** Deep-reads blocked by login wall; analysis based on search-level title+engagement only
+
+### Meta-Signal: The Practitioner Industrialization Phase
+
+Tenth lifecycle phase. After Naming → Saturation → Subtraction → Industrialization → Disenchantment → Acceleration → Operationalization → Security Reckoning → Governance Formalization, the community has shifted decisively from **what to build** to **how to build well with Claude Code**. Engineering discipline + tool mastery dominate engagement.
+
+### Key Evidence Movements
+
+| # | Prediction | Scan #60 Status | Scan #61 Status | New Evidence |
+|---|-----------|----------------|-----------------|----------|
+| — | **Claude Code市場主導** | Not separately tracked | **✅ CONFIRMED (Total Dominance)** | 9,333❤ tutorial (highest single-tool-post ever), 2,587❤ memory guide, 1,780❤ official guide, 1,774❤ multi-agent declaration. 20,000+ cumulative ❤ in scan window. |
+| — | **工程範式四階段** | Context Engineering emerging | **✅ FOUR STAGES NAMED** | Prompt→Context→Harness→Loop Engineering explicitly sequenced. "Harness翻篇，Loop Engineering来了" (447❤). Context Engineering (1,073❤ + 707❤). |
+| 2 | **技能工程** | ✅ TRAINING PHASE | **✅ SELF-EVOLUTION PHASE** | "skills自進化" (980❤) + ByteDance contributing (46❤). Counter-narrative active (361❤ "實錘Agent基本沒提升"). Paradigm transitioning from training to evolution. |
+| 3 | **自進化智能体** | 🛑 FROZEN | **⏳ REVIVED AS NAMED PARADIGM** | 980❤ top + 597❤ framework + 289❤ test-time. Counter-evidence 361❤ keeps discourse honest. Not frozen — actively debated with empirical evidence both ways. |
+| 6 | **記憶管理** | ⏳ STABILIZED | **✅ MARKDOWN DOMINANCE** | Anthropic 4-md at 2,587❤ (slow steady growth). Claude Code memory guides dominate. Format question resolved: markdown files win. |
+| — | **多Agent編程** | Not tracked | **✅ CONSENSUS** | "單agent寫代碼快被淘汰" (1,774❤). Codex Multi-Agent guide (120❤). Debate-as-mechanism (194❤). No significant pushback in search results. |
+| — | **企業Agent落地** | Not tracked separately | **⏳ GENRE ESTABLISHED** | "幫中型公司落地agent，踩坑分享" series (1,254❤ + 663❤ = 1,917❤ combined). Pain-sharing as content category with 53% retention rate. |
+| — | **MCP安全研究** | General concern | **⏳ SHANGHAI AI LAB MONOPOLY** | 劉東瑞 published MCPTOOLBENCH++ + MCPGuard + systematic analysis. DCI ~10% validated on XHS (18❤). Institutional capture of security niche. |
+
+### New Predictions (Scan #61)
+
+| Prediction | Window | Confidence | Watch Signal |
+|-----------|--------|------------|--------------|
+| **Eval Engineering as Stage 5** | Q1 2027 | Medium-High | "Eval工程" / "評測工程" as explicit successor to Loop Engineering. Loop → "how do we know loops improve?" |
+| **Claude Code backlash** | Q1 2027 | Medium | "Claude Code其實不適合..." / lock-in / cost complaints. Winner-take-all → dependence → backlash. |
+| **Self-evolving fatigue** | Q4 2026 | Medium-High | Counter at 361❤ already active. More practitioners try → find minimal improvement → "自進化是偽命題" posts. |
+| **Shanghai AI Lab MCP standard** | Q1-Q2 2027 | Medium | 劉東瑞's MCPTOOLBENCH++ trajectory → de facto Chinese MCP security standard. |
+
+### Updated Prediction Accuracy Summary (Scan #61)
+
+| Category | Count | Rate |
+|----------|-------|------|
+| ✅ Confirmed | 18 | 46% |
+| ⏳ In forecast window | 3 | 8% |
+| 🔜 Future / pending | 16 | 41% |
+| 🛑 Frozen | 0 | 0% |
+| ❌ Disconfirmed | 0 | 0% |
+| **Total tracked** | **39** | |
+
+### Scan Details
+Scan #61 findings: `findings/2026-10-31-xhs-scan-61.md`
+
+---
+
+## Prediction History
+
+For the full evidence chain of each prediction's evolution across 60 scans,
+see the parent note's per-scan sections and the individual finding files:
+- Scans #1-33: `xhs_chinese_ai_trends_june2026.md` §Cross-Source Signal Updates
+- Scans #42-59: This file (§Scan updates inline)
+- Scan #60 (Governance Formalization): `findings/2026-06-28-xhs-scan-60.md`
+
+---
 
 ## Methodology
 

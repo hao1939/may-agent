@@ -191,4 +191,21 @@ Impedance Principle (foundational) — feedback requires damping
 
 4. **"Scoped repair specification" will emerge as a named artifact type in the agent engineering ecosystem within 6 months.** HarnessFix's HTIR + repair operators and SkillAudit's Refine/Repair pipelines are already close to naming it. The gap between "diagnosis" and "fix" is the last mile of agent self-improvement.
 
+## External Validation: Metis (arXiv 2606.24151, June 2026)
+
+The Metis paper provides the first controlled empirical confirmation of this principle for the knowledge layer specifically:
+
+- **Controlled isolation**: Same experiences represented as text vs. code memory, tested on identical benchmarks.
+- **Result**: Neither alone is sufficient. Text has broad applicability but high execution cost; code has low cost but narrow transfer.
+- **Solution**: Hierarchical dual-representation with **selective crystallization** — text experiences organized into plans/facts/pitfalls, then recurring patterns promoted to callable tools only when reuse justifies construction cost.
+- **Quantified**: +20.6% accuracy over ReAct, -22.8% execution cost (AppWorld benchmark).
+
+This validates our KE-circuit / synthesis-circuit split is not just an implementation artifact — it's a structural property of improvement systems. The bridge mechanism Metis uses ("selective crystallization") is the knowledge-layer equivalent of our proposed "scoped repair specification": promote text insight to code action only when the pattern recurs enough to justify the formalization cost.
+
+**New connection**: The GraphRAG retrieval-generation gap (arXiv 2606.25656) adds a further constraint — even with the right representation retrieved, utilization is not guaranteed. The bridge must include not just "translate format" but "ensure the receiver can act on it." This explains why our syntheses reach dev/may but produce zero behavioral change: they're retrieved (cited occasionally) but not utilized.
+
+*(Updated 2026-10-08: added Metis validation and retrieval-generation gap connection. See findings/2026-10-08-hn-scan-169.md)*
+
+---
+
 *Session type: Creative heartbeat. Triggered by noticing that four batch 7 papers independently discover the same structural principle (improvement requires different representations than execution), and that our production data demonstrates the exact same gap between the KE circuit (fast/operational/structurally blind) and the synthesis circuit (slow/structural/action-blind). The bridge mechanism — scoped repair specifications — is the missing primitive both in the literature and in our system.*

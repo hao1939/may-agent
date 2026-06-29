@@ -12,6 +12,7 @@ const taskTreeContext = [
   "projects/scout-knowledge-lib.app/project.json",
   "projects/scout-knowledge-lib.app/tasks/tree.json",
   "projects/scout-knowledge-lib/knowledge/INDEX.md",
+  "shared/knowledge/INDEX.md",
 ];
 
 const scoutContext = [
@@ -43,6 +44,7 @@ async function routeScoutEvent(
     event.type === "scout.heartbeat" ||
     event.type === "scout.explore" ||
     event.type === "scout.digest" ||
+    event.type === "project.library_health.tick" ||
     event.type === "project.owner.requested" ||
     event.type === "project.planning.requested"
   ) {
@@ -69,6 +71,10 @@ async function routeScoutEvent(
 
   if (event.type === "project.knowledge.maintained") {
     return ctx.noop("external event emitted by knowledge-planner workflow");
+  }
+
+  if (event.type === "project.library_health.observed") {
+    return ctx.noop("external event emitted by library-health workflow");
   }
 
   return undefined;
@@ -166,6 +172,15 @@ export default defineProjectApp({
         project: projectId,
       },
     },
+    {
+      id: "library-health",
+      enabled: true,
+      intervalMs: 21_600_000, // 6h
+      event: {
+        type: "project.library_health.tick",
+        project: projectId,
+      },
+    },
   ],
 
   workflowHandlers: [
@@ -232,6 +247,28 @@ export default defineProjectApp({
       },
       context: taskTreeContext,
     },
+    {
+      name: "scout-library-health",
+      type: "job",
+      enabled: true,
+      description:
+        "Deterministically scans the Scout knowledge library shape and wakes Scout only for owner-judgment signals.",
+      on: ["project.library_health.tick"],
+      handler: {
+        workflow: "library-health",
+        includeEvent: true,
+        task: [
+          appTaskContext,
+          "sharedKnowledge: /app/shared/knowledge",
+          "persistent-task: skip",
+          "",
+          "Build and record a deterministic library-health packet.",
+          "Do not make content decisions here; wake Scout only when the packet contains signals that need owner judgment.",
+        ].join("\n"),
+        timeoutMs: 120_000,
+      },
+      context: taskTreeContext,
+    },
   ],
 
   events: [
@@ -241,6 +278,8 @@ export default defineProjectApp({
     { type: "project.comment.created", project: projectId },
     { type: "project.tick", project: projectId },
     { type: "project.action.invoked", project: projectId },
+    { type: "project.library_health.tick", project: projectId },
+    { type: "project.library_health.observed", project: projectId },
     { type: "project.owner.requested", project: projectId },
     { type: "project.planning.requested", project: projectId },
     { type: "metric.breach", metricIds: ["scout.knowledge-preamble-coverage"] },
@@ -267,6 +306,11 @@ export default defineProjectApp({
         description:
           "Reviews library task tree and updates the knowledge workspace.",
       },
+      "scout-library-health": {
+        emits: ["project.library_health.observed", "project.owner.requested"],
+        description:
+          "Observes library shape and wakes Scout for meaningful maintenance signals.",
+      },
     },
     adapters: [
       {
@@ -291,7 +335,10 @@ export default defineProjectApp({
           "Knowledge-library metric breach wakes Scout to inspect and repair.",
       },
     ],
-    externalEvents: ["project.knowledge.maintained"],
+    externalEvents: [
+      "project.knowledge.maintained",
+      "project.library_health.observed",
+    ],
     intentionalCycles: [
       {
         id: "scout-continuous-research",
@@ -317,6 +364,18 @@ export default defineProjectApp({
         "Ask Scout to repair knowledge/INDEX.md and related navigation.",
       event(params) {
         return ownerRequested("repair-index", params);
+      },
+    },
+    "health-check": {
+      type: "async",
+      description:
+        "Run the deterministic library-health observer and wake Scout if maintenance signals are found.",
+      event(params) {
+        return {
+          type: "project.library_health.tick",
+          project: projectId,
+          params,
+        };
       },
     },
     "explore-now": {

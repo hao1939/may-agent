@@ -1,6 +1,8 @@
 {
   "version": 3,
-  "updated_at": "2026-06-14T19:00:00.000Z",
+  "project": "scout-knowledge-lib",
+  "root_task_id": "project",
+  "updated_at": "2026-11-01T14:00:00.000Z",
   "tasks": {
     "project": {
       "id": "project",
@@ -73,7 +75,8 @@
         "projects/scout-knowledge-lib/reports/library-inventory-2026-06-12.md"
       ],
       "result": "Completed initial migration: 61 knowledge files preserved, 15 historical second-brain outputs copied into reports/migration, and agents/scout/knowledge now points to the project knowledge workspace.",
-      "state": "done"
+      "state": "done",
+      "summary": "Completed initial migration: 61 knowledge files preserved, 15 historical second-brain outputs copied into reports/migration, and agents/scout/knowledge now points to the project knowledge workspace."
     },
     "library-inventory-and-index": {
       "id": "library-inventory-and-index",
@@ -101,7 +104,8 @@
         "projects/scout-knowledge-lib/reports/library-inventory-2026-06-12.md"
       ],
       "result": "Completed migration inventory and rebuilt the library index. Duplicate-looking files remain intentionally visible for source-aware consolidation.",
-      "state": "done"
+      "state": "done",
+      "summary": "Completed migration inventory and rebuilt the library index. Duplicate-looking files remain intentionally visible for source-aware consolidation."
     },
     "dedupe-and-quality": {
       "id": "dedupe-and-quality",
@@ -129,7 +133,8 @@
         "No shallow bulk rewrites are made just to satisfy a metric."
       ],
       "result": "All five child tasks completed: agent-architecture, evaluation, multi-agent, and XHS-generic clusters consolidated into canonical notes; temp notes archived. All known consolidation clusters resolved (2026-06-15).",
-      "state": "done"
+      "state": "done",
+      "summary": "All five child tasks completed: agent-architecture, evaluation, multi-agent, and XHS-generic clusters consolidated into canonical notes; temp notes archived. All known consolidation clusters resolved (2026-06-15)."
     },
     "consolidate-agent-architecture-cluster": {
       "id": "consolidate-agent-architecture-cluster",
@@ -161,7 +166,8 @@
         "knowledge/INDEX.md updated: canonical note marked, superseded notes shown with strikethrough."
       ],
       "result": "Consolidated 5 agent-architecture files into agent-architectures.md. Superseded files kept with redirect headers. INDEX.md updated to reflect new navigation.",
-      "state": "done"
+      "state": "done",
+      "summary": "Consolidated 5 agent-architecture files into agent-architectures.md. Superseded files kept with redirect headers. INDEX.md updated to reflect new navigation."
     },
     "consolidate-evaluation-cluster": {
       "id": "consolidate-evaluation-cluster",
@@ -193,7 +199,8 @@
         "knowledge/INDEX.md updated: canonical note marked, superseded notes shown with strikethrough."
       ],
       "result": "Consolidated 5 evaluation files into agent-evaluation.md. Durable patterns (live benchmarks, trace verification, reviewer agents, operational metrics) separated from dated XHS observations. Superseded files kept with redirect headers. INDEX.md updated.",
-      "state": "done"
+      "state": "done",
+      "summary": "Consolidated 5 evaluation files into agent-evaluation.md. Durable patterns (live benchmarks, trace verification, reviewer agents, operational metrics) separated from dated XHS observations. Superseded files kept with redirect headers. INDEX.md updated."
     },
     "consolidate-multi-agent-trends-cluster": {
       "id": "consolidate-multi-agent-trends-cluster",
@@ -225,7 +232,8 @@
         "Related but distinct notes (context-stigmergy-synthesis.md, multi-agent-stigmergy.md) retained and cross-linked."
       ],
       "result": "Consolidated 11 multi-agent coordination files into multi-agent-coordination.md. Organized into 9 thematic sections: coordination topology, stigmergy, metric-driven coordination, structured handoffs, critic agents, pipeline structures, frameworks landscape, failure modes, and emerging research. Superseded files kept with redirect headers. INDEX.md updated.",
-      "state": "done"
+      "state": "done",
+      "summary": "Consolidated 11 multi-agent coordination files into multi-agent-coordination.md. Organized into 9 thematic sections: coordination topology, stigmergy, metric-driven coordination, structured handoffs, critic agents, pipeline structures, frameworks landscape, failure modes, and emerging research. Superseded files kept with redirect headers. INDEX.md updated."
     },
     "review-temp-notes": {
       "id": "review-temp-notes",
@@ -253,7 +261,8 @@
         "INDEX.md updated to show temp-ideas.md as archived."
       ],
       "result": "Both temp files resolved. temp-ideas.md ideas (memory compression, anti-patterns, self-healing) all covered by existing canonical notes. temp.txt was noise. Both marked archived in-place with provenance.",
-      "state": "done"
+      "state": "done",
+      "summary": "Both temp files resolved. temp-ideas.md ideas (memory compression, anti-patterns, self-healing) all covered by existing canonical notes. temp.txt was noise. Both marked archived in-place with provenance."
     },
     "triage-inbox-imports": {
       "id": "triage-inbox-imports",
@@ -297,7 +306,8 @@
         "reports/inbox-triage-github-batch.md"
       ],
       "result": "All 89 inbox files triaged across 4 batches (arXiv 25, HN 29, XHS 33, GitHub 2). All archived as dated provenance. Coverage analysis found existing canonical notes cover the vast majority of durable themes. Library gaps identified: agent security/governance (arXiv), government export controls (HN), agent harness pattern and MCP ecosystem (GitHub). Event-level XHS themes (Claude 5 launch, WeChat AI) noted but don't warrant canonical notes.",
-      "state": "done"
+      "state": "done",
+      "summary": "All 89 inbox files triaged across 4 batches (arXiv 25, HN 29, XHS 33, GitHub 2). All archived as dated provenance. Coverage analysis found existing canonical notes cover the vast majority of durable themes. Library gaps identified: agent security/governance (arXiv), government export controls (HN), agent harness pattern and MCP ecosystem (GitHub). Event-level XHS themes (Claude 5 launch, WeChat AI) noted but don't warrant canonical notes."
     },
     "triage-inbox-arxiv": {
       "id": "triage-inbox-arxiv",
@@ -324,7 +334,8 @@
         "INDEX.md inbox section updated to show arXiv batch as triaged."
       ],
       "result": "All 25 arXiv files triaged as archive-as-provenance. 238 unique papers, ~70% content overlap. One library gap identified: agent security/governance has no canonical note despite being the #1 theme across papers.",
-      "state": "done"
+      "state": "done",
+      "summary": "All 25 arXiv files triaged as archive-as-provenance. 238 unique papers, ~70% content overlap. One library gap identified: agent security/governance has no canonical note despite being the #1 theme across papers."
     },
     "triage-inbox-hn": {
       "id": "triage-inbox-hn",
@@ -351,7 +362,8 @@
         "INDEX.md inbox section updated to show HN batch as triaged."
       ],
       "result": "All 29 HN files triaged as archive-as-provenance. ~75-80% content overlap across files (daily re-runs of same API queries). Existing findings/hn-ai-agent-trends.md covers 6 of 6 major themes. One library gap identified: government export controls / crypto wars 2.0 (Fable/Mythos suspension, 2324pts) not in consolidated note.",
-      "state": "done"
+      "state": "done",
+      "summary": "All 29 HN files triaged as archive-as-provenance. ~75-80% content overlap across files (daily re-runs of same API queries). Existing findings/hn-ai-agent-trends.md covers 6 of 6 major themes. One library gap identified: government export controls / crypto wars 2.0 (Fable/Mythos suspension, 2324pts) not in consolidated note."
     },
     "triage-inbox-xhs": {
       "id": "triage-inbox-xhs",
@@ -378,7 +390,8 @@
         "INDEX.md inbox section updated to show XHS batch as triaged."
       ],
       "result": "All 33 XHS files triaged as archive-as-provenance. Daily browsing snapshots from Jun 3-22 with high redundancy (same-date multi-revision, cross-directory duplicates). Coverage analysis confirmed existing xhs_chinese_ai_trends_june2026.md canonical note covers all durable architectural themes. 5 event-level gaps identified (Claude 5 launch, WeChat AI, etc.) but none warrant new canonical notes.",
-      "state": "done"
+      "state": "done",
+      "summary": "All 33 XHS files triaged as archive-as-provenance. Daily browsing snapshots from Jun 3-22 with high redundancy (same-date multi-revision, cross-directory duplicates). Coverage analysis confirmed existing xhs_chinese_ai_trends_june2026.md canonical note covers all durable architectural themes. 5 event-level gaps identified (Claude 5 launch, WeChat AI, etc.) but none warrant new canonical notes."
     },
     "triage-inbox-github": {
       "id": "triage-inbox-github",
@@ -402,7 +415,8 @@
         "INDEX.md inbox section updated to show GitHub batch as triaged."
       ],
       "result": "Both GitHub trending files (2025, 2026) archived as dated provenance. Star counts and repo lists are point-in-time snapshots. Coverage analysis found most architectural patterns already in canonical notes; identified 4 library gaps: agent harness pattern, skills/plugins, MCP ecosystem, and agent testing tooling.",
-      "state": "done"
+      "state": "done",
+      "summary": "Both GitHub trending files (2025, 2026) archived as dated provenance. Star counts and repo lists are point-in-time snapshots. Coverage analysis found most architectural patterns already in canonical notes; identified 4 library gaps: agent harness pattern, skills/plugins, MCP ecosystem, and agent testing tooling."
     },
     "source-grounded-synthesis": {
       "id": "source-grounded-synthesis",
@@ -433,7 +447,8 @@
         "remaining_gap": "All gaps resolved. Security/governance → fill-gap-agent-security (done 2026-07-15). Testing tooling → fill-gap-agent-testing-tooling (done 2026-07-16, section in agent-evaluation.md)."
       },
       "result": "Both child tasks done: agent-harness-skills merged into agent-architectures.md (2026-06-15), MCP protocol note created as standalone canonical note agent-protocols-mcp-a2a.md (2026-07-14). Remaining gaps resolved in sibling tasks: agent-security-governance.md (2026-07-15), agent-evaluation.md §Agent Testing Tooling (2026-07-16).",
-      "state": "done"
+      "state": "done",
+      "summary": "Both child tasks done: agent-harness-skills merged into agent-architectures.md (2026-06-15), MCP protocol note created as standalone canonical note agent-protocols-mcp-a2a.md (2026-07-14). Remaining gaps resolved in sibling tasks: agent-security-governance.md (2026-07-15), agent-evaluation.md §Agent Testing Tooling (2026-07-16)."
     },
     "fill-gap-agent-harness-skills": {
       "id": "fill-gap-agent-harness-skills",
@@ -463,7 +478,8 @@
         "Both sections cross-reference KE knowledge entries."
       ],
       "result": "Already completed as part of agent-architectures.md update (2026-06-15). Harness Engineering and Skills-as-Code both named, described, and source-cited. Task status corrected from backlog to done (2026-07-14).",
-      "state": "done"
+      "state": "done",
+      "summary": "Already completed as part of agent-architectures.md update (2026-06-15). Harness Engineering and Skills-as-Code both named, described, and source-cited. Task status corrected from backlog to done (2026-07-14)."
     },
     "fill-gap-mcp-protocol": {
       "id": "fill-gap-mcp-protocol",
@@ -497,7 +513,8 @@
         "INDEX.md updated with new 'Agent Protocols And Standards' section."
       ],
       "result": "Created standalone canonical note agent-protocols-mcp-a2a.md. Decision: standalone note (not a section in agent-architectures.md) because protocols span architecture, coordination, evaluation, and security — a distinct concern. All three acceptance criteria met: protocol descriptions, A2A/AG-UI comparison, and MCP陨落 Chinese perspective included.",
-      "state": "done"
+      "state": "done",
+      "summary": "Created standalone canonical note agent-protocols-mcp-a2a.md. Decision: standalone note (not a section in agent-architectures.md) because protocols span architecture, coordination, evaluation, and security — a distinct concern. All three acceptance criteria met: protocol descriptions, A2A/AG-UI comparison, and MCP陨落 Chinese perspective included."
     },
     "adoption-and-reuse-feedback": {
       "id": "adoption-and-reuse-feedback",
@@ -556,7 +573,8 @@
       "context": {
         "origin": "Identified as remaining_gap in source-grounded-synthesis task (2026-07-14). See reports/inbox-triage-arxiv-batch.md for paper-level evidence."
       },
-      "state": "done"
+      "state": "done",
+      "summary": "Canonical note agent-security-governance.md covers attack surfaces (CFD, tool-use, metadata, supply-chain), defense architectures (dual-boundary, trust layers, progressive autonomy, guardrail feedback, cooperative governance, privacy budgets, bootstrapped monitoring, multi-agent trust), structural governance turn, evaluation/adversarial testing, and open problems. Source-grounded from 11 arXiv papers, HN discourse, and XHS signals. All three acceptance criteria met."
     },
     "fill-gap-agent-testing-tooling": {
       "id": "fill-gap-agent-testing-tooling",
@@ -590,7 +608,8 @@
       "context": {
         "origin": "Identified as remaining_gap in source-grounded-synthesis task (2026-07-14). See reports/inbox-triage-github-batch.md."
       },
-      "state": "done"
+      "state": "done",
+      "summary": "Added §Agent Testing Tooling to agent-evaluation.md with 3 subsections: open source tools table (promptfoo, RagaAI, Giskard, langwatch, mcpmark), Layer-Isolated testing methodology (arXiv), and CI containment tools (Agent Gate, ClawMoat, Bastion, Guardian Runtime). Known gaps section covers self-repair measurement void and harness-absorption risk. All three acceptance criteria met."
     },
     "consolidate-xhs-generic-duplicates": {
       "id": "consolidate-xhs-generic-duplicates",
@@ -622,7 +641,8 @@
         "INDEX.md Migration Notes updated to reflect XHS consolidation status."
       ],
       "result": "Superseded 6 generic XHS duplicate notes. Retained 5 source-dated XHS notes (xhs_chinese_ai_trends_may2026.md, xhs_coordination_trends_may2026.md, xhs_trends_report_Q2_2026.md, insights/xhs_trends_v5.md, xhs_latest_trends_insight_report.md) plus 2 XHS eval/failure notes with distinct content.",
-      "state": "done"
+      "state": "done",
+      "summary": "Superseded 6 generic XHS duplicate notes. Retained 5 source-dated XHS notes (xhs_chinese_ai_trends_may2026.md, xhs_coordination_trends_may2026.md, xhs_trends_report_Q2_2026.md, insights/xhs_trends_v5.md, xhs_latest_trends_insight_report.md) plus 2 XHS eval/failure notes with distinct content."
     },
     "ongoing-research": {
       "id": "ongoing-research",
@@ -710,15 +730,317 @@
     "library-maintenance": {
       "id": "library-maintenance",
       "parent_id": "project",
-      "children": [],
+      "children": [
+        "split-xhs-canonical-note",
+        "archive-reset-digest-log",
+        "split-agent-security-governance",
+        "split-hn-operational-memory",
+        "split-agent-architectures-runtime",
+        "split-defense-architectures-verified",
+        "source-unsourced-high-value-findings",
+        "shared-knowledge-convergence",
+        "split-agent-evaluation-research"
+      ],
       "kind": "work",
       "priority": "P2",
       "owner": "scout",
       "goal": "Periodic library health: consolidate new duplicates, update INDEX.md, archive stale findings, improve synthesis quality.",
-      "state": "backlog",
+      "state": "active",
       "context": {
-        "note": "Triggered by knowledge-planner workflow when project.owner.requested events arrive. Not on a fixed schedule — reacts to library drift."
+        "note": "Triggered by knowledge-planner workflow when project.owner.requested events arrive. Not on a fixed schedule — reacts to library drift.",
+        "current_condition": "2026-11-01: (1) Oversized notes: agent-architectures.md at 811 lines (11 over threshold, remaining content is 50+ atomic sections of 7-13 lines — same situation as hn-operational-memory). agent-security-defense-architectures.md at 810 lines (10 over threshold — §ANIS and §Structural Inevitability absorbed post-split, same fragmentation limit). xhs-scan-log-june2026.md (1982 lines, companion log — tolerable). hn-agent-operational-memory.md (936 lines, 24 diverse sections — tolerable). agent-security-event-log.md (906 lines, append-only provenance — tolerable). (2) Unsourced backlog at ~120 findings (reduced from ~124 via 15th sourcing batch Nov 1: 4 arXiv triages re-marked as Covered — Contract Layer, Stochastic-Deterministic Inversion, Externalization Turn, Evolution Stall). Steady-state approach: re-mark already-covered entries in small verified batches. (3) New thematic cluster: Stochastic Gatekeeper (#241) → Backbone Imperative (#242) → Ecosystem Turn (#243) form a coherent diagnostic→constructive→governance arc. Monitor for potential synthesis or canonical-note promotion if pattern repeats."
       }
+    },
+    "split-xhs-canonical-note": {
+      "id": "split-xhs-canonical-note",
+      "parent_id": "library-maintenance",
+      "children": [],
+      "kind": "work",
+      "priority": "P1",
+      "owner": "scout",
+      "goal": "Split xhs_chinese_ai_trends_june2026.md (2,529 lines, 3.2× threshold) into thematic sub-notes to unblock the sourcing pipeline.",
+      "inputs": [
+        "knowledge/xhs_chinese_ai_trends_june2026.md",
+        "knowledge/xhs-prediction-tracker.md",
+        "knowledge/INDEX.md"
+      ],
+      "outputs": [
+        "knowledge/xhs_chinese_ai_trends_june2026.md",
+        "knowledge/xhs-scan-log-june2026.md",
+        "knowledge/INDEX.md"
+      ],
+      "acceptance": [
+        "The canonical XHS note drops below 800 lines by extracting thematic sections into standalone canonical notes.",
+        "Extracted sub-notes have ai_context preambles and cross-link back to the parent note.",
+        "Prediction tracking remains in xhs-prediction-tracker.md (already extracted).",
+        "INDEX.md reflects the new navigation structure.",
+        "No content is lost — extraction, not deletion."
+      ],
+      "evidence": [
+        "knowledge/xhs_chinese_ai_trends_june2026.md reduced from 2,529 to 581 lines (below 800-line threshold).",
+        "knowledge/xhs-scan-log-june2026.md created (1,982 lines) with ai_context preamble, cross-links to canonical note and prediction tracker.",
+        "INDEX.md XHS section updated with scan log entry and corrected line counts.",
+        "Zero content lost — scan log extracted verbatim."
+      ],
+      "result": "Extracted 25 dated cross-source scan updates (1,959 lines, 77% of the file) into xhs-scan-log-june2026.md companion file. Canonical note dropped from 2,529 to 581 lines. ai_context preamble updated. INDEX.md updated. All content preserved.",
+      "state": "done",
+      "summary": "Extracted 25 dated cross-source scan updates (1,959 lines, 77% of the file) into xhs-scan-log-june2026.md companion file. Canonical note dropped from 2,529 to 581 lines. ai_context preamble updated. INDEX.md updated. All content preserved."
+    },
+    "archive-reset-digest-log": {
+      "id": "archive-reset-digest-log",
+      "parent_id": "library-maintenance",
+      "children": [],
+      "kind": "work",
+      "priority": "P1",
+      "owner": "scout",
+      "goal": "Archive and reset the misleading Scout digest today.md append-only log so daily digest work remains readable and bounded.",
+      "inputs": [
+        "agents/scout/workspace/digest/today.md",
+        "projects/scout-knowledge-lib.app/agents/scout/workspace/digest/today.md",
+        "reports/library-health-2026-08-25.md"
+      ],
+      "outputs": [
+        "agents/scout/workspace/digest/",
+        "projects/scout-knowledge-lib.app/agents/scout/workspace/digest/"
+      ],
+      "acceptance": [
+        "Existing today.md content is preserved under a dated archive file.",
+        "today.md is reset to a compact current-day digest surface.",
+        "Any duplicate app/domain digest copies are reconciled or explicitly documented."
+      ],
+      "evidence": [
+        "agents/scout/workspace/digest/2026-06-20-pre-reset-archive.md (9,169 lines preserved)",
+        "agents/scout/workspace/digest/today.md reset to 39 lines with recent-activity summary",
+        "App-level digest (63 lines) is a separate smaller file at projects/scout-knowledge-lib.app/, not a duplicate of the domain today.md"
+      ],
+      "result": "Archived 9,169-line today.md as 2026-06-20-pre-reset-archive.md. Reset today.md to 39-line compact surface with Aug 25-27 activity summary and pending-work section. App-level digest is a separate smaller file (63 lines), documented as non-duplicate.",
+      "state": "done",
+      "summary": "Archived 9,169-line today.md as 2026-06-20-pre-reset-archive.md. Reset today.md to 39-line compact surface with Aug 25-27 activity summary and pending-work section. App-level digest is a separate smaller file (63 lines), documented as non-duplicate."
+    },
+    "split-agent-security-governance": {
+      "id": "split-agent-security-governance",
+      "parent_id": "library-maintenance",
+      "children": [],
+      "kind": "work",
+      "priority": "P1",
+      "owner": "scout",
+      "goal": "Split agent-security-governance.md into smaller canonical subtopics while preserving source-grounded coverage and navigation.",
+      "inputs": [
+        "knowledge/agent-security-governance.md",
+        "knowledge/INDEX.md",
+        "reports/library-health-2026-08-25.md"
+      ],
+      "outputs": [
+        "knowledge/",
+        "knowledge/INDEX.md"
+      ],
+      "acceptance": [
+        "agent-security-governance.md drops below the canonical note size threshold or has a documented reason not to.",
+        "Extracted sub-notes have ai_context preambles and source basis.",
+        "INDEX.md points agents to the right security/governance entry points."
+      ],
+      "context": {
+        "candidate_splits": "Governance primitives, supply-chain security, agent identity/trust, guardrail governance.",
+        "why": "The note grew while already oversized, which blocks absorption of new security/governance findings.",
+        "progress": "2026-09-14: Extracted §2 Defense Architectures (24 named patterns, 398 lines) into agent-security-defense-architectures.md companion file (420 lines with ai_context). Canonical note dropped 1,122→741 lines — BELOW the 800-line threshold. Combined with prior extractions (§5 Event Log 2026-09-11, §4c State-Level 2026-09-12), total reduction is original 1,589→741 (53% reduction). Now has 3 companion files. The canonical note retains: §1 Attack Surfaces, §3 Structural Governance, §4 Evaluation, §4b Formal Governance Primitives, §4c stub, §5 Open Problems, §6 Composition Boundary, §7 Boundary Delegation Paradox, §8 Minimum Viable Authority Turn, §9 DeepMind AI Control Roadmap."
+      },
+      "evidence": [
+        "knowledge/agent-security-defense-architectures.md created (420 lines with ai_context preamble, cross-links).",
+        "knowledge/agent-security-governance.md reduced from 1,122 to 741 lines (below 800-line threshold).",
+        "knowledge/INDEX.md updated with companion note entry."
+      ],
+      "result": "Canonical note reduced below 800-line threshold via extraction of §2 Defense Architectures (24 patterns) into agent-security-defense-architectures.md. All three acceptance criteria met: note below threshold, extracted sub-note has ai_context preamble and source basis, INDEX.md updated with all four security entry points.",
+      "state": "done",
+      "summary": "Extracted §2 Defense Architectures (398 lines, 24 named patterns) into companion note. Canonical note dropped from 1,122 to 741 lines — below 800-line threshold. All acceptance criteria met."
+    },
+    "split-hn-operational-memory": {
+      "id": "split-hn-operational-memory",
+      "parent_id": "library-maintenance",
+      "children": [],
+      "kind": "work",
+      "priority": "P2",
+      "owner": "scout",
+      "goal": "Review hn-agent-operational-memory.md (1,248 lines, 1.6× threshold) and decide whether to split thematic sections into standalone notes or trim stale content.",
+      "inputs": [
+        "knowledge/hn-agent-operational-memory.md",
+        "knowledge/INDEX.md"
+      ],
+      "outputs": [
+        "knowledge/",
+        "knowledge/INDEX.md"
+      ],
+      "acceptance": [
+        "Note drops below 800 lines via extraction, trimming, or a documented reason to remain oversized.",
+        "Any extracted content has ai_context preamble and cross-links.",
+        "INDEX.md updated to reflect changes."
+      ],
+      "context": {
+        "why": "Newly detected as oversized in Aug-27 health scan (1,248 lines). Lower priority than XHS and security splits since it is less of a sourcing bottleneck.",
+        "progress": "2026-09-12: Extracted Comprehension Cliff / Reviews Expensive / Skill Atrophy discourse arc (396 lines, 8 sections) into hn-comprehension-cliff-discourse.md. Parent reduced from 1,303 to 915 lines. Still above 800-line threshold — remaining content is 24 distinct HN discourse threads (sovereignty stack, sandbox convergence, model commoditization, dual-use impossibility, meta RLHF, probe-and-refine) that are thematically diverse but individually small (20-60 lines each). Further extraction would fragment without clear navigational benefit."
+      },
+      "evidence": [
+        "knowledge/hn-comprehension-cliff-discourse.md created (440 lines with ai_context preamble, cross-links).",
+        "knowledge/hn-agent-operational-memory.md reduced from 1,303 to 915 lines.",
+        "knowledge/INDEX.md updated with companion note entry."
+      ],
+      "result": "Extracted largest coherent cluster (Comprehension Cliff, 396 lines) into companion note. Parent reduced to 915 lines. Remaining 115 lines above threshold are 24 small diverse sections; further splits would fragment without benefit.",
+      "state": "done",
+      "summary": "Extracted largest coherent cluster (Comprehension Cliff, 396 lines) into companion note. Parent reduced to 915 lines. Remaining 115 lines above threshold are 24 small diverse sections; further splits would fragment without benefit."
+    },
+    "split-agent-architectures-runtime": {
+      "id": "split-agent-architectures-runtime",
+      "parent_id": "library-maintenance",
+      "children": [],
+      "kind": "work",
+      "priority": "P1",
+      "owner": "scout",
+      "goal": "Extract §Runtime Hardening from agent-architectures.md (980 lines) into a companion note to bring the canonical note below 800 lines.",
+      "inputs": [
+        "knowledge/agent-architectures.md",
+        "knowledge/INDEX.md"
+      ],
+      "outputs": [
+        "knowledge/agent-runtime-hardening.md",
+        "knowledge/agent-architectures.md",
+        "knowledge/INDEX.md"
+      ],
+      "acceptance": [
+        "agent-architectures.md drops below or near the 800-line threshold.",
+        "Extracted companion note has ai_context preamble and cross-links.",
+        "INDEX.md updated with the new companion note entry."
+      ],
+      "evidence": [
+        "knowledge/agent-runtime-hardening.md created (203 lines with ai_context preamble, cross-links to canonical note, security, and protocols).",
+        "knowledge/agent-architectures.md reduced from 980 to 803 lines (redirect stub replaces full section).",
+        "knowledge/INDEX.md updated with companion note entry in Agent Architecture And Control section."
+      ],
+      "result": "Extracted §Runtime Hardening (8 named patterns, 187 lines) into agent-runtime-hardening.md companion note. Canonical note reduced from 980 to 803 lines. INDEX.md updated. All acceptance criteria met.",
+      "state": "done",
+      "summary": "Extracted §Runtime Hardening (8 named patterns, 187 lines) into agent-runtime-hardening.md companion note. Canonical note reduced from 980 to 803 lines. INDEX.md updated."
+    },
+    "source-unsourced-high-value-findings": {
+      "id": "source-unsourced-high-value-findings",
+      "parent_id": "library-maintenance",
+      "children": [],
+      "kind": "work",
+      "priority": "P1",
+      "owner": "scout",
+      "goal": "Reduce the Not yet sourced backlog by integrating the highest-value findings into canonical notes or creating justified new synthesis notes.",
+      "inputs": [
+        "knowledge/INDEX.md",
+        "knowledge/findings/",
+        "reports/library-health-2026-08-25.md"
+      ],
+      "outputs": [
+        "knowledge/",
+        "knowledge/INDEX.md"
+      ],
+      "acceptance": [
+        "A small batch of high-value Not yet sourced findings is absorbed into canonical knowledge.",
+        "INDEX.md no longer marks those absorbed findings as Not yet sourced.",
+        "If capacity blocks sourcing, Scout records the specific split or new-note prerequisite."
+      ],
+      "context": {
+        "starting_points": "Executable Turn, HN Competence Reckoning, XHS Disenchantment/Operationalization, Harness Discipline, and Memory Assembly Gap are repeatedly called out by health reports.",
+        "approach": "Two-track: (1) Re-mark findings whose themes are ALREADY covered by canonical notes — these need INDEX correction, not content creation. (2) For genuinely new findings (Memory Assembly Gap, Harness Discipline compositional coherence), evaluate whether agent-architectures.md or a new canonical note is the right home. Fifteenth batch (Nov 1) resolved Contract Layer, Stochastic-Deterministic Inversion, Externalization Turn, and Evolution Stall via track 1.",
+        "capacity_constraint": "agent-architectures.md at 803 lines after Runtime Hardening extraction (2026-10-15). agent-runtime-hardening.md (203 lines) has headroom for runtime-specific findings. multi-agent-coordination.md (163 lines) and agent-evaluation.md (434 lines) have substantial headroom. Consider new canonical notes only for genuinely distinct concerns (e.g., Contract Layer as cross-cutting theme).",
+        "progress": "2026-09-15: First batch — 9 HN scans (Jun 15–18) re-marked as Covered (themes verified in agent-security-event-log.md, agent-architectures.md, agent-security-state-level-governance.md, hn-comprehension-cliff-discourse.md, hn-operational-memory.md). Backlog reduced 137→128. Second batch — 6 findings (HN scans #33, #35, #36, #43, #45, #46) re-marked as Covered (themes verified across agent-protocols-mcp-a2a.md, agent-security-event-log.md, agent-architectures.md, the-token-economics-trap.md, the-orchestration-hollowing.md, agent-evaluation.md). Backlog reduced 131→125. 2026-09-16: Third batch — 17 findings re-marked as Covered: XHS cross-source scans #28-#41 (12 scans), HN scan #32, HN scan #34, XHS scans #31/#33. Themes verified across agent-architectures.md (§Practitioner Local Model, §Harness Engineering, §Architectural Laziness, §Skills-as-Code), agent-security-event-log.md (§Dual-Use Impossibility, §Supply-Chain), agent-security-state-level-governance.md, the-orchestration-hollowing.md (Omnigent/Relaymux), hn-comprehension-cliff-discourse.md, insights/the-distillation-inversion.md, insights/the-discrimination-gradient.md, xhs_chinese_ai_trends_june2026.md. Backlog reduced 132→115. Fourth batch — 10 findings re-marked as Covered: HN scans #44, #47-#55 (Aug 2026 series). Themes verified across the-token-economics-trap.md (explicitly cites scans #47-58), agent-security-event-log.md (§Supply-Chain, §Talent Concentration, §Export Controls), hn-comprehension-cliff-discourse.md (§Skill Atrophy, §Governance Pincer), agent-protocols-mcp-a2a.md (§MCP Auth Maturation), agent-architectures.md (§Practitioner Local Model Inflection), agent-security-state-level-governance.md, the-orchestration-hollowing.md, findings/hn-memory-patterns.md. Backlog reduced 119→109. 2026-09-18: Fifth batch — 11 HN scans (#56-#66, Sep 1–7 series) re-marked as Covered. Themes verified across the-token-economics-trap.md (source_basis explicitly cites scans #47-58), the-decoupling-cascade.md (source_basis cites scans #53-60, Cloudflare temp accounts), the-trust-frontier.md (cites 2606.20502/2606.20508, Readability Paradox scan #65, AI Laundering/Obscure Sorrows), agent-security-event-log.md (§Talent Concentration Jumper/Shazeer), agent-security-state-level-governance.md (Export Controls, sovereignty gradient), agent-security-defense-architectures.md (LedgerAgent/SEB/Contagion/CMPE), agent-evaluation.md (§EARS, §LegalHalluLens, §Testing Tooling NRT-Bench), governance-compilation-gradient.md (AgenticRei deontic, ArgusRed compilation reversibility), multi-agent-coordination.md (MATM/Skill-MAS). Backlog reduced 120→109. 2026-09-22: Sixth batch — 11 HN scans (#67-73, #76-77, #80, #82) re-marked as Covered. Themes verified across agent-security-governance.md (§6 Composition Boundary with TRAP/SCR-Bench/Cordon/SafeClawBench, §7 Boundary Delegation Paradox citing scan #80 by name, §8 Minimum Viable Authority with ToolPrivBench/N-Version/ToolPro citing scan #82 in source_basis, Identity Boundary Convergence citing scan #76), governance-compilation-gradient.md (ToolPrivBench behavioral→compiled stage), agent-evaluation.md (EARS §Diagnostic Refinement, MemTrace), the-verification-inversion.md (Discrimination Crisis), the-subtraction-deficit.md (rejection-as-subtraction, curation), insights/the-discrimination-gradient.md (CV as discrimination measure), agent-architectures.md (§Harness Engineering, §Architectural Laziness/Ponytail), the-decoupling-cascade.md (Cloudflare temp accounts). Backlog reduced 115→104. 2026-09-27: Seventh batch — 4 findings re-marked as Covered: HN scans #49 (Jun 19), #50 (Jun 20), #51 (Jun 19), #52-58 (Jun 20 Competence Reckoning series). Themes verified across agent-security-event-log.md (§Supply-Chain 10k repos, §Dual-Use Impossibility, §Talent Concentration Jumper/Shazeer), agent-architectures.md (§Practitioner Local Model Inflection), hn-comprehension-cliff-discourse.md (§Skill Atrophy, §Governance Pincer), the-token-economics-trap.md (primary synthesis, source_basis cites scans #47-58, §Hallucination-Size Inversion GPT-5.5 86%/GLM-5.2 28%), agent-protocols-mcp-a2a.md (§ATProto Identity Portability), the-decoupling-cascade.md. Backlog reduced 115→111. 2026-10-01: Eighth batch — 5 findings re-marked as Covered: HN scan Jun 15 First Pass (Fable Crisis → the-transduction-chain.md, botsitting → the-transduction-chain.md, backlash → hn-comprehension-cliff-discourse.md), XHS Live Scan Jun 16 (记忆管理 → xhs_chinese_ai_trends_june2026.md + xhs-prediction-tracker.md + agent-architectures.md §Memory Infrastructure), XHS Cross-Source Scan Jun 17 (local model → agent-architectures.md §Practitioner Local Model, sovereignty → agent-security-state-level-governance.md), XHS Live Scan Jun 17 Evening (Fable → agent-security-event-log.md, SpaceX/Cursor → agent-architectures.md, Ponytail → agent-architectures.md §Architectural Laziness), XHS Direct Scan #46 Jun 19 (Skill Hell → the-subtraction-deficit.md + xhs-prediction-tracker.md, 减法工程 → the-subtraction-deficit.md, MemSkill → xhs-prediction-tracker.md, supply-chain → agent-security-defense-architectures.md). Backlog reduced 113→108. 2026-10-05: Tenth batch — 3 HN scans re-marked as Covered: #84 (Memory Sovereignty Splitting → agent-security-governance.md §7 'Scan #84' GateMem 2606.18829 + §9.2 Sovereignty Trust), #85 (Temporal Orientation Trilemma → hn-agent-operational-memory.md line 913 explicit cross-link), #89 (Trust Topology Inversion → agent-security-governance.md §9+§9.2 with scan #89 linked). Backlog reduced 112→109. 2026-10-10: Eleventh batch — 8 findings re-marked as Covered: arXiv Pathology/Trust triage (CEF/Thanatosis → insights/the-acceleration-trap + the-crystallization-spiral + the-inoculation-paradox; Trust Dynamics → the-chronic-condition + the-acceleration-trap; ACCORD → the-inoculation-paradox + the-crystallization-spiral + the-frozen-prompt; CoffeeBench → the-acceleration-trap + the-agent-political-economy-turn; SEAGym → the-goodhart-reflex); XHS scan #44 (guard 375:1 + CEF → the-guard-paradox + the-acceleration-trap); XHS scan #45 (dormancy → the-natural-experiment; constant function → the-constant-function); XHS scan #46 Evolution Stack (ToolPrivBench → agent-security-governance §8; evaluator ratio → the-evaluation-mirage); XHS scan #46 Dormancy Recurrence (dormancy-blindness → the-frozen-prompt + the-constant-function); XHS scan #47 (A2A 24:1 → agent-protocols-mcp-a2a; boundary crossing → the-transduction-chain + the-impedance-principle); XHS scan #48 (human actuator → the-natural-experiment + the-detection-repair-gap); XHS scan #49 (breathing amplitude → the-natural-experiment; evaluator submersion → the-evaluation-mirage + the-session-floor). Backlog reduced 117→109. 2026-10-16: Twelfth batch — 9 XHS findings re-marked as Covered: XHS scans #49 (Loop Backlash / MCP陨落 → xhs_chinese_ai_trends_june2026.md + agent-protocols-mcp-a2a.md + xhs-prediction-tracker.md), #50 (Industrialization / Skill Materialization → agent-architectures.md §Skills-as-Code + xhs-prediction-tracker.md), #51 (Disenchantment → xhs-prediction-tracker.md 記憶管理 + 自進化智能体), #52 (Acceleration → xhs_chinese_ai_trends_june2026.md §1 + xhs-prediction-tracker.md 命名疲劳 + 評估工程), #53 (Operationalization → xhs-prediction-tracker.md + the-evaluation-mirage.md + the-guard-paradox.md), #54 (Skill Security → agent-security-defense-architectures.md §2.22/§2.24), #55 (Cold Start Naming → the-cold-start-tax.md + agent-security-event-log.md), #56 (Guardrails Confirmed → xhs-prediction-tracker.md 護栏效応 ✅), #57 (H2 Strategic Inflection → xhs-prediction-tracker.md 命名疲劳 + 記憶管理 + 自進化智能体). Backlog reduced 120→111. 2026-10-25: Thirteenth batch — 8 findings re-marked as Covered: HN #96 (Fail-Plausible Crisis → the-fail-plausible-equilibrium.md cites 2606.14589/SIMMER/DeCompBench/Shield-to-Target; Deontic Policies → governance-compilation-gradient.md; Looking-Is-Not-Picking → the-compilation-threshold.md + agent-runtime-hardening.md), HN #106 (Harness Consolidation → the-orchestration-hollowing.md §Orchestration Bifurcation scan #106 cited by name; Probe-and-Refine + N-Version → agent-security-governance.md §8), HN #107 (Skill Cambrian Explosion → agent-architectures.md §Skill Cambrian Explosion + §Skills-as-Code + §Architectural Laziness), HN #130 (Effort Signal Collapse → the-verification-commons-collapse.md explicitly cites #130 as causal upstream), HN #140 (Capability Kernel Turn → agent-security-defense-architectures.md §2.27 scan #140 cited by name with fak/ARC/Agent-Environment-Lab), HN #151 (Escapability Hierarchy → agent-security-defense-architectures.md §2.28 Unfireable Safety Kernel 2606.26057 + §2.30 ERC-8004 + agent-security-governance.md §6 Composition Boundary), HN #166 (Supply Chain Crystallization → agent-security-defense-architectures.md §2.30 ToxicSkills 36% cross-reference + agent-protocols-mcp-a2a.md §A2A Adoption), HN #170b (Governance Vacuum → agent-security-defense-architectures.md §2.30 ShareLock >90% ASR + §2.31 Deterministic Control Plane 10,008 repos). Backlog reduced 120→112. 2026-10-29: Fourteenth batch — 4 findings re-marked as Covered: HN #99 (Infrastructure Inversion → the-substrate-inversion.md + agent-security-governance.md §7-§8 + agent-security-defense-architectures.md), HN #100 (Behavioral Contract Turn → the-fail-plausible-equilibrium.md + agent-security-governance.md §8 + agent-evaluation.md + agent-architectures.md + governance-compilation-gradient.md), HN #102 (Role Confusion Thesis → agent-security-governance.md §1.1 full section with 2603.12277), HN #104 (Style-Authority Paradox → agent-security-governance.md §1.1 + agent-security-defense-architectures.md + agent-runtime-hardening.md). Backlog reduced 119→115. 2026-11-01: Fifteenth batch — 4 arXiv triages re-marked as Covered: Contract Layer (Probe-and-Refine → agent-security-governance.md §8, EARS → agent-evaluation.md, ContractGuard → §6.5; meta-theme = the-substrate-inversion.md), Stochastic-Deterministic Inversion (core thesis = the-compilation-threshold.md + agent-runtime-hardening.md §Run Compilation + governance-compilation-gradient.md; Token Budgets → the-token-economics-trap.md), Externalization Turn (meta-theme = the-substrate-inversion.md; SafeClawBench → §6.4; AgenticRei → the-fail-plausible-equilibrium.md), Evolution Stall & Memory Paradigm ([2605.30621] + [2606.09863] → agent-runtime-hardening.md; T-Mem → hn-operational-memory.md; MemTrace → agent-evaluation.md; SecureClaw → agent-security-defense-architectures.md §2.1). Backlog reduced ~124→~120."
+      },
+      "state": "active"
+    },
+    "shared-knowledge-convergence": {
+      "id": "shared-knowledge-convergence",
+      "parent_id": "library-maintenance",
+      "children": [],
+      "kind": "work",
+      "priority": "P2",
+      "owner": "scout",
+      "goal": "Classify how shared/knowledge should relate to the Scout Knowledge Library, then selectively promote links, summaries, or canonical syntheses without bulk-copying the shared corpus.",
+      "inputs": [
+        "shared/knowledge/INDEX.md",
+        "shared/knowledge/knowledge-index.json",
+        "shared/knowledge/entries/",
+        "shared/knowledge/library/",
+        "knowledge/INDEX.md"
+      ],
+      "outputs": [
+        "knowledge/INDEX.md",
+        "reports/shared-knowledge-convergence.md",
+        "tasks/tree.json"
+      ],
+      "acceptance": [
+        "Scout records a compact map of shared/knowledge categories and which ones belong in this project.",
+        "Reusable agent-system knowledge from shared/knowledge is linked or summarized from Scout's INDEX instead of duplicated blindly.",
+        "Raw experiments, archives, and project-specific shared evidence remain external unless Scout identifies a durable canonical need.",
+        "Follow-up tasks are created only for concrete high-value convergence gaps."
+      ],
+      "context": {
+        "starting_inventory": "shared/knowledge has thousands of markdown files, including KE entries, experiments, topic pages, syntheses, and archives. Treat it as an external corpus and source of prior art.",
+        "principle": "Convergence means navigation and synthesis first; migration only when a file becomes durable Scout library knowledge."
+      },
+      "state": "backlog"
+    },
+    "split-defense-architectures-verified": {
+      "id": "split-defense-architectures-verified",
+      "parent_id": "library-maintenance",
+      "children": [],
+      "kind": "work",
+      "priority": "P1",
+      "owner": "scout",
+      "goal": "Extract §2.33–§2.42 verified enforcement patterns from agent-security-defense-architectures.md (928 lines) into a companion note to bring it below 800 lines.",
+      "inputs": [
+        "knowledge/agent-security-defense-architectures.md",
+        "knowledge/INDEX.md"
+      ],
+      "outputs": [
+        "knowledge/agent-security-verified-enforcement.md",
+        "knowledge/agent-security-defense-architectures.md",
+        "knowledge/INDEX.md"
+      ],
+      "acceptance": [
+        "agent-security-defense-architectures.md drops below 800 lines.",
+        "Extracted companion note has ai_context preamble, source basis, and cross-links.",
+        "INDEX.md updated with new companion note entry."
+      ],
+      "evidence": [
+        "knowledge/agent-security-verified-enforcement.md created (272 lines with ai_context preamble, cross-links to parent note, security governance, event log, protocols).",
+        "knowledge/agent-security-defense-architectures.md reduced from 928 to 696 lines (redirect stub replaces §2.33–§2.42).",
+        "knowledge/INDEX.md Agent Security section updated with new companion note entry."
+      ],
+      "result": "Extracted 10 verified enforcement patterns (§2.33–§2.42, ~248 lines) into agent-security-verified-enforcement.md. These patterns share a structural principle: enforcement without agent cooperation (out-of-band Progent/CaMeL/FIDES, institutional attestation, Cedar autoformalization, Kiko trust-by-construction, TerraProbe deceptive fixes, Robust-TO per-datum trust, VIGIL trace, KPR knowledge-boundary, physical-world hardware-gated). Parent reduced from 928 to 696 lines. INDEX.md updated.",
+      "state": "done",
+      "summary": "Extracted §2.33–§2.42 (10 verified enforcement patterns, 248 lines) into companion note. Parent reduced 928→696 lines. INDEX.md updated."
+    },
+    "split-agent-evaluation-research": {
+      "id": "split-agent-evaluation-research",
+      "parent_id": "library-maintenance",
+      "children": [],
+      "kind": "work",
+      "priority": "P1",
+      "owner": "scout",
+      "goal": "Extract §12-§22 evaluation-research sections from agent-evaluation.md (959 lines, 20% over threshold) into a companion note to bring the canonical note below 800 lines.",
+      "inputs": [
+        "knowledge/agent-evaluation.md",
+        "knowledge/INDEX.md"
+      ],
+      "outputs": [
+        "knowledge/agent-evaluation-research.md",
+        "knowledge/agent-evaluation.md",
+        "knowledge/INDEX.md"
+      ],
+      "acceptance": [
+        "agent-evaluation.md drops below 800 lines via extraction of evaluation-research sections.",
+        "Extracted companion note has ai_context preamble, source basis, and cross-links.",
+        "INDEX.md updated with new companion note entry in Evaluation section."
+      ],
+      "evidence": [
+        "knowledge/agent-evaluation-research.md created (501 lines with ai_context preamble, cross-links to parent note).",
+        "knowledge/agent-evaluation.md reduced from 959 to 497 lines (well below 800-line threshold).",
+        "knowledge/INDEX.md Evaluation section updated with companion note entry."
+      ],
+      "result": "Extracted §12–§22 (11 evaluation-research sections, 475 lines) into agent-evaluation-research.md companion note. Sections cover: Decomposed Evaluation (BinEval), Grounding Gap, Composition Tax, Measurement Ceiling, Deployment Paradox, Mechanism Gap, Outcome Mimicry, Alignment Tax, Self-Iteration Turn, Evaluation Decomposition, Hard Boundary Requirement. Parent reduced from 959 to 497 lines. INDEX.md updated. All acceptance criteria met.",
+      "state": "done",
+      "summary": "Extracted §12–§22 (11 evaluation-research sections) into companion note. Parent reduced 959→497 lines. INDEX.md updated."
     }
   }
 }

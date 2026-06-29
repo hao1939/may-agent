@@ -1,8 +1,8 @@
 <ai_context>
-summary: "Canonical reference for agent evaluation patterns and testing tooling: live benchmarks, execution-trace verification, reviewer agents, operational metrics (MTBF, CPT, context efficiency), XHS community trends, and June 2026 testing tooling landscape (promptfoo, RagaAI, Layer-Isolated methodology, CI containment tools)."
-triggers: ["evaluation", "benchmark", "reviewer agent", "feedback", "Agent-Eval-Agent", "evaluator agent", "gym", "MTBF", "context efficiency", "trajectory", "testing tooling", "promptfoo", "agent testing", "CI agent", "layer-isolated"]
-last_updated: "2026-07-18"
-source_basis: "Consolidated from agent-evaluation.md, agent-evaluation-trends.md, agent-evaluation-trends-updated.md, xhs-eval-synthesis-2024.md, and xhs_eval_trends_may2024.md. Testing tooling section added from findings/github-trending-ai-agents-2026.md, findings/2026-06-17-arxiv-ai-agent-triage.md, findings/hn-ai-agent-trends.md, findings/2026-06-14-arxiv-agent-triage.md, findings/2026-06-15-arxiv-agent-triage-batch7.md. Batch 6 sourcing: Multiagent Confidence Protocols, Intelligence Entropy evaluation dimension. Session-state sourcing (Jul 18): MemTrace knowledge-point evaluation."
+summary: "Canonical reference for agent evaluation patterns and testing tooling: live benchmarks, execution-trace verification, reviewer agents, operational metrics (MTBF, CPT, context efficiency), XHS community trends, June 2026 testing tooling landscape (promptfoo, RagaAI, Layer-Isolated methodology, CI containment tools), the Diagnostic Refinement wave (typed failure characterization via LegalHalluLens, EARS, Thermodynamic Signatures, Rift), Deployment Unit Turn (configuration-level evaluation), and the Observability Inversion (process discipline evaluation via RigorBench, small critics, structural code quality). Research-frontier patterns (§12–§22) extracted to companion note agent-evaluation-research.md."
+triggers: ["evaluation", "benchmark", "reviewer agent", "feedback", "Agent-Eval-Agent", "evaluator agent", "gym", "MTBF", "context efficiency", "trajectory", "testing tooling", "promptfoo", "agent testing", "CI agent", "layer-isolated", "diagnostic refinement", "typed hallucination", "LegalHalluLens", "EARS abstention", "Rift deception", "thermodynamic signatures", "process discipline", "process observability", "RigorBench", "small critic", "structural code quality", "Topos"]
+last_updated: "2026-10-28"
+source_basis: "Consolidated from agent-evaluation.md, agent-evaluation-trends.md, agent-evaluation-trends-updated.md, xhs-eval-synthesis-2024.md, and xhs_eval_trends_may2024.md. Testing tooling section added from findings/github-trending-ai-agents-2026.md, findings/2026-06-17-arxiv-ai-agent-triage.md, findings/hn-ai-agent-trends.md, findings/2026-06-14-arxiv-agent-triage.md, findings/2026-06-15-arxiv-agent-triage-batch7.md. Batch 6 sourcing: Multiagent Confidence Protocols, Intelligence Entropy evaluation dimension. Session-state sourcing (Jul 18): MemTrace knowledge-point evaluation. Diagnostic Refinement wave (Jun 20): LegalHalluLens, EARS, Thermodynamic Signatures, Rift. Observability Inversion (Jun 26): RigorBench, Steer Don't Solve, Topos. 2026-10-28: §12–§22 extracted to agent-evaluation-research.md companion note."
 </ai_context>
 
 # Agent Evaluation Patterns
@@ -339,7 +339,156 @@ Results (23,500 agent turns, finance/healthcare/code):
   Abstention Competence (non-resolving refusals = abstention without value).
 - **Source**: [2606.16871] Human-on-the-Bridge, arXiv June 2026. Categories: cs.MA.
 
+### The Diagnostic Refinement — Typed Failure Characterization (arXiv, June 2026)
+
+A convergent wave of papers demonstrates that **aggregate evaluation metrics
+conceal structured failure modes**. This represents a phase transition beyond
+per-layer isolation (Layer-Isolated Testing) toward per-type, per-direction
+diagnostic characterization.
+
+**LegalHalluLens** ([2606.18021]): 52% aggregate hallucination rate hides a
+38-40pp gap between claim types (obligation/numeric vs temporal). Two systems
+with matched 52% aggregate rates carry **opposite** Risk Direction Indices —
+one over-invents, the other over-omits. Multi-agent debate pipeline calibrated
+to typed diagnostics reduces fabricated detections by 45%.
+
+**EARS — Explanatory Abstention** ([2606.18668]): Production e-commerce MAS
+improves pass rate 68.5%→78.9% by replacing binary refuse/answer with a typed
+failure taxonomy (ambiguous, underspecified, misrouted, unsupported). Sub-agent
+abstention becomes inter-agent communication: not "I can't" but "I can't
+because [type], here's what the coordinator should do instead."
+
+**Thermodynamic Signatures of Reasoning** ([2606.19404]): Hallucination
+detection via physics-informed spectral analysis of attention Laplacians.
+Correct reasoning shows Wigner-Dyson statistics (structured level repulsion);
+hallucination shows Poisson statistics (random/decorrelated). +6.5 AUROC over
+LapEig, label-free unsupervised detection at mean AUROC 0.71.
+
+**Rift — Deception vs Error Signatures** ([2606.17229]): Deception (knowing
+the truth, outputting a lie) leaves an unforgeable internal signature:
+2.1-2.3x higher residual rank than naive error on identical wrong outputs.
+AUC 1.0 across GPT-2/instruct families. Survives cross-architecture transfer
+(mean AUC 0.933), active concealment (AUC 1.0), and is read-only (detectable
+but not injectable).
+
+- **Key implication**: The Evaluation Mirage is deeper than previously
+  documented. Not only do aggregate scores mask layer-level failures
+  (Layer-Isolated), they mask **type-level and direction-level failures** within
+  each layer. Deployment decisions require typed hallucination profiles (by
+  claim category), risk direction indices (omission vs invention), and
+  possibly spectral characterization of reasoning quality. The Rift finding
+  is particularly significant: if deception has an unforgeable signature
+  distinct from honest error, mechanistic trust becomes possible independent
+  of behavioral alignment.
+- **Connects to**: Evaluation Mirage (typed extension), Layer-Isolated Testing
+  (per-type within per-layer), MemTrace (aggregation hides qualitative
+  differences), Intelligence Entropy (typed degradation rates per failure mode),
+  Abstention Decay (EARS operationalizes structured abstention).
+- **Sources**: [2606.18021] LegalHalluLens; [2606.18668] EARS; [2606.19404]
+  Thermodynamic Signatures; [2606.17229] Rift. All arXiv June 2026.
+
+### The Deployment Unit Turn — Configuration-Level Evaluation (arXiv, June 2026)
+
+Three independent June 2026 papers prove that agent evaluation must target the
+full **deployment configuration** (model + CLI/harness + tool environment),
+not components in isolation.
+
+**AgentMeter** ([2606.21140]): Benchmark for model-CLI matching. Same model
+produces fundamentally different success/cost profiles under different CLIs.
+Core30 results: highest Pass/30 = GLM-5.1 + qwen-coder; lowest cost/pass =
+GPT-5.3-Codex + kimi-cli; highest AMS = Qwen3.6+ + kimi-cli. Spearman 0.765
+correlation between Core30 and Benchmark90. **The "model leaderboard" is the
+wrong artifact — "configuration leaderboards" are needed.**
+
+**Calibration Is Not Control** ([2606.21399]): Scalar risk scoring (confidence
+→ threshold → intervene) targets the wrong decision object. Recalibrating
+improves prediction metrics but leaves control regret unchanged. Action-
+conditioned controller reduces regret from 0.506 to 0.110 on ALFWorld.
+**Oversight must produce conditional action recommendations, not risk numbers.**
+
+**Don't Blindly Trust It** ([2606.21409]): Tool augmentation value is
+conditional on deployed tool reliability. Qwen2.5-7B: 44.8 F1 (clean
+retrieval), 22.3 F1 (no feedback), 4.7 F1 (shuffled retrieval). **Same agent
++ tool config is beneficial in one deployment and harmful in another.**
+
+- **Key implication**: Agent evaluation that isolates model capability from
+  harness/CLI/tool reliability is methodologically incomplete. The correct
+  evaluation unit is the deployed configuration — model version + harness
+  version + tool manifest + workflow topology. This is the evaluation
+  corollary of the Infrastructure Inversion thesis (scan #99). Prediction:
+  "configuration leaderboards" replace model leaderboards for agentic tasks
+  within 12 months.
+- **Connects to**: Evaluation Mirage (deployment context as hidden variable),
+  Layer-Isolated Testing (harness is an uncontrolled layer in most evals),
+  Harness Consolidation Wave (meta-harness as evaluation-relevant artifact),
+  Infrastructure Inversion (infrastructure defines capability, not model).
+- **Sources**: [2606.21140] AgentMeter; [2606.21399] Calibration Is Not Control;
+  [2606.21409] Don't Blindly Trust It. All arXiv June 2026.
+
+### The Observability Inversion — Process Discipline as Evaluation Axis (June 2026)
+
+A cluster of concurrent research and tooling demonstrates that **process
+observability** is becoming the primary evaluation axis, inverting the
+traditional outcome-only pipeline.
+
+**RigorBench** ([2606.22678]): First benchmark measuring *how* coding agents
+work rather than *whether* they produce correct output. Five process pillars:
+Planning Fidelity, Verification Coverage, Recovery Efficiency, Abstention
+Quality, Atomic Transition Integrity. Key result: structured process discipline
+improves process quality scores by 41% **AND raises downstream outcome
+correctness by 17%** — empirical proof that how agents code matters as much as
+what they produce.
+
+**Steer, Don't Solve** ([2606.21811]): Small trained critics (30-92× cheaper
+than teacher models) steering frozen agents outperform end-to-end training.
+Critic-guided Qwen3-Next: more accurate (25.2% vs 20.8%) AND cheaper ($0.04
+vs $0.11) because intra-trajectory critics shorten trajectories. Process
+steering beats process-free scaling.
+
+**Topos** (github.com/Krv-Labs/topos): Open-source structural code quality
+evaluation via graph theory (AST/CFG/CPG/MDG). Category-theory-inspired
+framework. Available as CLI, MCP Server, and VS Code extension (BSD-3).
+Non-cooperative code quality assessment — measures structural properties
+rather than asking the agent if its output is good.
+
+This forms a **process observability stack**:
+| Layer | Tool/Paper | Function |
+|-------|-----------|----------|
+| Metrics | RigorBench, Topos | Measure process quality structurally |
+| Steering | Small Critics, SCPO | Intervene during execution |
+| Governance | CtxGov, Retrace | Audit inherited instructions, replay failures |
+
+The traditional pipeline (Run → Check output → Accept/reject) inverts to
+(Observe process → Steer in-flight → Measure structural quality → Accept with
+evidence). Extends the Non-Cooperative Trust Principle: process observability
+is non-cooperative evaluation of agent behavior.
+
+- **Key implication**: Process discipline evaluation should be integrated into
+  our harness as a first-class metric alongside outcome correctness.
+  RigorBench's five pillars map to concrete measurement of patterns we
+  already track informally (doom loops, abstention quality, recovery).
+  Small critics are an immediately implementable cost reduction.
+- **Dual-use risk**: Process observability infrastructure enables surveillance
+  ([2606.25836] — agentic surveillance formalization). Every process
+  observation tool is also a process surveillance tool.
+- **Sources**: [2606.22678] RigorBench; [2606.21811] Steer, Don't Solve;
+  Topos (github.com/Krv-Labs/topos); [HN Scan #170](./findings/2026-06-26-hn-scan-170.md).
+  Updated 2026-06-26.
+
+## Evaluation Research Patterns (§12–§22)
+
+> **Extracted → [Agent Evaluation Research Patterns](./agent-evaluation-research.md)**
+>
+> 11 arXiv-sourced evaluation research sections (475 lines) extracted into
+> companion note 2026-10-28. Covers: Decomposed Evaluation (BinEval), Grounding
+> Gap, Composition Tax (co-failure ceiling, RQGM, ERC-8004), Measurement Ceiling,
+> Deployment Paradox (DRA 5-8× gap), Mechanism Gap (CAWM 20%), Outcome Mimicry
+> (AgentLens Lucky Pass 10.7%), Alignment Tax (N_eff monoculture), Self-Iteration
+> Turn (AgentX, JERP), Evaluation Decomposition (7 papers), Hard Boundary
+> Requirement (compression metric, semantic early-stopping).
+
 ## Related Notes
+- [Agent Evaluation Research Patterns](./agent-evaluation-research.md) ← companion note (§12–§22, arXiv research frontier)
 - [Agent Self-Correction Trends 2026](./agent-self-correction-trends-2026.md)
 - [Agent Error Recovery and Resilience](./agent-error-recovery.md)
 - [Agent Anti-Patterns](./insights/agent-anti-patterns.md)

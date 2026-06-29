@@ -36,6 +36,7 @@ The old heartbeat-owned library has been extracted into a V3 project:
 - Domain workspace: ${projectDir}
 - App/control plane: ${appDir}
 - Durable library: ${projectDir}/knowledge
+- External shared corpus: /app/shared/knowledge
 
 Your job in this workflow is not a freeform heartbeat. Review the project task
 tree, understand the trigger, and do the smallest useful maintenance step.
@@ -55,6 +56,8 @@ Valid durable outcomes:
 
 Operating rules:
 - Prefer updating existing notes over creating duplicates.
+- Treat /app/shared/knowledge as external source material. Link, summarize, or
+  promote only durable reusable knowledge; do not bulk-copy the corpus.
 - Keep source-grounded <ai_context> preambles where the library already uses them.
 - Do not bulk-edit just to improve a metric.
 - Do not create ceremonial project/control tasks.

@@ -424,6 +424,22 @@ one problem expressed 23 ways.
 
 ---
 
+## New Evidence: The Context Senescence Thesis (Scan #112, 2026-06-23)
+
+Five papers from June 23, 2026 provide EMPIRICAL confirmation of this synthesis's core claim:
+
+- **SelfCompact (2606.23525):** Proves agents literally cannot detect their own context degradation. A lightweight external "rubric" (external temporal governance) yields +18.1pts and -70% cost. This is the Eternal Present's missing `expiry` primitive proven necessary at the session level.
+- **AFTER (2606.23127):** 382-task benchmark proving procedural skills need lifecycle governance — the `succession` primitive for learned behaviors.
+- **Kamera (2606.23581):** Multimodal agents re-encode unchanged artifacts repeatedly — a sub-symbolic manifestation of missing `consolidation` (unchanged state should persist, not re-derive).
+- **Expressivity Floor (2606.23668):** Formal PAC-Bayes proof that prompt channels have capacity limits. Context senescence ISN'T just costly — it provably saturates the communication channel, making new information unrecoverable.
+- **EnterpriseClawBench (2606.23654):** Best enterprise agent achieves only 0.663 — configuration-level degradation from accumulated context pollution across turns.
+
+**Status update:** This moves from "active hypothesis" to "empirically confirmed at session level." The five missing primitives (expiry, consolidation, resolution, succession, provenance) now each have at least one paper demonstrating their necessity. The biological analog (cells cannot self-diagnose senescence; an external immune system is required) is validated by SelfCompact's core finding.
+
+→ Full analysis: `findings/2026-06-23-hn-scan-112.md`
+
+---
+
 ## Meta-Observation: This Synthesis's Own Temporal Status
 
 Per the Recursive Mirror, this synthesis must declare its own temporal scope:
@@ -439,3 +455,22 @@ Per the Recursive Mirror, this synthesis must declare its own temporal scope:
 This is the first synthesis to include its own lifecycle metadata. If the
 Recursive Mirror is correct, this practice should propagate to all future
 syntheses — or this synthesis is no better than the 29 it critiques.
+
+---
+
+## Update: Engineering Solutions Arrived (2026-11-01)
+
+The Temporal Memory Convergence (findings/2026-11-01-hn-arxiv-scan-248.md) documents
+that **all five missing temporal primitives now have concrete implementations**:
+
+| Primitive | Solution | Paper |
+|-----------|----------|-------|
+| Expiry | Bi-temporal ledger with deterministic retirement | MemStrata (2606.26511) |
+| Consolidation | Surprise-gated LoRA writes; trainable RL environment | Memory Depth (2606.26806); Supersede (2606.27472) |
+| Resolution | Endogenous immune monitoring within cognitive loop | ANIS (2606.28270) |
+| Succession | Deterministic (S,R,O) supersession rule | MemStrata (2606.26511) |
+| Provenance | Bi-temporal ledger; confidence/freshness metadata | MemStrata; ESI (HN Show) |
+
+This synthesis's status changes from "Active hypothesis" to "Confirmed with
+engineering pathways available." The diagnosis was correct; the field has
+independently converged on solutions matching the predicted primitive set.

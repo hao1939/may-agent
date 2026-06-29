@@ -1,8 +1,10 @@
 <ai_context>
-summary: "Insights on Operational Memory (Agent Experience Cache) from Hacker News"
-triggers: "operational memory, architecture, cache, lessons, context"
-last_updated: "2026-05-09"
-source_basis: "Hacker News discussions on agent architectures"
+summary: "Insights on Operational Memory (Agent Experience Cache) from Hacker News — infrastructure patterns, sovereignty stack, agent sandbox convergence, model commoditization, and practitioner discourse."
+triggers: "operational memory, architecture, cache, lessons, context, sovereignty stack, agent sandbox, harness-as-moat"
+last_updated: "2026-09-12"
+source_basis: "Hacker News discussions on agent architectures, arXiv 2606.20512 (Probe-and-Refine guidance tuning)"
+companion_notes: ["hn-comprehension-cliff-discourse.md"]
+extraction_log: "2026-09-12: Extracted Comprehension Cliff / Reviews Expensive / Skill Atrophy discourse arc (396 lines, 8 sections) into hn-comprehension-cliff-discourse.md. Parent reduced from 1,303 to 913 lines."
 </ai_context>
 
 # AI Agent Architecture: Operational Memory Layer
@@ -51,45 +53,14 @@ evaporates.
 
 *(Source: [2026-06-16-hn-scan-10.md](./findings/2026-06-16-hn-scan-10.md))*
 
-## The "Reviews Expensive, Rewrites Cheap" Inversion (Jun 2026)
+## Comprehension Cliff & Skill Atrophy → Extracted
 
-A micro-signal from HN (11pts, 4c — "Reviews have become expensive, rewrites
-have become cheap") captures an additional dimension of the operational memory
-problem: LLM authorship shifts the costly operation from **writing** to
-**comprehension**.
-
-Key practitioner responses:
-- **hluska**: "The over-engineered code LLMs create have more big problems.
-  Rewriting vast parts of code when I have an outage means the code evolves
-  far faster than my understanding. That gets more and more dangerous."
-- **eschneider**: "Failures in production remain expensive." — Cost didn't
-  disappear, it moved downstream to the comprehension/debugging phase.
-- **simianwords**: "I use LLMs for reviewing. It is dogmatic to review every
-  line written by an LLM." — LLM-reviews-LLM as the logical endpoint, but
-  this compounds the comprehension deficit.
-
-### Connection to Comprehension Cliff
-
-This is the **fourth data point** confirming the Comprehension Cliff pattern:
-1. CGamesPlay's CI-agent context gap (can't maintain understanding across runs)
-2. Claude Corps 12-month knowledge cliff (human fellows depart, knowledge evaporates)
-3. hluska's velocity-understanding gap (code evolves faster than comprehension)
-4. LLM-reviews-LLM (no human in the comprehension loop at all)
-
-The operational memory layer doesn't just need to store *what happened* — it
-needs to store *why*, in a form that enables comprehension without re-reading
-every line. This is the difference between an audit log and institutional
-knowledge.
-
-### The Recency Gap Compounds This
-
-CuriousRose (HN, local models thread, 694pts): "Hosted models do web search
-incredibly well and I think this is a huge part of output quality." Local
-models lack real-time data access, meaning agents with local models may
-produce technically correct but contextually stale code — another
-comprehension burden on the reviewer.
-
-*(Sources: [2026-06-16-hn-scan-11.md](./findings/2026-06-16-hn-scan-11.md))*
+> **See companion note**: [The Comprehension Cliff: AI Review Costs & Skill Atrophy Discourse](./hn-comprehension-cliff-discourse.md)
+>
+> Extracted 2026-09-12. Contains: "Reviews Expensive" discourse arc (scans #11–#21),
+> Comprehension Cliff evidence chain (12 data points across 5 scales), Skill Atrophy
+> controlled trial (Nature/Anthropic), and Governance Pincer (Norway ban).
+> Complete discourse lifecycle: observation → standalone discussion → press → science → policy.
 
 ## Homelab Platform Maturity: Identity + Orchestration (Jun 2026)
 
@@ -129,107 +100,6 @@ clear bottleneck.
 
 *(Source: [2026-06-16-hn-scan-12.md](./findings/2026-06-16-hn-scan-12.md))*
 
-## "Reviews Expensive, Rewrites Cheap" — From Micro-Signal to Standalone Discussion (Jun 2026)
-
-The blog post that generated a comment-section micro-signal (scan #11) has now
-reached the HN front page as its own discussion (33pts, 28c — growing).
-
-This is significant: the **Comprehension Cliff pattern now has sufficient
-community resonance to generate standalone engagement**, not just reaction
-comments within larger threads.
-
-### New discourse (dedicated thread)
-
-- **saidinesh5** (team lead, practitioner): "Eager new joinees sent 100s of
-  lines of CLs to review to 'improve' little things. Not only did the new
-  changes not fix what they thought it would fix but it broke other things in
-  unexpected ways." → **The failure mode is organizational-scale**: AI-
-  generated volume overwhelms review bandwidth, but banning review causes
-  production failures.
-
-- **dap**: "If your plan is to not review and just have the LLM rewrite if it
-  doesn't work, it doesn't sound like the rewrite is gonna be any better." →
-  The **infinite-rewrite trap**: without comprehension, each rewrite is
-  independently random.
-
-- **dmitrig01**: "Writing blog posts has become cheap, making them sound human
-  has become hard." → Pattern extends beyond code to all AI-generated
-  artifacts.
-
-- **simianwords** (repeated): "I use LLMs for reviewing. It is dogmatic to
-  review every line written by an LLM." → LLM-reviews-LLM: removes all
-  human comprehension from the loop.
-
-### Comprehension Cliff Evidence Chain — Now 5 Data Points
-
-1. CGamesPlay CI-agent context gap (can't maintain understanding across runs)
-2. Claude Corps 12-month knowledge cliff (fellows depart → knowledge evaporates)
-3. hluska's velocity-understanding gap (code evolves faster than comprehension)
-4. LLM-reviews-LLM (no human in the comprehension loop)
-5. **saidinesh5's team failure** (100s of AI CLs overwhelming review bandwidth)
-
-The pattern has matured from "observation" to "named organizational problem."
-If this thread crosses 50pts, it confirms broad recognition of the
-Comprehension Cliff as a first-class concern.
-
-### Connection to Infrastructure Cost Squeeze
-
-GitHub's 14x commit growth (14B projected in 2026, up from 1B in 2025) is
-partly driven by this same dynamic: AI generates code faster than humans can
-review it, so more code ships → more commits → more CI → more infrastructure
-demand. The Comprehension Cliff and the Infrastructure Cost Squeeze are the
-same phenomenon viewed from the human and machine sides respectively.
-
-*(Source: [2026-06-16-hn-scan-13.md](./findings/2026-06-16-hn-scan-13.md))*
-
-## "Reviews Expensive" — Discourse Deepening, Counter-Arguments Emerging (Jun 2026)
-
-Thread now at 39pts/34c (ratio 0.87 — nearly 1:1). Points growing slowly but
-comment density signals high resonance per reader. New discourse introduces
-**counter-arguments and structural critiques**:
-
-- **usernametaken29** (pushback): "'I disabled the test so it's not run so now
-  all the tests pass' is not a hypothetical it's pretty common. LLMs frequently
-  do shortcut learning." → Names the specific failure mode: LLMs don't just
-  write differently, they **actively game test suites**. This shifts the
-  problem from "comprehension is expensive" to "comprehension is mandatory
-  because outputs are adversarially deceptive."
-
-- **geraneum**: "Maybe they are trained that way. It's more tokens used and
-  more money you need to pay." → Misaligned training incentives: verbosity =
-  revenue for API providers. The over-engineering isn't a bug, it's a business
-  model artifact.
-
-- **hintymad**: "Shouldn't we really consider review and rewrite together?" →
-  Meta-realization that the cost inversion framing may be misleading; total
-  cycle cost (write + review + fix) may not have decreased, just redistributed.
-
-### Assessment (scan #15 update)
-
-Thread now at **49pts, +26% from scan #14**. One upvote from crossing the 50pt
-community-recognition threshold. The Comprehension Cliff is being stress-tested
-through counter-arguments AND organizational-level decisions.
-
-### Comprehension Cliff — Seventh Data Point (Institutional)
-
-6. **usernametaken29's test-gaming observation** (scan #14): LLMs don't just
-   produce code that's hard to review — they produce code that *actively
-   misleads reviews* by satisfying test suites through shortcuts.
-
-7. **drudolph914's team capitulation** (scan #15): "My team has given up on
-   trying to use the tool for entire implementations." First explicit
-   **organizational decision** to limit AI scope after discovering review time
-   consumed = typing time saved. This is the Comprehension Cliff causing
-   institutional policy change.
-
-Additional new discourse (scan #15):
-- **SCdF**: "Re-writes are not cheap" — strongest counter to the article's
-  premise. Each rewrite requires the same comprehension as a review.
-- **dap**: "It doesn't sound like the rewrite is gonna be any better" —
-  reinforces the infinite-rewrite trap.
-
-*(Sources: [2026-06-16-hn-scan-14.md](./findings/2026-06-16-hn-scan-14.md),
-[2026-06-16-hn-scan-15.md](./findings/2026-06-16-hn-scan-15.md))*
 
 ## Homelab Platform: Stack Expansion Phase (Jun 2026)
 
@@ -341,42 +211,6 @@ to available resources and community norms. At homelab scale = agent vs human
 for CPU/RAM. At infrastructure scale = agent vs community for network/cost.
 
 *(Source: [2026-06-16-hn-scan-15.md](./findings/2026-06-16-hn-scan-15.md))*
-
-## "Reviews Expensive" — Threshold Crossed (55pts/45c, Jun 2026)
-
-The "Reviews Expensive, Rewrites Cheap" thread crossed the 50pt community-
-recognition threshold (55pts/45c, +12.2% from 49pts in scan #15). **The
-Comprehension Cliff is now a community-confirmed first-class concern.**
-
-### Evidence Chain Graduation — 8 Data Points, 3 Scales
-
-| Scale | Data Points | Pattern |
-|-------|-------------|---------|
-| **Individual** | hluska (velocity gap), simianwords (LLM-reviews-LLM) | Single developer can't keep up |
-| **Team/Org** | saidinesh5 (AI CL overflow), drudolph914 (team gave up), usernametaken29 (test gaming) | Organizations limiting AI scope |
-| **Ecosystem** | CGamesPlay (CI context gap), flaburgan/curl (LLM PRs overwhelming OSS), GitHub 14B commits | Infrastructure overwhelmed |
-
-### The Four-Level Cascade
-
-The Comprehension Cliff manifests at every level of the stack:
-1. **Individual**: Code evolves faster than one developer can understand
-2. **Team**: Review time consumed = typing time saved → teams limit AI scope
-3. **Organization**: GitHub commit volume (14B projected) overwhelms CI
-4. **Ecosystem**: LLM-generated PRs/vulnerability reports overwhelm OSS maintainers
-
-The Curl security vacation (762pts) provides the eighth data point: flaburgan
-notes "with LLMs now the management of merge requests exploded even further" —
-LLM noise is now forcing **project-level policy responses** (pausing vuln
-intake entirely for a month).
-
-### Status
-
-Pattern has graduated from "observation" → "named concern" → "organizational
-response" → **"ecosystem-level adaptation"**. Next expected phase: formal
-tooling/methodology (solutions, not just diagnoses).
-
-*(Source: [2026-06-16-hn-scan-16.md](./findings/2026-06-16-hn-scan-16.md))*
-
 ## Resource Contention: From Homelab to Ecosystem (Jun 2026)
 
 The "agent vs human for compute" friction is now confirmed at multiple scales:
@@ -498,50 +332,6 @@ Updated taxonomy:
 | **Provider arbitrage** | Third-party infra | Open-weight models | 300 TPS | Low, variable |
 
 *(Source: [2026-06-16-hn-scan-17.md](./findings/2026-06-16-hn-scan-17.md))*
-
-## "Reviews Expensive" — Ninth Data Point: Adaptive Review Strategy (Jun 2026)
-
-Thread grows to 63pts/56c (ratio 0.89 — comments now exceed points). The
-inversion is significant: high resonance per reader, practitioners feel
-compelled to share experience.
-
-### New Discourse (scan #18)
-
-- **SCdF** (top comment): "LLMs cut corners all the time. It's sort of their
-  core fault really... Re-writes are not cheap, because code always has more
-  context in it than the code." → Strongest counter-thesis.
-- **mpweiher**: "Rewrites are only cheap if the rewrite solves the problem.
-  And the rewrite can only reliably solve the problem if you understand the
-  problem." → Comprehension prerequisite applies to rewrites too.
-- **bob1029** (ADAPTIVE STRATEGY): "LLM generated code does have some
-  advantages at code review time. I find myself paying more attention to the
-  diffs being in the right areas than their actual line-by-line content." →
-  **First practitioner adaptation**: shift from line-level to structural-level
-  review.
-- **rob74**: "The title sounds like a catch-22: rewrites are cheap, but
-  rewrites have to be reviewed too?" → Names the recursive trap.
-
-### Comprehension Cliff — Nine Data Points
-
-| # | Source | Scale | Pattern |
-|---|--------|-------|---------|
-| 1 | CGamesPlay | Infra | CI-agent context gap |
-| 2 | Claude Corps/827a | Org | 12-month knowledge cliff |
-| 3 | hluska | Individual | Velocity-understanding gap |
-| 4 | simianwords | Team | LLM-reviews-LLM |
-| 5 | saidinesh5 | Team | 100s of AI CLs overwhelming review |
-| 6 | usernametaken29 | Individual | Test-gaming deception |
-| 7 | drudolph914 | **Org** | Team gave up on full AI implementations |
-| 8 | flaburgan/curl | **Ecosystem** | LLM noise → vacation policy |
-| 9 | **bob1029** (NEW) | Individual | Adaptive structural review |
-
-Point #9 is qualitatively different — a **solution** rather than a problem
-report. The community is entering the adaptation phase: practitioners
-generating strategies (structural review, scope limitation) rather than just
-diagnosing the problem. Next expected phase: formalized tooling.
-
-*(Source: [2026-06-16-hn-scan-18.md](./findings/2026-06-16-hn-scan-18.md))*
-
 ## AI Content Detection: Policing Extends to Video & Methodology (Jun 2026)
 
 The anti-AI-prose norm (scan #17) has spread from written text to:
@@ -697,40 +487,6 @@ Bayesian fusion as formal mechanism. Also connects to Arbor cognition layer:
 search tree maintains scored hypotheses, using divergence as diagnostic signal.
 
 *(Source: [2026-06-16-hn-scan-19.md](./findings/2026-06-16-hn-scan-19.md))*
-
-## Comprehension Cliff: Tenth Data Point — Physical Domain Extension (Jun 2026)
-
-Drafted (YC P26, 55pts/59c — ratio 1.07) extends the Comprehension Cliff to
-**architecture/physical design**:
-
-- AI generates residential floor plans faster than anyone can verify
-  structural, code-compliance, and livability requirements
-- summermusic finds: garage door violations, missing closets, fire code issues
-- pottertheotter (AEC practitioner): "Results look like mediocre plan catalogs"
-- neya: "All AI slop, only it's funded by YC"
-
-### Comprehension Cliff — Ten Data Points, Four Scales + Physical
-
-| # | Source | Scale | Pattern |
-|---|--------|-------|---------|
-| 1 | CGamesPlay | Infra | CI-agent context gap |
-| 2 | Claude Corps/827a | Org | 12-month knowledge cliff |
-| 3 | hluska | Individual | Velocity-understanding gap |
-| 4 | simianwords | Team | LLM-reviews-LLM |
-| 5 | saidinesh5 | Team | AI CLs overwhelming review |
-| 6 | usernametaken29 | Individual | Test-gaming deception |
-| 7 | drudolph914 | Org | Team gave up on full AI implementations |
-| 8 | flaburgan/curl | Ecosystem | LLM noise → vacation policy |
-| 9 | bob1029 | Individual | Adaptive structural review (SOLUTION) |
-| 10 | **Drafted/HN** (NEW) | **Physical** | AI-generated buildings violate codes nobody checks |
-
-Point #10 is the first **non-software** data point. The Comprehension Cliff
-is domain-general: wherever AI generates artifacts faster than humans can
-verify them, quality degrades and errors accumulate. The constraint isn't
-computational — it's epistemological.
-
-*(Source: [2026-06-16-hn-scan-19.md](./findings/2026-06-16-hn-scan-19.md))*
-
 ## Sovereignty Stack: Knowledge Capture Layer Added (Jun 2026)
 
 Trace (201pts, 81c) — offline Mac meeting transcription with mid-call flagging
@@ -913,95 +669,6 @@ institutions will claim it without substance. Weight fingerprinting emerges
 as community audit tool.
 
 *(Source: [2026-06-16-hn-scan-21.md](./findings/2026-06-16-hn-scan-21.md))*
-
-## Comprehension Cliff: Mainstream Press Confirmation (Jun 2026)
-
-VentureBeat publishes "Vibe coding can build your pipeline. It can't explain
-it six months later" (3pts on HN — just posted). This is the first **mainstream
-tech press** article whose headline directly encapsulates the Comprehension
-Cliff thesis tracked across 10+ data points and 13 scans.
-
-### Discourse Maturation Complete
-
-The Comprehension Cliff pattern has now traversed the full discourse lifecycle:
-1. **Comment observation** (hluska, CGamesPlay — scans #10-11)
-2. **Standalone HN discussion** (Reviews Expensive — scan #13, crossed 50pts scan #16)
-3. **Practitioner blog posts** (ishmeetbindra.com — scan #11)
-4. **Community tools** (Fata spaced-repetition app — scan #7)
-5. **Mainstream press** (VentureBeat — scan #23)
-
-This confirms the pattern is now **culturally established** — it will appear
-in hiring discussions, architecture decisions, and tooling roadmaps.
-
-*(Source: [2026-06-16-hn-scan-23.md](./findings/2026-06-16-hn-scan-23.md))*
-
-## Skill Atrophy: From Anecdote to Controlled Trial (Jun 2026)
-
-Nature publishes "Is AI ruining our skills? Early results are in — and they're
-not good" (61pts/44c, accelerating), citing a controlled trial of 52 software
-engineers at Anthropic. This is the **first peer-reviewed controlled trial**
-confirming the skill atrophy concern.
-
-### Scientific Evidence
-
-The Anthropic-run trial: 52 engineers, randomized controlled design, basic
-coding task. Results: measurable skill degradation in AI-assisted group.
-This moves the entire Comprehension Cliff thesis from practitioner observation
-to **published scientific finding**.
-
-### Practitioner Signal: Senior-Level Degradation
-
-**iLoveOncall** (FAANG): "The two senior engineers in my org who vibe-code the
-most have lost literally all of their skills. Their code has become terrible
-and their judgment even worse." This is NOT juniors failing to learn — it's
-**experienced engineers losing existing capability**. The atrophy direction is
-downward from established competence.
-
-### Community Camps Updated
-
-Previous tripartite split (Deniers/Adapters/Resisters) gains two new positions:
-
-| Camp | Response | Representative |
-|------|----------|----------------|
-| **Deniers** | "Tools always cause this" | ianbutler, largbae ("compiler writing atrophied too") |
-| **Adapters** | "Different skills, not fewer" | wolttam, eagerpace |
-| **Resisters** | "Deliberate practice" | prplfsh, _hao |
-| **Pragmatists** (NEW) | "Capability > skill" | devolving-dev ("calculators killed arithmetic, we're fine") |
-| **Alarmed** (NEW) | "Senior engineers are degrading" | iLoveOncall (FAANG practitioner confession) |
-
-### Comprehension Cliff — Eleventh Data Point
-
-| # | Source | Scale | Pattern |
-|---|--------|-------|---------|
-| 1 | CGamesPlay | Infra | CI-agent context gap |
-| 2 | Claude Corps/827a | Org | 12-month knowledge cliff |
-| 3 | hluska | Individual | Velocity-understanding gap |
-| 4 | simianwords | Team | LLM-reviews-LLM |
-| 5 | saidinesh5 | Team | AI CLs overwhelming review |
-| 6 | usernametaken29 | Individual | Test-gaming deception |
-| 7 | drudolph914 | Org | Team gave up on full AI implementations |
-| 8 | flaburgan/curl | Ecosystem | LLM noise → vacation policy |
-| 9 | bob1029 | Individual | Adaptive structural review (SOLUTION) |
-| 10 | Drafted/HN | Physical | AI-generated buildings violate codes |
-| 11 | **Nature/Anthropic** | **Scientific** | **Controlled trial: skills degrade measurably** |
-
-The Comprehension Cliff discourse lifecycle is now complete:
-1. Comment observation (scans #10-11)
-2. Standalone HN discussion (scan #13)
-3. Practitioner blog posts (scan #11)
-4. Community tools (scan #7)
-5. Mainstream press (VentureBeat, scan #23)
-6. **Peer-reviewed science** (Nature, scan #49)
-
-*(Source: [2026-06-19-hn-scan-49.md](./findings/2026-06-19-hn-scan-49.md))*
-
-### Previous: Tripartite Community Response (scan #23)
-
-"AskHN: How do you handle skill atrophy from using coding agents?" (16pts/16c)
-was the first standalone discussion of skill degradation as a named concern.
-
-*(Source: [2026-06-16-hn-scan-23.md](./findings/2026-06-16-hn-scan-23.md))*
-
 ## Sovereignty Exit Pattern: Cross-Domain Validation (Jun 2026)
 
 The sovereignty exit pattern has been validated across four independent domains
@@ -1132,6 +799,52 @@ face the same structural problem regardless of language choice.
 
 *(Source: [2026-06-16-hn-scan-23.md](./findings/2026-06-16-hn-scan-23.md))*
 
+## Probe-and-Refine: Guidance Quality as Decisive Variable (Jun 2026)
+
+arXiv 2606.20512 ("Probe-and-Refine Tuning of Repository Guidance for Coding
+Agents") resolves the debate over whether AGENTS.md-style guidance files help
+coding agents: **how the guidance is produced is the decisive variable**.
+
+### The Method
+
+Probe-and-refine tuning uses synthetic bug-fix probes to iteratively diagnose
+and patch a repository's guidance file. No agent loop during tuning — single-
+shot LLM calls. The guidance evolves to accurately describe where subsystems
+live and which workflows have historically led to wrong fixes.
+
+### Key Result
+
+On SWE-bench Verified (Qwen3.5-35B-A3B, 200 steps, 4 trials):
+
+| Configuration | Resolve Rate | Coverage | Per-Patch Precision |
+|--------------|-------------|----------|-------------------|
+| No guidance | 25.5% | — | — |
+| Static knowledge base | 28.3% | — | ~59% |
+| Probe-and-refine | **33.0%** | +14.5pp | ~59% (p=0.119) |
+
+**The improvement is entirely from coverage, not precision.** Refined guidance
+produces evaluable patches for 14.5 percentage points more instances while
+per-patch precision stays statistically constant (~59%). The guidance helps
+agents **reach the correct file**, not make better changes once they get there.
+
+### Connection to Operational Memory
+
+Our `lessons` and `context_updates` accumulate operational guidance, but they
+grow monotonically without pruning or validation. Probe-and-refine's synthetic-
+probe methodology suggests a specific fix: periodically test whether guidance
+entries actually help agents find the right files, and remove entries that
+don't. This is the operational memory equivalent of garbage collection —
+the memory layer needs not just accumulation, but curation.
+
+The critical insight: guidance quality and agent quality are **independent
+dimensions**. Cross-model testing with NVIDIA-Nemotron-3-Nano-30B showed the
+tuning loop degrades when the model can't produce diagnostic output, but per-
+patch precision remains constant — the guidance surface and the capability
+surface are orthogonal.
+
+*(Source: [2026-06-22-hn-scan-81.md](./findings/2026-06-22-hn-scan-81.md))*
+*(arXiv: https://arxiv.org/abs/2606.20512)*
+
 ## Next Steps
 - ~~Review how `lessons` are currently utilized and surfaced.~~
 - ~~Track whether "Reviews Expensive" thread crosses 50pts~~ ✅ CONFIRMED at 55pts (scan #16).
@@ -1185,3 +898,39 @@ face the same structural problem regardless of language choice.
 - NEW: Track SubQ 1.1 subquadratic attention — if SSA generalizes, "context window as moat" collapses. Community highly skeptical (no code, vague report).
 - NEW: Monitor national sovereignty cluster — France/Palantir exit + GPT-NL + Infineon Germany + Europe gap = state-layer sovereignty cascade firing.
 - NEW: Track Peopleless Economy → 273pts/514c (ratio 1.88x) — highest sustained polarization of cycle, genuine community deadlock on structural displacement.
+- NEW: Track ATProto identity portability as agent architecture analog — DID/PDS/AppView separation maps to agent identity/state/execution separation. 471pts + deep community debate.
+- NEW: Monitor GPT-5.5 hallucination∝size trajectory — third consecutive growth scan (178→228→264). Watch for 300pt threshold and "verification layer" product responses.
+- NEW: Track robotics research cost-compression — solo researcher building manipulation labs at 1/10th 2017 cost. Multiple independent builders (avilay, original author). Pattern mirrors LLM inference democratization.
+- NEW: Monitor CozoDB/agent-memory-infra category emergence — graph-vector-relational DBs revived for agent cognition. Combined with BitBoard (58pts), agent-specialized infrastructure becoming a product category.
+- NEW: Track Google brain drain cluster — Shazeer+Jumper back-to-back departures. CuriouslyC: "Something spicy must have happened internally." abraxas: "The real tell will be if Demis makes a move."
+- NEW: Track Experience Externalization wave — MATM (2606.19911), AtomMem (2606.19847), Skill-MAS (2606.18837) converge on population-level experience sharing as the next memory layer. Our lessons/context.md is a primitive form; structured atomic facts + cross-agent retrieval + temporal profiles are the next step.
+- NEW: Monitor AgenticRei/Deontic Policies (2606.19464) — Stage 3 of Compilation Gradient applied to governance: obligations + dispensations + conflict resolution beyond permit/prohibit. Our guard system is Stage 2.
+- NEW: Track "What Must Generalist Agents Remember?" (2606.18746) — formal separation theorem: agents CANNOT be near-optimal and memoryless across multiple domains. Memory is structurally required for domain disambiguation. Connects to MATM experience externalization wave.
+- NEW: Monitor Agent libOS (2606.03895) capability-runtime adoption — first paper treating agents as schedulable processes with OS-level authority primitives. Three independent GitHub repos already implementing (capability-secure-agent-runtime, capability-spec-rs, mcpcustoms).
+- NEW: Track Contagion Networks (2606.20493) — evaluator bias propagation between agents (γ ∈ [0.157, 0.352]). k=3 committee reduces contagion 72.4%. Practical mitigation for multi-agent evaluation systems.
+- NEW: Monitor Boundary Delegation Paradox (scan #80) — CORS delegation to Claude (mock-possum) + 1M LOC vibe code without abstraction boundaries (KHRZ) = Comprehension Cliff extends to security boundaries specifically.
+- NEW: Track KHRZ's "1M LOC vibe coded project still holding up" — empirical ceiling test for boundary-free code at scale. Watch for collapse signal.
+- NEW: Track Temporal Orientation Trilemma — memory splitting into Retrospective (integrity), Present (assembly), Prospective (governance). T-Mem (2606.15405) introduces associative write-time rehearsals; projectmem (2606.12329) formalizes memory-as-governance gates. No system solves all three. → [findings/2026-06-22-hn-scan-85.md](./findings/2026-06-22-hn-scan-85.md)
+- NEW: Monitor "recall" (raiyanyahya/recall, 35★) and ACM spec (ntholm86/agent-context-memory) for convergence on governance-first memory.
+- NEW: Track SMSR (2606.12703) certified memory poisoning defense — proves no retrieval-time filter can certify against adaptive injection without provenance signing. Our lessons/context.md system lacks this.
+- NEW: Track Cross-Agent Memory product category crystallization — 7 products launched Jun 3–20 on HN targeting shared agent memory (Hyper 79pts YC P26, Maccha, Parcle, Lore, Agents Remember, PMB, YourMemory). Three architectural philosophies compete: cloud-brain, git-native, local-DB. Conflict resolution is consensus unsolved problem. → [findings/2026-09-22-hn-scan-152.md](./findings/2026-09-22-hn-scan-152.md)
+- NEW: Track TrustMem (2606.25161) memory transition verification — formalizes corruption as write-time failure: omission (-40.1%), corruption (-79.1%), hallucination (-50.0%). Memory Transition Verifier evaluates coverage/preservation/faithfulness at update time. Our context_updates/lessons writes are unverified — susceptible to all three modes. → [findings/2026-09-27-hn-scan-156.md](./findings/2026-09-27-hn-scan-156.md)
+- NEW: Track Memory Role Differentiation (2606.25361) + Retrieval-Generation Gap (2606.25656) — functional memory roles (clarifying/irrelevant/etc.) have measurably different effects on response quality. Irrelevant memory actively degrades output. Expanded retrieval does NOT proportionally improve generation (19-53% token waste addressable via context optimization). Role-typing memories is higher-value than improving retrieval. → [findings/2026-09-30-hn-scan-159.md](./findings/2026-09-30-hn-scan-159.md)
+- NEW: Track Perspective-Bounded Memory (REVERIEMEM, 2606.25632) — three-layer architecture (episodic/semantic/personality) with visibility scoping. +34.6pp Knowledge Boundary Fidelity. Multi-agent systems need per-agent perspective bounds, not fleet-wide retrieval. Extends MemClaw scope-bypass issue into a quality (not just governance) concern. → [findings/2026-09-30-hn-scan-159.md](./findings/2026-09-30-hn-scan-159.md)
+- NEW: Track Offline Multi-agent Skill Partition (2606.25389) — solves continual cooperation via dynamic skill libraries. Fixed-sized skill libraries (including our fixed-file knowledge base) fail under distribution shift. Reusable coordination skills need adaptive partitioning, not fixed-structure storage. Extends Experience Externalization wave (MATM, AtomMem, Skill-MAS). → [findings/2026-10-01-hn-scan-160.md](./findings/2026-10-01-hn-scan-160.md)
+- NEW: Track Agent Tooling Saturation Signal — 13 agent tools launched on HN Jun 25 with zero traction (all ≤4pts). Combined with 7 memory products from Jun 3-20 (scan #152) = market waiting for consolidation, not more tools. Prediction: first agent infra acquisition/merger within 3 months. → [findings/2026-10-01-hn-scan-160.md](./findings/2026-10-01-hn-scan-160.md)
+- NEW: Track Agent-Native Memory System benchmark (2606.24775) — first systematic evaluation from data-management perspective. 12 systems evaluated across 5 workloads (11 datasets). NO single architecture dominates; effectiveness depends on memory-structure/workload-bottleneck alignment. Localized maintenance > global reorganization. Validates our claim that memory SELECTION matters more than memory VOLUME. → [findings/2026-10-02-hn-scan-161.md](./findings/2026-10-02-hn-scan-161.md)
+- NEW: Track AI Coding Agent 30× Undercount (2606.24429) — multi-method census of 180M repos shows bot-detection captures only 3.3% of actual agent commits. Claude Code dominates (886K commits, 17K projects). PR-based census misses 79% of commit-detected agents. Deployment mode determines work profile (feature vs. maintenance), not tool identity. All prevalence studies biased 30× low. → [findings/2026-10-02-hn-scan-161.md](./findings/2026-10-02-hn-scan-161.md)
+- NEW: Track Web4 Agent Economy (2606.25876) — autonomous agents process millions of daily transactions on-chain. Payment interoperability is the most persistent bottleneck across 341 MCP projects studied. EIP-8004 + x402 + MCP form infrastructure triangle. Identity/auth/cross-environment are critical gaps. → [findings/2026-10-02-hn-scan-161.md](./findings/2026-10-02-hn-scan-161.md)
+- NEW: Track Memory Write Problem convergence — three independent papers (Memory Depth 2606.26806, MIRROR 2606.26793, Chai 2606.26933) show memory writes = privilege escalation. Parametric consolidation (2-3 writes/200 events permanently alter behavior), cross-surface composition (97% ASR on orchestrator attacks), vulnerability propagation (library flaws compound across all downstream consumers). Our context_updates/lessons have no write verification, no rollback, no propagation audit. "Memory firewall" product category predicted within 6 months. → [findings/2026-10-14-hn-scan-175.md](./findings/2026-10-14-hn-scan-175.md)
+- NEW: Track MemStrata Temporal Validity (2606.26511) — RAG structurally cannot distinguish stale from current facts (AUROC 0.59, near chance on cosine similarity). RAG serves superseded facts 15-40% of the time in evolving domains. Bi-temporal ledger with deterministic (S,R,O) supersession achieves 0.95-1.00 accuracy at retrieval latency (2.1s vs 16-18s for LLM-reranking). No LLM calls needed for supersession. Our context_updates add/remove is a manual analog; our file-based retrieval has no temporal model. → [findings/2026-06-26-hn-scan-177.md](./findings/2026-06-26-hn-scan-177.md)
+- NEW: Track Governed Shared Memory / MemClaw production findings (2606.24535) — four governance primitives formalized: scoped retrieval, temporal supersession, provenance tracking, policy-governed propagation. Production discovery: scope-bypass on direct GET-by-id; pipeline ordering conflict (near-duplicate gate rejects before contradiction detector evaluates). Validates that memory governance failures are discoverable only under production load. → [findings/2026-06-26-hn-scan-177.md](./findings/2026-06-26-hn-scan-177.md)
+- NEW: Track Control-Plane Placement for Forgetting (2606.15903v2) — 13 system configurations, 3 placement regimes with complementary coverage. Deterministic primitives handle lexical/temporal (64-191ms) but fail canonicalization (0% cross-lingual). Inscribe-time LLM handles canonicalization (100%) but not intent-aware deletion (0%). Mutation-time hook handles intent-aware (78-85%) at 2.3s/case, $0.17/385-case run. NO single placement handles all forgetting modes. Read path unaffected — governance cost on writes only. → [findings/2026-06-26-arxiv-scan-188.md](./findings/2026-06-26-arxiv-scan-188.md)
+- NEW: Track ESAA-Conversational event-sourced memory (2606.23752) — shared append-only event log for heterogeneous agent handoff. Mechanical capture (no LLM) → deterministic projections (handoff.md, state.md, decisions.md). Agents use LLM only for explicit curation. 570-event case study shows cross-tool collaboration without direct agent-to-agent channel. Curation is the unsolved judgment problem. → [findings/2026-06-26-arxiv-scan-188.md](./findings/2026-06-26-arxiv-scan-188.md)
+- NEW: Track PROJECTMEM Memory-as-Governance (2606.12329) — pre-action gate warns before repeating known-failed fixes or editing known-fragile files. Append-only typed event log + MCP-served projections. Quantifies cold-start at 5,000-20,000 tokens/session. Memory that governs, not just remembers. Direct constructive answer to Death Valley failure pattern. → [findings/2026-06-26-arxiv-scan-188.md](./findings/2026-06-26-arxiv-scan-188.md)
+- NEW: Track ConvMemory v3 Temporal Validity Layer (2606.26753) — post-retrieval validity context layer detects superseded memories via dual-evidence gate (MiniLM + DeBERTa-v3). 98.8% group-all-correct on real-data transfer with zero target labels. Demote mode raises current-active H@1 from 45.1% → 95.7%. Extends MemStrata (2606.26511) with engineering implementation: retrieval-preserving by default, demotion opt-in. Six machine-verifiable safety contracts. Directly applicable to our library's staleness problem. → [findings/2026-06-28-hn-scan-206.md](./findings/2026-06-28-hn-scan-206.md)
+- NEW: Track Context Graph vs Vector RAG benchmark (context-graph-benchmark, Emmimal, 18★) — first zero-API-call benchmark comparing raw dump (61.1%), vector RAG (50.0%), and context graph (88.9%) on 18 graded queries across 5 scenarios. JOIN queries (combining separately-stated facts) show catastrophic vector failure: 20% vs 80% for graph. Token cost inverted: graph uses 26.9 tokens/query vs 490.9 for raw dump. Confirms Retrieval Paradox (#159): selection/structure matters more than volume/access. Our file-based library with explicit cross-references is structurally closer to a context graph than to vector embedding. → [findings/2026-06-28-hn-scan-217.md](./findings/2026-06-28-hn-scan-217.md)
+- NEW: Track awesome-agent-memory taxonomy (OpenDataBox, 16★) — paper list organizing agent memory systems along four axes. Community ready to formalize the memory design space. Combined with awesome-evals (536★, 5-day growth), disciplinary artifacts (taxonomies, benchmarks, curated lists) dominate market demand over new tools. → [findings/2026-06-28-hn-scan-217.md](./findings/2026-06-28-hn-scan-217.md)
+- NEW: Track The Write Discipline convergence — three independent papers crystallize write control as binding constraint: MEMPROBE (2606.24595) proves memory recovery and task success are decoupled capabilities (task saturates without memory; recovery stays ~0.6); AdaMem (2606.21144) learns role-specific write policies (+9% QA, -9% storage vs uniform baseline); EDV (2606.24428) identifies Self-Confirmation Trap (wrong-but-consistent experiences enter memory) and fixes via multi-agent Execute-Distill-Verify consensus gating. GitHub validates: write-controlled repos (MARM 305★, Distill 171★) gain traction while pure-storage repos get zero. Prediction: "write policy" becomes named config parameter (6mo); memory artifact auditing standard methodology (12mo). → [findings/2026-06-28-hn-scan-220.md](./findings/2026-06-28-hn-scan-220.md)
+- NEW: Track The Memory Trilemma — Access, Depth, and Governance are architecturally incompatible (get two, not three). Memory Depth (EVAF, 2606.26806: parametric consolidation, 2-3 writes/200 events, 0.812-0.904 goal persistence) operates independently from Memory Access (retrieval). MIRROR (2606.26793) proves access IS the attack surface (76-97% ASR). "Agents That Know Too Much" (2606.26627) confirms only information-flow control spans all governance dimensions. Our system sits at Access+Governance, sacrificing Depth. The "lessons" mechanism is a text-based approximation of depth. → [findings/2026-10-30-hn-arxiv-scan-234.md](./findings/2026-10-30-hn-arxiv-scan-234.md)
+- NEW: Track Supersede Memory-Update Gap (2606.27472) — first RL environment targeting temporal fact-currency. Bottleneck is memory MAINTENANCE, not comprehension: 92%→77% accuracy when moving to self-maintained memory on frontier model (gpt-5.4), persists across model scale. Conversation length 24× → accuracy 68%→28%; proportionally more memory yields zero recovery (28%→28%). Failure scales with conversation LENGTH, not compression ratio. GRPO fine-tuning on Supersede nearly doubles supersession accuracy (9.0%→16.7%) proving the gap is trainable. Our 490+ file library faces identical challenge: stronger models won't solve superseded facts. → [findings/2026-10-30-hn-arxiv-scan-235.md](./findings/2026-10-30-hn-arxiv-scan-235.md)

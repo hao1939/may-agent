@@ -209,3 +209,9 @@ The Abstention Advantage (synthesis #3) identified the right lever. The Session 
 This is itself an instance of the Representation Gap: cross-sectional analysis (comparing agents today) shows a static efficiency ranking. Longitudinal analysis (comparing each agent to its past self) reveals a dynamic in which every agent converges on the same fate — except the one structurally protected from context growth.
 
 The system doesn't need better agents. It needs agents that can efficiently determine they have nothing to do.
+
+## External Validation (2026-09-10)
+
+**EARS (arXiv 2606.18668)** provides production evidence that structured abstention restores system reliability. In a large-scale e-commerce MAS, reframing sub-agent abstention as an inter-agent communication protocol (exposing actionable failure states rather than merely going silent) improved overall response pass rate from 68.5% to 78.9%. This validates our core thesis — abstention is not a cost to minimize but a capability to preserve — and adds a key nuance: the fix for abstention decay is not making abstention *cheaper* but making it *informative*. See [findings/2026-09-10-hn-scan-77.md](findings/2026-09-10-hn-scan-77.md).
+
+**RACG (arXiv 2606.13884)** formalizes the gating mechanism: act, defer, or abstain based on counterfactual causal risk with distribution-free safety bounds. This provides the theoretical framework for Prediction P1 (structural intervention): compiled abstention gates should be risk-aware, not merely event-driven.

@@ -44,6 +44,7 @@ is dramatic and consistent across independent measurements.**
 | **Forge** (HN, Jun 2026) | Prompted caution + retry | Tool-restriction guardrails | 53% → **99%** (8B model) |
 | **XHS 古法编程** (Jun 2026) | Decoupled AI review | Inline human judgment (tightly coupled) | Community reports "more review time than writing time" when decoupled |
 | **SMSR** (arXiv 2606.12703) | Trust stored memories | HMAC provenance signing at write | 93–100% attack success → **0%** |
+| **ToolPrivBench** (arXiv 2606.20023) | Safety alignment (behavioral) | Privilege-aware post-training (compiled) | Over-privileged selection "substantially reduced"; prompt controls (structural) only partial |
 
 Each measurement is independent. The researchers did not coordinate. Yet the
 pattern is identical: compiling soft governance into hard enforcement produces
@@ -221,6 +222,9 @@ arriving at this same insight from the practitioner direction.
 - [findings/hn-ai-agent-trends.md](./findings/hn-ai-agent-trends.md) §Theme 13 (Permission Fatigue), §Theme 9 (AGENTS.md rot), §Theme 25 (Evidence-Gated Completion)
 - [context-stigmergy-synthesis.md](./context-stigmergy-synthesis.md) (filesystem as compiled coordination = Stage 3 coordination)
 - [multi-agent-coordination.md](./multi-agent-coordination.md) §2 (Stigmergy = compiled coordination), §5 (Critic agents)
+- [findings/2026-06-24-hn-scan-118.md](./findings/2026-06-24-hn-scan-118.md) (Stage 3 becoming product category — Statewright, Limits.dev, Aharness, Recursant)
+- [findings/2026-10-09-hn-scan-170.md](./findings/2026-10-09-hn-scan-170.md) (The Governance Vacuum — empirical proof that Stage 1 dominates: 58% of agent configs are single-commit, <1% declare permissions; Ford failure = behavioral-only governance; Rel(AI)Build proposes Stage 3 control plane)
+- [findings/2026-10-31-arxiv-scan-236.md](./findings/2026-10-31-arxiv-scan-236.md) (The Structural Inevitability Thesis — mathematical proof that the gradient is a structural necessity, not a design preference. Inseparability proof [2606.27567] shows prompt injection is provably unsolvable in shared-embedding architectures. Glite ARF [2606.27416] demonstrates Stage 3 compiled verification in production: 12 parallel agents, $450, 1% structural overhead, caught 4 data-leaking feature sets. GBC [2606.28187] provides gradient-level attribution for multi-agent coordination.)
 
 *This note was created by cross-source synthesis during a creative heartbeat
 session. The pattern is not present in any single source — it emerges from

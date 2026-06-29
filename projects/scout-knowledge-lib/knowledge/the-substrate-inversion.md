@@ -327,6 +327,8 @@ dropping). Today it's a *structural* claim supported by:
 5. **Internal evidence** — same model, 7× efficiency from architecture difference
 6. **Community convergence** — "strip orchestration from the LLM," "meta-harness"
 
+**Update (2026-10-06, Scan #167):** icat-agent (2606.25514) provides the strongest controlled evidence yet. Same model (GPT-5.4-xhigh), different scaffold → **+8.3pp on SWE-bench Pro** (67.4% vs prior SOTA 59.1%). Key: context isolation (no shared state → prevents context poisoning), quality-adaptive workflow (well-defined issues get parallel patching; ambiguous get exploration), event-based message passing. The improvement on the *harder* benchmark is larger than most model-generation jumps. Also: SWE-Pro (2606.25530) measures the quality gap directly — experts achieve 15.5× speedup + 171.3× memory reduction; LLMs achieve negligible gains. The ceiling is real and its position is architectural.
+
 The window matters because the implications are directional and irreversible:
 - Every week, local models get slightly better → harness advantage grows
 - Every week, more governance primitives formalize → architecture compounds
@@ -390,6 +392,190 @@ sessions, not the content of prompts.
 
 The prediction: deliberately designed architectural primitives will produce even
 larger improvements than dev's accidental one.
+
+### Update: The Selectivity Turn (Scan #171, 2026-10-10)
+
+Seven simultaneous signals confirm the Substrate Inversion has reached operational
+maturity: the binding constraint has shifted from capability to **selectivity**.
+
+- **Co-Failure Ceiling** (2606.27288): Multi-model ensembles capped by β (all-wrong
+  rate), not model count. Adding models that fail on the *same* queries yields zero
+  gain. Intelligence is in choosing *which* model for *which* query.
+- **Deterministic Anchoring** (2606.26979): Static structure makes code agents
+  *reproducible*, not smarter. Intelligence is in the anchor placement.
+- **Execution Cost-Effectiveness** (2606.26978): Test execution barely affects
+  repair success when restricted; value is concentrated. Intelligence is in
+  knowing *when* to test, not testing always.
+- **Process Harness** (2606.27188): Deterministic engine retains authority; agents
+  are invited at *designated control points*. Intelligence is in the control point
+  selection, not the agent's autonomy.
+
+The pattern: "more X" has exhausted returns across every stack layer simultaneously.
+The productive direction is precision of application — the architectural consequence
+of the model becoming commodity substrate. Source: [findings/2026-10-10-hn-scan-171.md].
+
+### Update: The Isolation Imperative (Scan #180, 2026-06-26)
+
+The strongest quantitative Substrate Inversion evidence to date, plus the mechanism
+identified: **isolation** (principled boundaries between agent components) is what
+converts model capability into system reliability.
+
+- **NetLLMeval** (2606.26960): 24,000 runs, 10 models × 4 solver architectures ×
+  10 tasks × 6 topologies. Solver design lifts a **14B model from 0.43 → 0.88
+  correctness** — matching trillion-parameter frontier systems. This is a **+45pp**
+  improvement from architecture alone, the largest single-domain scaffold effect
+  documented in this library.
+- **Reboot** (2606.27122): Feature reduction (sequential milestone decomposition)
+  improves multi-agent C→Rust translation by **6-20%** over multi-agent alone.
+  The isolation mechanism (validated milestones) is worth more than the agent count.
+- **Instruction Bleed** (2606.26356, ICML 2026): Prompt modules sharing a context
+  window interfere at Cohen's d=0.63 — sub-threshold per trial but compounding
+  across deployments. Isolation between prompt modules is a measurable reliability
+  requirement.
+- **RIZZ** (2606.20638): Branch-isolated memory with verifier-gated routing
+  prevents cross-task contamination in long-lived agents. The architectural
+  mechanism for the Memory Write Problem solution.
+
+Source: [findings/2026-06-26-arxiv-scan-180.md].
+
+### Update: The Metacognitive Ceiling (Scan #183, 2026-06-26)
+
+Converging evidence that the Substrate Inversion has reached its operational
+limit: the ceiling is no longer model capability vs. scaffold capability, but
+**metacognition** — knowing when to abandon the current approach.
+
+- **Module decomposition → 32% token savings** (HN 48687634): Topos case study
+  showing structurally refactored code requires 32% fewer tokens for follow-up
+  feature additions. Better architecture makes the right approach more obvious to
+  the agent, reducing the need for metacognitive reframing.
+- **CHIA recursive loop** (arXiv 2606.27350): Open-source framework where agents
+  drive hardware/software co-design. Agents designing the silicon substrate that
+  runs agents = the Substrate Inversion going recursive. The cyclic-graph
+  architecture (DAG of design tools with rollback) is a structural answer to the
+  metacognitive ceiling: fail cheaply rather than need to know you're wrong.
+- **Trapped-ion hardware agent** (arXiv 2606.27231): Agent saturated on domain
+  knowledge but hit a metacognitive ceiling — couldn't recognize when to reframe
+  the problem. Human operator guidance (external metacognition) unlocked success.
+
+The pattern: environments that make wrong approaches fail fast (authorization
+gates, structural quality metrics, cyclic exploration) outperform environments
+that try to make agents more metacognitive.
+
+Source: [findings/2026-06-26-hn-scan-183.md].
+
+### Update: The Recursive Design Loop (Scan #187, 2026-06-27)
+
+The Substrate Inversion is now self-applying: agents design the substrates that
+other agents (or themselves) run on. Five independent papers demonstrate this:
+
+- **EVOM** (arXiv 2606.26327): LLM design agent evolves RL actor-critic
+  architectures via meta-evolution. Outperforms manual baselines and prior SOTA.
+  Key safety property: designer has zero execution authority (decoupled loops).
+- **KernelPro** (arXiv 2606.26453): Multi-agent system generates and optimizes
+  GPU kernels, achieving 2.42–5.30× speedup over baselines (SOTA all levels).
+  Agents improving the hardware layer they run on = recursive substrate optimization.
+  Micro-profiling tools as expert surrogates (p < 0.0001) — the scaffold IS the expertise.
+- **PEEU** (arXiv 2606.27330): 7B model outperforms 32B via autonomous exploration
+  + hindsight experience. Low-level skill mastery does NOT guarantee high-level
+  planning — the compositional gap IS the substrate gap.
+- **Agentic Evolution** (arXiv 2606.25532): Physically grounded multi-agent engine
+  prevents hallucinated designs via Evolutionary Knowledge Graph. Physical
+  constraint coupling = spec-anchored self-improvement.
+- **AHOIS Socratic agents** (arXiv 2606.26722): Multi-agent scientist with
+  adversarial Socratic interrogation achieves epistemic autonomy on real
+  optical hardware. The interrogation pattern IS the quality mechanism.
+
+The recursive loop is safe ONLY where external verification is cheap (profiler,
+physics, experiment). It stalls where verification is expensive (security,
+governance). This is the Verification-Generation Inversion (scan #186) as a
+design-loop property.
+
+Source: [findings/2026-06-27-arxiv-scan-187.md].
+
+### Update: The Formalization Pressure — Harness Scaling Laws (Scan #190, 2026-06-27)
+
+The Substrate Inversion receives its strongest quantitative validation yet:
+**harness performance follows predictable scaling laws independent of model capability**.
+
+- **Effective Feedback Compute / EFC** (arXiv 2605.29682v2): Raw compute (tokens,
+  tool calls, cost) cannot distinguish useful from redundant feedback. EFC —
+  measuring only informative, valid, non-redundant, and retained feedback —
+  achieves R²=0.99 in controlled scaling and R²=0.93 on real traces (where raw
+  compute has near-zero or negative fit). As a control layer: pass rate 61.2%→68.2%,
+  cost 213.8→85.1 (60% reduction). Defines harness efficiency η = EFC / raw compute.
+
+This is the Substrate Inversion *as a scaling law*: the harness, not the model,
+determines performance trajectories. The 60% cost reduction from simply filtering
+to effective feedback shows that the dominant cost in agent systems is not inference
+but redundant/unstable harness interaction.
+
+- **Experience Compression Spectrum** (arXiv 2604.15877v2): Agent memory, skills,
+  and rules are points on a single compression axis (5–20× episodic, 50–500×
+  procedural, 1,000×+ declarative). Cross-community citation rate: <1%. The
+  "Missing Diagonal" — no system supports adaptive cross-level compression.
+
+This connects the Substrate Inversion to the knowledge layer: our own library
+operates mostly at the episodic level (scan findings ~10×). Named Phenomena
+(this note, Compilation Gradient, etc.) are manual compression to declarative
+level (~1,000×+). The gap between them — procedural patterns — is the Missing
+Diagonal. Automating the diagonal IS harness engineering for knowledge.
+
+Source: [findings/2026-06-27-hn-scan-190.md].
+
+### Update: Exploitarium — Strongest Practitioner Evidence (Scan #223, 2026-10-29)
+
+The Substrate Inversion receives its strongest real-world validation from an
+adversarial domain. The "Exploitarium" (anonymous GitHub mass-0day disclosure,
+HN 48698617, **911pts**/360c) author explicitly states:
+
+> "I used GPT-5.5-3-Codex-Spark for ALL the fuzzing, as barely any 'thought'
+> is necessary when provided with an efficient harness. ...You do NOT need a
+> SOTA model to help you identify these issues."
+
+This is the Substrate Inversion thesis stated by a security researcher with
+published papers in fuzzing methodology. The harness — not the model — was the
+differentiating factor. A domain expert's fuzzing harness + commodity model
+produced industrial-scale vulnerability discovery that overwhelmed triage capacity.
+
+**Corroborating signal** from Rust core team (Manishearth): independently used
+"a pretty well-tuned LLM to find ~500 safety bugs across the Rust ecosystem."
+Same pattern: expert-built harness + generic model = volume that exceeds
+per-finding verification capacity.
+
+**Offensive implication**: The Substrate Inversion applies to attack as well as
+defense. A good offensive harness commoditizes vulnerability discovery the same
+way a good defensive harness commoditizes code generation. This means:
+- Security scanning based on individual vulnerability signatures (exclusion) will
+  fail against harness-augmented adversaries
+- Only structural defense (memory safety, formal verification, container isolation)
+  survives — the security version of the Perimeter Impossibility
+
+Source: [findings/2026-10-29-hn-scan-223.md].
+
+### Update: The Backbone Imperative — Constructive Name (Scan #242, 2026-11-01)
+
+The Substrate Inversion finds its constructive architectural pattern:
+**deterministic backbone + stochastic capability layer + consistency gate**.
+
+Six independent signals converge:
+- **GILP** (arXiv 2606.27806): Parameterized world model backbone reduces agent
+  hallucination 5× (0.176→0.035) via consistency gate between backbone predictions
+  and LLM-proposed actions. +22% LLM calls for +17pp success rate.
+- **TOP500 Chinese #1** (HN 48710775, 109pts): Domestic chips + interconnects as
+  irrevocable hardware backbone. Sovereignty at the physical layer.
+- **Model Training as Code** (HN 48673450, 153pts): Training pipelines treated as
+  deterministic workflow engine (Aleph Alpha "Savanah").
+- **AdvancedShelLM** (arXiv 2606.27990): Multi-agent honeypot achieves deception
+  via stateful deterministic backbone constraining stochastic response generation.
+
+The Backbone Imperative is the constructive form of the Substrate Inversion:
+the substrate that intelligence migrates INTO must be deterministic, maintained
+separately from agents, and operate at a stack layer agents cannot override.
+Every success case (GILP, HORIZON, Glite ARF, ActPlane, PerceptionRubrics) has
+this shape. Every failure case (Stochastic Gatekeeper Paradox, Authority Default)
+results from stochastic systems in backbone roles without deterministic constraint.
+
+Source: [findings/2026-11-01-hn-arxiv-scan-242.md].
 
 ---
 
